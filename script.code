@@ -1,0 +1,10 @@
+MAKE A VARIABLE x ASSIGN "Hello World"
+PRINT # x
+FILE OPEN myfile.txt
+FILE WRITE myfile.txt x
+PRINT # "reading from file..."
+PRINT # "--------------------"
+FILE READ myfile.txt
+PRINT # "--------------------"
+FILE CLOSE myfile.txt
+PRINT # "file closed"

@@ -1,0 +1,8 @@
+MAKE A VARIABLE x ASSIGN "Hello World"
+PRINT # x
+
+MAKE A VARIABLE limit ASSIGN 5
+
+FOR i FROM 0 TO limit
+    PRINT # "Iteration: " + i
+END FOR

@@ -1,0 +1,6 @@
+MAKE A VARIABLE x ASSIGN "Hello World"
+PRINT # x
+PRINT # x
+PRINT # 3
+MAKE A VARIABLE x ASSIGN "Hello World"
+MAKE A VARIABLE x ASSIGN "Hello World"
