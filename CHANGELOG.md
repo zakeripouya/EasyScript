@@ -6,7 +6,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Changed
 
-- **Number equality has a tolerance:** numbers within a relative 1e-9 of each other count as equal, so `0.1 plus 0.2 is 0.3` is `yes`. `is at most`/`is at least` and the other ordering comparisons agree with it.
+- **Number equality has a tolerance:** numbers within a relative 1e-12 of each other count as equal (so `1000000000 is 1000000000.5` is still `no`), so `0.1 plus 0.2 is 0.3` is `yes`. `is at most`/`is at least` and the other ordering comparisons agree with it.
 - **`followed by` binds more loosely than `plus` and `minus`,** so the maths happens before joining: `"Sum: " followed by 2 plus 3` gives `Sum: 5`. It still binds more tightly than comparisons.
 - `main.c` moved to `src/main.c`, and `.vscode/` is no longer tracked.
 

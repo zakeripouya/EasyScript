@@ -271,11 +271,11 @@ static EsValue es_not(int line, EsValue a) {
 
 /* --- Comparisons ---------------------------------------------------------- */
 
-/* Numbers within a relative 1e-9 of each other count as equal, so
+/* Numbers within a relative 1e-12 of each other count as equal, so
  * 0.1 plus 0.2 is 0.3. */
 static bool es_close(double a, double b) {
     if (a == b) return true;
-    return fabs(a - b) <= 1e-9 * fmax(fabs(a), fabs(b));
+    return fabs(a - b) <= 1e-12 * fmax(fabs(a), fabs(b));
 }
 
 static bool es_same(EsValue a, EsValue b) {
