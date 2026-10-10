@@ -718,7 +718,7 @@ Line 2: "scores" is a list of numbers, so this could mean two things.
 To put it at the end of the list, write "add ... to the end of scores". To add it to every item, write "set scores to every n in scores plus ...".
 ```
 
-**Sorting** puts numbers smallest first and text in alphabetical order (by character codes, so capital letters come first). Add `, biggest first` (or `smallest first`) to choose the order, and sort text, or lists of lists, by their length with `sort names by their length` (`, longest first` or `shortest first`). Items that are equal stay in the order they were in. Sorting changes the list itself.
+**Sorting** puts numbers smallest first ("not a number", which only comes from sums like infinity minus infinity, goes last) and text in alphabetical order (by character codes, so capital letters come first). Add `, biggest first` (or `smallest first`) to choose the order, and sort text, or lists of lists, by their length with `sort names by their length` (`, longest first` or `shortest first`). Items that are equal stay in the order they were in. Sorting changes the list itself.
 
 ### Going through a list
 

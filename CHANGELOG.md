@@ -42,6 +42,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- **Leaner lists.** Numbers are sorted in place with pdqsort instead of a merge sort with a second buffer (text and sorting by length keep the stable merge sort), lists made with a known size get exactly that size, `only`'s results are shrunk to fit, and slices and `a copy of` reuse a list nobody else holds instead of copying it. The sort benchmark went from 16.5 MB (17.3 bytes per item) to 9.0 MB (9.4; C's `qsort` program is 9.3), at the same speed. Growing lists by 1.5x instead of doubling was tried and dropped: on macOS it made realloc move the last big block with a deferred copy that the sort then paid for (14.3 MB). "not a number" now sorts last. `make bench` prints bytes per item for the sort benchmark; the sorting code is in the new `runtime/es_sort.h`.
 - **A function's name is every word before `with`, `of`, `using` or `to`.** So `to greet someone:` now defines a function called `greet someone` with no inputs; write `to greet with someone:` for an input. Using `someone` in its body, or calling `greet "Paris"`, gives an error that explains this and shows the fix. The tests and docs use `with`.
 
 - The macOS leak sweep leaves out programs that stop with a runtime error (they exit without clean-up by design, so `leaks` could report their variables depending on register allocation). Numbers shown in runtime error messages are kept reachable (`es_shown`).

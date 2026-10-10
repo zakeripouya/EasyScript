@@ -350,12 +350,12 @@ Each of these gives back a **new list** (changing it doesn't change the original
 | `remove item N from L` | Take out the item at position N | `remove item 2 from scores` |
 | `remove the first item from L` / `remove the last item from L` | Take out the first or last item | `remove the last item from names` |
 | `set item N of L to X` / `change item N of L to X` | Replace an item (also `the first item`, `the last item`) | `set item 1 of scores to 100` |
-| `sort L` | Numbers smallest first, text alphabetically (by character code) | `sort scores` |
+| `sort L` | Numbers smallest first ("not a number" last), text alphabetically (by character code). The list itself changes | `sort scores` |
 | `sort L, biggest first` / `sort L, smallest first` | Choose the order (the comma is optional) | `sort scores, biggest first` |
 | `sort L by their length` | Text by how many characters, lists by how many items | `sort names by their length` |
 | `sort L by their length, longest first` / `..., shortest first` | Choose the order | `sort names by their length, longest first` |
 
-Sorting keeps equal items in the order they were in. `remove`, `insert`, and `sort` start sentences, so they can't be function names.
+Sorting text, and sorting by length, keeps equal items in the order they were in. `remove`, `insert`, and `sort` start sentences, so they can't be function names.
 
 ### Going through lists
 

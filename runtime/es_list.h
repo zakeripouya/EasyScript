@@ -23,7 +23,10 @@
 
 /* --- Making lists ------------------------------------------------------------ */
 
-/* Room for at least `need` items. */
+/* Room for at least `need` items, doubling each time. (Growing by 1.5x was
+ * tried: on macOS, realloc then moves the last big block with a deferred
+ * copy that's paid at the next big write, such as sorting, so the sort
+ * benchmark peaked 5 MB higher. Doubling lets realloc grow in place there.) */
 static void es_list_reserve(EsList *l, size_t need) {
     if (need <= l->cap) return;
     size_t cap = l->cap ? l->cap * 2 : 4;
@@ -35,6 +38,21 @@ static void es_list_reserve(EsList *l, size_t need) {
     if (!data) es_out_of_memory();
     l->at.any = data;
     l->cap = cap;
+}
+
+/* Gives back the room the list doesn't use, so it takes exactly its size. */
+static void es_list_shrink(EsList *l) {
+    if (l->cap == l->len) return;
+    size_t size = es_item_size(l->items);
+    es_memory.live_bytes -= (l->cap - l->len) * size;
+    if (l->len == 0) {
+        free(l->at.any);
+        l->at.any = NULL;
+    } else {
+        void *data = realloc(l->at.any, l->len * size);
+        if (data) l->at.any = data; /* if it can't shrink, it keeps the old block */
+    }
+    l->cap = l->len;
 }
 
 static EsList *es_list_new(EsItems items, size_t cap) {
@@ -86,7 +104,29 @@ static EsList *es_list_copy_of(const EsList *l) {
     return copy;
 }
 
+/* Makes every list inside l (and inside those) belong to l alone, copying
+ * the ones something else holds: for reusing a list nobody else holds while
+ * keeping the promise that copies and slices share no lists. */
+static void es_list_own_deep(EsList *l) {
+    if (l->items != ES_ITEMS_LIST) return;
+    for (size_t i = 0; i < l->len; i++) {
+        EsList *inner = l->at.l[i];
+        if (inner->header.refs == 1) {
+            es_list_own_deep(inner);
+        } else {
+            l->at.l[i] = es_list_copy_of(inner);
+            es_list_release(inner);
+        }
+    }
+}
+
+/* "a copy of L". A list nobody else holds (a value just worked out) is
+ * already a copy, so it's reused. */
 static EsList *es_list_copy(EsList *l) {
+    if (l->header.refs == 1) {
+        es_list_own_deep(l);
+        return l;
+    }
     EsList *copy = es_list_copy_of(l);
     es_list_release(l);
     return copy;
@@ -148,6 +188,28 @@ static size_t es_insert_index(int site, const EsList *l, double pos) {
     return (size_t)pos - 1;
 }
 
+/* The slice of `count` items from index `start`, `step` apart, as a new list
+ * of exactly that size. If nobody else holds l, it becomes the slice itself:
+ * the other items are released and the kept ones moved down. */
+static EsList *es_list_keep(EsList *l, size_t start, size_t count, size_t step) {
+    if (l->header.refs != 1) {
+        EsList *slice = es_list_pick(l, start, count, step);
+        es_list_release(l);
+        return slice;
+    }
+    size_t size = es_item_size(l->items);
+    for (size_t i = 0; es_items_counted(l->items) && i < l->len; i++) {
+        bool kept = i >= start && (i - start) % step == 0 && (i - start) / step < count;
+        if (!kept) es_object_release(l->at.o[i]);
+    }
+    char *base = l->at.any;
+    for (size_t k = 0; k < count; k++) memmove(base + k * size, base + (start + k * step) * size, size);
+    l->len = count;
+    es_list_own_deep(l);
+    es_list_shrink(l);
+    return l;
+}
+
 /* "items FROM to TO of L" (to_end: "to the end"). Both positions must be in
  * the list, and FROM can't be after TO. */
 static EsList *es_slice_range(int site, EsList *l, double from, double to, bool to_end) {
@@ -156,9 +218,7 @@ static EsList *es_slice_range(int site, EsList *l, double from, double to, bool 
     if (a > b) {
         es_fail(site, NULL, "I can't take items %zu to %zu: the first position is after the last one.", a + 1, b + 1);
     }
-    EsList *slice = es_list_pick(l, a, b - a + 1, 1);
-    es_list_release(l);
-    return slice;
+    return es_list_keep(l, a, b - a + 1, 1);
 }
 
 /* "the first N items" / "the last N items": all of them when there are fewer. */
@@ -166,26 +226,20 @@ static EsList *es_slice_end(int site, EsList *l, double n, bool last) {
     if (n < 0) es_fail(site, NULL, "The number of items can't be negative, but it's %s.", es_shown(n));
     if (n != floor(n)) es_fail(site, NULL, "The number of items has to be a whole number, but it's %s.", es_shown(n));
     size_t count = n >= (double)l->len ? l->len : (size_t)n;
-    EsList *slice = es_list_pick(l, last ? l->len - count : 0, count, 1);
-    es_list_release(l);
-    return slice;
+    return es_list_keep(l, last ? l->len - count : 0, count, 1);
 }
 
 /* "L without the first item" / "L without the last item" */
 static EsList *es_slice_without(int site, EsList *l, bool last) {
     es_index(site, l, last ? ES_LAST : ES_FIRST, 0); /* there has to be one */
-    EsList *slice = es_list_pick(l, last ? 0 : 1, l->len - 1, 1);
-    es_list_release(l);
-    return slice;
+    return es_list_keep(l, last ? 0 : 1, l->len - 1, 1);
 }
 
 /* "every second item of L": the items at positions step, 2 * step, ...;
  * "every other item of L": 1, 3, 5, ... (start is the first position). */
 static EsList *es_slice_every(EsList *l, size_t step, size_t start) {
     size_t count = l->len >= start ? (l->len - start) / step + 1 : 0;
-    EsList *slice = es_list_pick(l, start - 1, count, step);
-    es_list_release(l);
-    return slice;
+    return es_list_keep(l, start - 1, count, step);
 }
 
 /* --- Items -------------------------------------------------------------------- */
@@ -417,115 +471,6 @@ static EsText *es_list_text(EsList *l) {
     free(b.data);
     es_list_release(l);
     return t;
-}
-
-/* --- Sorting -------------------------------------------------------------------
- *
- * A stable merge sort (equal items keep their order), written once as a macro
- * so each kind of item gets its own copy with the comparison inlined, instead
- * of calling a comparison function for every pair like qsort. Short runs are
- * sorted by insertion first; runs already in order are copied straight. */
-
-#define ES_DEFINE_SORT(NAME, T, BEFORE)                                                  \
-    static void NAME##_insertion(T *a, size_t n) {                                        \
-        for (size_t i = 1; i < n; i++) {                                                  \
-            T x = a[i];                                                                   \
-            size_t j = i;                                                                 \
-            while (j > 0 && BEFORE(x, a[j - 1])) {                                        \
-                a[j] = a[j - 1];                                                          \
-                j--;                                                                      \
-            }                                                                             \
-            a[j] = x;                                                                     \
-        }                                                                                 \
-    }                                                                                     \
-    static void NAME##_merge(const T *src, T *dst, size_t lo, size_t mid, size_t hi) {    \
-        size_t i = lo, j = mid, k = lo;                                                   \
-        if (!BEFORE(src[mid], src[mid - 1])) { /* already in order */                     \
-            memcpy(dst + lo, src + lo, (hi - lo) * sizeof(T));                            \
-            return;                                                                       \
-        }                                                                                 \
-        while (i < mid && j < hi) dst[k++] = BEFORE(src[j], src[i]) ? src[j++] : src[i++]; \
-        while (i < mid) dst[k++] = src[i++];                                              \
-        while (j < hi) dst[k++] = src[j++];                                               \
-    }                                                                                     \
-    static void NAME(T *a, size_t n) {                                                    \
-        const size_t run = 32;                                                            \
-        for (size_t lo = 0; lo < n; lo += run) NAME##_insertion(a + lo, n - lo < run ? n - lo : run); \
-        if (n <= run) return;                                                             \
-        T *tmp = malloc(n * sizeof(T));                                                   \
-        if (!tmp) es_out_of_memory();                                                     \
-        T *src = a, *dst = tmp;                                                           \
-        for (size_t width = run; width < n; width *= 2) {                                 \
-            for (size_t lo = 0; lo < n; lo += 2 * width) {                                \
-                size_t mid = lo + width < n ? lo + width : n;                             \
-                size_t hi = lo + 2 * width < n ? lo + 2 * width : n;                      \
-                if (mid < hi) {                                                           \
-                    NAME##_merge(src, dst, lo, mid, hi);                                  \
-                } else {                                                                  \
-                    memcpy(dst + lo, src + lo, (hi - lo) * sizeof(T));                    \
-                }                                                                         \
-            }                                                                             \
-            T *swap = src;                                                                \
-            src = dst;                                                                    \
-            dst = swap;                                                                   \
-        }                                                                                 \
-        if (src != a) memcpy(a, src, n * sizeof(T));                                      \
-        free(tmp);                                                                        \
-    }
-
-/* Sorting by length sorts (length, item) pairs. */
-typedef struct {
-    size_t key;
-    EsObject *item;
-} EsKeyed;
-
-#define ES_NUMBER_UP(x, y) ((x) < (y))
-#define ES_NUMBER_DOWN(x, y) ((x) > (y))
-#define ES_TEXT_UP(x, y) es_text_less((x), (y))
-#define ES_TEXT_DOWN(x, y) es_text_less((y), (x))
-#define ES_KEY_UP(x, y) ((x).key < (y).key)
-#define ES_KEY_DOWN(x, y) ((x).key > (y).key)
-
-ES_DEFINE_SORT(es_sort_numbers_up, double, ES_NUMBER_UP)
-ES_DEFINE_SORT(es_sort_numbers_down, double, ES_NUMBER_DOWN)
-typedef EsText *EsTextRef; /* (the macro needs a one-word type) */
-ES_DEFINE_SORT(es_sort_text_up, EsTextRef, ES_TEXT_UP)
-ES_DEFINE_SORT(es_sort_text_down, EsTextRef, ES_TEXT_DOWN)
-ES_DEFINE_SORT(es_sort_keyed_up, EsKeyed, ES_KEY_UP)
-ES_DEFINE_SORT(es_sort_keyed_down, EsKeyed, ES_KEY_DOWN)
-
-enum { ES_SORT_UP, ES_SORT_DOWN, ES_SORT_LENGTH_UP, ES_SORT_LENGTH_DOWN };
-
-/* Text by its length in characters, lists by their number of items. */
-static void es_sort_by_length(EsList *l, bool longest_first) {
-    if (l->len < 2) return;
-    EsKeyed *keyed = malloc(l->len * sizeof *keyed);
-    if (!keyed) es_out_of_memory();
-    for (size_t i = 0; i < l->len; i++) {
-        keyed[i].item = l->at.o[i];
-        keyed[i].key = l->items == ES_ITEMS_TEXT ? es_text_chars(l->at.t[i]) : l->at.l[i]->len;
-    }
-    if (longest_first) {
-        es_sort_keyed_down(keyed, l->len);
-    } else {
-        es_sort_keyed_up(keyed, l->len);
-    }
-    for (size_t i = 0; i < l->len; i++) l->at.o[i] = keyed[i].item;
-    free(keyed);
-}
-
-/* "sort L": numbers smallest first, text alphabetically (by bytes), or by
- * length; `how` is one of ES_SORT_*. The list itself changes. */
-static void es_sort(EsList *l, int how) {
-    bool down = how == ES_SORT_DOWN || how == ES_SORT_LENGTH_DOWN;
-    if (how == ES_SORT_LENGTH_UP || how == ES_SORT_LENGTH_DOWN) {
-        es_sort_by_length(l, down);
-    } else if (l->items == ES_ITEMS_NUMBER) {
-        (down ? es_sort_numbers_down : es_sort_numbers_up)(l->at.n, l->len);
-    } else if (l->items == ES_ITEMS_TEXT) {
-        (down ? es_sort_text_down : es_sort_text_up)(l->at.t, l->len);
-    }
-    es_list_release(l);
 }
 
 #endif

@@ -262,6 +262,7 @@ static void emit_helper(Codegen *g, const Expr *expr, Codegen *helper, size_t id
         sb_append(out, ");\n");
     }
     sb_append(out, "    }\n");
+    if (!every) sb_append(out, "    es_list_shrink(es_result); /* exactly the items kept */\n");
     if (type_counted(item_type)) {
         sb_appendf(out, "    %s(&", cg_drop(item_type));
         cg_append_var(out, item, item_type);

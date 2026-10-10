@@ -95,9 +95,9 @@ Time (and peak memory) for each benchmark, measured with `make bench`:
 | Count to 100 million | 0.05 s | 0.02 s | 0.02 s | 4.11 s |
 | Nested loops (100 million rounds) | 0.11 s | 0.03 s | 0.03 s | 4.94 s |
 | Build a 50,000-character text | 0.00 s, 1.6 MB | (none) | 0.01 s, 13 MB | 0.01 s, 12 MB |
-| Sort a million numbers | 0.06 s | 0.08 s (`qsort`) | 0.08 s | 0.31 s |
+| Sort a million numbers | 0.06 s, 9.0 MB | 0.08 s (`qsort`), 8.9 MB | 0.08 s, 29 MB | 0.31 s, 63 MB |
 
-Apple M4, macOS 15.3.1, EasyScript 0.1.0 plus reference counting, static types, lists and stack traces, 2026-10-10. The compiler knows every value's kind, so numbers are plain C doubles and loops run close to C. Sorting beats C's `qsort` because the comparison is inlined instead of called through a function pointer. Recursion is slower than C because every call checks for runaway recursion and records itself for runtime errors' call chain (so it can stop with a friendly error that says how it got there), and numbers compare with a small tolerance. Details and history: [docs/performance.md](docs/performance.md).
+Apple M4, macOS 15.3.1, EasyScript 0.1.0 plus reference counting, static types, lists and stack traces, 2026-10-10. The compiler knows every value's kind, so numbers are plain C doubles and loops run close to C. Sorting beats C's `qsort` because the comparison is inlined instead of called through a function pointer, and sorts numbers in place, in the same memory as C. Recursion is slower than C because every call checks for runaway recursion and records itself for runtime errors' call chain (so it can stop with a friendly error that says how it got there), and numbers compare with a small tolerance. Details and history: [docs/performance.md](docs/performance.md).
 
 ## Roadmap
 

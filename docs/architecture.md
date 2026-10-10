@@ -19,7 +19,7 @@ Every stage reports errors to one `Diag` context, and the driver prints them all
 | **Checker** | AST → diagnostics, kinds | Resolves names (made before use, made once, in scope) with "did you mean" suggestions, checks functions and constants, and infers the kind (type) of every value, writing it into the AST for codegen (see [Types](#types)). It runs only when parsing succeeded. |
 | **Middle end** | (added later) | An intermediate representation and optimizations. |
 | **C codegen** | checked AST → C source | Writes a self-contained C program: the embedded runtime, a static object per text literal, the functions, and `main()`, whose variables are C locals. It inserts every retain and release (see [Memory](#memory-in-generated-programs)). It never looks at source text and reports no errors. |
-| **Runtime** | (inside the generated program) | `runtime/es_memory.h`, `runtime/es_runtime.h` and `runtime/es_list.h`: reference-counted text and lists, the operations on numbers (`double`), yes/no (`bool`), text and lists, the call stack, and friendly runtime errors for what kinds can't catch: `Line N: ...`, the source line with carets, and the chain of calls. There's no tagged value. |
+| **Runtime** | (inside the generated program) | `runtime/es_memory.h`, `runtime/es_runtime.h`, `runtime/es_list.h` and `runtime/es_sort.h`: reference-counted text and lists, the operations on numbers (`double`), yes/no (`bool`), text and lists, the call stack, and friendly runtime errors for what kinds can't catch: `Line N: ...`, the source line with carets, and the chain of calls. There's no tagged value. |
 | **Driver** | | `src/main.c`: runs the passes in order, prints diagnostics, invokes `cc`, and cleans up temp files. |
 
 **Boundaries:** each stage only talks to the next through shared data structures (tokens, the AST, and the symbol table). The parser never emits C, and codegen never reads source text. Every stage reports problems through one `Diag` context, and the driver prints them all at the end.
@@ -63,7 +63,8 @@ What exists today:
 | `src/back/codegen_c.{c,h}`, `codegen_expr.c`, `codegen_list.c`, `codegen_internal.h` | Done. `codegen_c` writes the program (statements, loops, functions, constants in `codegen_c.c`; expressions in `codegen_expr.c`; lists, `for each`, and the helper functions for `every`/`only` in `codegen_list.c`); see [Code generation](#code-generation). |
 | `runtime/es_memory.h` | Heap objects (text and lists) and reference counting, the memory checks, output, and errors. The first part of the header-only runtime copied to the top of every generated program. |
 | `runtime/es_runtime.h` | The second part: what values can do (text, arithmetic, logic, comparisons, loops, functions, files, input). |
-| `runtime/es_list.h` | The third part: lists (making, items, questions, changes, a stable merge sort, and printing them in English). |
+| `runtime/es_list.h` | The third part: lists (making, items, slices, questions, changes, and printing them in English). |
+| `runtime/es_sort.h` | The fourth part: sorting (pdqsort in place for numbers; a stable merge sort for text and for sorting by length). |
 | `tools/embed.c` | A build tool that joins the runtime files into `build/gen/es_runtime_embed.c` (a byte array) so the compiler carries the runtime inside itself. |
 | `src/main.c` | Done. The driver. |
 

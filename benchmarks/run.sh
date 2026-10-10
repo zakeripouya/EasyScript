@@ -9,6 +9,10 @@
 # version must print the same result as the EasyScript one.
 #
 # Languages whose tools aren't installed are skipped.
+#
+# A benchmark that builds a list has a file `items` holding how many items
+# the list gets; its rows add peak memory divided by that ("bytes/item", the
+# whole process's peak, so it includes the program itself).
 
 set -u
 
@@ -35,15 +39,18 @@ measure() {
             STATUS=$?
             secs=$(awk '/ real /{print $1}' "$OUT/time")
             peak=$(awk '/maximum resident set size/{printf "%.1f", $1 / 1048576}' "$OUT/time")
+            bytes=$(awk '/maximum resident set size/{print $1}' "$OUT/time")
         else
             /usr/bin/time -v "$@" >"$OUT/stdout" 2>"$OUT/time"
             STATUS=$?
             secs=$(awk -F': ' '/Elapsed \(wall clock\)/{n = split($2, t, ":"); s = 0; for (k = 1; k <= n; k++) s = s * 60 + t[k]; printf "%.2f", s}' "$OUT/time")
             peak=$(awk -F': ' '/Maximum resident set size/{printf "%.1f", $2 / 1024}' "$OUT/time")
+            bytes=$(awk -F': ' '/Maximum resident set size/{print $2 * 1024}' "$OUT/time")
         fi
         if [ -z "$best" ] || awk -v a="$secs" -v b="$best" 'BEGIN{exit !(a < b)}'; then
             best=$secs
             PEAK_MB=$peak
+            PEAK_BYTES=$bytes
         fi
         i=$((i + 1))
     done
@@ -51,13 +58,14 @@ measure() {
     RESULT=$(head -n 1 "$OUT/stdout")
 }
 
+# row PROGRAM LANGUAGE TIME MEMORY BYTES_PER_ITEM RESULT
 row() {
-    printf "%-8s %-11s %9s %11s   %s\n" "$1" "$2" "$3" "$4" "$5"
+    printf "%-8s %-11s %9s %11s %10s   %s\n" "$1" "$2" "$3" "$4" "$5" "$6"
 }
 
 failed=0
-printf "%-8s %-11s %9s %11s   %s\n" "program" "language" "time (s)" "memory (MB)" "result"
-printf "%-8s %-11s %9s %11s   %s\n" "-------" "--------" "--------" "-----------" "------"
+printf "%-8s %-11s %9s %11s %10s   %s\n" "program" "language" "time (s)" "memory (MB)" "bytes/item" "result"
+printf "%-8s %-11s %9s %11s %10s   %s\n" "-------" "--------" "--------" "-----------" "----------" "------"
 
 for dir in "$ROOT"/benchmarks/*/; do
     name=$(basename "$dir")
@@ -72,11 +80,11 @@ for dir in "$ROOT"/benchmarks/*/; do
         [ -f "$src" ] || continue
         case $lang in
             easyscript) "$ES" build "$src" -o "$bin" || { failed=1; continue; } ;;
-            c) have cc || { row "$name" c - - "(cc not installed)"; continue; }
+            c) have cc || { row "$name" c - - - "(cc not installed)"; continue; }
                cc -O2 "$src" -o "$bin" || { failed=1; continue; } ;;
-            go) have go || { row "$name" go - - "(go not installed)"; continue; }
+            go) have go || { row "$name" go - - - "(go not installed)"; continue; }
                 go build -o "$bin" "$src" || { failed=1; continue; } ;;
-            python) have python3 || { row "$name" python - - "(python3 not installed)"; continue; } ;;
+            python) have python3 || { row "$name" python - - - "(python3 not installed)"; continue; } ;;
         esac
         if [ "$lang" = python ]; then
             measure python3 "$src"
@@ -93,7 +101,11 @@ for dir in "$ROOT"/benchmarks/*/; do
             note="$RESULT  (MISMATCH: expected $expected)"
             failed=1
         fi
-        row "$name" "$lang" "$SECONDS_TAKEN" "$PEAK_MB" "$note"
+        per_item=-
+        if [ -f "${dir}items" ]; then
+            per_item=$(awk -v b="$PEAK_BYTES" -v n="$(cat "${dir}items")" 'BEGIN{printf "%.1f", b / n}')
+        fi
+        row "$name" "$lang" "$SECONDS_TAKEN" "$PEAK_MB" "$per_item" "$note"
     done
 done
 
