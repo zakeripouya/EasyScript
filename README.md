@@ -57,6 +57,8 @@ EasyScript is at the start of **Phase 1 (core language)**. Here's exactly what e
 | 4 | **Real-world programs:** standard library, C interop, concurrency, backend servers | Coming soon |
 | 5 | **Systems mode:** low-level control, no runtime, and an operating system | Coming soon |
 
+Also planned: **EasyScript Notebook** (after Phase 1, growing with Phase 4). It's a chat-style notebook where each message is a statement that runs immediately, with results (text, tables, charts) shown as replies. Messages that don't parse get friendly suggestions. An optional AI fallback writes EasyScript for vague requests and always shows the code before running it. A whole conversation exports as a runnable `.es` file. It will ship as a Jupyter kernel first, so it also works in Jupyter and VS Code.
+
 Details: [docs/roadmap.md](docs/roadmap.md).
 
 ## Design rules

@@ -10,6 +10,12 @@ EasyScript grows in five phases. Each phase ends with working, tested, documente
 | [4](#phase-4-real-world-programs) | Standard library, C interop, concurrency, servers | Coming soon |
 | [5](#phase-5-systems-mode) | Systems mode and an operating system | Coming soon |
 
+Alongside the phases:
+
+| Feature | When | Status |
+|---|---|---|
+| [EasyScript Notebook](#easyscript-notebook) | After Phase 1; grows with Phase 4 | Planned |
+
 ## Phase 1: Core language
 
 The goal is to write small, real programs in the new sentence syntax and compile them to fast native executables, with friendly errors.
@@ -89,3 +95,21 @@ Rewrite the EasyScript compiler in EasyScript and compile it with itself. This i
 
 - **Systems mode:** a stricter subset with manual memory control and no runtime, suitable for kernels and embedded code
 - **An operating system:** a small OS written in EasyScript, the long-term goal
+
+## EasyScript Notebook
+
+**Status: Planned.** It starts after Phase 1 and grows with Phase 4.
+
+A chat-style notebook for EasyScript. You type a message, and the reply is its result.
+
+- **Each message is an EasyScript statement that runs immediately.** Its results come back as replies: text at first, then tables and charts as the standard library grows in Phase 4. Later messages can use the variables made by earlier ones.
+- **Messages that don't parse get friendly suggestions,** the way an assistant would reply. They come from the same deterministic errors the compiler gives ("Did you mean "say"?", "Write it like "let total be 0""), shown as a conversation instead of a compiler report.
+- **An optional AI fallback.** For a vague request ("show me the biggest numbers"), an AI model can write EasyScript for it. The generated code is always **shown before it runs**, and nothing runs until you accept it. This follows the design rule that AI is optional: the notebook works fully without it, and turning it off changes nothing else.
+- **The transcript exports as a runnable `.es` file:** the statements that ran, in order, with the conversation kept as `note:` comments. That file compiles and runs like any other program.
+- **The Jupyter kernel protocol comes first.** EasyScript will first ship as a Jupyter kernel, so the notebook also works in Jupyter and VS Code from day one. The chat-style interface is then built on the same kernel.
+
+Open questions:
+- **Running one statement at a time:** EasyScript compiles to C, so it needs a way to run each statement while keeping the session's variables between messages (for example, recompiling the session, or a long-lived session process).
+- **Rendering results:** how a result says it's a table or a chart, so the notebook can display it that way.
+
+It depends on Phase 1 (statements that run) and on the interactive shell being rebuilt on the new compiler.
