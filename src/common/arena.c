@@ -21,7 +21,7 @@ struct Arena {
 };
 
 static void out_of_memory(void) {
-    fprintf(stderr, "Error: Out of memory\n");
+    fprintf(stderr, "EasyScript ran out of memory.\n");
     exit(1);
 }
 

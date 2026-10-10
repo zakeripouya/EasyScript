@@ -534,7 +534,10 @@ static void es_write_file(int line, EsValue value, EsValue path, bool append) {
     es_require_file_name(line, path);
     EsValue text = es_to_text(value);
     FILE *f = fopen(path.text, append ? "ab" : "wb");
-    if (!f) es_fail(line, NULL, "I couldn't write to the file \"%s\": %s.", path.text, es_reason(errno));
+    if (!f) {
+        es_fail(line, NULL, "I couldn't write to the file \"%s\": %s.", path.text,
+                errno == ENOENT ? "the folder it should go in doesn't exist" : es_reason(errno));
+    }
     fwrite(text.text, 1, text.len, f);
     fputc('\n', f);
     if (fclose(f) != 0) es_fail(line, NULL, "I couldn't write to the file \"%s\": %s.", path.text, es_reason(errno));

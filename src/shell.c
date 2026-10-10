@@ -157,7 +157,7 @@ static int run_session(Shell *sh, size_t *printed) {
         setenv("ES_ANSWERS", sh->answers_path, 1);
         char *argv[] = {sh->self, "run", (char *)sh->session_path, NULL};
         execvp(argv[0], argv);
-        fprintf(stderr, "Error: Unable to run %s: %s\n", argv[0], strerror(errno));
+        fprintf(stderr, "I couldn't run %s: %s.\n", argv[0], strerror(errno));
         _exit(127);  // _exit so the child doesn't run the parent's atexit cleanup
     }
     close(fds[1]);
@@ -191,7 +191,7 @@ static void try_entry(Shell *sh, const StrBuf *entry, size_t lines) {
     sh->session.len = kept;
     sh->session.data[kept] = '\0';
     if (truncate(sh->answers_path, answers) != 0) {
-        fprintf(stderr, "Error: Unable to reset the shell's answers file: %s\n", strerror(errno));
+        fprintf(stderr, "I couldn't set up the shell's answers file: %s.\n", strerror(errno));
     }
     printf(lines > 1 ? "(That block wasn't kept.)\n" : "(That line wasn't kept.)\n");
 }
@@ -207,7 +207,7 @@ void shell_run(Arena *arena, char *self, const char *session_path, const char *a
     sh.chunk = arena_alloc(arena, CHUNK);
     FILE *answers = fopen(answers_path, "w");
     if (!answers) {
-        fprintf(stderr, "Error: Unable to create the shell's answers file: %s\n", strerror(errno));
+        fprintf(stderr, "I couldn't set up the shell's answers file: %s.\n", strerror(errno));
         return;
     }
     fclose(answers);

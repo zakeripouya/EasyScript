@@ -27,6 +27,7 @@ That example is real output from today's compiler. It's [`examples/lexer/err_mis
 - **Always suggest a fix.** If the compiler can tell what would work, it says so: the valid indentations, the closest variable name, the right symbol.
 - **Never guess.** The compiler never quietly picks a meaning and carries on. If a sentence is ambiguous, that's an error that lists the possible readings. Suggestions are only ever *shown* to you; they're never applied automatically.
 - **Report everything at once.** The compiler collects every error it finds in one run and shows them all, separated by blank lines, so you can fix several mistakes before trying again.
+- **Every message is tested.** `make test` checks that each error message in the compiler and runtime is produced by at least one test.
 - **No AI required.** Every message and suggestion comes from deterministic rules in the compiler, such as edit distance for "did you mean". The same program always produces the same errors.
 
 ## Errors you can see today

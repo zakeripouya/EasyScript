@@ -166,7 +166,7 @@ static const char *function_header(const Checker *c, const Function *f) {
 static void report_unknown_function(Checker *c, const char *name, SourcePos pos) {
     if (checker_find_constant(c, name)) {
         diag_error(c->diag, pos.span, "\"%s\" is a constant, not a function.", name);
-        diag_note(c->diag, "Only functions made with \"to %s ...:\" can be called.", name);
+        diag_note(c->diag, "A constant is a fixed value: use it by its name alone, like \"say %s\".", name);
         return;
     }
     if (checker_find_made(c, name)) {

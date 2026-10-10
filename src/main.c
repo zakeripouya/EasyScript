@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -38,7 +39,7 @@ static void print_usage(FILE *out) {
 }
 
 static int usage_error(const char *message) {
-    fprintf(stderr, "Error: %s\n", message);
+    fprintf(stderr, "%s\n", message);
     print_usage(stderr);
     return 2;
 }
@@ -62,7 +63,7 @@ static void make_temp_dir(void) {
     }
     char *dir = arena_sprintf(arena, "%s/easyscript-XXXXXX", base);
     if (!mkdtemp(dir)) {
-        fprintf(stderr, "Error: Unable to create temporary directory in %s: %s\n", base, strerror(errno));
+        fprintf(stderr, "I couldn't make a temporary folder in %s: %s.\n", base, strerror(errno));
         exit(1);
     }
     temp_dir = dir;
@@ -73,26 +74,34 @@ static void make_temp_dir(void) {
     atexit(remove_temp_dir);
 }
 
+// Why a file couldn't be opened, in plain words.
+static const char *file_reason(int err) {
+    switch (err) {
+    case ENOENT: return "it doesn't exist";
+    case EACCES: return "permission was denied";
+    case EISDIR: return "it's a folder, not a file";
+    default: return strerror(err);
+    }
+}
+
+static _Noreturn void cannot_read(const char *path, int err) {
+    fprintf(stderr, "I couldn't read the file \"%s\": %s.\n", path, file_reason(err));
+    exit(1);
+}
+
 static char *read_file(const char *path, size_t *length_out) {
     FILE *file = fopen(path, "rb");
     if (!file) {
-        fprintf(stderr, "Error: Unable to open source file %s.\n", path);
+        fprintf(stderr, "I couldn't open the file \"%s\": %s.\n", path, file_reason(errno));
         exit(1);
     }
-    if (fseek(file, 0, SEEK_END) != 0) {
-        fprintf(stderr, "Error: Unable to read source file %s.\n", path);
-        exit(1);
-    }
+    struct stat st;
+    if (fstat(fileno(file), &st) == 0 && S_ISDIR(st.st_mode)) cannot_read(path, EISDIR);
+    if (fseek(file, 0, SEEK_END) != 0) cannot_read(path, errno);
     long length = ftell(file);
-    if (length < 0 || fseek(file, 0, SEEK_SET) != 0) {
-        fprintf(stderr, "Error: Unable to read source file %s.\n", path);
-        exit(1);
-    }
+    if (length < 0 || fseek(file, 0, SEEK_SET) != 0) cannot_read(path, errno);
     char *data = arena_alloc(arena, (size_t)length + 1);
-    if (fread(data, 1, (size_t)length, file) != (size_t)length) {
-        fprintf(stderr, "Error: Unable to read source file %s.\n", path);
-        exit(1);
-    }
+    if (fread(data, 1, (size_t)length, file) != (size_t)length) cannot_read(path, errno);
     fclose(file);
     data[length] = '\0';
     if (length_out) {
@@ -122,12 +131,12 @@ static void generate_c(const char *source_path) {
     codegen_c(arena, program, &code);
     FILE *output_file = fopen(temp_c_path, "w");
     if (!output_file) {
-        fprintf(stderr, "Error: Unable to create output file.\n");
+        fprintf(stderr, "I couldn't write the C file: %s.\n", strerror(errno));
         exit(1);
     }
     fwrite(code.data, 1, code.len, output_file);
     if (fclose(output_file) != 0) {
-        fprintf(stderr, "Error: Unable to write output file.\n");
+        fprintf(stderr, "I couldn't write the C file: %s.\n", strerror(errno));
         exit(1);
     }
 }
@@ -139,18 +148,18 @@ static int run_process(char *const argv[]) {
     fflush(stderr);
     pid_t pid = fork();
     if (pid < 0) {
-        fprintf(stderr, "Error: Unable to start %s: %s\n", argv[0], strerror(errno));
+        fprintf(stderr, "I couldn't start %s: %s.\n", argv[0], strerror(errno));
         return -1;
     }
     if (pid == 0) {
         execvp(argv[0], argv);
-        fprintf(stderr, "Error: Unable to run %s: %s\n", argv[0], strerror(errno));
+        fprintf(stderr, "I couldn't run %s: %s.\n", argv[0], strerror(errno));
         _exit(127);  // _exit so the child doesn't run the parent's atexit cleanup
     }
     int status;
     while (waitpid(pid, &status, 0) < 0) {
         if (errno != EINTR) {
-            fprintf(stderr, "Error: Unable to wait for %s: %s\n", argv[0], strerror(errno));
+            fprintf(stderr, "I couldn't wait for %s: %s.\n", argv[0], strerror(errno));
             return -1;
         }
     }
@@ -166,7 +175,7 @@ static int run_process(char *const argv[]) {
 static int compile_c(const char *output_path) {
     char *argv[] = {"cc", "-O2", temp_c_path, "-o", (char *)output_path, "-lm", NULL};
     if (run_process(argv) != 0) {
-        fprintf(stderr, "Error: Failed to compile the generated C code.\n");
+        fprintf(stderr, "The C compiler couldn't build the program. This is a bug in EasyScript; please report it.\n");
         return 1;
     }
     return 0;
@@ -258,38 +267,38 @@ int main(int argc, char *argv[]) {
     for (int i = 2; i < argc; i++) {
         if (strcmp(argv[i], "-o") == 0) {
             if (i + 1 >= argc) {
-                return usage_error("-o needs an output path.");
+                return usage_error("After -o, give the name of the program to make.");
             }
             if (output_path) {
-                return usage_error("-o given more than once.");
+                return usage_error("Give -o only once.");
             }
             output_path = argv[++i];
         } else if (!source_path) {
             source_path = argv[i];
         } else {
-            return usage_error("Only one source file can be given.");
+            return usage_error("Give one .es file at a time.");
         }
     }
 
     if (strcmp(command, "run") == 0 || strcmp(command, "emit") == 0 || strcmp(command, "build") == 0 ||
         strcmp(command, "tokens") == 0 || strcmp(command, "ast") == 0) {
         if (!source_path) {
-            return usage_error("No source file given.");
+            return usage_error("Tell me which .es file to use.");
         }
     } else {
-        fprintf(stderr, "Error: Unknown command '%s'.\n", command);
+        fprintf(stderr, "I don't know the command \"%s\".\n", command);
         print_usage(stderr);
         return 2;
     }
 
     if (strcmp(command, "build") == 0) {
         if (!output_path) {
-            return usage_error("build needs -o OUT.");
+            return usage_error("Tell me what to call the program with -o, like \"easyscript build hello.es -o hello\".");
         }
         return cmd_build(source_path, output_path);
     }
     if (output_path) {
-        return usage_error("-o is only valid with build.");
+        return usage_error("-o only works with build.");
     }
     if (strcmp(command, "run") == 0) {
         return cmd_run(source_path);

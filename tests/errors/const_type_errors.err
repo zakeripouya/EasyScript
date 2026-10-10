@@ -37,3 +37,11 @@ Line 9: I can't add text to a number.
     keep k9 as 1 plus "2"
                ^^^^^^^^^^
 To join text, use "and" or "followed by".
+
+Line 10: I can't find the remainder of text divided by a number.
+    keep k10 as "a" mod 2
+                ^^^^^^^^^
+
+Line 11: "or" needs yes or no on both sides, but the right side is a number.
+    keep k11 as no or 5
+                ^^^^^^^

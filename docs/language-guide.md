@@ -51,7 +51,7 @@ and run it:
 
 ## 1. How EasyScript reads your sentences
 
-**Status: Available.** This chapter is about how sentences are read: words, numbers, text, comments, and blocks. You can watch it happen with `easyscript tokens`. What the sentences *mean* comes in the later chapters. (Blocks are read correctly today, but the sentences that use them, like `if`, are coming soon.)
+**Status: Available.** This chapter is about how sentences are read: words, numbers, text, comments, and blocks. You can watch it happen with `easyscript tokens`. What the sentences *mean* comes in the later chapters.
 
 ### Sentences
 

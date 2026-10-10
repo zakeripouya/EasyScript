@@ -7,3 +7,5 @@ keep k6 as "12abc" as a number
 keep k7 as yes and "x"
 keep k8 as -"a"
 keep k9 as 1 plus "2"
+keep k10 as "a" mod 2
+keep k11 as no or 5

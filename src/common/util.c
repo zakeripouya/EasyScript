@@ -8,7 +8,7 @@
 #define SB_INITIAL_CAP 16
 
 static void overflow(void) {
-    fprintf(stderr, "Error: Out of memory\n");
+    fprintf(stderr, "EasyScript ran out of memory.\n");
     exit(1);
 }
 

@@ -1,0 +1,4 @@
+Line 2: "rate" is a constant, not a function.
+    say rate of 2
+        ^^^^^^^^^
+A constant is a fixed value: use it by its name alone, like "say rate".

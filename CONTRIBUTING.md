@@ -48,6 +48,8 @@ Docs must never show syntax as working before it does. Mark planned features "Co
 | `tests/shell/` | `NAME.in` typed into the shell, plus `NAME.out` and `NAME.err` | `easyscript` with no arguments |
 | CLI checks | the end of `tests/run.sh` | |
 
+Two audits also run in `make test` (they need `python3`): every error message in the source must be produced by at least one test (`tests/tools/error_coverage.py`; messages that need the operating system itself to fail are listed there with a reason), and every word and phrase the parser accepts must appear in `docs/vocabulary.md` (`tests/tools/vocab_coverage.py`). A new message needs a test, and a new phrase needs documenting.
+
 Expected-output files must match **byte for byte**. When you change a message on purpose, update its expected file in the same commit.
 
 ### Updating expected output: `make bless`

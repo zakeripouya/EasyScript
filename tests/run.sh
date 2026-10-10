@@ -302,17 +302,23 @@ expected: $want_line"
     fi
 }
 
-expect_failure "cli/missing-file" 1 "Error: Unable to open source file nope.es." \
+expect_failure "cli/missing-file" 1 "I couldn't open the file \"nope.es\": it doesn't exist." \
     "$ES" run nope.es
-expect_failure "cli/unknown-command" 2 "Error: Unknown command 'frobnicate'." \
+expect_failure "cli/folder-as-file" 1 "I couldn't read the file \"$ROOT/tests\": it's a folder, not a file." \
+    "$ES" run "$ROOT/tests"
+expect_failure "cli/unknown-command" 2 "I don't know the command \"frobnicate\"." \
     "$ES" frobnicate "$HELLO"
-expect_failure "cli/no-source" 2 "Error: No source file given." \
+expect_failure "cli/no-source" 2 "Tell me which .es file to use." \
     "$ES" run
-expect_failure "cli/build-without-o" 2 "Error: build needs -o OUT." \
+expect_failure "cli/build-without-o" 2 "Tell me what to call the program with -o, like \"easyscript build hello.es -o hello\"." \
     "$ES" build "$HELLO"
-expect_failure "cli/o-without-build" 2 "Error: -o is only valid with build." \
+expect_failure "cli/o-without-build" 2 "-o only works with build." \
     "$ES" run "$HELLO" -o x
-expect_failure "cli/two-sources" 2 "Error: Only one source file can be given." \
+expect_failure "cli/o-without-path" 2 "After -o, give the name of the program to make." \
+    "$ES" build "$HELLO" -o
+expect_failure "cli/o-twice" 2 "Give -o only once." \
+    "$ES" build "$HELLO" -o x -o y
+expect_failure "cli/two-sources" 2 "Give one .es file at a time." \
     "$ES" run "$HELLO" "$HELLO"
 
 # Temp directories made by the compiler must be cleaned up, including on errors.
@@ -349,6 +355,26 @@ $out"
 
 check_readme_block "## A first program" "$ROOT/examples/programs/first_program.es" "docs/readme-first-program"
 check_readme_block "## A bigger example" "$ROOT/examples/programs/taste.es" "docs/readme-bigger-example"
+
+# --- Audits ---------------------------------------------------------------------
+#
+# Every error message in the source must be produced by some test, and every
+# phrase the parser accepts must be in docs/vocabulary.md (see tests/tools/).
+
+audit() {
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "SKIP $1 (needs python3)"
+        return
+    fi
+    if out=$(python3 "$ROOT/tests/tools/$2" 2>&1); then
+        ok "$1"
+    else
+        not_ok "$1" "$out"
+    fi
+}
+
+audit "audit/every-error-message-tested" error_coverage.py
+audit "audit/every-phrase-documented" vocab_coverage.py
 
 # --- Summary ----------------------------------------------------------------
 
