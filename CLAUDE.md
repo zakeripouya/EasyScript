@@ -23,6 +23,37 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 - Write portable C11 (`-std=c11 -Wall -Wextra`). Invoke the C compiler as `cc`, not `gcc`.
 - Report compile errors with source positions rather than calling `exit(1)` deep inside the lexer or parser.
 
+## Code organization (target)
+
+The compiler follows this pipeline:
+
+- **Front end:** lexer → parser → checker.
+- **Middle end:** IR and optimizations (added later).
+- **Back end:** C codegen.
+
+Each stage talks to the next only through shared data structures: tokens, the AST, and the symbol table. **The parser never emits C. Codegen never looks at source text.**
+
+Target layout:
+
+```
+src/main.c            driver: runs the passes in order
+src/front/            lexer.c, parse_expr.c, parse_stmt.c, check.c
+src/back/             codegen_c.c
+src/common/           arena.c, util.c, diag.c, ast.h
+runtime/              runtime support linked into generated programs
+```
+
+Rules:
+
+- **Group code by job**, not one file per function. Each module has a small public `.h` and keeps its private details in the `.c`.
+- **Keep files under ~600 lines.** Split a file when it passes that, or when it covers two different concerns.
+- **Helpers that aren't used elsewhere must be `static`.**
+- **No global mutable state.** Pass context structs (`Compiler`, `Parser`, `Checker`, `Codegen`) explicitly.
+- **Prefer opaque structs** when other modules don't need the fields.
+- **Functions stay short and do one thing.**
+
+Don't move code into this layout separately. Create it as later steps rewrite each stage, and update "Current state" as each piece moves.
+
 ## Testing
 
 - **Every feature needs tests in `tests/`.** That includes parser error cases: ambiguous input must produce the expected error and suggestions.
@@ -40,6 +71,11 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 ## Current state of the repo
 
 The code is an early prototype of the old syntax. It doesn't follow the rules above yet:
+
+- **Layout:** flat. `main.c` is at the repo root, and `src/` holds `arena`, `lexer`, `parser`, and `codegen` side by side. There is no `front/`, `back/`, `common/`, `runtime/`, checker, `diag.c`, or `util.c`. The AST is defined in `parser.h`, not in a shared `ast.h`.
+- **Stage boundaries:** there's no checker, so codegen does name resolution itself (looking up undefined variables and files). `main.c` emits the C prologue and epilogue (`#include`, `int main() {`) rather than leaving that to codegen.
+- **Global mutable state:** `src/codegen.c` has `var_map[100]`, `var_map_index`, and `var_counter`. `main.c` has file-scope `arena` and `temp_*` path pointers, which exist because the `atexit` cleanup can't take arguments. Both should move into context structs. For `main.c`, that requires errors to return to the driver instead of calling `exit(1)`, so cleanup can run explicitly.
+- **Non-static helpers:** `lexer.c`'s `get_id` and `codegen.c`'s `sanitize_filename`/`get_var_id`/`is_var_string`/`add_var` are extern without being in a header. The `Lexer`, `Parser`, and `AST` structs are all public.
 
 - `main.c`: the CLI. `run FILE` / `build FILE -o OUT` / `emit FILE`, `help`, and the REPL with no arguments. Unknown commands and bad arguments print usage and exit 2. Each invocation creates one `mkdtemp` directory under `$TMPDIR` (or `/tmp`) holding `program.c`, `program`, and the REPL's `session.es`, and an `atexit` handler removes it, including on compile errors. Nothing is written to the cwd except `build`'s `-o` output. `cc -O2` is invoked with `fork`/`execvp` (no shell). `run` returns the program's exit status (128+signal if it was killed). The REPL appends each line to the session file and reruns all of it through `argv[0] run`. Uses `getline`, so there's no line-length limit.
 - `src/arena.{c,h}`: arena allocator (`arena_new`, `arena_alloc` returns zeroed, aligned memory, `arena_strdup`, `arena_sprintf`, `arena_free`). It grows in 64 KiB blocks and gives oversized requests their own block. So far only `main.c` uses it. The lexer, parser and codegen still use `malloc`/`strdup` and need migrating.
