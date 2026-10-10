@@ -2,7 +2,7 @@
 #define FRONT_CHECK_INTERNAL_H
 
 // Shared by the checker's source files (check.c, check_expr.c, check_types.c,
-// check_const.c, check_list.c). Not for use outside src/front/.
+// check_const.c, check_list.c, check_text.c). Not for use outside src/front/.
 
 #include <stdbool.h>
 #include "common/ast.h"
@@ -34,6 +34,7 @@ typedef enum {
     DEFER_TO_NUMBER,  // "as a number": a number or text
     DEFER_ONE_OF,     // `left` has one of the kinds in `allowed` (e.g. text or a list for "length of")
     DEFER_JOIN,       // "followed by": two lists of one kind join into a list; anything else into text
+    DEFER_SEARCH,     // "contains", "the position of": `left` is text (and `right` text) or a list (of `right`)
 } DeferKind;
 
 // Kinds for DEFER_ONE_OF.
@@ -152,10 +153,31 @@ void checker_make_item_name(Checker *c, const Name *name, TypeVar item);
 // The kind of a list's items; if `var` isn't a list, reports "<message>, but this is <kind>."
 TypeVar checker_require_list(Checker *c, TypeVar var, const Expr *at, const char *message);
 TypeVar checker_check_list_expr(Checker *c, const Expr *expr);  // EXPR_LIST ... EXPR_ONLY
-TypeVar checker_check_contains(Checker *c, const Expr *expr, TypeVar left, TypeVar right);
+// What's looked for in a list ("contains", "the position of") has to be the kind it holds.
+void checker_require_item(Checker *c, const Expr *list, TypeVar list_var, const Expr *value, TypeVar value_var);
 void checker_check_list_stmt(Checker *c, const Stmt *stmt);
 // "add E to X" where X is a list: adds to its end when that's the only meaning.
 void checker_add_to_list(Checker *c, Stmt *stmt, const Symbol *symbol, TypeVar amount);
+
+// check_text.c
+// "character 2 of T", "the first 3 characters of T", ...: an EXPR_ITEM or EXPR_SLICE marked `characters`.
+TypeVar checker_check_characters(Checker *c, const Expr *expr);
+TypeVar checker_check_text_op(Checker *c, const Expr *expr);  // EXPR_TEXT_OP
+// "L contains X" (text or a list): waits until the kind of L is known.
+TypeVar checker_check_contains(Checker *c, const Expr *expr, TypeVar left, TypeVar right);
+TypeVar checker_check_starts(Checker *c, const Expr *expr, TypeVar left, TypeVar right);  // starts/ends with
+// Settles a DEFER_SEARCH once the kinds are known enough; true when settled.
+bool checker_settle_search(Checker *c, const Deferred *d);
+
+// check_text.c
+// "character 2 of T", "the first 3 characters of T", ...: an EXPR_ITEM or EXPR_SLICE marked `characters`.
+TypeVar checker_check_characters(Checker *c, const Expr *expr);
+TypeVar checker_check_text_op(Checker *c, const Expr *expr);  // EXPR_TEXT_OP
+// "L contains X" (text or a list): waits until the kind of L is known.
+TypeVar checker_check_contains(Checker *c, const Expr *expr, TypeVar left, TypeVar right);
+TypeVar checker_check_starts(Checker *c, const Expr *expr, TypeVar left, TypeVar right);  // starts/ends with
+// Settles a DEFER_SEARCH once the kinds are known enough; true when settled.
+bool checker_settle_search(Checker *c, const Deferred *d);
 
 // check_const.c
 void checker_collect_constants(Checker *c, const Block *program);

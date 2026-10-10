@@ -407,6 +407,24 @@ static bool es_contains_l(EsList *l, EsList *v) {
     return found;
 }
 
+/* "the position of X in L": the position of the first item equal to X, or 0
+ * if none is. */
+#define ES_POSITION(S, T, SAME, RELEASE)                                   \
+    static double es_position_##S(T v, EsList *l) {                        \
+        size_t i = 0;                                                      \
+        while (i < l->len && !SAME(l->at.S[i], v)) i++;                    \
+        double position = i < l->len ? (double)i + 1 : 0;                  \
+        RELEASE(v);                                                        \
+        es_list_release(l);                                                \
+        return position;                                                   \
+    }
+
+#define ES_SAME_YESNO(a, b) ((a) == (b))
+ES_POSITION(n, double, es_close, ES_IGNORE)
+ES_POSITION(b, bool, ES_SAME_YESNO, ES_IGNORE)
+ES_POSITION(t, EsText *, es_text_equal, es_release)
+ES_POSITION(l, EsList *, es_list_equal, es_list_release)
+
 /* "L added together" */
 static double es_list_sum(EsList *l) {
     double total = 0;
@@ -467,6 +485,7 @@ typedef struct {
 } EsBuf;
 
 static void es_buf_add(EsBuf *b, const char *s, size_t n) {
+    if (n == 0) return; /* nothing to add (and b->data may still be NULL) */
     if (b->len + n > b->cap) {
         size_t cap = b->cap ? b->cap * 2 : 64;
         while (cap < b->len + n) cap *= 2;

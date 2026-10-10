@@ -1,0 +1,4 @@
+Line 2: I can't turn empty text into a number.
+    say answer as a number
+        ^^^^^^^^^^^^^^^^^^
+A number is digits, with a "-" before them if it's negative and a "." for decimals, like 42, -7 or 3.5.

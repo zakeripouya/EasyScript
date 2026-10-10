@@ -1,0 +1,34 @@
+Line 2: A constant can't take text apart or look inside it.
+    keep shout as greeting in uppercase
+                  ^^^^^^^^^^^^^^^^^^^^^
+Make it with "let" instead of "keep".
+
+Line 3: A constant can't take text apart or look inside it.
+    keep first letter as character 1 of greeting
+                         ^^^^^^^^^^^^^^^^^^^^^^^
+Make it with "let" instead of "keep".
+
+Line 4: A constant can't take text apart or look inside it.
+    keep start as the first 2 characters of greeting
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Make it with "let" instead of "keep".
+
+Line 5: A constant can't take text apart or look inside it.
+    keep found as greeting contains "ell"
+                  ^^^^^^^^^^^^^^^^^^^^^^^
+Make it with "let" instead of "keep".
+
+Line 7: A constant can't work things out from a list.
+    keep has a as fixed contains "a"
+                  ^^^^^^^^^^^^^^^^^^
+A constant can be a list written out, like "keep weekdays as a list of "Mon" and "Tue"" (and its length). To work something out from a list, use "let" instead of "keep".
+
+Line 8: A constant can't take text apart or look inside it.
+    keep starts as greeting starts with "he"
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+Make it with "let" instead of "keep".
+
+Line 9: I can't turn empty text into a number.
+    keep empty number as "" as a number
+                         ^^^^^^^^^^^^^^
+A number is digits, with a "-" before them if it's negative and a "." for decimals, like 42, -7 or 3.5.

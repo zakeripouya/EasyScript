@@ -134,7 +134,9 @@ static Expr *parse_name_or_call(Parser *p) {
     const KnownName *known = parser_match_name(p, 0, false);
     Name name;
     parser_take_name(p, known ? known->words : 1, &name);
-    if (parser_at_call_intro(p, name.text)) return parse_call(p, &name);
+    // "word with "a" replaced by "b"" replaces text, unless "word" is a function.
+    bool replace = parser_at_replace(p) && !parser_is_function(p, name.text);
+    if (!replace && parser_at_call_intro(p, name.text)) return parse_call(p, &name);
     Expr *expr = ast_new_expr(p->arena, EXPR_NAME, name.pos);
     expr->as.name = name.text;
     expr->display = name.display;
@@ -176,6 +178,8 @@ static Expr *parse_word(Parser *p) {
     if (known && known->words > 1) return parse_name_or_call(p);  // "late fee", before any other meaning
     Expr *list = parser_parse_list_word(p);
     if (list) return list;
+    Expr *text = parser_parse_text_word(p);
+    if (text) return text;
     if (parser_at_only(p)) return parser_parse_only(p);
     if (parser_at_every(p)) return reject_inner_every(p);
 

@@ -30,12 +30,13 @@ Every heap object starts with the same small header, a kind and a reference coun
 
 ```c
 typedef struct { EsObjectKind kind; size_t refs; } EsObject;
-typedef struct { EsObject header; size_t len; const char *chars; } EsText;
+typedef struct { EsObject header; size_t len; const char *chars; size_t count, cap; } EsText;
 typedef struct EsList { EsObject header; EsItems items; size_t len, cap; union { double *n; ... } at; } EsList;
 ```
 
-- **Heap text** (made while the program runs) starts with a count of 1. Its characters sit right after the object, in the same allocation.
-- **Static text** (literals in the program, text constants, and the runtime's own words like `yes` and `infinity`) is a static `EsText` whose count is `ES_IMMORTAL`. Retain and release skip it, so it's never counted or freed.
+- **Heap text** (made while the program runs) starts with a count of 1. Its characters sit right after the object, in the same allocation, with room for `cap` bytes. `count` is how many characters (UTF-8 code points) it has, worked out the first time it's needed and kept (0 until then); text whose `count` equals its `len` is plain ASCII, so the text tools work on it byte by byte.
+- **Growing in place.** `set T to T followed by X` becomes `es_append(&T, X)`: when the text's count is 1 (only this variable holds it), it's `realloc`ed to double its room when full and X is copied onto its end, so building text piece by piece takes time in proportion to its length (a million pieces: 130 s and 147 MB before, about 5 ms and 6 MB after). Shared text is copied as before, so every other holder still sees the old text. Codegen does this only when the parts added don't read T (`set t to t followed by t` is a plain join).
+- **Static text** (literals in the program, text constants, and the runtime's own words like `yes` and `infinity`) is a static `EsText` whose count is `ES_IMMORTAL`. Retain and release skip it, so it's never counted or freed. Literals carry their character count, written by the compiler. A single ASCII character made while the program runs (`character 2 of word`, `the characters of word`) is one of 128 static immortal texts too (`es_ascii_text`), so taking ASCII text apart allocates nothing but the list.
 - **A list** holds its items in an array that grows (doubling), allocated separately from the `EsList`. Lists whose size is known when they're made (written out, slices, copies, `every`) get exactly that size, and `only`'s result is shrunk to fit. A list nobody else holds (a value just worked out, with a count of 1) is reused instead of copied by slices and `a copy of`, and `reversed` and loops already did the same. Its items are all one kind (`EsItems`: numbers, yes/no, text, or lists); text and lists in it are references the list owns, released when the item is removed or replaced or when the list is freed. Every list made while the program runs is a heap list: list literals make a new list each time they run, because lists can change. The only static list is `es_no_list`, what a list variable holds before it's given a list (never read, never changed).
 
 ### Ownership

@@ -21,7 +21,7 @@ Write it like "item (n plus 1) of scores".
 Line 5: Something is missing after "without the first".
     say scores without the first
                ^^^^^^^^^^^^^^^^^
-Did you mean "without the first item"?
+Did you mean "without the first item" or "without the first character"?
 
 Line 6: I expected "of" here, but found "scores".
     say every second item scores

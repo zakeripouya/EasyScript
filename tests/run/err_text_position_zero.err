@@ -1,0 +1,4 @@
+Line 1: There's no character 0 in the text: it has 1 character.
+    say character 0 of "x"
+        ^^^^^^^^^^^^^^^^^^
+Positions start at 1: the first character is character 1.

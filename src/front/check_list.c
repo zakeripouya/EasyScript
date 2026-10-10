@@ -95,14 +95,27 @@ static TypeVar check_list_op(Checker *c, const Expr *expr) {
     return error_var(c);
 }
 
+// A list form used on text ("item 1 of word"): says how to write it for text.
+static TypeVar require_list_not_text(Checker *c, TypeVar var, const Expr *at, const char *message, bool one) {
+    TypeVar item = checker_require_list(c, var, at, message);
+    if (types_of(c, var) == TYPE_TEXT) {
+        diag_note(c->diag, "To take %s of text, write it with \"%s\", like \"%s\".", one ? "a character" : "characters",
+                  one ? "character" : "characters", one ? "character 1 of word" : "characters 2 to 4 of word");
+    }
+    return item;
+}
+
 TypeVar checker_check_list_expr(Checker *c, const Expr *expr) {
+    if ((expr->kind == EXPR_ITEM && expr->as.item.characters) || (expr->kind == EXPR_SLICE && expr->as.slice.characters)) {
+        return checker_check_characters(c, expr);
+    }
     switch (expr->kind) {
     case EXPR_LIST: return check_literal(c, expr);
     case EXPR_EMPTY_LIST: return types_new(c, expr->as.list_type, expr->pos.line);
     case EXPR_ITEM:
         require_position(c, expr->as.item.position);
-        return checker_require_list(c, checker_check_expr(c, expr->as.item.list), expr->as.item.list,
-                                    "I can only take an item from a list");
+        return require_list_not_text(c, checker_check_expr(c, expr->as.item.list), expr->as.item.list,
+                                     "I can only take an item from a list", true);
     case EXPR_LIST_OP: return check_list_op(c, expr);
     case EXPR_EVERY: {
         const Expr *list = expr->as.every.list;
@@ -120,7 +133,7 @@ TypeVar checker_check_list_expr(Checker *c, const Expr *expr) {
                             NULL);
         }
         TypeVar list = checker_check_expr(c, expr->as.slice.list);
-        checker_require_list(c, list, expr->as.slice.list, "I can only take items from a list");
+        require_list_not_text(c, list, expr->as.slice.list, "I can only take items from a list", false);
         return list;
     }
     case EXPR_ONLY: {
@@ -134,11 +147,8 @@ TypeVar checker_check_list_expr(Checker *c, const Expr *expr) {
     }
 }
 
-TypeVar checker_check_contains(Checker *c, const Expr *expr, TypeVar left, TypeVar right) {
-    const Expr *list = expr->as.binary.left;
-    TypeVar item = checker_require_list(c, left, list, "I can only look for an item in a list");
-    if (types_of(c, item) != TYPE_ERROR) require_item(c, list, left, item, expr->as.binary.right, right, true);
-    return types_new(c, TYPE_YESNO, expr->pos.line);
+void checker_require_item(Checker *c, const Expr *list, TypeVar list_var, const Expr *value, TypeVar value_var) {
+    require_item(c, list, list_var, types_item(c, list_var), value, value_var, true);
 }
 
 // --- Sentences -----------------------------------------------------------------------

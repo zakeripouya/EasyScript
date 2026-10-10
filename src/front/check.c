@@ -131,6 +131,8 @@ void checker_report_unknown(Checker *c, const char *name, const char *display, S
     } else if (ended) {
         diag_note(c->diag, "You made \"%s\" inside %s on line %zu, so it only exists inside that block. "
                            "To use it afterwards, make it before %s.", ended->display, ended->where, ended->line, ended->where);
+    } else if (strcmp(name, "letter") == 0 || strcmp(name, "digit") == 0 || strcmp(name, "space") == 0) {
+        diag_note(c->diag, "To check whether a character is a %s, write \"is a %s\", with the \"a\".", name, name);
     } else if (near_constant && !near) {
         diag_note(c->diag, "Did you mean \"%s\"? It's a constant, kept on line %zu.", near_constant->display,
                   near_constant->definition->pos.line);

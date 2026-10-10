@@ -1,0 +1,4 @@
+Line 2: I don't know anything called "letter".
+    say c is letter
+             ^^^^^^
+To check whether a character is a letter, write "is a letter", with the "a".

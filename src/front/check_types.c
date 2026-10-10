@@ -181,6 +181,7 @@ static bool settle(Checker *c, Deferred *d) {
     if (d->kind == DEFER_AND) return settle_and(c, d);
     if (d->kind == DEFER_JOIN) return settle_join(c, d);
     if (d->kind == DEFER_ONE_OF) return settle_one_of(c, d);
+    if (d->kind == DEFER_SEARCH) return checker_settle_search(c, d);
     Type type = types_of(c, d->left);
     if (type == TYPE_UNKNOWN) return false;
     const char *name = ast_type_name(c->arena, type);
@@ -223,9 +224,22 @@ static void settle_all(Checker *c) {
 
 // --- Kinds nothing decided ---------------------------------------------------------
 
-// What to suggest writing for a kind nothing decided: "a number", or "a list
-// of numbers" when it's known to be a list.
+// Whether `var` is still waiting in a "contains" or "the position of",
+// which works on text.
+static bool searched(Checker *c, TypeVar var) {
+    for (size_t i = 0; i < c->deferred.len; i++) {
+        const Deferred *d = &c->deferred.items[i];
+        if (!d->done && d->kind == DEFER_SEARCH && (root(c, d->left) == root(c, var) || root(c, d->right) == root(c, var))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// What to suggest writing for a kind nothing decided: "a number", "text"
+// for what's searched, or "a list of numbers" when it's known to be a list.
 static const char *suggested_kind(Checker *c, TypeVar var) {
+    if (searched(c, var)) return "text";
     Type type = types_of(c, var);
     return type_is_list(type) ? ast_type_name(c->arena, type - TYPE_UNKNOWN + TYPE_NUMBER) : "a number";
 }

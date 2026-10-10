@@ -1,7 +1,7 @@
 /* EasyScript runtime, part 1: heap objects (text and lists) and memory.
  *
- * The runtime is three files, embedded into the compiler at build time (in
- * this order: es_memory.h, es_runtime.h, es_list.h) and copied to the top of
+ * The runtime is five files, embedded into the compiler at build time (in
+ * this order: es_memory.h, es_runtime.h, es_list.h, es_sort.h, es_text.h) and copied to the top of
  * every generated C program, so programs need nothing else to build.
  * Everything is static; generated code calls it.
  *
@@ -64,10 +64,12 @@ typedef struct {
     EsObject header;
     size_t len;        /* bytes, not counting the NUL */
     const char *chars; /* always NUL-terminated; heap text keeps them right after this struct */
+    size_t count;      /* characters (UTF-8), or 0 when not worked out yet (see es_text_chars) */
+    size_t cap;        /* heap text: room for this many bytes (plus the NUL), so adding to it can grow in place */
 } EsText;
 
 /* A static text object (a literal), for the runtime's own words. */
-#define ES_STATIC_TEXT(s) {{ES_OBJ_TEXT, ES_IMMORTAL}, sizeof(s) - 1, s}
+#define ES_STATIC_TEXT(s) {{ES_OBJ_TEXT, ES_IMMORTAL}, sizeof(s) - 1, s, 0, 0}
 
 static EsText es_empty_text = ES_STATIC_TEXT("");
 
@@ -160,7 +162,7 @@ __attribute__((noinline, cold))
 static void es_free_object(EsObject *obj) {
     size_t size = 0;
     switch (obj->kind) {
-    case ES_OBJ_TEXT: size = sizeof(EsText) + ((EsText *)obj)->len + 1; break;
+    case ES_OBJ_TEXT: size = sizeof(EsText) + ((EsText *)obj)->cap + 1; break;
     case ES_OBJ_LIST: {
         EsList *l = (EsList *)obj;
         if (es_items_counted(l->items)) {
@@ -229,6 +231,8 @@ static EsText *es_text_new(size_t len, char **chars) {
     p[len] = '\0';
     t->len = len;
     t->chars = p;
+    t->count = 0;
+    t->cap = len;
     *chars = p;
     return t;
 }

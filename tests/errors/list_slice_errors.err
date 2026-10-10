@@ -13,6 +13,7 @@ Line 4: The position of an item has to be a number, but this is text.
 Line 5: I can only take items from a list, but this is text.
     say every second item of "text"
                              ^^^^^^
+To take characters of text, write it with "characters", like "characters 2 to 4 of word".
 
 Line 6: I can only take items from a list, but this is a number.
     say 5 without the last item

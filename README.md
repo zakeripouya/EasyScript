@@ -73,6 +73,7 @@ Hello, Ada!
 | Decisions | `if ... :` with indented blocks, `otherwise if`, `otherwise` (or `else`), and one-line `if x is 5, say "hi".` / `if x is 5 then say "hi".` |
 | Loops | `count from 1 to 10:` (up or down, `by`/`in steps of`, `as n`), `for each`, `repeat 3 times:`, `while`/`as long as`, `keep doing this until`, `forever`, with `stop the loop` and `skip this one`; `it` is the loop's number |
 | Lists | `a list of 72, 95 and 88`, `an empty list of text`, `item 2 of scores`, `the first item in`/`the last item of`; `add 5 to the end of scores`, `insert`, `remove item 2 from`, `set item 2 of scores to 100`, `sort` (also `biggest first`, `by their length`); `contains`, `is empty`, `the number of items in`; `for each score in scores:`; slices (`items 2 to 4 of scores`, `the first 3 items in`, `the last 2 items in`, `scores without the first item`, `every second item of`); `every score in scores plus 5`, `only the scores that are at least 70`, `added together`, `the biggest of`, `reversed`, `a copy of`, joining (`morning slots followed by evening slots`); nested lists; printed in English ("72, 95 and 88") |
+| Text | Characters with the list forms (`character 3 of word`, `the first 3 characters of word`, `characters 2 to 5 of word`, `word without the first character`, `every other character of word`, `the characters of word`), counted as Unicode characters (`"café"` has 4); `contains`, `starts with`, `ends with`, `the position of "x" in word` (0 if it isn't there); `the words of`, `the lines of`, `split by ","`, `joined with ", "`; `in uppercase`, `in lowercase`, `without extra spaces`, `with "a" replaced by "b"`; `is a letter`, `is a digit`, `is a space`, `the code of`, `the character with code 65`; text built with `set line to line followed by ...` grows in place |
 | Functions | `to make tea:` / `to greet with someone:` / `to area with width and height:` / `to add tax to amount:`, `give back` / `return`, calls as sentences (`greet "Paris".`, `call greet with "Paris".`, `add tax to 100.`) or values (`area of 3 and 4`); recursion, and calling a function before it's defined |
 | Types | Every value is a number, text, yes/no, or a list of one kind, worked out by the compiler (no annotations needed); kind mistakes are caught before the program runs; optional kinds in definitions: `to area with width (a number) and height (a number), giving back a number:`, `(a list of numbers)` |
 | Other | `stop the program`; any sentence can start with `please` |
@@ -83,7 +84,7 @@ Hello, Ada!
 
 See the runnable [example programs](examples/programs/).
 
-**Phase 2 has started.** Done so far: **memory management** (text and lists are freed as soon as nothing uses them, so long loops run in flat memory; [how it works](docs/memory.md)), **static types** (the compiler works out whether every value is a number, text, yes/no, or a list, catches kind mistakes before the program runs, and generates plain C numbers; [Types](docs/language-guide.md#9-types)), and **lists** (shared by reference, with items by position from 1, `for each`, `every`/`only`, sorting, and friendly errors; [Lists](docs/language-guide.md#10-lists)). Runtime errors now show the source line and the chain of calls. **Coming next:** records, maps, modules, and text tools, plus `file ... exists` (moved from Phase 1). Follow along in the [roadmap](docs/roadmap.md).
+**Phase 2 has started.** Done so far: **memory management** (text and lists are freed as soon as nothing uses them, so long loops run in flat memory; [how it works](docs/memory.md)), **static types** (the compiler works out whether every value is a number, text, yes/no, or a list, catches kind mistakes before the program runs, and generates plain C numbers; [Types](docs/language-guide.md#9-types)), **lists** (shared by reference, with items by position from 1, `for each`, `every`/`only`, sorting, and friendly errors; [Lists](docs/language-guide.md#10-lists)), and **text tools** (characters, searching, splitting into words and lines, joining, changing case, character codes, and fast text building; [Text](docs/language-guide.md#11-text)). Runtime errors now show the source line and the chain of calls. **Coming next:** records, maps and modules, plus `file ... exists` (moved from Phase 1). Follow along in the [roadmap](docs/roadmap.md).
 
 ## Performance
 
@@ -91,20 +92,21 @@ Time (and peak memory) for each benchmark, measured with `make bench`:
 
 | Program | EasyScript | C | Go | Python |
 |---|---|---|---|---|
-| Recursive fib(38) | 0.24 s | 0.07 s | 0.08 s | 2.88 s |
-| Count to 100 million | 0.05 s | 0.02 s | 0.02 s | 4.11 s |
-| Nested loops (100 million rounds) | 0.11 s | 0.03 s | 0.03 s | 4.94 s |
-| Build a 50,000-character text | 0.00 s, 1.6 MB | (none) | 0.01 s, 13 MB | 0.01 s, 12 MB |
-| Sort a million numbers | 0.06 s, 9.0 MB | 0.08 s (`qsort`), 8.9 MB | 0.08 s, 29 MB | 0.31 s, 63 MB |
+| Recursive fib(38) | 0.24 s | 0.07 s | 0.08 s | 2.83 s |
+| Count to 100 million | 0.05 s | 0.03 s | 0.02 s | 4.07 s |
+| Nested loops (100 million rounds) | 0.11 s | 0.03 s | 0.03 s | 5.07 s |
+| Build a 50,000-character text | 0.00 s, 1.3 MB | (none) | 0.01 s, 12 MB | 0.01 s, 12 MB |
+| Sort a million numbers | 0.06 s, 9.0 MB | 0.08 s (`qsort`), 8.8 MB | 0.08 s, 34 MB | 0.32 s, 63 MB |
+| Add to a text a million times | 0.00 s, 6.0 MB | 0.00 s, 6.0 MB | 0.00 s, 19 MB | 0.04 s, 16 MB |
 
-Apple M4, macOS 15.3.1, EasyScript 0.1.0 plus reference counting, static types, lists and stack traces, 2026-10-10. The compiler knows every value's kind, so numbers are plain C doubles and loops run close to C. Sorting beats C's `qsort` because the comparison is inlined instead of called through a function pointer, and sorts numbers in place, in the same memory as C. Recursion is slower than C because every call checks for runaway recursion and records itself for runtime errors' call chain (so it can stop with a friendly error that says how it got there), and numbers compare with a small tolerance. Details and history: [docs/performance.md](docs/performance.md).
+Apple M4, macOS 15.3.1, EasyScript 0.1.0 plus reference counting, static types, lists, stack traces and text tools, 2026-10-10. The compiler knows every value's kind, so numbers are plain C doubles and loops run close to C. Sorting beats C's `qsort` because the comparison is inlined instead of called through a function pointer, and sorts numbers in place, in the same memory as C. Text that only one variable holds grows in place, so adding to it a million times takes about 5 ms, in the same memory as C (it took over two minutes before). Recursion is slower than C because every call checks for runaway recursion and records itself for runtime errors' call chain (so it can stop with a friendly error that says how it got there), and numbers compare with a small tolerance. Details and history: [docs/performance.md](docs/performance.md).
 
 ## Roadmap
 
 | Phase | Focus | Status |
 |---|---|---|
 | 1 | **Core language:** variables, constants, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | **Complete** (v0.1.0) |
-| 2 | **Data and structure:** memory management, static types, records, lists, maps, modules, text tools | **In progress** (memory management, static types and lists done) |
+| 2 | **Data and structure:** memory management, static types, records, lists, maps, modules, text tools | **In progress** (memory management, static types, lists and text tools done) |
 | 3 | **Self-hosting:** the EasyScript compiler, written in EasyScript | Coming soon |
 | 4 | **Real-world programs:** standard library, C interop, concurrency, backend servers | Coming soon |
 | 5 | **Systems mode:** low-level control, no runtime, and an operating system | Coming soon |
@@ -117,7 +119,7 @@ Details: [docs/roadmap.md](docs/roadmap.md).
 
 1. **Deterministic parsing, no guessing.** Every sentence has exactly one meaning, or it's an error. The compiler never picks "the most likely" reading.
 2. **Ambiguity is an error with suggestions.** If a sentence could mean two things, you're told so, along with the valid ways to write it.
-3. **Filler words are ignored.** `the`, `a`, and `an` are dropped, so `let the total be 0.` and `let total be 0.` are the same sentence.
+3. **Filler words are ignored.** `the`, `a`, and `an` are dropped, so `let the total be 0.` and `let total be 0.` are the same sentence. The one exception is `is a letter` (and `is a digit`, `is a space`), which needs its `a`, so that `x is letter` can still compare with a variable called `letter`.
 4. **Keywords are case-insensitive**, and words are contextual: a word like `count` can still be a variable name.
 5. **Friendly English errors.** Every message says what went wrong in plain words, points at it, and suggests a fix. See [docs/errors.md](docs/errors.md).
 6. **AI is optional.** The compiler is ordinary deterministic software. Nothing needs an AI model or a network connection to compile.

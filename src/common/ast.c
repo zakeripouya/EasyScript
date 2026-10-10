@@ -50,7 +50,7 @@ const char *ast_binary_op_name(BinaryOp op) {
     static const char *const names[] = {
         "or", "and", "equal", "not equal", "less", "less or equal", "greater",
         "greater or equal", "add", "subtract", "join", "multiply", "divide", "modulo",
-        "contains", "does not contain",
+        "contains", "does not contain", "starts with", "does not start with", "ends with", "does not end with",
     };
     return names[op];
 }
@@ -67,6 +67,15 @@ const char *ast_change_op_name(ChangeOp op) {
 const char *ast_list_op_name(ListOp op) {
     static const char *const names[] = {
         "added together", "biggest of", "smallest of", "reversed", "copy of", "is empty", "is not empty",
+    };
+    return names[op];
+}
+
+const char *ast_text_op_name(TextOp op) {
+    static const char *const names[] = {
+        "characters of", "words of", "lines of", "in uppercase", "in lowercase", "without extra spaces",
+        "split by", "joined with", "replaced", "position of", "code of", "character with code",
+        "is a letter", "is a digit", "is a space",
     };
     return names[op];
 }
@@ -107,22 +116,36 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch) {
     case EXPR_EMPTY_LIST:
         sb_appendf(scratch, "empty %s", ast_type_name(scratch->arena, expr->as.list_type) + 2);  // without "a "
         break;
-    case EXPR_ITEM:
-        return expr->as.item.where == ITEM_FIRST ? "first item" : expr->as.item.where == ITEM_LAST ? "last item" : "item";
+    case EXPR_ITEM: {
+        const char *noun = expr->as.item.characters ? "character" : "item";
+        const char *where = expr->as.item.where == ITEM_FIRST ? "first " : expr->as.item.where == ITEM_LAST ? "last " : "";
+        sb_appendf(scratch, "%s%s", where, noun);
+        break;
+    }
     case EXPR_LIST_OP: return ast_list_op_name(expr->as.list_op.op);
     case EXPR_EVERY: sb_appendf(scratch, "every %s in", expr->as.every.var.text); break;
     case EXPR_ONLY: return "only";
     case EXPR_SLICE: {
         static const char *const names[] = {"items", "first items", "last items", "without the first item",
                                             "without the last item", "every"};
-        sb_append(scratch, names[expr->as.slice.kind]);
+        static const char *const text_names[] = {"characters", "first characters", "last characters",
+                                                 "without the first character", "without the last character", "every"};
+        bool characters = expr->as.slice.characters;
+        sb_append(scratch, (characters ? text_names : names)[expr->as.slice.kind]);
+        const char *noun = characters ? "character" : "item";
         if (expr->as.slice.kind == SLICE_RANGE && !expr->as.slice.to) sb_append(scratch, " to the end");
-        if (expr->as.slice.kind == SLICE_EVERY && expr->as.slice.start == 1) sb_append(scratch, " other item");
+        if (expr->as.slice.kind == SLICE_EVERY && expr->as.slice.start == 1) sb_appendf(scratch, " other %s", noun);
         if (expr->as.slice.kind == SLICE_EVERY && expr->as.slice.start != 1) {
-            sb_appendf(scratch, " item at a multiple of %zu", expr->as.slice.step);
+            sb_appendf(scratch, " %s at a multiple of %zu", noun, expr->as.slice.step);
         }
         break;
     }
+    case EXPR_TEXT_OP:
+        if (expr->as.text_op.negated) {
+            sb_appendf(scratch, "is not %s", ast_text_op_name(expr->as.text_op.op) + 3);
+            break;
+        }
+        return ast_text_op_name(expr->as.text_op.op);
     }
     return scratch->data;
 }
@@ -152,6 +175,14 @@ static void dump_expr(const Expr *expr, size_t depth, StrBuf *out) {
     case EXPR_SLICE:  // in the order they're written, except postfix "without": the list first
         dump_children(expr->as.slice.from, expr->as.slice.to, depth, out);
         dump_expr(expr->as.slice.list, depth + 1, out);
+        break;
+    case EXPR_TEXT_OP:  // in the order they're written, except "the position of X in T": X first
+        if (expr->as.text_op.op == TEXT_POSITION) {
+            dump_children(expr->as.text_op.arg, expr->as.text_op.operand, depth, out);
+        } else {
+            dump_children(expr->as.text_op.operand, expr->as.text_op.arg, depth, out);
+            dump_children(expr->as.text_op.arg2, NULL, depth, out);
+        }
         break;
     default: break;
     }

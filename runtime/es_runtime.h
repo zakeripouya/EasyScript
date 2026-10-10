@@ -69,19 +69,54 @@ static EsText *es_join(EsText *a, EsText *b) {
     return joined;
 }
 
+/* "set T to T followed by X": adds b to the text in *slot. Text that only
+ * this variable holds grows in place (doubling its room), so building text
+ * piece by piece takes time in proportion to its length; shared text is
+ * copied as es_join does. Consumes b. */
+static void es_append(EsText **slot, EsText *b) {
+    EsText *a = *slot;
+    if (a->header.refs != 1) {
+        es_set(slot, es_join(es_retain(a), b));
+        return;
+    }
+    size_t len = a->len + b->len;
+    if (len > a->cap) {
+        size_t cap = a->cap * 2 > len ? a->cap * 2 : len;
+        if (cap < 16) cap = 16;
+        if (cap > SIZE_MAX - sizeof(EsText) - 1) es_out_of_memory();
+        es_memory_take(cap - a->cap);
+        EsText *grown = (EsText *)realloc(a, sizeof(EsText) + cap + 1);
+        if (!grown) es_out_of_memory();
+        grown->chars = (const char *)(grown + 1);
+        grown->cap = cap;
+        *slot = a = grown;
+    }
+    char *chars = (char *)(a + 1);
+    memcpy(chars + a->len, b->chars, b->len);
+    chars[len] = '\0';
+    a->count = a->count > 0 && b->count > 0 ? a->count + b->count : 0; /* 0: count again when needed */
+    a->len = len;
+    es_release(b);
+}
+
 static void es_say(EsText *t) {
     es_out(t->chars, t->len);
     es_out("\n", 1);
     es_release(t);
 }
 
-/* Length in characters (UTF-8 aware). */
-static size_t es_text_chars(const EsText *t) {
-    size_t chars = 0;
-    for (size_t i = 0; i < t->len; i++) {
-        if (((unsigned char)t->chars[i] & 0xC0) != 0x80) chars++;
+/* Length in characters: a character is a Unicode code point, stored as
+ * UTF-8 (one to four bytes), so it's every byte that doesn't continue the
+ * one before. Counted once and kept in the text (text never changes, except
+ * while es_append grows text nobody else holds); text whose count equals its
+ * length is plain ASCII, so its characters are its bytes. */
+static size_t es_text_chars(EsText *t) {
+    if (t->count == 0 && t->len > 0) {
+        size_t chars = 0;
+        for (size_t i = 0; i < t->len; i++) chars += !es_continuation_byte(t->chars[i]);
+        t->count = chars;
     }
-    return chars;
+    return t->count;
 }
 
 static double es_length(EsText *t) {
@@ -137,14 +172,23 @@ static bool es_parse_number(const char *s, size_t len, double *out) {
     return true;
 }
 
-/* "as a number" on text (consuming it). */
+/* "as a number" on text (consuming it). The text is shown up to its 60th
+ * character. */
 static double es_text_number(int site, EsText *t) {
     double x;
-    if (!es_parse_number(t->chars, t->len, &x)) {
-        es_fail(site, NULL, "I can't turn \"%.*s\" into a number.", (int)(t->len > 60 ? 60 : t->len), t->chars);
+    if (es_parse_number(t->chars, t->len, &x)) {
+        es_release(t);
+        return x;
     }
-    es_release(t);
-    return x;
+    static const char *const hint = "A number is digits, with a \"-\" before them if it's negative and a \".\" "
+                                    "for decimals, like 42, -7 or 3.5.";
+    if (t->len == 0) es_fail(site, hint, "I can't turn empty text into a number.");
+    size_t shown = 0;
+    for (size_t chars = 0; shown < t->len && chars < 60; chars++) {
+        shown++;
+        while (shown < t->len && es_continuation_byte(t->chars[shown])) shown++;
+    }
+    es_fail(site, hint, "I can't turn \"%.*s%s\" into a number.", (int)shown, t->chars, shown < t->len ? "..." : "");
 }
 
 /* --- Comparisons ---------------------------------------------------------- */

@@ -333,6 +333,7 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
     case STMT_LET:
     case STMT_SET: {
         const Expr *value = stmt->as.assign.value;
+        if (stmt->kind == STMT_SET && cg_emit_append(g, stmt)) break;
         if (stmt->kind == STMT_LET) cg_declare_name(g, stmt->as.assign.name.text, value->type);
         emit_store(g, stmt->as.assign.name.text, value->type, expr_code(g, value));
         break;

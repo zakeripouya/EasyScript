@@ -1,0 +1,5 @@
+Line 2: The code of a character needs exactly one character, but this text has 2.
+        give back the code of letter
+                      ^^^^^^^^^^^^^^
+while working out "code" (letter was "ab")
+called from line 4: say code with "ab"

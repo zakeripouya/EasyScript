@@ -6,6 +6,19 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Text tools** (Phase 2, step 16). See the new [Text chapter](docs/language-guide.md#11-text).
+  - **A character is a Unicode character** (a code point, stored as UTF-8), so `"café"` has 4 characters. Text keeps its character count once it's been worked out (literals carry it from the compiler); text whose count equals its length is plain ASCII and is worked on byte by byte, and a single ASCII character is a static text, so taking ASCII text apart allocates nothing but the list.
+  - **Characters and pieces** with exactly the list forms and rules: `character 3 of word`, `the first character of word`, `the last character in word`, `characters 2 to 5 of word`, `characters 3 to the end of word`, `the first 3 characters of word`, `the last 2 characters of word`, `word without the first character` / `without the last character`, `every other character of word`, `every second character of word` (any ordinal), `the characters of word` (a list of text), and `the number of characters in word`. Positions that aren't in the text stop the program like list positions do ("There's no character 5 in the text: it has 4 characters."). Using a list form on text (or the other way round) is a compile error that shows the right form.
+  - **Searching:** `word contains "ab"` (`contains` now works on text as well as lists, decided from the kinds like `and`), `starts with`, `ends with` (and `does not` / `doesn't` forms), and `the position of "x" in word`, which is **0 when it isn't there** (positions start at 1); it works for list items too (`the position of 95 in scores`).
+  - **Splitting and joining:** `the words of text`, `the lines of text`, `text split by ","`, `names joined with ", "` (lists of text, numbers or yes/no values).
+  - **Changing (into new text):** `word in uppercase`, `word in lowercase` (English, accented Latin, Greek and Cyrillic letters), `text without extra spaces` (at the start and end), `text with "a" replaced by "b"`.
+  - **Characters:** `C is a letter` / `is a digit` / `is a space` (and `is not`, `isn't`), yes only for exactly one such character; they need the `a`, so `letter is letter` still compares with a variable called `letter`. `the code of C` and `the character with code 65`.
+  - **Text built piece by piece grows in place.** `set T to T followed by X` (or `and X`) adds to T where it is when nothing else holds it, doubling its room when full, instead of copying it every time: a million pieces went from 129.7 s and 147 MB to about 5 ms and 6 MB. Every other holder of the old text still sees the old text. A new `build` benchmark measures it against C, Go and Python.
+  - **`as a number`** on text that isn't a number now adds a hint ("A number is digits, with a "-" before them if it's negative and a "." for decimals, like 42, -7 or 3.5."), says "empty text" for empty text, and cuts long text at its 60th character (not byte) with "...". Constants give the same message.
+  - Runtime errors for characters, ranges and counts, splitting by or replacing empty text, the code of anything but one character, and character codes that aren't one; compile errors for every kind mistake, and for text tools in constants ("A constant can't take text apart or look inside it.").
+  - `examples/programs/word_counter.es` (reads a file, counts its words, and reports the most common ones), moved off the planned list in the roadmap. Tests for every form, Unicode text, empty text, every error, in-place building and its sharing rules, and text tools in a 100,000-round loop under the memory limit.
+  - Inside the compiler: `src/front/parse_text.c`, `src/front/check_text.c`, `src/back/codegen_text.c` and `runtime/es_text.h` (the runtime's fifth part). `EsText` has two new fields, `count` and `cap`.
+
 - **Joining lists:** `followed by` between two lists of the same kind makes a new list (`the morning slots followed by the evening slots`), of exactly the right size, reusing the left list when nothing else holds it, with lists inside copied so it shares none. Lists of different kinds are a compile error; anything other than two lists still joins as text. The kind is worked out like `and`'s (a deferred check), so it also works for function inputs whose kinds come from calls.
 
 - **Fixed lists:** `keep` works for lists written out of fixed numbers, text or yes/no values (`keep weekdays as a list of "Mon", "Tue" and "Wed".`). Adding, removing, setting, inserting or sorting on one is a compile error that suggests `let`. A fixed list is a static list in the program, never counted or freed; reading it uses it directly, and storing it in a variable or giving it to a function makes a copy that can change. `length of` a fixed list is fixed too. A fixed list can't hold lists.
@@ -61,6 +74,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- A list form whose list was written out (`item 1 of a list of "a" and "b"`) generated the list's C code twice, leaving unused static text that `-Wunused-variable` rejects in strict builds; it's generated once now.
 - A function with no inputs couldn't say what it gives back with a comma (`to roll, giving back a number:`), although the vocabulary showed it.
 - The error audit (`tests/tools/error_coverage.py`) could take minutes on messages with several `%s`; each now only matches within a line.
 

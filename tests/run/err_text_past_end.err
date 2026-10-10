@@ -1,0 +1,3 @@
+Line 3: There's no character 5 in the text: it has 4 characters.
+    say character 5 of word
+        ^^^^^^^^^^^^^^^^^^^

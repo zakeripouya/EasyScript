@@ -68,6 +68,9 @@ bool parser_is_operator_word(const char *word);
 // Number of tokens if the next tokens spell `words`, else 0.
 size_t parser_match_words(const Parser *p, const char *words);
 
+// The same, `ahead` tokens from here.
+size_t parser_match_words_at(const Parser *p, size_t ahead, const char *words);
+
 // How many leading words of `words` the next tokens spell.
 size_t parser_leading_words(const Parser *p, const char *words);
 
@@ -193,6 +196,9 @@ void parser_take_name(Parser *p, size_t words, Name *name);
 bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type);
 // "every second item", "every 3rd item", "every other item": a slice.
 bool parser_at_every_nth(const Parser *p);
+// How many tokens a simple value at `ahead` takes (a number, text, a name,
+// or a group in parentheses), or 0 if none starts there.
+size_t parser_value_length(const Parser *p, size_t ahead);
 // "item P", "first item" or "last item", followed by one of `after`.
 bool parser_at_item(const Parser *p, const char *const *after);
 // A list form starting with a word ("list of", "empty list of", "item",
@@ -204,6 +210,18 @@ Stmt *parser_parse_set_item(Parser *p, const Token *verb);  // set item P of L t
 Stmt *parser_parse_remove(Parser *p, const Token *verb);
 Stmt *parser_parse_insert(Parser *p, const Token *verb);
 Stmt *parser_parse_sort(Parser *p, const Token *verb);
+
+// parse_text.c
+// "the characters of T", "the words of T", "the lines of T", "the code of T",
+// "the character with code N", "the position of X in T"; NULL if none starts here.
+Expr *parser_parse_text_word(Parser *p);
+// After a value: "in uppercase", "in lowercase", "without extra spaces",
+// "split by X", "joined with X", "with X replaced by Y"; NULL if none is next.
+Expr *parser_parse_text_postfix(Parser *p, Expr *expr);
+// "with X replaced by" is next (so "with" doesn't start a call's inputs).
+bool parser_at_replace(const Parser *p);
+// After a value: "is a letter", "is not a digit", "isn't a space"; NULL if none is next.
+Expr *parser_parse_char_test(Parser *p, Expr *left);
 
 // parse_loop.c: a loop starting with `verb` (count, go, for, do, repeat,
 // while, as, keep, forever), and stop/break/skip/continue/move on.

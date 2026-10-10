@@ -55,7 +55,7 @@ static void emit_item(Codegen *g, const Expr *expr, StrBuf *out) {
     Expr *parts[] = {expr->as.item.position, expr->as.item.list};
     const char *values[2] = {"0", NULL};
     bool opened = cg_ordered(g, parts, 2, values, out);
-    if (!opened) values[1] = cg_list_operand(g, expr->as.item.list);
+    if (!opened && expr->as.item.list->kind == EXPR_NAME) values[1] = cg_list_operand(g, expr->as.item.list);
     sb_appendf(out, "es_get_%s(%zu, %s, %s, %s)%s", cg_item_suffix(expr->as.item.list->type), cg_site(g, expr->pos),
                values[1], where_code(expr->as.item.where), values[0], opened ? ")" : "");
 }
@@ -88,7 +88,7 @@ static void emit_slice(Codegen *g, const Expr *expr, StrBuf *out) {
     Expr *parts[] = {expr->as.slice.from, expr->as.slice.to, expr->as.slice.list};
     const char *v[3] = {"0", "0", NULL};
     bool opened = cg_ordered(g, parts, 3, v, out);
-    if (!opened) v[2] = cg_list_operand(g, expr->as.slice.list);
+    if (!opened && expr->as.slice.list->kind == EXPR_NAME) v[2] = cg_list_operand(g, expr->as.slice.list);
     size_t site = kind == SLICE_EVERY ? 0 : cg_site(g, expr->pos);  // SLICE_EVERY can't fail
     switch (kind) {
     case SLICE_RANGE:
@@ -109,7 +109,7 @@ void cg_emit_contains(Codegen *g, const Expr *expr, StrBuf *out) {
     Expr *parts[] = {expr->as.binary.left, expr->as.binary.right};
     const char *values[2];
     bool opened = cg_ordered(g, parts, 2, values, out);
-    if (!opened) values[0] = cg_list_operand(g, expr->as.binary.left);
+    if (!opened && expr->as.binary.left->kind == EXPR_NAME) values[0] = cg_list_operand(g, expr->as.binary.left);
     sb_appendf(out, "%ses_contains_%s(%s, %s)%s", expr->as.binary.op == BINARY_NOT_CONTAINS ? "!" : "",
                cg_item_suffix(expr->as.binary.left->type), values[0], values[1], opened ? ")" : "");
 }
@@ -180,6 +180,11 @@ static void collect(Codegen *g, const Expr *expr, Names *bound, Codegen *helper)
         collect_all(g, parts, 3, bound, helper);
         return;
     }
+    case EXPR_TEXT_OP: {
+        Expr *parts[] = {expr->as.text_op.operand, expr->as.text_op.arg, expr->as.text_op.arg2};
+        collect_all(g, parts, 3, bound, helper);
+        return;
+    }
     default: return;
     }
 }
@@ -209,6 +214,10 @@ static bool calls_function(const Codegen *g, const Expr *expr) {
     case EXPR_SLICE:
         return (expr->as.slice.from && calls_function(g, expr->as.slice.from)) ||
                (expr->as.slice.to && calls_function(g, expr->as.slice.to)) || calls_function(g, expr->as.slice.list);
+    case EXPR_TEXT_OP:
+        return calls_function(g, expr->as.text_op.operand) ||
+               (expr->as.text_op.arg && calls_function(g, expr->as.text_op.arg)) ||
+               (expr->as.text_op.arg2 && calls_function(g, expr->as.text_op.arg2));
     default: return false;
     }
 }
@@ -303,6 +312,10 @@ static void emit_helper_call(Codegen *g, const Expr *expr, StrBuf *out) {
 }
 
 void cg_emit_list_expr(Codegen *g, const Expr *expr, StrBuf *out) {
+    if ((expr->kind == EXPR_ITEM && expr->as.item.characters) || (expr->kind == EXPR_SLICE && expr->as.slice.characters)) {
+        cg_emit_characters(g, expr, out);
+        return;
+    }
     switch (expr->kind) {
     case EXPR_LIST: emit_literal(g, expr, out); break;
     case EXPR_EMPTY_LIST: sb_appendf(out, "es_list_new(%s, 0)", items_kind(expr->type)); break;

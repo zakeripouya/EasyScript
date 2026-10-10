@@ -1,3 +1,4 @@
 Line 3: I can't turn "x" into a number.
     ask "Q? " and call the answer q. say q as a number
                                          ^^^^^^^^^^^^^
+A number is digits, with a "-" before them if it's negative and a "." for decimals, like 42, -7 or 3.5.

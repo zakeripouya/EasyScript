@@ -1,0 +1,69 @@
+Line 1: There's no character at position 0.
+    say every 0th character of word
+              ^^^
+Positions start at 1: "every 2nd character" means characters 2, 4, 6 and so on.
+
+Line 2: Something is missing after "character".
+    say character of word
+        ^^^^^^^^^
+Say which character, like "character 1", "the first character", or "the last character".
+
+Line 3: Something is missing after "to".
+    say characters 2 to of word
+                     ^^
+Say where the characters end, like "characters 2 to 4 of word" or "characters 2 to the end of word".
+
+Line 4: I expected "of" here, but found "word".
+    say the first 3 characters word
+                               ^^^^
+Write it like "the first 3 characters of word".
+
+Line 5: I expected "in" here, but found "word".
+    say the position of "x" word
+                            ^^^^
+Write it like "the position of "x" in word".
+
+Line 6: I expected "by" here, but found the text "b".
+    say word with "a" replaced "b"
+                               ^^^
+Write it like "word with "a" replaced by "b"".
+
+Line 7: Something is missing after "split".
+    say word split ","
+             ^^^^^
+Did you mean "split by"?
+
+Line 8: Something is missing after "joined".
+    say names joined ", "
+              ^^^^^^
+Did you mean "joined with"?
+
+Line 9: Something is missing after "without extra".
+    say word without extra
+             ^^^^^^^^^^^^^
+Did you mean "without extra spaces"?
+
+Line 10: Something is missing after "without the first".
+    say word without the first
+             ^^^^^^^^^^^^^^^^^
+Did you mean "without the first item" or "without the first character"?
+
+Line 11: Something is missing after "starts".
+    say word starts "a"
+             ^^^^^^
+Did you mean "starts with"?
+
+Line 12: Something is missing after "does not start".
+    say word does not start "a"
+             ^^^^^^^^^^^^^^
+Did you mean "does not start with"?
+
+Line 13: A position worked out with arithmetic needs parentheses.
+    say characters 2 plus 1 to 3 of word
+                     ^^^^
+Write it like "character (n plus 1) of word".
+
+Line 14: A position worked out with arithmetic needs parentheses.
+    say the first n plus 1 characters of word
+                    ^^^^
+Write it like "character (n plus 1) of word".

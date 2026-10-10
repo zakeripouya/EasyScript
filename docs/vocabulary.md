@@ -7,7 +7,7 @@ Every word, symbol, and sentence pattern in EasyScript, grouped by category, wit
 - **Available:** works today: it compiles and runs.
 - **Coming soon:** planned for the phase shown. Sentence patterns marked this way are **proposals**: the wording may change before they ship, and they don't compile today.
 
-In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressions, and `CONDITION` is anything that is yes or no. Keywords are case-insensitive. The filler words `the`, `a`, and `an` may appear anywhere and are ignored, so they're left out of the patterns below.
+In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressions, and `CONDITION` is anything that is yes or no. Keywords are case-insensitive. The filler words `the`, `a`, and `an` may appear anywhere and are ignored, so they're left out of the patterns below (except in `is a letter`, `is a digit` and `is a space`, which need their `a`; see [Text](#characters-and-their-codes)).
 
 ## Sentences and layout
 
@@ -16,7 +16,7 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | `.` or new line | Ends a sentence | `say "hi".` | Available |
 | `:` + indented lines | Opens a block of sentences | `if x is 1:`<br>`    say "one".` | Available |
 | indentation | Blocks are indented. A tab counts as 4 spaces. A line must line up with an enclosing block | (see [blocks.es](../examples/lexer/blocks.es)) | Available |
-| `the`, `a`, `an` | Filler words; always ignored outside text | `set the total to 0.` = `set total to 0.` | Available |
+| `the`, `a`, `an` | Filler words; ignored outside text, except that `is a letter`, `is a digit` and `is a space` need their `a` | `set the total to 0.` = `set total to 0.` | Available |
 | `#` | Comment to the end of the line | `say 1. # ignored` | Available |
 | `note:` | A line starting with `note:` (any capitalization) is a comment | `note: explain the next step` | Available |
 
@@ -376,14 +376,86 @@ The comparisons after `only L that` are the usual ones with `are` for `is`: `are
 
 A list is **shared**: `let same be scores` gives the same list another name, and a function given a list can change it. Changes through any name show through all of them. Use `a copy of L` for a separate list. A variable keeps its kind, so a list variable can only be given another list of the same kind. A list kept with `keep` is fixed (see [Constants](#constants)).
 
+## Text
+
+All text words are **Available**. A **character** is one Unicode character (a code point, stored as UTF-8), so `"café"` has 4 characters. Positions start at 1, and taking characters uses exactly the forms and rules of [taking list items](#items), with `character` for `item`. Text never changes: every form here makes new text (or a new list). See the [language guide](language-guide.md#11-text).
+
+### Characters and pieces
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `character N of T` / `character N in T` | The character at position N (from 1) | `character 3 of word` |
+| `the first character of T` / `the last character in T` | The first or last character | `the first character of name` |
+| `characters A to B of T` / `... in T` | Characters A to B, both included | `characters 2 to 5 of word` |
+| `characters A to the end of T` | Character A and everything after it | `characters 3 to the end of word` |
+| `the first N characters of T` / `the last N characters in T` | The first or last N characters (all of them if there are fewer) | `the first 3 characters of word` |
+| `T without the first character` / `T without the last character` | All but the first or last character (empty text is an error) | `word without the first character` |
+| `every other character of T` | The characters at positions 1, 3, 5, ... | `every other character of word` |
+| `every second character of T` / `every 3rd character in T` | The characters at positions 2, 4, 6, ... (any ordinal, as for items) | `every second character of word` |
+| `the characters of T` | A list of text, one character each | `for each letter in the characters of word:` |
+| `the length of T` / `the number of characters in T` | How many characters | `the number of characters in word` |
+
+A position that isn't in the text (0, past the end, or not whole) stops the program with an error that says the length, as for lists.
+
+### Searching
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `T contains X` | Yes if X appears in T (empty text appears in everything) | `word contains "ab"` |
+| `T does not contain X` / `T doesn't contain X` | The opposite | `name doesn't contain " "` |
+| `T starts with X` / `T ends with X` | Yes if T begins or ends with X | `word starts with "un"`, `word ends with "ing"` |
+| `T does not start with X` / `T doesn't start with X` | The opposite | `line doesn't start with "#"` |
+| `T does not end with X` / `T doesn't end with X` | The opposite | `file does not end with ".txt"` |
+| `the position of X in T` | The position of the character where X first starts, or **0 if it isn't there** (positions start at 1, so 0 is never a real one). Empty text is found at position 1 | `the position of "x" in word` |
+| `the position of X in L` | The same for a list: the position of the first item equal to X, or 0 | `the position of 95 in scores` |
+
+These are comparisons, like `contains` for lists: `word starts with "un" and word ends with "able"` works. `X` and `T` in `the position of X in T` are single values (names, text, numbers, or something in parentheses).
+
+### Splitting and joining
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `the words of T` | A list of the pieces of T between spaces (spaces, tabs and line breaks; any number of them, at the start and end too) | `the words of sentence` |
+| `the lines of T` | A list of the lines of T. A line break at the very end doesn't start another line, a `\r` before a line break is dropped, and empty text has no lines | `the lines of contents` |
+| `T split by S` | A list of the pieces of T between each S, empty pieces included. Empty text gives an empty list; splitting by empty text is an error | `"a,b,,c" split by ","` |
+| `L joined with S` | The items of a list of text, numbers or yes/no values as text, with S between each two | `names joined with ", "` |
+
+### Changing text
+
+Each gives back new text.
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `T in uppercase` / `T in lowercase` | T with its letters changed to capitals or small letters | `name in uppercase` |
+| `T without extra spaces` | T without the spaces, tabs and line breaks at its start and end | `answer without extra spaces` |
+| `T with X replaced by Y` | T with every X (from the left, not overlapping) replaced by Y. Replacing empty text is an error | `text with "a" replaced by "b"` |
+
+`in uppercase`, `without extra spaces`, `split by`, `joined with` and `with ... replaced by` bind tightly, like `as text`, and the values after `split by`, `joined with`, `with` and `replaced by` are single values (put anything longer in parentheses). After a name, `with X replaced by` replaces text, unless the name is a function: then `with` starts its inputs.
+
+### Characters and their codes
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `C is a letter` / `C is not a letter` / `C isn't a letter` | Yes if C is exactly one character, and it's a letter | `if letter is a letter, add 1 to count` |
+| `C is a digit` / `C is not a digit` / `C isn't a digit` | Yes if C is exactly one of `0` to `9` | `character 1 of code is a digit` |
+| `C is a space` / `C is not a space` / `C isn't a space` | Yes if C is exactly one space, tab, or line break | `if letter is a space, skip this one` |
+| `the code of C` | The Unicode number of the one character in C (an error for empty text or more than one character) | `the code of "A"` (65) |
+| `the character with code N` | The character with that Unicode number (a whole number from 1 to 1114111) | `the character with code 233` (`é`) |
+
+**`is a letter` needs the `a`:** `C is letter` (or `C is the letter`) compares C with a variable called `letter`, so `letter`, `digit` and `space` can still be names. Letters, uppercase and lowercase cover English, the accented Latin letters (Latin-1 and Latin Extended-A), Greek and Cyrillic; other characters (Chinese, emoji, ...) aren't letters and don't change case.
+
+### Building text
+
+`set T to T followed by X` (or `set T to T and X`) adds to the end of T. When nothing else holds that text, it grows in place instead of being copied, so building a long text one piece at a time is fast: a million pieces take about 5 milliseconds. Every other name that held the old text still sees the old text.
+
 ## Kinds of values
 
 Every value has a kind, worked out by the compiler before the program runs (**Available**). Kind mistakes are compile errors with the line and a caret. See the [language guide](language-guide.md#9-types).
 
 | Kind | Written in a definition as | Comes from |
 |---|---|---|
-| number | `(a number)`, `giving back a number` | number values, arithmetic, `length of`, `as a number`, `it`, counting loops |
-| text | `(text)`, `giving back text` | text values, `followed by`, `and` with text, `as text`, `ask`, reading a file |
+| number | `(a number)`, `giving back a number` | number values, arithmetic, `length of`, `as a number`, `it`, counting loops, `the position of`, `the code of` |
+| text | `(text)`, `giving back text` | text values, `followed by`, `and` with text, `as text`, `ask`, reading a file, characters, `in uppercase`, `joined with`, ... |
 | yes/no | `(yes or no)` or `(yes/no)`, `giving back yes or no` | `yes`/`no`, comparisons, `and`/`or`/`not` between yes/no values |
 | nothing | `giving back nothing` | a function with no `give back X` (only as what a function gives back) |
 | list | `(a list of numbers)`, `(a list of text)`, `(a list of yes/no values)` or `(a list of yes or no values)`, `(a list of lists of numbers)`, `giving back a list of text` | `a list of ...`, `an empty list of ...`, `every`, `only`, `reversed`, `a copy of` |

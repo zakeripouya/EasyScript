@@ -63,7 +63,7 @@ The proposed wording for each planned feature is in the [vocabulary](vocabulary.
 
 ### Examples
 
-Done (in [`examples/programs/`](../examples/programs/), checked by `make test`): `hello.es`, `first_program.es`, `variables.es`, `text.es`, `logic.es`, `ask_name.es` (with test input), `files.es`, `decisions.es`, `loops.es`, `logan.es` (the 2024 prototype's loop example, ported), `factorial.es`, `fibonacci.es`, `tax.es` (a constant used by a function), `taste.es` (the README's bigger example), and the larger programs `fizzbuzz.es`, `guessing_game.es` (with test input), `notes.es`, `hanoi.es`, and `receipt.es`, `err_divide_by_zero.es`. Phase 2 added `million_lines.es` (memory), `kinds.es` (types), and `grade_statistics.es` and `top_scores.es` (lists). The checker's "did you mean" error is tested in `tests/errors/misspelled_variable.es`.
+Done (in [`examples/programs/`](../examples/programs/), checked by `make test`): `hello.es`, `first_program.es`, `variables.es`, `text.es`, `logic.es`, `ask_name.es` (with test input), `files.es`, `decisions.es`, `loops.es`, `logan.es` (the 2024 prototype's loop example, ported), `factorial.es`, `fibonacci.es`, `tax.es` (a constant used by a function), `taste.es` (the README's bigger example), and the larger programs `fizzbuzz.es`, `guessing_game.es` (with test input), `notes.es`, `hanoi.es`, and `receipt.es`, `err_divide_by_zero.es`. Phase 2 added `million_lines.es` (memory), `kinds.es` (types), `grade_statistics.es` and `top_scores.es` (lists), and `word_counter.es` (text tools: reads a file, counts its words, and reports the most common ones). The checker's "did you mean" error is tested in `tests/errors/misspelled_variable.es`.
 
 Planned. Each will be added with its expected output in the same commit as its feature:
 
@@ -71,13 +71,12 @@ Planned. Each will be added with its expected output in the same commit as its f
 |---|---|
 | `file_exists.es` | `file ... exists` |
 | `err_ambiguous.es` | an ambiguous block sentence and its suggestions |
-| `word_counter.es` | Phase 2 (text tools): read a file and count its words. Needs a way to split text, which Phase 1 doesn't have |
 
 ## Phase 2: Data and structure
 
 - [x] **Memory management:** reference counting. Text (and, since lists arrived, lists) made while a program runs is freed as soon as nothing uses it, so loops run in flat memory (the text benchmark went from 280 MB to under 2 MB). Users never write anything about memory. See [memory.md](memory.md).
   - **Needed once records arrive:** reference counting can't free objects that refer to each other in a cycle. Text and lists can't form cycles (a list never holds a list of its own kind), but records (and lists of records) can, so they'll need **weak references or a cycle collector**.
-- **Text tools:** splitting text into words and lines, and looking at its characters (needed for the planned `word_counter.es` example)
+- [x] **Text tools:** characters taken with the list forms (`character 3 of word`, `the first 3 characters of word`, `every other character of word`, `the characters of word`), counted as Unicode characters; `contains`, `starts with`, `ends with`, `the position of`; `the words of`, `the lines of`, `split by`, `joined with`; `in uppercase`, `in lowercase`, `without extra spaces`, `with ... replaced by`; `is a letter`/`is a digit`/`is a space`, `the code of`, `the character with code`; text built piece by piece grows in place (a million pieces: 130 s before, about 5 ms after). See [Text](language-guide.md#11-text).
 - [x] **Static types:** the compiler works out whether every value is a number, text, or yes/no, inferring function inputs and results from how they're used and called, with optional kinds in definitions (`to area with width (a number), giving back a number:`). Kind mistakes are compile errors with the runtime's old wording plus carets; generated code uses plain C `double`/`bool` and only text is reference counted. See [Types](language-guide.md#9-types).
 - [x] **From Phase 1: runtime errors with the source line,** shown like compile errors, plus an English stack trace: the function being worked out with the values it was given, and each call back to the main program (repeated calls collapsed).
 - **From Phase 1:** `file ... exists`

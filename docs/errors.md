@@ -390,6 +390,38 @@ Write it like "a list of (a list of 1 and 2) and (a list of 3 and 4)".
 
 The full, tested set is the `list_*.err` files in [`tests/errors/`](../tests/errors/) and [`err_list_forms.err`](../tests/ast/err_list_forms.err).
 
+### Text
+
+Text tools need text (and lists where they say so), and the forms that take characters say how to take items instead, and the other way round.
+
+**A list form used on text**: [`text_type_errors.es`](../tests/errors/text_type_errors.es)
+
+```
+Line 5: I can only take an item from a list, but this is text.
+    say item 1 of word
+                  ^^^^
+To take a character of text, write it with "character", like "character 1 of word".
+```
+
+| Problem | Message (summary) |
+|---|---|
+| A character form on something that isn't text | "I can only take a character from text, but this is a list of numbers." with a note to use `item` for a list |
+| Looking for something in a number or yes/no value | "I can only look for something in text or a list, but this is a number." |
+| Looking for something other than text in text | "I can only look for text in text, but this is a number." with a hint to use `as text` |
+| `starts with` / `ends with` without text on both sides | ""starts with" needs text on both sides, but this is a number." |
+| A text tool on something that isn't text | "I can only take the words of text, but this is a number." (and likewise for the characters, the lines, uppercase, lowercase, extra spaces, splitting, replacing, the code, and `is a letter` / `is a digit` / `is a space`) |
+| `joined with` on something that isn't a list of numbers, text or yes/no values | "I can only join the items of a list, but this is text." |
+| Splitting by, joining with, or replacing with something that isn't text | "Text can only be split by text, but this is a number." / "The items can only be joined with text, but this is a number." / "I can only replace text with text, but this is a number." |
+| A character code that isn't a number | "A character code has to be a number, but this is text." |
+| A text tool in a constant | "A constant can't take text apart or look inside it." with a `let` suggestion |
+| `is letter` without the `a`, and no variable called `letter` | "I don't know anything called "letter"." with "To check whether a character is a letter, write "is a letter", with the "a"." |
+| `every 0th character` | "There's no character at position 0." |
+| `character` without a position | "Something is missing after "character"." |
+| `with X replaced` without `by` | "I expected "by" here, but found the text "b"." |
+| `split`, `joined`, `starts`, `without extra` with a word missing | "Something is missing after "split"." with "Did you mean "split by"?" |
+
+The full, tested set is the `text_*.err` files in [`tests/errors/`](../tests/errors/) and [`err_text_forms.err`](../tests/ast/err_text_forms.err).
+
 ### While the program runs
 
 Runtime errors look like compile errors: `Line N:` and what went wrong, the line with carets under the part that failed, and sometimes a hint. Anything the program printed before the error stays printed. Only mistakes that kinds can't catch are left for this.
@@ -441,7 +473,7 @@ Positions start at 1: the first item is item 1.
 | A function that keeps calling itself | "Functions are calling each other too deeply (more than 10000 calls inside each other)." with a hint to check that it stops |
 | A count step that's zero or negative | "The step of a count has to be more than zero, but it's -1." with a hint that counting picks its own direction |
 | `repeat N times` with N that isn't a whole number of zero or more | "The number of times has to be a whole number, but it's 2.5." (or "can't be negative") |
-| `as a number` on text that isn't a number | "I can't turn "12abc" into a number." |
+| `as a number` on text that isn't a number | "I can't turn "12abc" into a number." (or "I can't turn empty text into a number."), with the hint "A number is digits, with a "-" before them if it's negative and a "." for decimals, like 42, -7 or 3.5." Long text is cut short after 60 characters |
 | A file that can't be read or written | "I couldn't read the file "nope.txt": it doesn't exist." |
 | A function that gives back a value but reaches its end without `give back` | "The function "sign" ended without giving anything back." with a hint |
 | A list item that isn't there | "There's no item 4 in the list: it has 3 items." (or "it's empty"); item 0 adds "Positions start at 1: the first item is item 1." |
@@ -450,6 +482,15 @@ Positions start at 1: the first item is item 1.
 | Inserting past the end | "I can't insert at position 6: the position has to be from 1 to 5 (the list has 4 items)." |
 | A range that goes backwards | "I can't take items 3 to 2: the first position is after the last one." |
 | A number of items that's negative or not whole | "The number of items can't be negative, but it's -1." / "... has to be a whole number, but it's 1.5." |
+| A character that isn't there | "There's no character 5 in the text: it has 4 characters." (or "it's empty"); character 0 adds "Positions start at 1: the first character is character 1." |
+| A character position that isn't a whole number | "The position of a character has to be a whole number, but it's 1.5." |
+| The first or last character of empty text (or taking it away with `without`) | "There's no first character: the text is empty." |
+| A range of characters that goes backwards | "I can't take characters 3 to 2: the first position is after the last one." |
+| A number of characters that's negative or not whole | "The number of characters can't be negative, but it's -2." / "... has to be a whole number, but it's 1.5." |
+| Splitting by empty text | "I can't split text by empty text." with a hint to use `the characters of` |
+| Replacing empty text | "I can't replace empty text: there's nothing to look for." |
+| The code of anything but one character | "The code of a character needs exactly one character, but this text has 2." (or "... but this text is empty.") |
+| A character code that isn't one | "There's no character with code 55296." with the hint "Character codes are whole numbers from 1 to 1114111, like 65 for "A"." |
 
 Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).
 

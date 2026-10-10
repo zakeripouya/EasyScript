@@ -1,0 +1,4 @@
+Line 1: I can't turn "this text is much too long to be a number, so the message cu..." into a number.
+    say "this text is much too long to be a number, so the message cuts it short after sixty characters" as a number
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A number is digits, with a "-" before them if it's negative and a "." for decimals, like 42, -7 or 3.5.

@@ -126,4 +126,12 @@ void cg_emit_contains(Codegen *g, const Expr *expr, StrBuf *out);   // L contain
 void cg_emit_each_head(Codegen *g, const Stmt *stmt, size_t id, StrBuf *body, size_t depth);
 const char *cg_list_stmt(Codegen *g, const Stmt *stmt);  // a list sentence as one C statement (no ";")
 
+// codegen_text.c
+void cg_emit_text_op(Codegen *g, const Expr *expr, StrBuf *out);       // EXPR_TEXT_OP
+void cg_emit_characters(Codegen *g, const Expr *expr, StrBuf *out);    // EXPR_ITEM/EXPR_SLICE of text
+void cg_emit_text_search(Codegen *g, const Expr *expr, StrBuf *out);   // contains (text), starts with, ends with
+bool cg_text_op_effects(const Codegen *g, const Expr *expr);           // cg_has_effects for EXPR_TEXT_OP
+// "set T to T followed by ...": adds to T in place (es_append); false if the sentence isn't like that.
+bool cg_emit_append(Codegen *g, const Stmt *stmt);
+
 #endif

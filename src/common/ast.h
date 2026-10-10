@@ -68,6 +68,7 @@ typedef enum {
     EXPR_EVERY,          // every NAME in L <rest of the expression, worked out for each item>
     EXPR_ONLY,           // only L that are <comparison>
     EXPR_SLICE,          // items 2 to 4 of L, the first 3 items in L, L without the last item, ...
+    EXPR_TEXT_OP,        // the words of T, T in uppercase, T split by ",", the position of X in T, ...
 } ExprKind;
 
 typedef enum {
@@ -92,6 +93,10 @@ typedef enum {
     BINARY_MODULO,
     BINARY_CONTAINS,      // L contains X
     BINARY_NOT_CONTAINS,  // L does not contain X
+    BINARY_STARTS_WITH,      // T starts with X
+    BINARY_NOT_STARTS_WITH,  // T does not start with X
+    BINARY_ENDS_WITH,        // T ends with X
+    BINARY_NOT_ENDS_WITH,    // T does not end with X
 } BinaryOp;
 
 typedef enum {
@@ -125,6 +130,25 @@ typedef enum {
     SLICE_WITHOUT_LAST,   // L without the last item
     SLICE_EVERY,          // every STEP-th item of L ("every second item": 2, 4, 6...; "every other item": 1, 3, 5...)
 } SliceKind;
+
+// What a text tool does. Each makes something new; text never changes.
+typedef enum {
+    TEXT_CHARACTERS,  // the characters of T (a list of text)
+    TEXT_WORDS,       // the words of T
+    TEXT_LINES,       // the lines of T
+    TEXT_UPPERCASE,   // T in uppercase
+    TEXT_LOWERCASE,   // T in lowercase
+    TEXT_TRIM,        // T without extra spaces
+    TEXT_SPLIT,       // T split by ARG
+    TEXT_JOINED,      // L joined with ARG (L a list)
+    TEXT_REPLACE,     // T with ARG replaced by ARG2
+    TEXT_POSITION,    // the position of ARG in T (T text or a list; 0 if it isn't there)
+    TEXT_CODE,        // the code of T (one character)
+    TEXT_FROM_CODE,   // the character with code T (a number)
+    TEXT_IS_LETTER,   // T is a letter (negated: is not a letter)
+    TEXT_IS_DIGIT,    // T is a digit
+    TEXT_IS_SPACE,    // T is a space
+} TextOp;
 
 typedef struct Expr Expr;
 
@@ -179,8 +203,9 @@ struct Expr {
         Type list_type;     // EXPR_EMPTY_LIST: the list's type, e.g. a list of numbers
         struct {
             ItemWhere where;
-            Expr *position;  // ITEM_AT; NULL for the first and last item
-            Expr *list;
+            Expr *position;   // ITEM_AT; NULL for the first and last item
+            Expr *list;       // the list, or the text for a character
+            bool characters;  // "character 2 of T": a character of text, not an item of a list
         } item;
         struct {
             ListOp op;
@@ -203,7 +228,17 @@ struct Expr {
             Expr *to;     // SLICE_RANGE: the last position, or NULL for the end
             size_t step;   // SLICE_EVERY: 2 for "every second item" and "every other item"
             size_t start;  // SLICE_EVERY: the first position taken (STEP, or 1 for "every other item")
+            bool characters;  // "characters 2 to 4 of T": characters of text, not items of a list
         } slice;
+        struct {
+            TextOp op;
+            Span op_span;
+            Expr *operand;  // the text (the list for TEXT_JOINED, the number for TEXT_FROM_CODE)
+            Expr *arg;      // TEXT_SPLIT, TEXT_JOINED: the separator; TEXT_REPLACE: what to look for;
+                            // TEXT_POSITION: what to find
+            Expr *arg2;     // TEXT_REPLACE: what to put instead
+            bool negated;   // TEXT_IS_*: "is not a letter", "isn't a digit"
+        } text_op;
     } as;
 };
 
@@ -371,6 +406,7 @@ const char *ast_binary_op_name(BinaryOp op);
 const char *ast_unary_op_name(UnaryOp op);
 const char *ast_change_op_name(ChangeOp op);
 const char *ast_list_op_name(ListOp op);
+const char *ast_text_op_name(TextOp op);
 
 // Indented outline, one node per line: "label [line:column]", children
 // indented two spaces. Statement children come in source order (for files:

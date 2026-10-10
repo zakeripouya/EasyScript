@@ -1,0 +1,4 @@
+Line 2: There's no character with code 55296.
+    say the character with code 55296
+            ^^^^^^^^^^^^^^^^^^^^^^^^^
+Character codes are whole numbers from 1 to 1114111, like 65 for "A".

@@ -159,12 +159,16 @@ void cg_append_c_string(StrBuf *out, const char *s, size_t len) {
     sb_append_char(out, '"');
 }
 
-// static EsText es_s1 = {{ES_OBJ_TEXT, ES_IMMORTAL}, 6, "Name? "};
+// static EsText es_s1 = {{ES_OBJ_TEXT, ES_IMMORTAL}, 6, "Name? ", 6, 0}; the
+// second number is how many characters it has (UTF-8), so the runtime never
+// has to count them.
 size_t cg_static_text(Codegen *g, const char *s, size_t len) {
     size_t id = ++g->texts->count;
+    size_t chars = 0;
+    for (size_t i = 0; i < len; i++) chars += ((unsigned char)s[i] & 0xC0) != 0x80;
     sb_appendf(&g->texts->code, "static EsText es_s%zu = {{ES_OBJ_TEXT, ES_IMMORTAL}, %zu, ", id, len);
     cg_append_c_string(&g->texts->code, s, len);
-    sb_append(&g->texts->code, "};\n");
+    sb_appendf(&g->texts->code, ", %zu, 0};\n", chars);
     return id;
 }
 
@@ -201,11 +205,12 @@ bool cg_has_effects(const Codegen *g, const Expr *expr) {
     switch (expr->kind) {
     case EXPR_CALL:
     case EXPR_FILE_CONTENTS:
-    case EXPR_ITEM:
     case EXPR_LIST_OP:
     case EXPR_EVERY:
-    case EXPR_ONLY:
-    case EXPR_SLICE: return true;
+    case EXPR_ONLY: return true;
+    case EXPR_ITEM:
+    case EXPR_SLICE: return true;  // can fail (a position past the end), for text too
+    case EXPR_TEXT_OP: return cg_text_op_effects(g, expr);
     case EXPR_LIST:
         for (size_t i = 0; i < expr->as.items.len; i++) {
             if (cg_has_effects(g, expr->as.items.items[i])) return true;
@@ -219,7 +224,6 @@ bool cg_has_effects(const Codegen *g, const Expr *expr) {
                cg_has_effects(g, expr->as.convert.operand);
     case EXPR_BINARY:
         return expr->as.binary.op == BINARY_DIVIDE || expr->as.binary.op == BINARY_MODULO ||
-               expr->as.binary.op == BINARY_CONTAINS || expr->as.binary.op == BINARY_NOT_CONTAINS ||
                type_is_list(expr->as.binary.left->type) || cg_has_effects(g, expr->as.binary.left) ||
                cg_has_effects(g, expr->as.binary.right);
     default: return false;
@@ -339,7 +343,17 @@ static void emit_binary(Codegen *g, const Expr *expr, StrBuf *out) {
         sb_appendf(out, "(%s %s %s)%s", l, arithmetic_operator(op), r, close);
         return;
     case BINARY_CONTAINS:
-    case BINARY_NOT_CONTAINS: cg_emit_contains(g, expr, out); return;
+    case BINARY_NOT_CONTAINS:
+        if (expr->as.binary.left->type == TYPE_TEXT) {
+            cg_emit_text_search(g, expr, out);
+        } else {
+            cg_emit_contains(g, expr, out);
+        }
+        return;
+    case BINARY_STARTS_WITH:
+    case BINARY_NOT_STARTS_WITH:
+    case BINARY_ENDS_WITH:
+    case BINARY_NOT_ENDS_WITH: cg_emit_text_search(g, expr, out); return;
     default: emit_compare(g, expr, out); return;
     }
 }
@@ -453,6 +467,7 @@ void cg_emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     case EXPR_EVERY:
     case EXPR_ONLY:
     case EXPR_SLICE: cg_emit_list_expr(g, expr, out); break;
+    case EXPR_TEXT_OP: cg_emit_text_op(g, expr, out); break;
     case EXPR_NOTHING:
     case EXPR_ERROR:
         // The checker rejects these before codegen runs.

@@ -147,6 +147,10 @@ static bool reject_list_operand(Eval *ev, Span span, ConstValue a, ConstValue b)
     return true;
 }
 
+static bool reject_text_tool(Eval *ev, Span span) {
+    return fail(ev, span, "Make it with \"let\" instead of \"keep\".", "A constant can't take text apart or look inside it.");
+}
+
 static bool reject_nested(Eval *ev, Span span) {
     return fail(ev, span, "Make it with \"let\" instead of \"keep\".",
                 "A fixed list can't hold lists, because those could change.");
@@ -247,7 +251,15 @@ static bool logic(Eval *ev, const Expr *expr, ConstValue *out) {
 
 static bool binary(Eval *ev, const Expr *expr, ConstValue *out) {
     BinaryOp op = expr->as.binary.op;
-    if (op == BINARY_CONTAINS || op == BINARY_NOT_CONTAINS) return reject_list(ev, expr->pos.span);
+    if (op == BINARY_STARTS_WITH || op == BINARY_NOT_STARTS_WITH || op == BINARY_ENDS_WITH ||
+        op == BINARY_NOT_ENDS_WITH) {
+        return reject_text_tool(ev, expr->pos.span);
+    }
+    if (op == BINARY_CONTAINS || op == BINARY_NOT_CONTAINS) {
+        ConstValue in;
+        if (!eval(ev, expr->as.binary.left, &in)) return false;
+        return in.kind == CONST_LIST ? reject_list(ev, expr->pos.span) : reject_text_tool(ev, expr->pos.span);
+    }
     if (op == BINARY_AND || op == BINARY_OR) return logic(ev, expr, out);
     ConstValue a, b;
     if (!eval(ev, expr->as.binary.left, &a) || !eval(ev, expr->as.binary.right, &b)) return false;
@@ -305,6 +317,19 @@ static bool parse_number(const char *s, size_t len, double *out) {
     return true;
 }
 
+// The runtime's message (es_text_number): the text up to its 60th character.
+static bool not_a_number(Eval *ev, Span span, ConstValue a) {
+    static const char *const hint = "A number is digits, with a \"-\" before them if it's negative and a \".\" for "
+                                    "decimals, like 42, -7 or 3.5.";
+    if (a.len == 0) return fail(ev, span, hint, "I can't turn empty text into a number.");
+    size_t shown = 0;
+    for (size_t chars = 0; shown < a.len && chars < 60; chars++) {
+        shown++;
+        while (shown < a.len && ((unsigned char)a.text[shown] & 0xC0) == 0x80) shown++;
+    }
+    return fail(ev, span, hint, "I can't turn \"%.*s%s\" into a number.", (int)shown, a.text, shown < a.len ? "..." : "");
+}
+
 static bool convert(Eval *ev, const Expr *expr, ConstValue *out) {
     ConstValue a;
     if (!eval(ev, expr->as.convert.operand, &a)) return false;
@@ -319,7 +344,7 @@ static bool convert(Eval *ev, const Expr *expr, ConstValue *out) {
     } else if (a.kind == CONST_TEXT && parse_number(a.text, a.len, &x)) {
         *out = number(x);
     } else if (a.kind == CONST_TEXT) {
-        return fail(ev, expr->pos.span, NULL, "I can't turn \"%.*s\" into a number.", (int)(a.len > 60 ? 60 : a.len), a.text);
+        return not_a_number(ev, expr->pos.span, a);
     } else {
         return fail(ev, expr->pos.span, NULL, "I can't turn %s into a number.", a.yes ? "yes" : "no");
     }
@@ -363,10 +388,13 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
     case EXPR_LIST: return list(ev, expr, out);
     case EXPR_EMPTY_LIST: return empty_list(ev, expr, out);
     case EXPR_ITEM:
+        return expr->as.item.characters ? reject_text_tool(ev, span) : reject_list(ev, span);
+    case EXPR_SLICE:
+        return expr->as.slice.characters ? reject_text_tool(ev, span) : reject_list(ev, span);
     case EXPR_LIST_OP:
     case EXPR_EVERY:
-    case EXPR_ONLY:
-    case EXPR_SLICE: return reject_list(ev, span);
+    case EXPR_ONLY: return reject_list(ev, span);
+    case EXPR_TEXT_OP: return reject_text_tool(ev, span);
     case EXPR_FILE_CONTENTS:
         return fail(ev, span, fixed_note, "A constant can't read a file, because files are read while the program runs.");
     case EXPR_ERROR: return false;

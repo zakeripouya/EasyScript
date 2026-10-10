@@ -132,6 +132,10 @@ static TypeVar check_binary(Checker *c, const Expr *expr) {
     }
     case BINARY_CONTAINS:
     case BINARY_NOT_CONTAINS: return checker_check_contains(c, expr, left, right);
+    case BINARY_STARTS_WITH:
+    case BINARY_NOT_STARTS_WITH:
+    case BINARY_ENDS_WITH:
+    case BINARY_NOT_ENDS_WITH: return checker_check_starts(c, expr, left, right);
     default:
         checker_arithmetic(c, op, left, right, expr->pos.span, line);
         return types_new(c, TYPE_NUMBER, line);
@@ -320,6 +324,7 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_EVERY:
     case EXPR_ONLY:
     case EXPR_SLICE: return checker_check_list_expr(c, expr);
+    case EXPR_TEXT_OP: return checker_check_text_op(c, expr);
     case EXPR_ERROR: return error_var(c);
     }
     return error_var(c);

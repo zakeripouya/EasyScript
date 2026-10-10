@@ -1,0 +1,129 @@
+Line 3: I can only take a character from text, but this is a list of numbers.
+    say character 1 of scores
+                       ^^^^^^
+To take an item of a list, write it with "item", like "item 1 of scores".
+
+Line 4: I can only take characters from text, but this is a number.
+    say characters 1 to 2 of 42
+                             ^^
+
+Line 5: I can only take an item from a list, but this is text.
+    say item 1 of word
+                  ^^^^
+To take a character of text, write it with "character", like "character 1 of word".
+
+Line 6: I can only take items from a list, but this is text.
+    say items 1 to 2 of word
+                        ^^^^
+To take characters of text, write it with "characters", like "characters 2 to 4 of word".
+
+Line 7: I can only look for something in text or a list, but this is a number.
+    say 42 contains "4"
+        ^^
+
+Line 8: I can only look for text in text, but this is a number.
+    say word contains 4
+                      ^
+Turn it into text first with "as text".
+
+Line 9: I can only look for text in text, but this is a number.
+    say the position of 4 in word
+                        ^
+Turn it into text first with "as text".
+
+Line 10: "scores" is a list of numbers, so it can't contain text.
+    say scores contains "x"
+                        ^^^
+A list holds one kind of value. To keep text too, make a separate list for it.
+
+Line 11: "starts with" needs text on both sides, but this is a number.
+    say 42 starts with "4"
+        ^^
+
+Line 12: "ends with" needs text on both sides, but this is a number.
+    say word ends with 4
+                       ^
+
+Line 13: I can only take the characters of text, but this is a number.
+    say the characters of 42
+                          ^^
+
+Line 14: I can only take the words of text, but this is a number.
+    say the words of 42
+                     ^^
+
+Line 15: I can only take the lines of text, but this is a yes/no value.
+    say the lines of yes
+                     ^^^
+
+Line 16: I can only put text in uppercase, but this is a number.
+    say 42 in uppercase
+        ^^
+
+Line 17: I can only put text in lowercase, but this is a number.
+    say 42 in lowercase
+        ^^
+
+Line 18: I can only take extra spaces off text, but this is a number.
+    say 42 without extra spaces
+        ^^
+
+Line 19: I can only split text, but this is a number.
+    say 42 split by ","
+        ^^
+
+Line 20: Text can only be split by text, but this is a number.
+    say word split by 4
+                      ^
+
+Line 21: I can only join the items of a list, but this is text.
+    say word joined with ", "
+        ^^^^
+
+Line 22: I can only join the items of a list of numbers, text or yes/no values, but this is a list of lists of numbers.
+    say (a list of (a list of 1)) joined with ", "
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 23: The items can only be joined with text, but this is a number.
+    say scores joined with 4
+                           ^
+
+Line 24: I can only replace things in text, but this is a number.
+    say 42 with "4" replaced by "5"
+        ^^
+
+Line 25: I can only replace text with text, but this is a number.
+    say word with 4 replaced by "5"
+                  ^
+
+Line 26: I can only replace text with text, but this is a number.
+    say word with "a" replaced by 5
+                                  ^
+
+Line 27: I can only find the code of a character, but this is a number.
+    say the code of 65
+                    ^^
+
+Line 28: A character code has to be a number, but this is text.
+    say the character with code "A"
+                                ^^^
+
+Line 29: I can only check whether text is a letter, but this is a number.
+    say 5 is a letter
+        ^
+
+Line 30: I can only check whether text is a digit, but this is a number.
+    say 5 is a digit
+        ^
+
+Line 31: I can only check whether text is a space, but this is a number.
+    say 5 is not a space
+        ^
+
+Line 32: The position of a character has to be a number, but this is text.
+    say character "x" of word
+                  ^^^
+
+Line 33: The number of characters has to be a number, but this is text.
+    say the first "x" characters of word
+                  ^^^

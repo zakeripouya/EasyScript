@@ -20,6 +20,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [8. Files](#8-files) | Available, except `file X exists` |
 | [9. Types](#9-types) | Available |
 | [10. Lists](#10-lists) | Available |
+| [11. Text](#11-text) | Available |
 
 ---
 
@@ -65,7 +66,7 @@ add 5 to total
 Say the total.
 ```
 
-Capital letters don't matter for words, so `Set` and `set` are the same word. The words `the`, `a`, and `an` are always ignored, so you can write naturally: `set the total to 0.` and `set total to 0.` are the same sentence. Because they're ignored, `the`, `a`, and `an` can't be used as names.
+Capital letters don't matter for words, so `Set` and `set` are the same word. The words `the`, `a`, and `an` are ignored, so you can write naturally: `set the total to 0.` and `set total to 0.` are the same sentence. Because they're ignored, `the`, `a`, and `an` can't be used as names. (One phrase needs its `a`: `is a letter`, and `is a digit` and `is a space`, so that `x is letter` can still compare `x` with a variable called `letter`; see [Text](#checking-characters).)
 
 Try it: [`examples/lexer/sentences.es`](../examples/lexer/sentences.es). The output lists every word the compiler saw, and `the` isn't among them.
 
@@ -234,6 +235,8 @@ not done and ready
 length of name
 contents of file "notes.txt"
 ```
+
+Taking text apart, searching it, splitting it into words and changing its case have [a chapter of their own](#11-text).
 
 Try it: `./easyscript ast examples/parser/text.es`
 
@@ -803,4 +806,114 @@ Asking for an item that isn't there (or item 0, or item 1.5), a range whose posi
 
 Try it: `./easyscript run examples/programs/grade_statistics.es` and `./easyscript run examples/programs/top_scores.es`
 
+---
 
+## 11. Text
+
+**Status: Available.**
+
+Text is a row of **characters**. A character is one Unicode character, whatever language it's from, so `"café"` has 4 characters and `"日本"` has 2. (Inside the program each is stored as UTF-8, one to four bytes; you never see that, and text that's plain English is handled byte by byte, as fast as it can be.) Text never changes: everything in this chapter makes new text, or a new list, and leaves the text it started from as it was.
+
+### Characters and pieces
+
+Characters are numbered from 1, and you take them with exactly the words you use for the items of a list, with `character` for `item`:
+
+```
+let word be "café au lait".
+say character 4 of word.                  # é
+say the first character of word.          # c
+say the last character in word.           # t
+say characters 2 to 4 of word.            # afé
+say characters 6 to the end of word.      # au lait
+say the first 4 characters of word.       # café
+say the last 4 characters of word.        # lait
+say word without the first character.     # afé au lait
+say every other character of "abcdefg".   # aceg
+say every second character of "abcdefg".  # bdf
+say the characters of "café".             # c, a, f and é
+say the number of characters in word.     # 12, like the length of word
+```
+
+The rules are the lists' rules too: positions are numbers, names, `it`, or something in parentheses (`character (n plus 1) of word`); asking for a character that isn't there stops the program with the length ("There's no character 13 in the text: it has 12 characters."); `the first 20 characters` of shorter text is all of it. `the characters of word` is a list of text, so it works with `for each`:
+
+```
+for each letter in the characters of "naïve":
+    say letter.
+```
+
+### Searching
+
+```
+let word be "unbreakable".
+say word contains "break".            # yes
+say word starts with "un".            # yes
+say word ends with "ing".             # no
+say word doesn't start with "re".     # yes
+say the position of "break" in word.  # 3
+say the position of "x" in word.      # 0
+```
+
+`contains`, `starts with` and `ends with` (and their `does not` / `doesn't` forms) are comparisons, so they combine with `and`, `or` and `not`. **`the position of` gives 0 when the text isn't there:** positions start at 1, so 0 can only mean "not found", and you can check for it: `if the position of "@" in address is 0, say "That's not an email address."`. It works for lists too: `the position of 95 in scores` is the position of the first item equal to 95, or 0.
+
+### Splitting and joining
+
+```
+say the words of "  the quick  brown fox ".       # the, quick, brown and fox
+say the lines of "one\ntwo\n".                   # one and two
+say "2024-10-10" split by "-".                    # 2024, 10 and 10
+let names be a list of "Ada", "Grace" and "Linus".
+say names joined with ", ".                       # Ada, Grace, Linus
+```
+
+`the words of` splits at spaces, tabs and line breaks, however many there are; `the lines of` splits at line breaks (a line break at the very end doesn't start another line). `split by` keeps empty pieces, so `"a,,b" split by ","` has three items, the middle one empty. `joined with` puts its text between the items of a list of text, numbers or yes/no values, and is the opposite of `split by`: `(text split by ",") joined with ","` gives back `text`.
+
+### Changing text
+
+```
+say "Hello, World" in uppercase.           # HELLO, WORLD
+say "Hello, World" in lowercase.           # hello, world
+say "  padded  " without extra spaces.     # padded
+say "banana" with "a" replaced by "o".     # bonono
+```
+
+`without extra spaces` takes away the spaces, tabs and line breaks at the start and the end, and leaves the ones in the middle. `with X replaced by Y` replaces every X, from the left. Letters change case in English, in the accented Latin letters (`é` becomes `É`), in Greek and in Cyrillic; other characters stay as they are.
+
+### Checking characters
+
+```
+for each letter in the characters of "R2-D2":
+    if letter is a letter:
+        say letter followed by " is a letter".
+    otherwise if letter is a digit:
+        say letter followed by " is a digit".
+say " " is a space.                  # yes
+say the code of "A".                 # 65
+say the character with code 233.     # é
+```
+
+`is a letter`, `is a digit` and `is a space` are yes only for text of exactly one such character (so `"ab" is a letter` is no). **They need the `a`:** `letter is letter`, without it, compares with a variable called `letter`, so you can still use `letter`, `digit` and `space` as names. The code of a character is its Unicode number; `the character with code N` goes the other way.
+
+### Building text
+
+Adding to the end of text in a loop is the usual way to build it:
+
+```
+let line be "".
+repeat 5 times:
+    set line to line followed by it followed by " ".
+say line.                                  # 1 2 3 4 5
+```
+
+`set line to line followed by ...` is fast however long the text gets: when nothing else holds the text, it grows where it is instead of being copied each time, so a million pieces take a fraction of a second. (Anything else that held the old text still sees the old text.)
+
+### Things to watch
+
+- **The forms that take one value take only one:** `the words of`, `the code of`, `the position of X in T`, and the values after `split by`, `joined with`, `with` and `replaced by` are single values, like `length of`. `the number of items in text split by ","` means `(the number of items in text) split by ","`, which is an error; write `the number of items in (text split by ",")`.
+- **After a function's name, `with` starts its inputs.** `word with "a" replaced by "b"` replaces text when `word` is a variable; if `word` were a function, it would be called with `"a"`.
+- **Text constants stay as written.** A constant (`keep`) can't take text apart or change it ("A constant can't take text apart or look inside it."); use `let`.
+
+### What's checked while the program runs
+
+A character that isn't there (or character 0, or 1.5), a range of characters that goes backwards, a negative or fractional number of characters, `without the first character` of empty text, splitting by empty text, replacing empty text, the code of anything but one character, a character code that isn't one, and `as a number` on text that isn't a number stop the program with the line and what went wrong. Everything else, including every kind mistake (`the words of 42`), is checked before the program runs.
+
+Try it: `./easyscript run examples/programs/word_counter.es`

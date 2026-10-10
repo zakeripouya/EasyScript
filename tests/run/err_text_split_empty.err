@@ -1,0 +1,4 @@
+Line 2: I can't split text by empty text.
+    say "a,b" split by ""
+                       ^^
+To take each character, write "the characters of ...".

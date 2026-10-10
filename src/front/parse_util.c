@@ -87,14 +87,14 @@ static bool is_phrase_token(const Token *token) {
 
 // How many of the phrase's leading words the next tokens match, and (in
 // *total) how many words the phrase has.
-static size_t leading_words(const Parser *p, const char *words, size_t *total) {
+static size_t leading_words_at(const Parser *p, size_t ahead, const char *words, size_t *total) {
     size_t matched = 0;
     bool matching = true;
     *total = 0;
     while (*words) {
         const char *space = strchr(words, ' ');
         size_t n = space ? (size_t)(space - words) : strlen(words);
-        const Token *token = parser_peek(p, matched);
+        const Token *token = parser_peek(p, ahead + matched);
         if (matching && is_phrase_token(token) && token->text_len == n && memcmp(token->text, words, n) == 0) {
             matched++;
         } else {
@@ -105,6 +105,16 @@ static size_t leading_words(const Parser *p, const char *words, size_t *total) {
         if (*words == ' ') words++;
     }
     return matched;
+}
+
+static size_t leading_words(const Parser *p, const char *words, size_t *total) {
+    return leading_words_at(p, 0, words, total);
+}
+
+size_t parser_match_words_at(const Parser *p, size_t ahead, const char *words) {
+    size_t total;
+    size_t matched = leading_words_at(p, ahead, words, &total);
+    return matched == total ? total : 0;
 }
 
 size_t parser_leading_words(const Parser *p, const char *words) {

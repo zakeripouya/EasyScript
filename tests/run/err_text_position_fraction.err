@@ -1,0 +1,3 @@
+Line 1: The position of a character has to be a whole number, but it's 1.5.
+    say character 1.5 of "abc"
+        ^^^^^^^^^^^^^^^^^^^^^^

@@ -4,14 +4,16 @@
 //   or          A or B
 //   and         A and B           (stops before "and call")
 //   not         not A
-//   comparison  A is B, A is greater than B, A >= B, L contains X, L is empty, ...   (no chaining)
+//   comparison  A is B, A is greater than B, A >= B, L contains X, L is empty, T starts with X,
+//               C is a letter, ...   (no chaining)
 //   join        A followed by B   (below arithmetic, so math happens first)
 //   additive    A plus B, A minus B, + -
 //   multiply    A times B, A multiplied by B, A divided by B, A mod B, * / %
 //   unary       -A
-//   postfix     A as a number, A as text, L added together, L reversed
+//   postfix     A as a number, A as text, L added together, L reversed, T in uppercase,
+//               T split by X, L joined with X, T with X replaced by Y, ... (parse_text.c)
 //   primary     literals, names, calls, ( ), length of X, contents of file X,
-//               lists (parse_list.c), only L that are ...
+//               lists (parse_list.c), text tools (parse_text.c), only L that are ...
 
 #include <string.h>
 #include "front/parse_internal.h"
@@ -53,6 +55,12 @@ static const Phrase comparison_ops[] = {
     {"contains", "contains", BINARY_CONTAINS, false},
     {"does not contain", "does not contain", BINARY_NOT_CONTAINS, false},
     {"doesn't contain", "doesn't contain", BINARY_NOT_CONTAINS, false},
+    {"starts with", "starts with", BINARY_STARTS_WITH, false},
+    {"does not start with", "does not start with", BINARY_NOT_STARTS_WITH, false},
+    {"doesn't start with", "doesn't start with", BINARY_NOT_STARTS_WITH, false},
+    {"ends with", "ends with", BINARY_ENDS_WITH, false},
+    {"does not end with", "does not end with", BINARY_NOT_ENDS_WITH, false},
+    {"doesn't end with", "doesn't end with", BINARY_NOT_ENDS_WITH, false},
 };
 
 // "only the scores that are at least 70": the comparisons, with "are" for "is".
@@ -91,10 +99,13 @@ static const Phrase empty_tests[] = {
     {"aren't empty", "aren't empty", LIST_NOT_EMPTY, false},
 };
 
-// "L without the first item" (the lexer drops "the")
+// "L without the first item" (the lexer drops "the"), "T without the first character"
+enum { WITHOUT_CHARACTER = 0x100 };
 static const Phrase without_phrases[] = {
     {"without first item", "without the first item", SLICE_WITHOUT_FIRST, false},
     {"without last item", "without the last item", SLICE_WITHOUT_LAST, false},
+    {"without first character", "without the first character", SLICE_WITHOUT_FIRST | WITHOUT_CHARACTER, false},
+    {"without last character", "without the last character", SLICE_WITHOUT_LAST | WITHOUT_CHARACTER, false},
 };
 
 static const Phrase list_postfix[] = {
@@ -317,6 +328,7 @@ static Expr *parse_comparison(Parser *p) {
     Expr *left = parse_join(p);
     size_t len;
     Expr *empty = parse_empty_test(p, left, 0, 3);
+    if (!empty) empty = parser_parse_char_test(p, left);
     if (empty && parser_match_phrase(p, comparison_ops, COUNT(comparison_ops), &len)) {
         Span op = parser_consume(p, len);
         if (parser_error(p, op, "Comparisons can't be chained like this.")) {
@@ -369,7 +381,8 @@ static Expr *parse_postfix(Parser *p) {
         if (without) {
             Span op_span = parser_consume(p, len);
             Expr *slice = ast_new_expr(p->arena, EXPR_SLICE, ast_pos_join(expr->pos, (SourcePos){op_span, 0, 0}));
-            slice->as.slice.kind = (SliceKind)without->value;
+            slice->as.slice.kind = (SliceKind)(without->value & ~WITHOUT_CHARACTER);
+            slice->as.slice.characters = (without->value & WITHOUT_CHARACTER) != 0;
             slice->as.slice.list = expr;
             expr = slice;
             continue;
@@ -377,6 +390,11 @@ static Expr *parse_postfix(Parser *p) {
         const Phrase *list_op = parser_match_phrase(p, list_postfix, COUNT(list_postfix), &len);
         if (list_op) {
             expr = new_list_op(p, (ListOp)list_op->value, parser_consume(p, len), expr);
+            continue;
+        }
+        Expr *text_op = p->sentence_failed ? NULL : parser_parse_text_postfix(p, expr);
+        if (text_op) {
+            expr = text_op;
             continue;
         }
         const Phrase *conversion = parser_match_phrase(p, conversions, COUNT(conversions), &len);
