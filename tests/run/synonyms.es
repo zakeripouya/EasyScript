@@ -1,0 +1,6 @@
+say "say"
+print "print"
+show "show"
+display "display"
+write "write"
+please say "please"

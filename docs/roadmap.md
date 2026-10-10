@@ -24,7 +24,7 @@ The goal is to write small, real programs in the new sentence syntax and compile
 
 - [x] Test system: program, error, lexer, unit, example, and CLI tests (`make test`)
 - [x] Sanitizer build (`make debug`, `make test-debug`)
-- [x] CLI: `run`, `build`, `emit`, `tokens`, with generated files in a temp directory
+- [x] CLI: `run`, `build`, `emit`, `tokens`, `ast`, with generated files in a temp directory
 - [x] Arena allocator, string builder, dynamic arrays, edit distance
 - [x] Diagnostics: multiple errors per run, source line, carets, suggestions
 - [x] Lexer: sentences, indentation blocks, words, numbers, text, symbols, comments, filler words
@@ -34,43 +34,42 @@ The goal is to write small, real programs in the new sentence syntax and compile
 - [x] Syntax tree (`src/common/ast.h`) and `easyscript ast`
 - [x] Expression parser: arithmetic, comparisons in words and symbols, `and`/`or`/`not`, joining text, conversions, `length of`, `contents of file`, calls, with "Did you mean" and ambiguity errors
 - [x] Statement parser for simple statements: variables, output, `ask`, files, `stop the program`, `please`
+- [x] Checker for names: made before use, made once, "did you mean", "you make it later"
+- [x] C code generator and runtime (tagged values, friendly runtime errors), embedded in the compiler
+- [x] Legacy prototype pipeline removed
 - [ ] Blocks: `if`/`otherwise`, loops, and function definitions
-- [ ] Checker: names, scopes, "did you mean"
-- [ ] C code generator from the new AST
-- [ ] Remove the legacy prototype pipeline
+- [ ] Checker: scopes and types
+- [ ] Runtime errors that show the source line
 
 **Language features**
 
-- [ ] Variables: `let`/`set`/`change`, `add`, `subtract`, `multiply`, `divide`, `increase`, `decrease` (parsing done)
-- [ ] Values: whole numbers, decimals, text, `yes`/`no`, `nothing`; arithmetic and joining text (parsing done; checking and running to do)
-- [ ] Output and input: `say` (`print`, `show`, `display`, `write`), `ask … and call the answer` (parsing done)
-- [ ] Decisions: `if`, `otherwise if`, `otherwise`; comparisons in words and symbols; `and`, `or`, `not`
+- [x] Variables: `let`/`set`/`change`, `add`, `subtract`, `multiply`, `divide`, `increase`, `decrease`
+- [x] Values: whole numbers, decimals, text, `yes`/`no`, `nothing`; arithmetic, joining text, conversions, `length of`
+- [x] Output and input: `say` (`print`, `show`, `display`, `write`), `ask … and call the answer`
+- [x] Files: `write … to file`, `append … to file`, `read file … and call it`, `contents of file`
+- [x] `stop the program`, `please`
+- [ ] Decisions: `if`, `otherwise if`, `otherwise` (the conditions already work)
 - [ ] Loops: `repeat N times`, `repeat while`, `repeat until`, `for each ... from ... to`, `stop`, `skip`
 - [ ] Functions: `to NAME using ...`, calls, `give back`
-- [ ] Files: `write … to file`, `append … to file`, `read file … and call it` (parsing done), `file ... exists`
-- [ ] `stop the program` (parsing done)
+- [ ] `file ... exists`
 
-The proposed wording for each feature is in the [vocabulary](vocabulary.md).
+The proposed wording for each planned feature is in the [vocabulary](vocabulary.md).
 
-### Planned examples
+### Examples
 
-Each of these will be added to `examples/` with its expected output in the same commit as its feature:
+Done (in [`examples/programs/`](../examples/programs/), checked by `make test`): `hello.es`, `first_program.es`, `variables.es`, `text.es`, `logic.es`, `ask_name.es` (with test input), `files.es`, `err_divide_by_zero.es`. The checker's "did you mean" error is tested in `tests/errors/misspelled_variable.es`.
+
+Planned. Each will be added with its expected output in the same commit as its feature:
 
 | Example | Feature |
 |---|---|
-| `hello.es` | `say` |
-| `variables.es` | `set`, arithmetic sentences |
-| `text.es` | joining text with `and`/`followed by`, escapes in output |
-| `ask_name.es` | `ask … and call the answer` (with test input) |
 | `decisions.es` | `if` / `otherwise if` / `otherwise` |
-| `conditions.es` | comparisons in words and symbols, `and`/`or`/`not` |
 | `repeat.es` | `repeat N times` |
 | `countdown.es` | `repeat while` (the README taste) |
 | `for_each.es` | `for each ... from ... to`, `stop`, `skip` |
 | `functions.es` | `to ... using`, calls, `give back` |
-| `files.es` | `write … to file`, `append … to file`, `read file … and call it`, `file ... exists` |
-| `err_unknown_name.es` | "did you mean" for misspelled names |
-| `err_ambiguous.es` | an ambiguous sentence and its suggestions |
+| `file_exists.es` | `file ... exists` |
+| `err_ambiguous.es` | an ambiguous block sentence and its suggestions |
 
 ## Phase 2: Data and structure
 
@@ -112,4 +111,4 @@ Open questions:
 - **Running one statement at a time:** EasyScript compiles to C, so it needs a way to run each statement while keeping the session's variables between messages (for example, recompiling the session, or a long-lived session process).
 - **Rendering results:** how a result says it's a table or a chart, so the notebook can display it that way.
 
-It depends on Phase 1 (statements that run) and on the interactive shell being rebuilt on the new compiler.
+It builds on the interactive shell, which now runs the new syntax but reruns the whole session for every line; the notebook needs a real one-statement-at-a-time session.

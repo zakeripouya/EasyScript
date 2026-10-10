@@ -1,1 +1,0 @@
-FILE DELETE myfile

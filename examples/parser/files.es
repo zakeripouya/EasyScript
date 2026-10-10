@@ -1,4 +1,4 @@
-note: Parser example. Statements parse today but do not run yet.
+note: Parser example, for reading the syntax tree.
 note: `easyscript ast` shows how it is understood.
 write "first line" to file "notes.txt"
 append "second line" to file "notes.txt"

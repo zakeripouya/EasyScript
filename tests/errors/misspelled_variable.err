@@ -1,0 +1,4 @@
+Line 4: I don't know anything called "totl".
+    add 5 to totl.
+             ^^^^
+Did you mean "total"? You made it on line 1.

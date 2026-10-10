@@ -1,4 +1,4 @@
-# Lexer example: this does not run yet. `easyscript tokens` shows how it is read.
+# Lexer example: `easyscript tokens` shows how this is read.
 # Comparison symbols: = != < > <= >=
 if total = 10:
     say "ten".

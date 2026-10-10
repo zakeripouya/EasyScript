@@ -1,4 +1,4 @@
-note: Parser example. Statements parse today but do not run yet.
+note: Parser example, for reading the syntax tree.
 note: `easyscript ast` shows how it is understood.
 # times and divided by come before plus and minus
 say price plus tax times 2

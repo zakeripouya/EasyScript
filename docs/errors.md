@@ -31,7 +31,11 @@ That example is real output from today's compiler. It's [`examples/lexer/err_mis
 
 ## Errors you can see today
 
-These come from the new lexer. Run `easyscript tokens yourfile.es` to see them.
+There are three kinds: the **lexer** and **parser** catch problems in how sentences are written, the **checker** catches problems with names, and **runtime errors** happen while a program runs. Compile-time errors (the first three) are all reported together, and the program isn't built. A runtime error stops the program.
+
+### From the lexer
+
+These come from the lexer. Run `easyscript tokens yourfile.es` to see them.
 
 **Indentation that doesn't line up**: [`err_bad_indentation.es`](../examples/lexer/err_bad_indentation.es)
 
@@ -66,7 +70,7 @@ The lexer also explains:
 
 The complete, tested set is in [`tests/tokens/`](../tests/tokens/) (the `err_*.err` files).
 
-## Errors from the parser
+### From the parser
 
 These come from the parser. Run `easyscript ast yourfile.es` to see them.
 
@@ -145,9 +149,11 @@ The parser also explains:
 
 After an error the parser skips to the end of that sentence and carries on, so you see one error per sentence and every sentence gets checked. The complete, tested set is in [`tests/ast/`](../tests/ast/) (the `err_*.err` files).
 
-## Coming soon
+### From the checker
 
-**Unknown names, with "did you mean".** The error format is implemented and unit-tested with exactly this message. The checker that will produce it is coming in Phase 1:
+The checker makes sure every name you use has been made with `let` (or by `ask` or `read file`) before it's used, and that no name is made twice. It only runs when the program has no parser errors, so one mistake never causes a flood of follow-on errors.
+
+**A misspelled name**: [`misspelled_variable.es`](../tests/errors/misspelled_variable.es)
 
 ```
 Line 4: I don't know anything called "totl".
@@ -156,14 +162,58 @@ Line 4: I don't know anything called "totl".
 Did you mean "total"? You made it on line 1.
 ```
 
-**Ambiguous blocks.** Blocks (`if`, loops, functions; coming soon) will follow the same rule: if a sentence could be read in more than one way, the parser stops and lists the readings.
-
-## Legacy prototype errors
-
-The legacy prototype (`PRINT # ...` syntax) still uses its original one-line errors, for example:
+**A name used before it's made**: [`made_later.es`](../tests/errors/made_later.es)
 
 ```
-Error: Variable not found for y
+Line 1: I don't know anything called "x".
+    say x
+        ^
+You make "x" later, on line 2. Make it before you use it.
 ```
 
-It stops at the first error. These go away when the legacy pipeline is removed.
+**A name made twice**: [`made_twice.es`](../tests/errors/made_twice.es)
+
+```
+Line 2: You already made "x" on line 1.
+    let x be 2
+        ^
+To change it, write "set x to ...".
+```
+
+Calling a function (`greet using "Ada"`) and `it` are also checker errors for now, because what they mean isn't implemented yet. The full, tested set is in [`tests/errors/`](../tests/errors/).
+
+### While the program runs
+
+Runtime errors are one line, `Line N:` and what went wrong, sometimes followed by a hint. Anything the program printed before the error stays printed.
+
+**Dividing by zero**: [`err_divide_by_zero.es`](../examples/programs/err_divide_by_zero.es)
+
+```
+Line 3: You divided by zero.
+```
+
+**Mixing up kinds of values**: [`err_subtract_text.es`](../tests/run/err_subtract_text.es)
+
+```
+Line 3: I can't subtract text from a number.
+```
+
+| Problem | Message (summary) |
+|---|---|
+| Arithmetic with text, yes/no, or nothing | "I can't add text to a number." With text, the hint suggests `and` or `followed by` |
+| Dividing or `mod` by zero | "You divided by zero." |
+| `and` between two numbers, or between yes/no and text | explains, and suggests `plus` or `as text` |
+| `or` / `not` without yes/no values | says which side wasn't yes or no |
+| Ordering text against a number (`1 is less than "2"`) | "I can't compare a number with text." with a hint to use `as a number` |
+| `as a number` on text that isn't a number | "I can't turn "12abc" into a number." |
+| `length of` something that isn't text | "I can only find the length of text, but this is a number." |
+| A file that can't be read or written | "I couldn't read the file "nope.txt": it doesn't exist." |
+| A file name that isn't text | "The name of a file has to be text, but this is a number." |
+
+Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).
+
+## Coming soon
+
+**Ambiguous blocks.** Blocks (`if`, loops, functions; coming soon) will follow the same rule as everything else: if a sentence could be read in more than one way, the compiler stops and lists the readings.
+
+**Source lines in runtime errors.** Runtime errors will show the line of your program and point at the part that failed, like compile errors do.

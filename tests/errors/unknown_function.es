@@ -1,0 +1,1 @@
+say greet using "Ada"

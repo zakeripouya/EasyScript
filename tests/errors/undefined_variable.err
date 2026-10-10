@@ -1,1 +1,4 @@
-Error: Variable not found for y
+Line 1: I don't know anything called "y".
+    say y
+        ^
+Make it first, like "let y be 0".

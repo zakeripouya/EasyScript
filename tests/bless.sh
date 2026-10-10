@@ -33,14 +33,26 @@ run_es() {
     (cd "$WORK/cwd" && "$ES" "$1" "$2") >"$WORK/stdout" 2>"$WORK/stderr"
 }
 
-# bless_run DIR: programs that must run successfully; stdout goes to NAME.out.
+# bless_run DIR: programs run with NAME.in (if present) as input; stdout goes
+# to NAME.out. Exit 1 writes stderr to NAME.err (a runtime error); exit 0
+# removes NAME.err.
 bless_run() {
     for src in "$1"/*.es; do
         [ -e "$src" ] || continue
-        if run_es run "$src"; then
+        input="${src%.es}.in"
+        [ -f "$input" ] || input=/dev/null
+        rm -rf "$WORK/cwd"
+        mkdir "$WORK/cwd"
+        (cd "$WORK/cwd" && "$ES" run "$src") <"$input" >"$WORK/stdout" 2>"$WORK/stderr"
+        status=$?
+        if [ $status -eq 0 ] && [ ! -s "$WORK/stderr" ]; then
             cp "$WORK/stdout" "${src%.es}.out"
+            rm -f "${src%.es}.err"
+        elif [ $status -eq 1 ]; then
+            cp "$WORK/stdout" "${src%.es}.out"
+            cp "$WORK/stderr" "${src%.es}.err"
         else
-            warn "${src#$ROOT/}" "it no longer runs successfully, so no .out can make it pass:
+            warn "${src#$ROOT/}" "exit status $status (or output on stderr after success), which no golden file can make pass:
 $(sed 's/^/    /' "$WORK/stderr")"
         fi
     done
@@ -80,13 +92,17 @@ bless_run "$ROOT/tests/run"
 bless_errors "$ROOT/tests/errors"
 bless_dump tokens "$ROOT/tests/tokens" out
 bless_dump ast "$ROOT/tests/ast" out
-bless_run "$ROOT/examples/legacy"
+bless_run "$ROOT/examples/programs"
 bless_dump tokens "$ROOT/examples/lexer" tokens
 bless_dump ast "$ROOT/examples/parser" ast
 
 cd "$ROOT"
 echo "Golden files changed (review with git diff before committing):"
-git --no-pager diff --stat -- tests examples
+changed=$(git ls-files --modified --deleted -- tests examples | grep -E '\.(out|err|tokens|ast)$' | sort -u)
+if [ -n "$changed" ]; then
+    # shellcheck disable=SC2086
+    git --no-pager diff --stat -- $changed
+fi
 untracked=$(git ls-files --others --exclude-standard -- tests examples | grep -E '\.(out|err|tokens|ast)$')
 if [ -n "$untracked" ]; then
     echo "New files:"

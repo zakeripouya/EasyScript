@@ -39,11 +39,11 @@ Docs must never show syntax as working before it does. Mark planned features "Co
 | `tests/unit/*.c` | C functions `static void test_x(TestContext *t)`, registered in the file's `*_tests` function | `CHECK`, `CHECK_SIZE`, `CHECK_STR` |
 | `tests/tokens/` | `NAME.es` plus `NAME.out`, and `NAME.err` for error cases | `easyscript tokens` |
 | `tests/ast/` | `NAME.es` plus `NAME.out`, and `NAME.err` for error cases | `easyscript ast` |
-| `tests/run/` | `NAME.es` plus `NAME.out` | `easyscript run` (stdout, exit status 0) |
-| `tests/errors/` | `NAME.es` plus `NAME.err` | `easyscript emit` (must fail; exact stderr) |
+| `tests/run/` | `NAME.es` plus `NAME.out`; optional `NAME.in` (input) and `NAME.err` (runtime error) | `easyscript run`: stdout must match; with `.err` it must exit 1 with exactly that stderr, otherwise exit 0 with empty stderr |
+| `tests/errors/` | `NAME.es` plus `NAME.err` | `easyscript emit` (must fail to compile; exact stderr). Mostly checker errors |
 | `examples/lexer/` | `NAME.es` plus `NAME.tokens`, and `NAME.err` for error cases | `easyscript tokens` |
 | `examples/parser/` | `NAME.es` plus `NAME.ast`, and `NAME.err` for error cases | `easyscript ast` |
-| `examples/legacy/` | `NAME.es` plus `NAME.out` | `easyscript run` |
+| `examples/programs/` | like `tests/run` | `easyscript run` |
 | CLI checks | the end of `tests/run.sh` | |
 
 Expected-output files must match **byte for byte**. When you change a message on purpose, update its expected file in the same commit.
@@ -67,7 +67,8 @@ Never bless just to make the suite go green. A blessed regression becomes the ne
 - **Deterministic parsing:** never guess what a sentence means. If it's ambiguous or doesn't match a pattern, report an error with the line, what was expected, and concrete suggestions.
 - Keywords are case-insensitive, and `the`/`a`/`an` are ignored. No word is reserved; the parser decides meaning from context.
 - Error messages are plain English. See [docs/errors.md](docs/errors.md).
-- The legacy uppercase syntax (`MAKE A VARIABLE`, `PRINT #`) is being replaced. Don't extend it.
+- Runtime errors are plain English too, with the line number ("Line 8: You divided by zero."). They're written in `runtime/es_runtime.h`.
+- `runtime/es_runtime.h` is embedded into the compiler at build time (`tools/embed.c` generates `build/gen/es_runtime_embed.c`; never edit that file). Generated programs must compile without warnings under `-Wall -Wextra -Wpedantic`.
 
 ## Code organization
 

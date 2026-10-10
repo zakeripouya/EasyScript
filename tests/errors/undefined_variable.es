@@ -1,1 +1,1 @@
-PRINT # y
+say y

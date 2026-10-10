@@ -8,7 +8,7 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 - A **colon followed by an indented block** opens a block (loops, conditionals, functions). The block ends when indentation returns to the outer level.
 - Keywords are **case-insensitive**.
 - `the`, `a`, `an` are **filler words**: the lexer/parser ignores them everywhere outside string literals. So they can never be used as identifiers.
-- **The old uppercase syntax (`MAKE A VARIABLE x ASSIGN 10`, `PRINT # x`, `FILE OPEN f`) is being replaced.** Don't add features to it or extend it. New work targets the sentence syntax. The README and the `.code` sample files still show the old syntax.
+- The 2024 uppercase prototype syntax (`MAKE A VARIABLE x ASSIGN 10`, `PRINT # x`) and its pipeline have been **removed**. Only the sentence syntax exists. `old/*.code` are historical files that no longer compile.
 
 ### Lexical rules (implemented in `src/front/lexer.c`)
 
@@ -94,6 +94,26 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 - **Leftovers:** forms ending in a name or keyword (`add`, `subtract`, `ask`, `read`, `stop`) report extra words as "I expected the sentence to end after …". Others use the expression leftover reporting. Statements with errors are left out of the returned `Block`.
 - **Quoting in messages:** `parser_quoted` renders text spans as `the text "…"` to avoid nested quotes.
 
+### Runtime semantics (implemented in `runtime/es_runtime.h`)
+
+- **Values:** `EsValue` is tagged: nothing, number (`double`), text (pointer and length, always NUL-terminated), or yes/no. Variables are dynamically typed; there are no static types yet.
+- **Printing:** whole numbers with `|x| < 1e15` print with `%.0f` (no decimals, never `-0`). Other numbers use `%.15g`, so `0.1 plus 0.2` prints `0.3`. NaN prints `not a number`; infinities print `infinity` and `-infinity`. yes/no prints `yes`/`no`, and nothing prints `nothing`.
+- **Arithmetic** (`plus minus times divided by mod`, unary `-`) needs two numbers. `plus` with text is an error that hints at `and`/`followed by`. Division or `mod` by zero gives "You divided by zero."; `mod` is `fmod`.
+- **`followed by`** turns both sides into text and joins them.
+- **`and`:** if the left side is `no`, the answer is `no` without evaluating the right side (codegen does the short-circuit). Otherwise:
+  - two yes/no values: the right side's value
+  - yes/no with anything else: an error, with an "as text" hint when text is involved
+  - text on either side (with text, a number or nothing): join, converting to text
+  - anything else (e.g. two numbers): an error, with a "use plus" hint for numbers
+- **`or`** short-circuits on a `yes` on the left. Both sides must be yes/no. **`not`** needs yes/no.
+- **Comparisons:** equal / not equal work on any values (different kinds are never equal, and numbers compare exactly). The ordering comparisons need two numbers or two texts (texts compare bytewise); anything else is an error, with an "as a number" hint for text against a number.
+- **Conversions:** `as a number` accepts optional surrounding spaces, an optional `-`, digits, and optionally `.digits`; anything else is an error. `as text` always works. `length of` counts UTF-8 characters and needs text.
+- **Files:** `write`/`append` write the value's text plus `\n`. Reading a file (`read file`, `contents of file`) strips one final `\n` (and a `\r` before it). A file name must be text. I/O errors read like `I couldn't read the file "x": it doesn't exist.`
+- **Input:** `ask` prints its prompt without a newline, reads one line (stripping `\n`/`\r\n`), and gives empty text at end of input.
+- **`stop the program`** flushes and exits 0. Runtime errors flush stdout, print `Line N: message` (plus an optional hint line) to stderr, and exit 1.
+- **Memory:** runtime text comes from a static block allocator, freed at exit via `atexit`. That's fine while programs have no loops; revisit when loops arrive.
+- **The runtime is header-only** (all `static`) and silences `-Wunused-function` with a GCC/Clang pragma. Generated programs must compile cleanly under `-std=c11 -Wall -Wextra -Wpedantic`.
+
 ## Parser rules
 
 - The parser must be **deterministic**. Never guess what the user meant, and never use heuristics, "best match", or silent fallbacks.
@@ -102,7 +122,7 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 
 ## Compiler implementation rules
 
-- **Arena allocator for all compiler memory** (tokens, AST nodes, strings, symbol tables). No per-object `malloc`/`free` and no `strdup`. Free the whole arena once at the end.
+- **Arena allocator for all compiler memory** (tokens, AST nodes, strings, symbol tables). No per-object `malloc`/`free` and no `strdup`. Free the whole arena once at the end. The compiler is leak-free: verified with macOS `leaks --atExit` on every command, including error paths and the shell. Keep it that way.
 - **No fixed-size buffers.** No `char buf[256]`, `VarMap var_map[100]`, `char line[1024]`, and so on. Grow storage dynamically from the arena. The same goes for generated C: don't emit `char x[256]` for strings.
 - Write portable C11 (`-std=c11 -Wall -Wextra`). Invoke the C compiler as `cc`, not `gcc`.
 - Report compile errors with source positions rather than calling `exit(1)` deep inside the lexer or parser.
@@ -145,14 +165,15 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 - `tests/ast/NAME.es` plus `NAME.out`, and an optional `NAME.err`: the same as `tests/tokens`, but run with `easyscript ast`.
 - `tests/tokens/NAME.es` plus `NAME.out`, and an optional `NAME.err`: run with `easyscript tokens`. Stdout must match `NAME.out`. If `NAME.err` exists, the run must exit 1 with exactly that stderr. Otherwise it must exit 0 with empty stderr. Name error cases `err_*`.
 - `tests/unit/*.c`: C unit tests for `src/common` and `src/front`. Don't use `a`, `an` or `the` as variable names in `.es` fixtures, because the lexer drops them, linked into `build/*/unit_tests`. Each test is `static void test_x(TestContext *t)`, registered with `unit_run` in that file's `*_tests(TestRunner *)` function. Declare that function in `unit.h` and call it from `main` in `unit.c`. Use `CHECK`, `CHECK_SIZE`, and `CHECK_STR`. `t->arena` is fresh for each test.
-- `tests/run/NAME.es` plus `NAME.out`: the program is compiled and run with `easyscript run`. Stdout must match `NAME.out` byte for byte, and the exit status must be 0.
-- `tests/errors/NAME.es` plus `NAME.err`: compiled with `easyscript emit`. It must exit non-zero, and stderr must match `NAME.err` exactly.
+- `tests/run/NAME.es` plus `NAME.out`: the program is compiled and run with `easyscript run`, with stdin from `NAME.in` if it exists (otherwise `/dev/null`). Stdout must match `NAME.out`. If `NAME.err` exists, the program must exit 1 with exactly that stderr; these are the runtime-error tests, named `err_*`. Otherwise it must exit 0 with empty stderr.
+- `tests/errors/NAME.es` plus `NAME.err`: compiled with `easyscript emit`. It must exit non-zero, and stderr must match `NAME.err` exactly. Mostly checker errors, plus one parse error showing that the checker is skipped.
+- **README sync checks:** the end of `tests/run.sh` checks that the README's "A first program" block equals `examples/programs/first_program.es`, and its "A taste of what's coming" block equals `examples/lexer/taste.es`.
 - CLI behavior (modes, usage errors, no files left in the cwd, temp-dir cleanup) is checked at the bottom of `tests/run.sh`. Add a check there when changing the CLI.
-- `examples/legacy/NAME.es` plus `NAME.out` (run like `tests/run`), `examples/lexer/NAME.es` plus `NAME.tokens`, and `examples/parser/NAME.es` plus `NAME.ast` (both with an optional `.err`) back the docs. `tests/run.sh` fails if any other folder or a loose `.es` appears under `examples/`.
+- `examples/programs/NAME.es` plus `NAME.out` and optional `.in`/`.err` (run like `tests/run`), `examples/lexer/NAME.es` plus `NAME.tokens`, and `examples/parser/NAME.es` plus `NAME.ast` (both with an optional `.err`) back the docs. `tests/run.sh` fails if any other folder or a loose `.es` appears under `examples/`.
 - `tests/run.sh` runs the unit binary, then the run/errors/tokens tests and the examples (each in an empty scratch directory, via the shared `check_run`/`check_errors`/`check_dump` functions), then the CLI checks. It prints PASS/FAIL per test plus one summary and exits 1 if anything fails. The `ES` and `UNIT` env vars choose which binaries are tested.
 - Expected files record current behavior, including known quirks (for example, the blank line after `FILE READ` in `run/file_io.out`). When fixing a quirk, update the expected file in the same commit.
 - **`make bless`** (`tests/bless.sh`) rewrites every golden file from the current output, then shows `git diff --stat` and any new expected files.
-  - It covers `tests/run`, `tests/errors`, `tests/tokens`, `tests/ast`, `examples/legacy`, `examples/lexer` and `examples/parser`.
+  - It covers `tests/run`, `tests/errors`, `tests/tokens`, `tests/ast`, `examples/programs`, `examples/lexer` and `examples/parser`. Run tests use `.in`; exit 1 writes `.err`.
   - In the tokens/ast folders, `.err` is written on failure and removed on success.
   - It exits 1 with "NOT BLESSED" when no golden file could make a test pass.
   - **Only bless after confirming the new output is intended.** First read every failing diff from `make test`. Bless only if each difference is a deliberate change. Then review `git diff` before committing, and say in the summary which expected files changed and why.
@@ -165,14 +186,14 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 1. Update the status in `README.md` (the Status table and "Coming soon" list, and the roadmap table if a phase changes).
 2. Update `docs/vocabulary.md` with every new or changed word, sentence pattern and synonym, each with an example and its status.
 3. Update the matching chapter of `docs/language-guide.md`, including its status label.
-4. Add or update an example in `examples/` with its expected output (`examples/lexer/NAME.tokens`, `examples/parser/NAME.ast`, each with an optional `.err`, or `examples/legacy/NAME.out`; new runnable examples get their own folder plus a runner in `tests/run.sh`).
+4. Add or update an example in `examples/` with its expected output (`examples/lexer/NAME.tokens`, `examples/parser/NAME.ast`, each with an optional `.err`, or `examples/programs/NAME.out` with optional `.in`/`.err` for anything that runs).
 5. Add an entry to `CHANGELOG.md` under `[Unreleased]`.
 
 **A feature isn't done until its docs and example exist and pass `make test`.** Also:
 
 - **Never present unimplemented syntax as working.** Anything that doesn't compile today is labelled "Coming soon" (a proposal whose wording may change). Move an item from the planned-examples list in `docs/roadmap.md` into `examples/` when it ships, and tick its roadmap checkbox.
 - **Error text in the docs is copied from tested `.err` files.** If a message changes, update `docs/errors.md` along with the expected file.
-- Expression vocabulary is now implemented and documented as "Available (parser)". Simple statements are implemented too. The **block** patterns in `docs/vocabulary.md` (`if … otherwise`, `repeat …`, `for each`, `to NAME using …`, `give back`, `stop.`/`skip.`, `file X exists`) are still **proposals, not decisions**. When implementing them, either implement them as written or change the docs in the same commit. Don't let the docs and the parser disagree.
+- Expressions and simple statements are implemented and documented as "Available" (calls and `it` as "Parses only"). The **block** patterns in `docs/vocabulary.md` (`if … otherwise`, `repeat …`, `for each`, `to NAME using …`, `give back`, `stop.`/`skip.`, `file X exists`) are still **proposals, not decisions**. When implementing them, either implement them as written or change the docs in the same commit. Don't let the docs and the parser disagree.
 - Architecture or workflow changes also update `docs/architecture.md` and `CONTRIBUTING.md`. The README's taste program must stay identical to `examples/lexer/taste.es`.
 
 ## Keeping this file current
@@ -181,46 +202,80 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 
 ## Current state of the repo
 
-The code is an early prototype of the old syntax. It doesn't follow the rules above yet:
+Phase 1 is in progress. Programs in the sentence syntax compile to C and run; blocks (`if`, loops, functions) don't exist yet.
 
-- **Layout:** partly migrated. `src/common/` (arena, util, diag, ast) and `src/front/` (lexer, parse_util, parse_expr, parse_stmt) exist. `main.c` is still at the repo root. The old `lexer`, `parser`, and `codegen` still sit flat in `src/` and still drive `run`/`build`/`emit`, through `src/legacy.{c,h}`. There's no `back/`, `runtime/`, block statements (`if`/loops/functions), or checker yet. The old AST is defined in the old `src/parser.h`.
-- **Two front ends:** the new lexer and parser are used only by `easyscript tokens` and `easyscript ast`. The old lexer, parser and codegen (`src/lexer.c` etc.) drive `run`, `build` and `emit`. Remove the old lexer, parser, codegen and `src/legacy.*` once the new parser replaces them. `legacy.c` exists so that `main.c` never includes both lexers' headers, since both define `Token`. The old files also export unprefixed symbols (`program`, `advance`, `eat`, `create_parser`, `get_id`, …), so every new extern symbol uses a `lex`/`parse_`/`parser_`/`ast_`/`diag_`/`sb_`/`vec_`/`arena_` prefix to avoid link clashes.
-- **Stage boundaries:** there's no checker, so codegen does name resolution itself (looking up undefined variables and files). `main.c` emits the C prologue and epilogue (`#include`, `int main() {`) rather than leaving that to codegen.
-- **Error reporting:** only the new lexer and parser (`tokens`/`ast`) use `diag`. The old lexer, parser, and codegen still print one `Error: ...` line and `exit(1)`. The `tests/errors/*.err` files expect that old format, so update them when each stage switches to `diag`.
-- **Global mutable state:** `src/codegen.c` has `var_map[100]`, `var_map_index`, and `var_counter`. `main.c` has file-scope `arena` and `temp_*` path pointers, which exist because the `atexit` cleanup can't take arguments. Both should move into context structs. For `main.c`, that requires errors to return to the driver instead of calling `exit(1)`, so cleanup can run explicitly. (A hard crash such as a sanitizer abort skips `atexit` and leaves the temp dir behind.)
-- **Non-static helpers:** `lexer.c`'s `get_id` and `codegen.c`'s `sanitize_filename`/`get_var_id`/`is_var_string`/`add_var` are extern without being in a header. The old `Lexer`, `Parser`, and `AST` structs are all public.
+- **Layout:** `main.c` (the driver) is still at the repo root and should move to `src/main.c`. `src/common/` holds arena, util, diag and ast. `src/front/` holds lexer, parse_util, parse_expr, parse_stmt and check. `src/back/` holds codegen_c. `runtime/es_runtime.h` is the runtime, and `tools/embed.c` is a build tool.
+- **Pipeline** (`generate_c` in `main.c`, shared by `run`/`build`/`emit`):
+  1. Lex and parse.
+  2. If there were no errors, run `check_program`.
+  3. If there are any diagnostics, print them all and exit 1.
+  4. Otherwise run `codegen_c` and write `program.c` to the temp dir.
 
-- `main.c`: the CLI. `run FILE` / `build FILE -o OUT` / `emit FILE` / `tokens FILE` / `ast FILE`, `help`, and the REPL with no arguments. Unknown commands and bad arguments print usage and exit 2. Each invocation creates one `mkdtemp` directory under `$TMPDIR` (or `/tmp`) holding `program.c`, `program`, and the REPL's `session.es`, and an `atexit` handler removes it, including on compile errors. Nothing is written to the cwd except `build`'s `-o` output. `cc -O2` is invoked with `fork`/`execvp` (no shell). `run` returns the program's exit status (128+signal if it was killed). The REPL appends each line to the session file and reruns all of it through `argv[0] run`. Uses `getline`, so there's no line-length limit.
-- `src/common/arena.{c,h}`: arena allocator (`arena_new`, `arena_alloc` returns zeroed, aligned memory, `arena_strdup`, `arena_sprintf`/`arena_vsprintf`, `arena_free`). It grows in 64 KiB blocks and gives oversized requests their own block. Used by `main.c`, `util`, and `diag`. The lexer, parser and codegen still use `malloc`/`strdup` and need migrating.
-- `src/common/util.{c,h}`: `StrBuf` string builder (`sb_init`, `sb_append`, `sb_append_n`, `sb_append_char`, `sb_append_repeat`, `sb_appendf`, `sb_vappendf`). It grows from the arena and `data` is always NUL-terminated. Also `Vec(T)`, `vec_push(arena, &v, x)`, and `vec_last(&v)` dynamic arrays (a zero-initialized `Vec` is empty), `edit_distance` (byte-wise, case-sensitive Levenshtein), and `PRINTF_LIKE` for format checking.
-- `src/common/diag.{c,h}`: opaque `Diag` context made by `diag_new(arena, source, len)`. Report with `diag_error(d, span, fmt, ...)`, then `diag_note(d, fmt, ...)` for help lines attached to the latest error. `Span` is a byte `{offset, length}`. `diag_line` gives the 1-based line, `diag_count` the number of errors, and `diag_render` (to a `StrBuf`) / `diag_print` (to a `FILE *`) output every error in report order, separated by blank lines, in this format: `Line N: message`, then the source line indented 4 spaces, then carets under the span, then the notes. Carets are clamped to the first line of the span, with at least one. Tabs are copied into the padding, UTF-8 is counted per character, and a trailing `\r` is dropped. "Did you mean" suggestions are written by the caller as notes.
-- `src/front/lexer.{c,h}`: the new lexer, following the lexical rules above. The public API is `lex(arena, diag, source, len)`, which returns a `TokenList` that always ends with `TOK_EOF`, plus `token_kind_name` and `tokens_dump`. Lexer state is a private struct in the `.c`. It uses no `malloc`, no fixed buffers and no globals. It reports every error to `diag` and keeps going. `easyscript tokens FILE` prints `KIND line:col text` (strings re-escaped and quoted) to stdout, and any errors to stderr afterwards, exiting 1 if there were errors. It was fuzzed once with 3,000 random and mutated inputs under ASan/UBSan with no findings (not part of the suite).
-- `src/common/ast.{h,c}`: `Expr` (tagged union; kinds ERROR, NUMBER (text plus `is_decimal`), TEXT, BOOLEAN, NOTHING, IT, NAME, CALL (`Vec(Expr *) args`), LENGTH, FILE_CONTENTS, UNARY, BINARY, CONVERT), `Stmt` (LET, SET, CHANGE + `ChangeOp`, SAY, ASK, WRITE_FILE, APPEND_FILE, READ_FILE, STOP; with `verb` span and `Name {text, pos}` for variable names), and `Block` (`Vec(Stmt *)`). Every node has a `SourcePos` and is allocated from the arena via `ast_new_expr`/`ast_new_stmt`. It also has `ast_pos_join`, the op-name functions, and `ast_dump_block`, which prints `label [line:col]` with two spaces of indentation per level (`easyscript ast`). Statement labels are e.g. `let total`, `add total`, `say`, `ask, call the answer name`, `write to file` (children: text, then path), `read file, call it notes`, `stop the program`.
-- `src/front/parse.h` (public `parse_program`), `parse_internal.h` (the `Parser` context, the `Phrase` table type, helpers), `parse_util.c` (tokens, phrase matching with missing-word errors, error helpers, leftover reporting with edit-distance operator suggestions), `parse_expr.c` (the grammar), and `parse_stmt.c` (statements and the program loop). The expression parser and the statement parser were each fuzzed once with 3,000 inputs under ASan/UBSan, with no findings.
-- `src/legacy.{c,h}`: `legacy_compile(source, out)` runs the old lexer, parser and codegen, writing the body of `main()`.
-- `src/lexer.{c,h}` (old): case-sensitive uppercase keywords, `#` token, and `malloc(256)` buffers for identifiers, numbers, and strings. A token longer than 255 characters overflows the heap. ASan confirms this in `get_id`, and the release build corrupts memory silently. Error positions are byte offsets, not line:column.
-- `src/parser.{c,h}`: recursive descent over a linked list of statements (`AST.right`). `AST_IF`, `AST_FOR_LOOP`, `AST_FUNCTION`, and `AST_CALL` are declared but not implemented. Errors call `exit(1)`.
-- `src/codegen.{c,h}`: global fixed `var_map[100]`, and variables are renamed to `name_N`. Redeclaring a variable makes later reads resolve to the *first* declaration (lookup returns the first match). Generated string variables are `char[256]`.
-- `Makefile`: `CC = cc`, `-Wall -Wextra -Isrc`, no `-std=c11` yet. The old lexer and parser use `strdup`, which strict C11 hides on glibc, so add the flag once they're rewritten. The new `src/common` and `tests/unit` code is already clean under `-std=c11 -Wpedantic`. Includes are written relative to `src/`, for example `#include "common/diag.h"`. Sources are grouped as `COMMON_SRC`, `FRONT_SRC` (also linked into the unit tests) and `LEGACY_SRC`. `sb_append_quoted` (util) is shared by the token and AST dumps. `edit_distance` is optimal string alignment, so a swap of two adjacent letters counts as 1. Objects go under `build/release/` (`-O2`) or `build/debug/` (`-g -O1 -fsanitize=address,undefined -fno-sanitize-recover=all`), mirroring the source path. Header dependencies come from `-MMD`. `./easyscript` is linked at the repo root. Add new `.c` files to the matching `*_SRC` variable; files in `tests/unit/` are picked up by wildcard. It builds with zero warnings in both modes, so keep it that way. `main.c` defines `_XOPEN_SOURCE 700` and `_DARWIN_C_SOURCE` for `mkdtemp`, `getline`, `fork`, and so on.
-- `tests/`: 40 unit tests (arena, StrBuf incl. quoting, Vec, edit distance, diag formatting, lexer spans/decoding/recovery/filler, parser spans/recovery/statements), 31 AST tests (16 valid: 7 `stmt_*` covering every statement form and synonym, plus 9 expression tests converted to `say` statements; 15 `err_*`), 21 token tests (14 valid, 7 `err_*`, covering every token kind, indentation edge cases, CRLF, no trailing newline, a 1000-character identifier, and each lexer error message), 4 run tests, 5 error tests, and 28 examples, plus CLI checks in `run.sh`. The run and error tests are written in the old syntax because that's all the compiler accepts today. Rewrite them when the syntax changes.
-- **Docs:** `README.md` (front page: vision, taste, honest status, roadmap, design rules, build/CLI, pipeline, links, "License: TBD"). Also `docs/language-guide.md` (chapters 0–4 and 8 available (lexer/parser); chapters 5–7 and `file X exists` coming soon; legacy appendix), `docs/vocabulary.md` (every word and pattern, with status Available (parser) / Available (lexer) / Coming soon / Legacy), `docs/errors.md`, `docs/architecture.md`, `docs/roadmap.md` (phase checklists and planned examples), `CHANGELOG.md`, `CONTRIBUTING.md`, and `examples/README.md`.
-- **Examples:** `examples/parser/` has 15 files, all written as statements: `variables`, `output`, `input`, `files`, `arithmetic`, `comparisons`, `logic`, `text`, `calls`, and 6 `err_*`. `examples/lexer/` has 10 new-syntax files: `taste` (the README program), `sentences`, `text`, `numbers`, `comparisons`, `blocks`, `comments`, and 3 `err_*` files. `examples/legacy/` has 3 runnable prototype programs: `print_text`, `variables`, `files`. No license has been chosen; the user will pick one.
-- `old/`: old-syntax `.code` examples, kept for reference only. `attempt1.code` and `script.code` compile and run. `combined_code.code` fails on `PRINT # 3` (printing a literal number isn't supported), `attempt1_src.code` fails because `FILE WRITE myfile HelloWorld` treats `HelloWorld` as an undefined variable, and `logan.code` uses an unsupported `FOR … END FOR` form.
-- `.gitignore` covers build outputs (`build/`, `easyscript`, stray `*.o`/`*.d`) `myfile*` (created when the examples are run from the repo root), and `.idea/` (CLion). Never commit these. `.gitattributes` marks `tests/tokens/**` as `-text` so git never rewrites their line endings.
+  `cc -O2 program.c -o OUT -lm` is run via `fork`/`execvp`, and `run` returns the program's exit status.
+- **Stage boundaries:** these now follow the target design. Codegen trusts the checker and reports nothing; it asserts if it ever sees `EXPR_CALL`, `EXPR_IT` or `EXPR_ERROR`. `main.c` still has file-scope `arena` and `temp_*` pointers for its `atexit` cleanup (the only global state in the compiler).
+- `main.c`: the CLI. `run FILE` / `build FILE -o OUT` / `emit FILE` / `tokens FILE` / `ast FILE`, and `help`. Unknown commands and bad arguments print usage and exit 2.
+  - Each invocation creates one `mkdtemp` directory under `$TMPDIR` (or `/tmp`), holding `program.c`, `program` and `session.es`. `atexit` removes it.
+  - **The shell** (no arguments) keeps the session in a `StrBuf`. Each line is appended, written to `session.es` and run through `argv[0] run`, and kept only if that exits 0. So earlier output and `ask` prompts repeat on every line. `exit` or `quit` leaves.
+- `src/common/arena.{c,h}`: arena allocator (`arena_new`, `arena_alloc` returns zeroed, aligned memory, `arena_strdup`, `arena_sprintf`/`arena_vsprintf`, `arena_free`). It grows in 64 KiB blocks and gives oversized requests their own block. All compiler memory comes from here.
+- `src/common/util.{c,h}`: `StrBuf` (`sb_*`, including `sb_append_quoted`), `Vec(T)` with `vec_push`/`vec_last`/`vec_pop`, `edit_distance` (optimal string alignment, so an adjacent swap counts 1), and `PRINTF_LIKE`.
+- `src/common/diag.{c,h}`: opaque `Diag` made by `diag_new(arena, source, len)`. Report with `diag_error(d, span, fmt, ...)`, then `diag_note(d, fmt, ...)` for help lines attached to the latest error. `Span` is a byte `{offset, length}`. `diag_line` gives the 1-based line and `diag_count` the number of errors. `diag_render` (to a `StrBuf`) and `diag_print` (to a `FILE *`) output every error in report order, separated by blank lines: `Line N: message`, then the source line indented 4 spaces, then carets under the span, then the notes. Carets are clamped to the first line of the span, with at least one. Tabs are copied into the padding, UTF-8 is counted per character, and a trailing `\r` is dropped.
+- `src/common/ast.{h,c}`: `Expr` (kinds ERROR, NUMBER (text plus `is_decimal`), TEXT, BOOLEAN, NOTHING, IT, NAME, CALL, LENGTH, FILE_CONTENTS, UNARY, BINARY, CONVERT), `Stmt` (LET, SET, CHANGE + `ChangeOp`, SAY, ASK, WRITE_FILE, APPEND_FILE, READ_FILE, STOP, each with a `verb` span), `Name {text, pos}`, and `Block` (`Vec(Stmt *)`). Every node has a `SourcePos`. It also has `ast_dump_block` for `easyscript ast`.
+- `src/front/lexer.{c,h}`: `lex(arena, diag, source, len)` returns a `TokenList` that always ends with `TOK_EOF`; tokens carry a `filler` span. Also `token_kind_name` and `tokens_dump(tokens, source, out)`.
+- `src/front/parse.h`, `parse_internal.h`, `parse_util.c`, `parse_expr.c`, `parse_stmt.c`: the parser; see the grammar sections above. The expression and statement parsers were each fuzzed with 3,000 inputs under ASan/UBSan, with no findings.
+- `src/front/check.{c,h}`: `check_program(arena, diag, program)`. A `Checker` context holds `made` (names made so far, with lines) and `later` (all names the program makes, for "You make "x" later, on line N").
+  - **Making names:** `let` makes a name; making it twice is "You already made …" with a "set" hint. `ask` and `read file … and call it` make the name if it's new and silently reuse it otherwise. `set`/`change`/arithmetic statements and `EXPR_NAME` need an existing name.
+  - **Unknown names:** "I don't know anything called "x"." plus one note:
+    - "Did you mean "total"? You made it on line 1." for the single closest name (OSA distance, limit 1 for names of 3 or fewer characters, otherwise 2)
+    - a list when several are equally close
+    - "You make "x" later, on line N."
+    - otherwise "Make it first, like "let x be 0"."
+  - **Not available yet:** `EXPR_CALL` ("I don't know a function called …") and `EXPR_IT` are errors.
+- `src/back/codegen_c.{c,h}`: `codegen_c(arena, program, out)` writes the embedded runtime (the `es_runtime_source` byte array), `static EsValue es_v_<name>;` globals, and `int main(void)`.
+  - **Names:** variables are mangled to `es_v_` plus the name, with `_` written as `__` and `'` as `_q`.
+  - **Temporaries:** the left operand of every binary operation, and the text of file writes, go into temporaries `es_t1…` declared at the top of `main`. This forces left-to-right evaluation.
+  - **Short-circuit:** `and`/`or` compile to `(t = L, es_is_no(t) ? t : es_and(line, t, R))`, and `or` uses `es_is_yes`.
+  - **Literals:** numbers are re-printed with `%.17g`, or `HUGE_VAL` if infinite. Text uses octal escapes and `\?`.
+  - **Lines:** each statement gets a `/* line N */` comment, and runtime calls receive the node's line.
+  - **Checked:** fuzzed once, with 171 mutated programs that passed the checker. All compiled with `-Wall -Wextra -Werror`.
+- `runtime/es_runtime.h`: see "Runtime semantics" above.
+- `Makefile`: `CC = cc`, `-std=c11 -Wall -Wextra -Isrc`.
+  - **Source groups:** `COMMON_SRC`, `FRONT_SRC` (also linked into the unit tests), `BACK_SRC`, and `GEN_RUNTIME`, which is `build/gen/es_runtime_embed.c` generated by `build/tools/embed` from `runtime/es_runtime.h`. Never edit generated files.
+  - **Builds:** objects go under `build/release/` (`-O2`) or `build/debug/` (ASan/UBSan, `-fno-sanitize-recover=all`), with `-MMD` dependencies.
+  - **Targets:** `all`, `test`, `debug`, `test-debug` (leak checking left at the ASan default, which is on for Linux), `bless`, and `clean`.
+  - Zero warnings in both modes. `main.c` defines `_XOPEN_SOURCE 700` and `_DARWIN_C_SOURCE`.
+- `tests/`:
+  - 40 unit tests
+  - 31 AST tests (16 valid, 15 `err_*`)
+  - 21 token tests (14 valid, 7 `err_*`)
+  - 30 run tests (12 programs covering numbers, text, logic and short-circuiting, every comparison, variables, files, `ask` with and without input, `stop`, sentences and synonyms; plus 18 `err_*` runtime-error tests, including left-to-right error order)
+  - 10 compile-error tests (checker messages and one parse error)
+  - 33 examples, 2 README sync checks, and CLI checks
+- **Docs:**
+  - `README.md`: front page with "A first program" (runs, and is tested), "A taste of what's coming" (preview), honest status, roadmap with Notebook, design rules, build/CLI, pipeline, links, and "License: TBD".
+  - `docs/language-guide.md`: chapters 0–4 and 8 available; `if`, loops, functions and `file X exists` coming soon.
+  - `docs/vocabulary.md`: statuses Available / Parses only (calls, `it`) / Coming soon.
+  - Also `docs/errors.md` (lexer, parser, checker and runtime errors), `docs/architecture.md`, `docs/roadmap.md`, `CHANGELOG.md`, `CONTRIBUTING.md` and `examples/README.md`.
+- **Examples:**
+  - `examples/programs/` (8 runnable): `hello`, `first_program`, `variables`, `text`, `logic`, `ask_name` (+ `.in`), `files`, `err_divide_by_zero`.
+  - `examples/parser/` (15): syntax-tree demos, many using names they never make.
+  - `examples/lexer/` (10), including `taste`.
+- No license has been chosen; the user will pick one.
+- `old/`: the 2024 prototype `.code` files. Historical only; they no longer compile.
+- `.gitignore` covers build outputs (`build/`, `easyscript`, stray `*.o`/`*.d`), `myfile*`, and `.idea/` (CLion). `.gitattributes` marks `tests/tokens/**` as `-text`.
 
 ## Build
 
 ```sh
-make                                  # builds ./easyscript and build/release/unit_tests (no warnings expected)
-make test                             # builds, then runs tests/run.sh (unit + program + error + CLI tests)
+make                                  # builds ./easyscript (plus build/tools/embed and build/release/unit_tests); no warnings expected
+make test                             # builds, then runs tests/run.sh (unit, tokens, ast, run, errors, examples, docs, CLI)
 make debug                            # ASan/UBSan build in build/debug/
-make test-debug                       # full suite against the sanitizer build (leak checks off for now)
+make test-debug                       # full suite against the sanitizer build
 make bless                            # rewrite golden files from current output, then show git diff --stat
-./easyscript run old/script.code      # compile + run (generated C/binary go to a temp dir)
+./easyscript run FILE.es              # compile + run (generated C/binary go to a temp dir)
 ./easyscript build FILE.es -o OUT     # compile to an executable at OUT
-./easyscript emit FILE.es             # print generated C to stdout
-./easyscript tokens FILE.es           # print the new lexer's tokens (errors to stderr, exit 1)
-./easyscript ast FILE.es              # print the syntax tree (statements and their expressions)
-./easyscript                          # REPL (old syntax; type EXIT to quit)
+./easyscript emit FILE.es             # print the generated C
+./easyscript tokens FILE.es           # print the lexer's tokens
+./easyscript ast FILE.es              # print the syntax tree
+./easyscript                          # interactive shell (exit or quit to leave)
 make clean
 ```

@@ -2,6 +2,7 @@
 #define _DARWIN_C_SOURCE  // macOS hides mkdtemp under strict feature macros
 
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +14,8 @@
 #include "common/util.h"
 #include "front/lexer.h"
 #include "front/parse.h"
-#include "legacy.h"
+#include "front/check.h"
+#include "back/codegen_c.h"
 
 static Arena *arena;
 
@@ -24,24 +26,9 @@ static char *temp_bin_path;
 static char *temp_session_path;
 
 static void print_banner(void) {
-    printf("========================================\n");
-    printf("           EasyScript Language          \n");
-    printf("========================================\n");
-    printf("Available Commands:\n");
-    printf("  PRINT ## - Print a value\n");
-    printf("  MAKE A FOR LOOP - Create a for loop\n");
-    printf("  MAKE A FUNCTION - Define a function\n");
-    printf("  IF - Conditional statement\n");
-    printf("  ELSE - Else statement\n");
-    printf("  VARIABLE DECLARATION - Declare a variable\n");
-    printf("  ASSIGNMENT - Assign a value to a variable\n");
-    printf("  FILE OPEN filename - Open a file\n");
-    printf("  FILE READ filename - Read from a file\n");
-    printf("  FILE WRITE filename content - Write to a file\n");
-    printf("  FILE CLOSE filename - Close a file\n");
-    printf("  CALL function_name - Call a function\n");
-    printf("  EXIT - Exit the interpreter\n");
-    printf("========================================\n");
+    printf("EasyScript interactive shell. Type a sentence, like: say \"hello\"\n");
+    printf("Each line is added to the session and the whole session runs again;\n");
+    printf("a line with an error isn't kept. Type exit to leave.\n");
 }
 
 static void print_usage(FILE *out) {
@@ -116,23 +103,31 @@ static char *read_file(const char *path, size_t *length_out) {
     return data;
 }
 
-// Compiles an EasyScript source file to C at temp_c_path.
+// Compiles an EasyScript source file to C at temp_c_path. On errors, prints
+// them all and exits with status 1.
 static void generate_c(const char *source_path) {
-    char *source = read_file(source_path, NULL);
+    size_t length;
+    char *source = read_file(source_path, &length);
+    Diag *diag = diag_new(arena, source, length);
+    TokenList tokens = lex(arena, diag, source, length);
+    Block *program = parse_program(arena, diag, source, &tokens);
+    if (diag_count(diag) == 0) {
+        check_program(arena, diag, program);  // only on a cleanly parsed program
+    }
+    if (diag_count(diag) > 0) {
+        diag_print(diag, stderr);
+        exit(1);
+    }
 
+    StrBuf code;
+    sb_init(&code, arena);
+    codegen_c(arena, program, &code);
     FILE *output_file = fopen(temp_c_path, "w");
     if (!output_file) {
         fprintf(stderr, "Error: Unable to create output file.\n");
         exit(1);
     }
-
-    fprintf(output_file, "#include <stdio.h>\n");
-    fprintf(output_file, "#include <stdlib.h>\n");
-    fprintf(output_file, "int main() {\n");
-    legacy_compile(source, output_file);
-    fprintf(output_file, "return 0;\n");
-    fprintf(output_file, "}\n");
-
+    fwrite(code.data, 1, code.len, output_file);
     if (fclose(output_file) != 0) {
         fprintf(stderr, "Error: Unable to write output file.\n");
         exit(1);
@@ -171,7 +166,7 @@ static int run_process(char *const argv[]) {
 }
 
 static int compile_c(const char *output_path) {
-    char *argv[] = {"cc", "-O2", temp_c_path, "-o", (char *)output_path, NULL};
+    char *argv[] = {"cc", "-O2", temp_c_path, "-o", (char *)output_path, "-lm", NULL};
     if (run_process(argv) != 0) {
         fprintf(stderr, "Error: Failed to compile the generated C code.\n");
         return 1;
@@ -244,14 +239,20 @@ static int cmd_run(const char *source_path) {
     return status < 0 ? 1 : status;
 }
 
+static bool write_session(const StrBuf *session) {
+    FILE *file = fopen(temp_session_path, "w");
+    if (!file) return false;
+    fwrite(session->data, 1, session->len, file);
+    return fclose(file) == 0;
+}
+
+// Each line is tried together with the lines kept so far; it's kept only if
+// the whole session then compiles and runs without an error.
 static void interactive_shell(char *self) {
     print_banner();
     make_temp_dir();
-    FILE *session_file = fopen(temp_session_path, "w");
-    if (!session_file) {
-        printf("Error: Unable to create session file.\n");
-        return;
-    }
+    StrBuf session;
+    sb_init(&session, arena);
 
     char *line = NULL;
     size_t cap = 0;
@@ -262,28 +263,24 @@ static void interactive_shell(char *self) {
         if (len < 0) {
             break;
         }
-
-        // Remove newline character from the end of the input
         if (len > 0 && line[len - 1] == '\n') {
-            line[len - 1] = '\0';
+            line[--len] = '\0';
         }
-
-        if (strcmp(line, "EXIT") == 0) {
+        if (strcmp(line, "exit") == 0 || strcmp(line, "quit") == 0) {
             break;
         }
 
-        // Append the line to the session file and rerun the whole session
-        fprintf(session_file, "%s\n", line);
-        fflush(session_file);
-
+        size_t kept = session.len;
+        sb_append_n(&session, line, (size_t)len);
+        sb_append_char(&session, '\n');
         char *argv[] = {self, "run", temp_session_path, NULL};
-        if (run_process(argv) != 0) {
-            printf("Error: Command execution failed.\n");
+        if (!write_session(&session) || run_process(argv) != 0) {
+            session.len = kept;  // drop the line
+            session.data[kept] = '\0';
+            printf("(That line wasn't kept.)\n");
         }
     }
-
     free(line);
-    fclose(session_file);
 }
 
 int main(int argc, char *argv[]) {

@@ -10,9 +10,26 @@ EasyScript is a programming language written in plain English sentences: the kin
 - **Compiled to C for speed.** No interpreter and no virtual machine. EasyScript generates C and hands it to your system's C compiler (`cc -O2`).
 - **Serious ambitions.** It starts with the core language. The goals after that are an EasyScript compiler written in EasyScript (self-hosting), then backend servers, and eventually an operating system written in EasyScript.
 
-## A taste
+## A first program
 
-This is what a small program is planned to look like:
+This runs today:
+
+```
+let name be "Ada".
+let total be 0.
+add 5 to total.
+increase total by 10.
+say "Hello, " and name and "! Your total is " and total and ".".
+```
+
+```
+$ ./easyscript run hello.es
+Hello, Ada! Your total is 15.
+```
+
+## A taste of what's coming
+
+This is what a slightly bigger program is planned to look like:
 
 ```
 note: Count down from 3, then greet someone.
@@ -28,30 +45,34 @@ to greet using name:
 greet using "Ada".
 ```
 
-> **Coming soon:** none of these sentences run yet. The new lexer already reads this program, and the test suite checks that it does ([`examples/lexer/taste.es`](examples/lexer/taste.es)). The exact wording of each sentence may still change before it ships; [docs/vocabulary.md](docs/vocabulary.md) tracks the proposals.
+> **Coming soon:** loops (`repeat while`) and functions (`to greet using name`) don't run yet. The lexer already reads this program, and the test suite checks that it does ([`examples/lexer/taste.es`](examples/lexer/taste.es)). The wording of planned sentences may still change before they ship; [docs/vocabulary.md](docs/vocabulary.md) tracks the proposals.
 
 ## Status
 
-EasyScript is at the start of **Phase 1 (core language)**. Here's exactly what exists today.
+EasyScript is in **Phase 1 (core language)**. Programs written in the sentence syntax compile to C and run. Here's exactly what exists today.
 
 **Works today:**
 
 | Piece | What you can do |
 |---|---|
-| New lexer | `easyscript tokens file.es` splits any file in the new syntax into words, numbers, text, symbols, and indentation, and reports friendly errors. See the [lexer examples](examples/lexer/). |
-| Parser | `easyscript ast file.es` shows how a program is understood. It handles statements (`let`/`set`/`change`, `add … to` and the other arithmetic sentences, `say` and its synonyms, `ask … and call the answer …`, writing, appending and reading files, `stop the program`, and a leading `please`), plus expressions: arithmetic, comparisons in words or symbols (`is at least`, `>=`), `and`/`or`/`not`, joining text, conversions, `length of`, `contents of file`, and function calls. See the [parser examples](examples/parser/). |
-| Error reporting | Errors show the line, the source, carets under the problem, and a suggestion. |
-| CLI | `run`, `build`, `emit`, `tokens`, and `ast` commands. Generated files go in a temporary directory. |
-| Legacy prototype | The original 2024 prototype syntax (`PRINT # "hi"`, `MAKE A VARIABLE x ASSIGN 10`, `FILE OPEN ...`) still compiles and runs end to end. It's being replaced and will be removed once the new parser works. See the [legacy examples](examples/legacy/). |
-| Tests | Unit, lexer, program, example, and CLI tests run with `make test`, plus a sanitizer build with `make test-debug`. |
+| Variables | `let total be 0`, `set`/`change ... to`, and `add 5 to total`, `subtract`, `increase`/`decrease`/`multiply`/`divide ... by` |
+| Values and expressions | Numbers, text, yes/no, nothing; arithmetic in words or symbols; comparisons (`is at least`, `>=`, ...); `and`/`or`/`not`; joining text with `and` or `followed by`; `as a number`, `as text`, `length of`, `contents of file` |
+| Output and input | `say` (or `print`, `show`, `display`, `write`), `ask "..." and call the answer name` |
+| Files | `write ... to file`, `append ... to file`, `read file ... and call it ...` |
+| Other | `stop the program`; any sentence can start with `please` |
+| Friendly errors | Compile errors show the line, the source, carets, and a suggestion ("Did you mean "total"? You made it on line 1."). Runtime errors say what happened and where: "Line 8: You divided by zero." |
+| Tools | `run`, `build`, `emit`, `tokens`, `ast`, and an interactive shell. Generated programs are self-contained C. |
+| Tests | Unit, lexer, parser, program, runtime-error, example, and CLI tests with `make test`, plus a sanitizer build with `make test-debug` |
 
-**Coming soon** (Phase 1): blocks (`if`, loops, and function definitions), the checker, and C code generation from the new syntax. Until those exist, nothing written in the new syntax runs. Follow along in the [roadmap](docs/roadmap.md).
+See the runnable [example programs](examples/programs/).
+
+**Coming soon** (Phase 1): decisions (`if`/`otherwise`), loops, your own functions, and a few more built-ins. Follow along in the [roadmap](docs/roadmap.md).
 
 ## Roadmap
 
 | Phase | Focus | Status |
 |---|---|---|
-| 1 | **Core language:** variables, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | In progress (lexer, expressions, and simple statements parse) |
+| 1 | **Core language:** variables, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | In progress (variables, expressions, output, input, and files run) |
 | 2 | **Data and structure:** records, lists, maps, modules, static types | Coming soon |
 | 3 | **Self-hosting:** the EasyScript compiler, written in EasyScript | Coming soon |
 | 4 | **Real-world programs:** standard library, C interop, concurrency, backend servers | Coming soon |
@@ -65,7 +86,7 @@ Details: [docs/roadmap.md](docs/roadmap.md).
 
 1. **Deterministic parsing, no guessing.** Every sentence has exactly one meaning, or it's an error. The compiler never picks "the most likely" reading.
 2. **Ambiguity is an error with suggestions.** If a sentence could mean two things, you're told so, along with the valid ways to write it.
-3. **Filler words are ignored.** `the`, `a`, and `an` are dropped, so `set the total to 0.` and `set total to 0.` are the same sentence.
+3. **Filler words are ignored.** `the`, `a`, and `an` are dropped, so `let the total be 0.` and `let total be 0.` are the same sentence.
 4. **Keywords are case-insensitive**, and words are contextual: a word like `count` can still be a variable name.
 5. **Friendly English errors.** Every message says what went wrong in plain words, points at it, and suggests a fix. See [docs/errors.md](docs/errors.md).
 6. **AI is optional.** The compiler is ordinary deterministic software. Nothing needs an AI model or a network connection to compile.
@@ -86,20 +107,20 @@ make test-debug   # runs the full suite against the sanitizer build
 ### Commands
 
 ```bash
-./easyscript tokens file.es          # show how the new lexer reads a file
+./easyscript run file.es             # compile and run
+./easyscript build file.es -o app    # compile to an executable
+./easyscript emit file.es            # print the generated C
+./easyscript tokens file.es          # show how the lexer reads a file
 ./easyscript ast file.es             # show the syntax tree
-./easyscript run file.es             # compile and run (legacy syntax for now)
-./easyscript build file.es -o app    # compile to an executable (legacy syntax for now)
-./easyscript emit file.es            # print the generated C (legacy syntax for now)
-./easyscript                         # interactive shell (legacy syntax)
+./easyscript                         # interactive shell
 ```
 
 Try it:
 
 ```bash
-./easyscript tokens examples/lexer/taste.es
+./easyscript run examples/programs/hello.es
+./easyscript run examples/programs/text.es
 ./easyscript ast examples/parser/variables.es
-./easyscript run examples/legacy/print_text.es
 ```
 
 ## How the compiler works
@@ -110,7 +131,7 @@ source.es → lexer → parser → checker → C code generator → cc -O2 → n
                      tree      and names
 ```
 
-The **front end** (lexer, parser, checker) understands EasyScript and reports errors. The **back end** turns the checked program into C. They only talk through shared data structures (tokens, the syntax tree, and the symbol table). Today the new lexer and parser handle expressions and simple statements; programs still run through the legacy prototype pipeline. See [docs/architecture.md](docs/architecture.md).
+The **front end** (lexer, parser, checker) understands EasyScript and reports errors. The **back end** turns the checked program into C. They only talk through shared data structures (tokens, the syntax tree, and the symbol table). Generated programs include a small runtime, embedded in the compiler, so they need nothing else to build. Today the checker resolves names; type checking comes later. See [docs/architecture.md](docs/architecture.md).
 
 ## Documentation
 

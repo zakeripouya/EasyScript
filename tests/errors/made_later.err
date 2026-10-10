@@ -1,0 +1,4 @@
+Line 1: I don't know anything called "x".
+    say x
+        ^
+You make "x" later, on line 2. Make it before you use it.

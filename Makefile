@@ -1,12 +1,15 @@
 CC = cc
-CFLAGS = -Wall -Wextra -Isrc
+CFLAGS = -std=c11 -Wall -Wextra -Isrc
 RELEASE_FLAGS = -O2
 DEBUG_FLAGS = -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all
 
 COMMON_SRC = src/common/arena.c src/common/util.c src/common/diag.c src/common/ast.c
-FRONT_SRC = src/front/lexer.c src/front/parse_util.c src/front/parse_expr.c src/front/parse_stmt.c
-LEGACY_SRC = src/legacy.c src/lexer.c src/parser.c src/codegen.c
-COMPILER_SRC = main.c $(FRONT_SRC) $(LEGACY_SRC) $(COMMON_SRC)
+FRONT_SRC = src/front/lexer.c src/front/parse_util.c src/front/parse_expr.c src/front/parse_stmt.c src/front/check.c
+BACK_SRC = src/back/codegen_c.c
+# The runtime, embedded into the compiler as a byte array by tools/embed.c.
+GEN_RUNTIME = build/gen/es_runtime_embed.c
+EMBED = build/tools/embed
+COMPILER_SRC = main.c $(FRONT_SRC) $(BACK_SRC) $(COMMON_SRC) $(GEN_RUNTIME)
 UNIT_SRC = $(wildcard tests/unit/*.c) $(FRONT_SRC) $(COMMON_SRC)
 
 RELEASE_DIR = build/release
@@ -16,6 +19,14 @@ release_objs = $(patsubst %.c,$(RELEASE_DIR)/%.o,$(1))
 debug_objs = $(patsubst %.c,$(DEBUG_DIR)/%.o,$(1))
 
 all: easyscript $(RELEASE_DIR)/unit_tests
+
+$(EMBED): tools/embed.c
+	@mkdir -p $(dir $@)
+	$(CC) -std=c11 -Wall -Wextra -O2 -o $@ $<
+
+$(GEN_RUNTIME): runtime/es_runtime.h $(EMBED)
+	@mkdir -p $(dir $@)
+	$(EMBED) runtime/es_runtime.h $@ es_runtime_source
 
 easyscript: $(call release_objs,$(COMPILER_SRC))
 	$(CC) $(CFLAGS) $(RELEASE_FLAGS) -o $@ $^
@@ -43,11 +54,10 @@ $(DEBUG_DIR)/%.o: %.c
 test: all
 	sh tests/run.sh
 
-# Full suite against the sanitizer build. Leak checking is off until the
-# lexer, parser, and codegen allocate from the arena instead of malloc.
+# Full suite against the sanitizer build. Leak checking stays on wherever
+# AddressSanitizer supports it (it's on by default on Linux).
 test-debug: debug
-	ES=$(CURDIR)/$(DEBUG_DIR)/easyscript UNIT=$(CURDIR)/$(DEBUG_DIR)/unit_tests \
-	ASAN_OPTIONS=detect_leaks=0 sh tests/run.sh
+	ES=$(CURDIR)/$(DEBUG_DIR)/easyscript UNIT=$(CURDIR)/$(DEBUG_DIR)/unit_tests sh tests/run.sh
 
 # Rewrites every golden file from the current output and shows git diff --stat.
 # Only use it after confirming the new output is intended.

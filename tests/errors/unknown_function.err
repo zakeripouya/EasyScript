@@ -1,0 +1,4 @@
+Line 1: I don't know a function called "greet".
+    say greet using "Ada"
+        ^^^^^^^^^^^^^^^^^
+Making your own functions isn't available yet.

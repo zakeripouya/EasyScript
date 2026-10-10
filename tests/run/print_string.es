@@ -1,1 +1,1 @@
-PRINT # "hello"
+say "hello"

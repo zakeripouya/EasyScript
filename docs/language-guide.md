@@ -2,7 +2,7 @@
 
 This guide teaches EasyScript from zero, one chapter at a time. Each chapter is marked with its status:
 
-- **Available:** you can try everything in the chapter today. "Available (lexer)" and "Available (parser)" mean the compiler already reads and understands it (try `easyscript tokens` or `easyscript ast`), but it doesn't run yet.
+- **Available:** you can write and run everything in the chapter today.
 - **Coming soon:** the chapter describes the *planned* language. Its examples don't compile yet, and the exact wording may change. They're here so you can see where the language is going and give feedback.
 
 The full list of words and patterns is in the [vocabulary](vocabulary.md).
@@ -10,15 +10,14 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | Chapter | Status |
 |---|---|
 | [0. Getting set up](#0-getting-set-up) | Available |
-| [1. How EasyScript reads your sentences](#1-how-easyscript-reads-your-sentences) | Available (lexer) |
-| [2. Values and expressions](#2-values-and-expressions) | Available (parser) |
-| [3. Variables](#3-variables) | Available (parser) |
-| [4. Output and input](#4-output-and-input) | Available (parser) |
+| [1. How EasyScript reads your sentences](#1-how-easyscript-reads-your-sentences) | Available |
+| [2. Values and expressions](#2-values-and-expressions) | Available (calling functions: coming soon) |
+| [3. Variables](#3-variables) | Available |
+| [4. Output and input](#4-output-and-input) | Available |
 | [5. Decisions](#5-decisions) | Coming soon |
 | [6. Loops](#6-loops) | Coming soon |
 | [7. Functions](#7-functions) | Coming soon |
-| [8. Files](#8-files) | Available (parser), except `file X exists` |
-| [Appendix: the legacy prototype](#appendix-the-legacy-prototype) | Available (legacy) |
+| [8. Files](#8-files) | Available, except `file X exists` |
 
 ---
 
@@ -34,17 +33,25 @@ cd EasyScript
 make
 ```
 
-EasyScript programs are plain text files ending in `.es`. Today, the most useful command for the new syntax is `tokens`, which shows how the compiler reads a file:
+EasyScript programs are plain text files ending in `.es`. Write this into `hello.es`:
+
+```
+say "Hello, world!".
+```
+
+and run it:
 
 ```bash
-./easyscript tokens examples/lexer/sentences.es
+./easyscript run hello.es
 ```
+
+`easyscript build hello.es -o hello` makes a program you can run on its own (`./hello`). Two more commands show what the compiler sees: `easyscript tokens` (the words and symbols) and `easyscript ast` (the meaning, as a tree).
 
 ---
 
 ## 1. How EasyScript reads your sentences
 
-**Status: Available (lexer).** Everything in this chapter is what the compiler's lexer does today, and you can watch it with `easyscript tokens`. What the sentences *mean* comes in the later chapters.
+**Status: Available.** This chapter is about how sentences are read: words, numbers, text, comments, and blocks. You can watch it happen with `easyscript tokens`. What the sentences *mean* comes in the later chapters. (Blocks are read correctly today, but the sentences that use them, like `if`, are coming soon.)
 
 ### Sentences
 
@@ -133,7 +140,7 @@ EasyScript also understands a few symbols: `+ - * / %` for arithmetic, `( )` for
 
 ## 2. Values and expressions
 
-**Status: Available (parser).** The parser understands everything in this chapter, and `easyscript ast` shows how it reads each line. Nothing runs yet. The examples show expressions on their own; in a program they appear inside statements, such as `say price plus tax` (chapter 4).
+**Status: Available**, except calling your own functions (coming soon). The examples show expressions on their own; in a program they appear inside sentences, such as `say price plus tax` (chapter 4).
 
 ### Values
 
@@ -158,7 +165,11 @@ minutes mod 60
 -temperature
 ```
 
-`plus`/`+`, `minus`/`-`, `times`/`multiplied by`/`*`, `divided by`/`/`, and `mod`/`%` (the remainder). As in maths, multiplying and dividing come first: `price plus tax times 2` means `price plus (tax times 2)`. Use parentheses to change that: `(price plus tax) times 2`.
+`plus`/`+`, `minus`/`-`, `times`/`multiplied by`/`*`, `divided by`/`/`, and `mod`/`%` (the remainder). They work on numbers; `say 7 divided by 2` prints `3.5`, and whole numbers print without decimals. Using text in arithmetic, or dividing by zero, stops the program with a message that says which line went wrong:
+
+```
+Line 3: You divided by zero.
+``` As in maths, multiplying and dividing come first: `price plus tax times 2` means `price plus (tax times 2)`. Use parentheses to change that: `(price plus tax) times 2`.
 
 Try it: `./easyscript ast examples/parser/arithmetic.es`
 
@@ -188,7 +199,7 @@ not done and ready
 
 ### Working with text
 
-`and` also joins text, and so does `followed by`. A value can be turned into text with `as text`, and text into a number with `as a number`:
+`and` also joins text, and so does `followed by`; numbers are turned into text for you. (Between two yes/no values `and` means "both"; the program decides which while it runs.) A value can be turned into text with `as text`, and text into a number with `as a number`:
 
 ```
 "Hello, " and name
@@ -202,7 +213,7 @@ Try it: `./easyscript ast examples/parser/text.es`
 
 ### Calling functions
 
-A function is called by its name, with `using` and its inputs:
+**Coming soon:** making your own functions. The way they'll be called already parses (try `easyscript ast`), but running a program that calls one is an error for now. A function is called by its name, with `using` and its inputs:
 
 ```
 greet using "Ada"
@@ -224,7 +235,7 @@ This is the "no guessing" rule in action. See [`examples/parser/`](../examples/p
 
 ## 3. Variables
 
-**Status: Available (parser).** These sentences parse today (`easyscript ast` shows them) but don't run yet.
+**Status: Available.**
 
 A variable is a named value. `let` creates one, and `set` changes it:
 
@@ -259,7 +270,7 @@ Try a name that says what it holds, like "total" or "answer".
 
 Words that already mean something, like `yes`, `nothing`, or `it`, can't be names either.
 
-**Coming soon:** using a name that doesn't exist will be an error that suggests the closest name you did create (the error format is ready; the checker that produces it isn't):
+A variable has to be made with `let` before it's used, and only once. Using a name that doesn't exist is an error that suggests the closest name you did make:
 
 ```
 Line 4: I don't know anything called "totl".
@@ -268,13 +279,15 @@ Line 4: I don't know anything called "totl".
 Did you mean "total"? You made it on line 1.
 ```
 
-Try it: `./easyscript ast examples/parser/variables.es`
+A variable can hold any kind of value, and can change kind: `set total to "done"` is fine.
+
+Try it: `./easyscript run examples/programs/variables.es`
 
 ---
 
 ## 4. Output and input
 
-**Status: Available (parser).** These sentences parse today but don't run yet.
+**Status: Available.**
 
 `say` prints a value on its own line. `print`, `show`, `display`, and `write` mean the same thing:
 
@@ -284,11 +297,13 @@ print total.
 show "Total: " followed by total as text.
 ```
 
-`ask` prints a question and keeps the line of text the user types:
+`ask` prints a question and keeps the line of text the user types (if there's nothing more to read, the answer is empty text). The answer is always text; turn it into a number with `as a number`:
 
 ```
 ask "What's your name? " and call the answer name.
 say "Nice to meet you, " and name and ".".
+ask "How old are you? " and call the answer age.
+say "Next year you'll be " and age as a number plus 1.
 ```
 
 Any sentence can begin with `please`, which is skipped: `please say "hi"`.
@@ -304,7 +319,7 @@ Line 2: I don't know a sentence that starts with "sya".
 Did you mean "say"?
 ```
 
-Try it: `./easyscript ast examples/parser/output.es` and `examples/parser/input.es`
+Try it: `./easyscript run examples/programs/ask_name.es`
 
 ---
 
@@ -375,16 +390,16 @@ say double using 21.
 
 ## 8. Files
 
-**Status: Available (parser), except `file X exists` (coming soon).** These sentences parse today but don't run yet.
+**Status: Available, except `file X exists` (coming soon).**
 
 ```
-write "first line\n" to file "notes.txt".
-append "second line\n" to file "notes.txt".
+write "first line" to file "notes.txt".
+append "second line" to file "notes.txt".
 read file "notes.txt" and call it notes.
 say notes.
 ```
 
-`write X to file F` replaces the file's contents, and `append` adds to the end. Inside an expression, `contents of file "notes.txt"` gives the whole file as text.
+`write X to file F` replaces the file's contents, and `append` adds to the end; both end what they write with a new line, so each one is a line of the file. Reading gives back the whole file without its last new line, so the example prints the two lines. If a file can't be read, the program stops with a message like `Line 3: I couldn't read the file "notes.txt": it doesn't exist.` Inside an expression, `contents of file "notes.txt"` gives the whole file as text.
 
 Coming soon: checking whether a file exists.
 
@@ -393,23 +408,4 @@ if file "settings.txt" exists:
     say "Found the settings.".
 ```
 
-Try it: `./easyscript ast examples/parser/files.es`
-
----
-
-## Appendix: the legacy prototype
-
-**Status: Available (legacy).** The original 2024 prototype syntax still compiles and runs end to end. It will be removed once the new parser works, so it's documented here only so you can try the full compile-and-run pipeline today.
-
-```
-MAKE A VARIABLE language ASSIGN "EasyScript"
-MAKE A VARIABLE year ASSIGN 2026
-PRINT # language
-PRINT # year
-```
-
-```bash
-./easyscript run examples/legacy/variables.es
-```
-
-Every legacy feature is in the [vocabulary](vocabulary.md#legacy-prototype-syntax), and runnable programs are in [`examples/legacy/`](../examples/legacy/).
+Try it: `./easyscript run examples/programs/files.es`

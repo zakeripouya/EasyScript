@@ -1,0 +1,4 @@
+Line 1: Something is missing after "plus".
+    let x be 1 plus
+               ^^^^
+Add a value there, like a number, some text in quotes, or a name.

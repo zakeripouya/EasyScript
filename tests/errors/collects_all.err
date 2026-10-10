@@ -1,0 +1,14 @@
+Line 1: I don't know anything called "a1".
+    say a1
+        ^^
+Make it first, like "let a1 be 0".
+
+Line 2: I don't know anything called "b2".
+    say b2
+        ^^
+You make "b2" later, on line 3. Make it before you use it.
+
+Line 4: You already made "b2" on line 3.
+    let b2 be 2
+        ^^
+To change it, write "set b2 to ...".

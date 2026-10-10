@@ -1,0 +1,4 @@
+Line 2: You already made "x" on line 1.
+    let x be 2
+        ^
+To change it, write "set x to ...".

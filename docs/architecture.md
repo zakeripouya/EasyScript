@@ -16,9 +16,10 @@ Every stage reports errors to one `Diag` context, and the driver prints them all
 |---|---|---|
 | **Lexer** | source text → tokens | Splits text into words, numbers, text, symbols, and `NEWLINE`/`INDENT`/`DEDENT`. It drops comments and filler words and lowercases words. It doesn't know what any word means. |
 | **Parser** | tokens → AST | Recognizes sentence patterns, deterministically. An ambiguous or unknown sentence is an error with suggestions; it never guesses. |
-| **Checker** | AST → AST + symbol table | Resolves names, checks types, and produces "did you mean" suggestions. |
+| **Checker** | AST → diagnostics | Today: resolves names (made before use, made once) with "did you mean" suggestions, and rejects what has no meaning yet (calls, `it`). Later: types. It runs only when parsing succeeded. |
 | **Middle end** | (added later) | An intermediate representation and optimizations. |
-| **C codegen** | checked AST → C source | Writes C. It never looks at source text. |
+| **C codegen** | checked AST → C source | Writes a self-contained C program: the embedded runtime, one global per variable, and `main()`. It never looks at source text and reports no errors. |
+| **Runtime** | (inside the generated program) | `runtime/es_runtime.h`: the tagged `EsValue` (nothing, number, text, yes/no), every operation, and friendly runtime errors (`Line N: ...`). |
 | **Driver** | | `src/main.c`: runs the passes in order, prints diagnostics, invokes `cc`, and cleans up temp files. |
 
 **Boundaries:** each stage only talks to the next through shared data structures (tokens, the AST, and the symbol table). The parser never emits C, and codegen never reads source text. Every stage reports problems through one `Diag` context, and the driver prints them all at the end.
@@ -51,17 +52,33 @@ What exists today:
 | `src/front/parse_util.c` | Token helpers, phrase matching (multi-word operators, with "Did you mean" for a missing last word), and error helpers. |
 | `src/front/parse_expr.c` | Done. Recursive-descent expression parser. |
 | `src/front/parse_stmt.c` | Done for simple statements: a table of statement forms, names (with filler and reserved-word errors), and the program loop. Blocks come next. |
-| `src/front/check.c` | Coming soon |
-| `src/back/codegen_c.c`, `runtime/` | Coming soon |
-| `main.c` (repo root) | The driver. It moves to `src/main.c` as the new pipeline takes over. |
-| `src/legacy.{c,h}`, `src/lexer.c`, `src/parser.c`, `src/codegen.c` | The 2024 prototype pipeline, which `run`/`build`/`emit` still use. It will be deleted when the new front and back ends replace it. |
+| `src/front/check.{c,h}` | Done for names. `check_program` walks the statements in order with a symbol table of the names made so far. |
+| `src/back/codegen_c.{c,h}` | Done. `codegen_c` writes the program; see [Code generation](#code-generation). |
+| `runtime/es_runtime.h` | Done for Phase 1. A header-only runtime copied to the top of every generated program. |
+| `tools/embed.c` | A build tool that turns `runtime/es_runtime.h` into `build/gen/es_runtime_embed.c` (a byte array) so the compiler carries the runtime inside itself. |
+| `main.c` (repo root) | The driver. It moves to `src/main.c` later. |
+
+## Code generation
+
+Every EasyScript value is an `EsValue`, and every operation is a runtime call that receives the source line, so errors can say where they happened. For example, `say total minus 1` on line 4 becomes:
+
+```c
+es_say((es_t1 = es_v_total, es_sub(4, es_t1, es_num(1))));
+```
+
+- **Variables** become C globals named `es_v_` plus the name, with `_` doubled and `'` written as `_q`, so names can't collide. (Locals will be hoisted per function when functions arrive.)
+- **Left to right:** the left side of every binary operation is stored in a temporary (`es_t1`, ...) before the right side is evaluated. C doesn't fix argument order, and this keeps evaluation, and so which error appears first, deterministic.
+- **`and` and `or` short-circuit:** `(t = LEFT, es_is_no(t) ? t : es_and(line, t, RIGHT))`. `es_and` then decides at run time between logical and (two yes/no values) and joining text.
+- **Literals:** numbers are re-printed with `%.17g` (so `007` and `08` are plain decimals), and text is a C string with octal escapes for non-ASCII bytes and `\?` for `?` (no trigraphs).
+- **Self-contained:** the generated file starts with the runtime, so `cc -O2 program.c -o program -lm` is all it needs. Generated programs compile without warnings even under `-Wall -Wextra -Wpedantic`.
+- **Runtime memory:** text built while the program runs comes from a block allocator that's freed at exit. That's fine without loops; loops will need memory reclaimed sooner.
 
 ## Code rules
 
 These are the rules every module follows (the full list is in [CONTRIBUTING.md](../CONTRIBUTING.md)):
 
-- **Memory:** an arena for everything, no per-object `malloc`/`free`, and no fixed-size buffers (in the compiler or in generated C).
-- **No global mutable state.** Context structs (`Compiler`, `Parser`, `Checker`, `Codegen`) are passed explicitly.
+- **Memory:** an arena for everything, no per-object `malloc`/`free`, and no fixed-size buffers (in the compiler or in generated C). The compiler has no leaks (checked with `leaks` on macOS; `make test-debug` keeps LeakSanitizer on where it's supported).
+- **No global mutable state** in the compiler. Context structs (`Parser`, `Checker`, `Codegen`) are passed explicitly. (The runtime inside generated programs keeps its allocator in a static, by design.)
 - **Small modules:** a small public header and private details in the `.c`. Opaque structs where other modules don't need the fields. Helpers are `static`. Files stay under about 600 lines, and functions are short and do one thing.
 - **Errors go through `diag`,** with source spans, and a stage keeps going after an error, so one run reports everything.
 
@@ -74,9 +91,9 @@ These are the rules every module follows (the full list is in [CONTRIBUTING.md](
 | `easyscript emit FILE` | Print the generated C |
 | `easyscript tokens FILE` | Print the lexer's tokens (`KIND line:col text`), and any errors to stderr |
 | `easyscript ast FILE` | Print the syntax tree as an indented outline (`node [line:col]`), and any errors to stderr |
-| `easyscript` | Interactive shell (legacy syntax) |
+| `easyscript` | Interactive shell: each line is tried with the lines kept so far, and kept only if the whole session then compiles and runs (so earlier output repeats). The Notebook will replace it. |
 
-Generated C and binaries go in a fresh temporary directory that's removed on exit. Nothing is written next to your source except `build`'s `-o` output. `cc` is started directly (`fork`/`exec`), never through a shell.
+`run`, `build`, and `emit` share one pipeline: lex, parse, check (only if parsing succeeded), print every error and exit 1 if there were any, otherwise generate C. `cc` is run as `cc -O2 FILE -o OUT -lm`. Generated C and binaries go in a fresh temporary directory that's removed on exit. Nothing is written next to your source except `build`'s `-o` output. `cc` is started directly (`fork`/`exec`), never through a shell.
 
 ## Testing
 
@@ -84,12 +101,13 @@ Generated C and binaries go in a fresh temporary directory that's removed on exi
 
 | Suite | Location | Checks |
 |---|---|---|
-| Unit tests | `tests/unit/*.c` | Arena, string builder, arrays, edit distance, diagnostic formatting, lexer and parser internals (spans, recovery) |
+| Unit tests | `tests/unit/*.c` | Arena, string builder, arrays, edit distance, diagnostic formatting, lexer and parser internals (spans, recovery, filler) |
 | Lexer tests | `tests/tokens/` | Token output (`.out`) and exact error output (`.err`) |
 | Parser tests | `tests/ast/` | Syntax tree output (`.out`) and exact error output (`.err`) |
-| Program tests | `tests/run/` | Compile and run, compare stdout |
-| Compile-error tests | `tests/errors/` | Exact compiler error output |
-| Examples | `examples/legacy/`, `examples/lexer/`, `examples/parser/` | Every example in the docs, with its expected output |
+| Program tests | `tests/run/` | Compile and run (stdin from `.in`), compare stdout; `.err` files are runtime errors (exit 1, exact stderr) |
+| Compile-error tests | `tests/errors/` | Exact compiler error output from `emit` (checker errors, mostly) |
+| Examples | `examples/programs/`, `examples/lexer/`, `examples/parser/` | Every example in the docs, with its expected output |
+| Docs checks | end of `tests/run.sh` | The README's program blocks match their example files |
 | CLI checks | end of `tests/run.sh` | Commands, usage errors, temp-file cleanup |
 
 `make test-debug` runs the same suite against a build with AddressSanitizer and UndefinedBehaviorSanitizer. `make bless` rewrites the expected files from the current output, for intended changes only (see [CONTRIBUTING.md](../CONTRIBUTING.md)).

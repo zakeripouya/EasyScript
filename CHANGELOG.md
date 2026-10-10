@@ -6,6 +6,14 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Programs run.** `run`, `build`, and `emit` now use the new pipeline: lexer → parser → checker → C code generator → `cc -O2`.
+  - **C backend** (`src/back/codegen_c.c`): top-level variables become C globals; evaluation is strictly left to right; `and`/`or` short-circuit.
+  - **Runtime** (`runtime/es_runtime.h`), embedded in the compiler by `tools/embed.c`, so generated programs are self-contained. Values are nothing, numbers, text, or yes/no. Whole numbers print without decimals. `and` joins text or means logical and, decided while the program runs.
+  - **Friendly runtime errors** with line numbers, e.g. "Line 3: I can't subtract text from a number." and "Line 8: You divided by zero."
+  - **Checker** (`src/front/check.c`) for names: "I don't know anything called "totl". Did you mean "total"? You made it on line 1.", names used before they're made, names made twice, and functions and `it` (not available yet).
+  - `write`/`append` end what they write with a new line, and reading a file leaves off its final new line.
+- The interactive shell runs the new syntax and only keeps lines that work.
+- `make test` checks that the README's programs match their example files. Run tests can provide input (`NAME.in`) and expect runtime errors (`NAME.err`).
 - **Roadmap:** the planned EasyScript Notebook (a chat-style notebook, Jupyter kernel first; see `docs/roadmap.md`).
 - **Statement parser** (`src/front/parse_stmt.c`). A program is now a list of statements, each ended by a period or the end of its line, and several can share a line:
   - `let X be E` / `let X equal E`, `set X to E` / `change X to E`
@@ -25,7 +33,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - `==` is now a token.
 - `examples/parser/` and `tests/ast/`, checked by `make test`. They're written as statements now; expression-only files are gone.
 - **Documentation:** a new README, `docs/` (language guide, vocabulary, errors, architecture, roadmap), `CONTRIBUTING.md`, and this changelog.
-- **Examples:** `examples/lexer/` (the new syntax as read by the lexer) and `examples/legacy/` (runnable prototype programs). Every example is checked by `make test`.
+- **Examples:** `examples/programs/` (runnable programs), `examples/lexer/`, and `examples/parser/`. Every example is checked by `make test`.
 - **New lexer** (`src/front/lexer.c`) for the sentence syntax:
   - sentences ending in a period or a new line; blocks from a colon and indentation (`INDENT`/`DEDENT`, with a tab counting as 4 spaces)
   - lowercased words, with filler words (`the`, `a`, `an`) dropped and apostrophes allowed inside words
@@ -42,7 +50,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 - The build uses `cc`, puts objects in `build/`, and tracks header dependencies automatically. It builds with no warnings.
 - The interactive shell keeps its scratch file in a temporary directory and no longer has a line-length limit.
-- The old prototype examples moved to `old/` (reference only) and `examples/legacy/` (tested).
+- The old prototype examples moved to `old/` (historical; they no longer compile).
 
 ### Fixed
 
@@ -53,10 +61,21 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 - Committed build outputs (`*.o`, binaries, generated C) and empty scratch files. A `.gitignore` now covers them.
 
+### Removed
+
+- The 2024 prototype pipeline (uppercase `PRINT #` / `MAKE A VARIABLE` syntax): its lexer, parser, and code generator, and the tests and examples written in it. That also removes its known bugs (a buffer overflow on words over 255 characters, the extra blank line after `FILE READ`, and redeclared variables reading the first declaration).
+
+### Changed (build)
+
+- The build uses `-std=c11`, and `make test-debug` no longer turns leak checking off (the compiler has no leaks).
+
 ### Known issues
 
-- The new syntax only goes as far as the lexer. Programs still compile through the legacy prototype pipeline (`PRINT #`, `MAKE A VARIABLE`, `FILE ...`).
-- In the legacy pipeline, a word or text longer than 255 characters overflows a buffer, `FILE READ` prints an extra blank line, and redeclaring a variable makes later reads use the first declaration.
+- Decisions, loops, and functions are coming soon, so programs run straight through from top to bottom.
+- Text built while a program runs is freed only when it exits. That's fine without loops, but loops will need better memory management.
+- Decimal numbers compare exactly, so `0.1 plus 0.2 is 0.3` is `no` (even though both print as `0.3`).
+- `followed by` and `plus` have the same precedence, so `"Total: " followed by 2 plus 3` is an error; write `followed by (2 plus 3)`.
+- The interactive shell reruns the whole session for every line, so earlier output (and questions from `ask`) repeat.
 
 ## 2024-07-06: First prototype
 

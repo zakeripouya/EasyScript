@@ -1,15 +1,16 @@
 #!/bin/sh
 # EasyScript test runner.
 #
-#   tests/run/NAME.es     compiled and run; stdout must match NAME.out and the
-#                         exit status must be 0
+#   tests/run/NAME.es     compiled and run (stdin from NAME.in if present);
+#                         stdout must match NAME.out. With NAME.err it must
+#                         exit 1 with that stderr, otherwise exit 0 silently
 #   tests/errors/NAME.es  compiled (emit); must fail, and stderr must match
 #                         NAME.err exactly
 #   tests/tokens/NAME.es  lexed with `easyscript tokens`; stdout must match
 #                         NAME.out. If NAME.err exists the run must fail and
 #                         stderr must match it; otherwise it must succeed with
 #                         empty stderr
-#   examples/legacy/      like tests/run (NAME.out)
+#   examples/programs/    like tests/run
 #   tests/ast/NAME.es     like tests/tokens, but with `easyscript ast`
 #   examples/lexer/       like tests/tokens, expected stdout in NAME.tokens
 #   examples/parser/      like tests/ast, expected stdout in NAME.ast
@@ -85,23 +86,37 @@ fi
 
 # --- Programs, compile errors, tokens, and examples ------------------------
 
-# check_run DIR LABEL: each DIR/NAME.es is run; stdout must match NAME.out.
+# check_run DIR LABEL: each DIR/NAME.es is compiled and run, with NAME.in as
+# its input if present (otherwise no input). Stdout must match NAME.out. With
+# a NAME.err the program must exit 1 with exactly that stderr (a runtime
+# error); without one it must exit 0 with empty stderr.
 check_run() {
     for src in "$1"/*.es; do
         [ -e "$src" ] || continue
         name="$2/$(basename "$src" .es)"
         expected="${src%.es}.out"
+        expected_err="${src%.es}.err"
+        input="${src%.es}.in"
+        [ -f "$input" ] || input=/dev/null
         if [ ! -f "$expected" ]; then
             not_ok "$name" "missing $(basename "$expected")"
             continue
         fi
         fresh_dir
-        (cd "$WORK/cwd" && "$ES" run "$src") >"$WORK/stdout" 2>"$WORK/stderr"
+        (cd "$WORK/cwd" && "$ES" run "$src") <"$input" >"$WORK/stdout" 2>"$WORK/stderr"
         status=$?
-        if [ $status -ne 0 ]; then
-            not_ok "$name" "exit status $status
+        if [ -f "$expected_err" ]; then
+            want_status=1
+        else
+            want_status=0
+            expected_err=/dev/null
+        fi
+        if [ $status -ne $want_status ]; then
+            not_ok "$name" "exit status $status, expected $want_status
 $(cat "$WORK/stderr")"
         elif ! out=$(diff -u "$expected" "$WORK/stdout"); then
+            not_ok "$name" "$out"
+        elif ! out=$(diff -u "$expected_err" "$WORK/stderr"); then
             not_ok "$name" "$out"
         else
             ok "$name"
@@ -176,19 +191,19 @@ check_dump tokens "$ROOT/tests/tokens" tokens out
 check_dump ast "$ROOT/tests/ast" ast out
 
 # Examples back the docs, so every one of them must be checked.
-check_run "$ROOT/examples/legacy" examples/legacy
+check_run "$ROOT/examples/programs" examples/programs
 check_dump tokens "$ROOT/examples/lexer" examples/lexer tokens
 check_dump ast "$ROOT/examples/parser" examples/parser ast
 for dir in "$ROOT"/examples/*/; do
     [ -d "$dir" ] || continue
     case $(basename "$dir") in
-        legacy|lexer|parser) ;;
+        programs|lexer|parser) ;;
         *) not_ok "examples/$(basename "$dir")" "no test runner covers this directory; add it to tests/run.sh" ;;
     esac
 done
 for src in "$ROOT"/examples/*.es; do
     [ -e "$src" ] || continue
-    not_ok "examples/$(basename "$src")" "examples must live in examples/legacy/, examples/lexer/ or examples/parser/"
+    not_ok "examples/$(basename "$src")" "examples must live in examples/programs/, examples/lexer/ or examples/parser/"
 done
 
 # --- CLI checks -------------------------------------------------------------
@@ -208,7 +223,7 @@ fresh_dir
 out=$(cd "$WORK/cwd" && "$ES" emit "$HELLO" 2>&1)
 if [ $? -ne 0 ]; then
     not_ok "cli/emit" "$out"
-elif ! echo "$out" | grep -q '^int main() {$'; then
+elif ! echo "$out" | grep -q '^int main(void) {$'; then
     not_ok "cli/emit" "output does not look like C:
 $out"
 elif check_cwd_empty "cli/emit"; then
@@ -279,6 +294,30 @@ if [ -n "$leftover" ]; then
 else
     ok "cli/temp-cleanup"
 fi
+
+# --- Docs that must match tested files ---------------------------------------
+
+# readme_block HEADING: the first code block after the README heading.
+readme_block() {
+    awk -v heading="$1" '
+        index($0, heading) == 1 { found = 1; next }
+        found && /^```/ { fences++; if (fences == 2) exit; next }
+        found && fences == 1 { print }
+    ' "$ROOT/README.md"
+}
+
+check_readme_block() {
+    readme_block "$1" >"$WORK/readme_block"
+    if ! out=$(diff -u "$2" "$WORK/readme_block"); then
+        not_ok "$3" "README block under \"$1\" differs from $(basename "$2"):
+$out"
+    else
+        ok "$3"
+    fi
+}
+
+check_readme_block "## A first program" "$ROOT/examples/programs/first_program.es" "docs/readme-first-program"
+check_readme_block "## A taste of what's coming" "$ROOT/examples/lexer/taste.es" "docs/readme-taste"
 
 # --- Summary ----------------------------------------------------------------
 

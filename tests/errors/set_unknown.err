@@ -1,0 +1,4 @@
+Line 1: I don't know anything called "score".
+    set score to 1
+        ^^^^^
+Make it first, like "let score be 0".

@@ -2,9 +2,28 @@
 
 Small programs, one per feature. **Every example is checked by `make test`** against its expected output, so if an example is here, it really works.
 
-## `lexer/`: the new syntax, as read by the lexer
+## `programs/`: programs you can run
 
-The new sentence syntax can't run yet; only its lexer is finished. These examples show how the compiler reads each feature. `NAME.tokens` holds the expected output of `easyscript tokens NAME.es`, and `err_*` examples also have `NAME.err` with the exact error message.
+`NAME.out` holds the expected output of `easyscript run NAME.es`. `NAME.in`, if present, is typed in as the program's input. `err_*` examples stop with a runtime error, and `NAME.err` holds the exact message.
+
+| Example | Shows |
+|---|---|
+| [hello.es](programs/hello.es) | `say` |
+| [first_program.es](programs/first_program.es) | The program on the README's front page |
+| [variables.es](programs/variables.es) | `let`, `add … to`, `increase`, `multiply`, `set` |
+| [text.es](programs/text.es) | Joining text with `and` and `followed by`, `length of`, `as a number` |
+| [logic.es](programs/logic.es) | Comparisons, `and`, `or`, `not` |
+| [ask_name.es](programs/ask_name.es) | `ask … and call the answer …` (input from `ask_name.in`) |
+| [files.es](programs/files.es) | `write`, `append`, and `read file` |
+| [err_divide_by_zero.es](programs/err_divide_by_zero.es) | A runtime error: "Line 3: You divided by zero." |
+
+```bash
+./easyscript run examples/programs/hello.es
+```
+
+## `lexer/`: how text is split into words and symbols
+
+These show how the lexer reads each feature (some, like `taste.es`, use planned sentences that don't run yet). `NAME.tokens` holds the expected output of `easyscript tokens NAME.es`, and `err_*` examples also have `NAME.err` with the exact error message.
 
 | Example | Shows |
 |---|---|
@@ -23,9 +42,9 @@ The new sentence syntax can't run yet; only its lexer is finished. These example
 ./easyscript tokens examples/lexer/blocks.es
 ```
 
-## `parser/`: statements and expressions, as understood by the parser
+## `parser/`: how sentences are understood
 
-Statements and expressions parse today, but don't run yet. `NAME.ast` holds the expected output of `easyscript ast NAME.es` (the syntax tree), and `err_*` examples also have `NAME.err`.
+These show the syntax tree for each kind of sentence (`easyscript ast`). Many use names they never make, so they're for reading the tree, not for running. `NAME.ast` holds the expected output of `easyscript ast NAME.es` (the syntax tree), and `err_*` examples also have `NAME.err`.
 
 | Example | Shows |
 |---|---|
@@ -49,20 +68,6 @@ Statements and expressions parse today, but don't run yet. `NAME.ast` holds the 
 ./easyscript ast examples/parser/variables.es
 ```
 
-## `legacy/`: the 2024 prototype syntax
-
-This syntax runs end to end today, but it's being replaced by the new syntax and will be removed once the new parser works. `NAME.out` holds the expected output of `easyscript run NAME.es`. (The prototype has no comments, so the explanations are here instead.)
-
-| Example | Shows |
-|---|---|
-| [print_text.es](legacy/print_text.es) | `PRINT # "..."` |
-| [variables.es](legacy/variables.es) | `MAKE A VARIABLE ... ASSIGN ...` with text and a number |
-| [files.es](legacy/files.es) | `FILE OPEN`/`WRITE`/`READ`/`CLOSE`. `FILE READ` prints an extra blank line, a known quirk of the prototype |
-
-```bash
-./easyscript run examples/legacy/variables.es
-```
-
 ## Adding an example
 
-Put it in `lexer/`, `parser/`, or `legacy/` (`tests/run.sh` rejects any other folder) with its expected output, run `make test`, and list it in the table above. Examples for features that don't work yet are listed in [docs/roadmap.md](../docs/roadmap.md#planned-examples) instead.
+Put it in `programs/`, `lexer/`, or `parser/` (`tests/run.sh` rejects any other folder) with its expected output, run `make test`, and list it in the table above. Examples for features that don't work yet are listed in [docs/roadmap.md](../docs/roadmap.md#examples) instead.

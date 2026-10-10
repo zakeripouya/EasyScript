@@ -1,4 +1,4 @@
-# Lexer example: this does not run yet. `easyscript tokens` shows how it is read.
+# Lexer example: `easyscript tokens` shows how this is read.
 # Text goes in double quotes. \n, \t, \" and \\ are escapes.
 say "Hello, world!".
 say "Two lines:\nfirst\nsecond".
