@@ -1,14 +1,63 @@
-Line 1: A constant can't use a list, because lists can change.
-    keep primes as a list of 2, 3 and 5
-                     ^^^^^^^^^^^^^^^^^^
-Make it with "let" instead, like "let primes be a list of 2, 3 and 5".
-
-Line 2: A constant can't use a list, because lists can change.
-    keep size as length of (a list of 1)
-                           ^^^^^^^^^^^^^
-Make it with "let" instead, like "let primes be a list of 2, 3 and 5".
-
-Line 3: A constant can't use a list, because lists can change.
+Line 4: A constant can't work things out from a list.
     keep has_two as primes contains 2
                     ^^^^^^^^^^^^^^^^^
-Make it with "let" instead, like "let primes be a list of 2, 3 and 5".
+A constant can be a list written out, like "keep weekdays as a list of "Mon" and "Tue"" (and its length). To work something out from a list, use "let" instead of "keep".
+
+Line 5: A fixed list can't hold lists, because those could change.
+    keep grid as a list of (a list of 1) and (a list of 2)
+                           ^^^^^^^^^^^^^
+Make it with "let" instead of "keep".
+
+Line 6: A fixed list can't hold lists, because those could change.
+    keep no_rows as an empty list of lists of numbers
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Make it with "let" instead of "keep".
+
+Line 7: All the items of a list have to be the same kind: the first is a number, but this is text.
+    keep mixed as a list of 1, "two" and 3
+                               ^^^^^
+
+Line 8: A constant can't work things out from a list.
+    keep reversed_primes as primes reversed
+                            ^^^^^^^^^^^^^^^
+A constant can be a list written out, like "keep weekdays as a list of "Mon" and "Tue"" (and its length). To work something out from a list, use "let" instead of "keep".
+
+Line 9: A constant can't work things out from a list.
+    keep doubled as primes plus primes
+                    ^^^^^^^^^^^^^^^^^^
+A constant can be a list written out, like "keep weekdays as a list of "Mon" and "Tue"" (and its length). To work something out from a list, use "let" instead of "keep".
+
+Line 10: "weekdays" is a constant, so it can't change.
+    add "Thu" to the end of weekdays
+                            ^^^^^^^^
+It's kept on line 2. If it needs to change, make it with "let weekdays be ..." instead of "keep".
+
+Line 11: "weekdays" is a constant, so it can't change.
+    remove item 1 from weekdays
+                       ^^^^^^^^
+It's kept on line 2. If it needs to change, make it with "let weekdays be ..." instead of "keep".
+
+Line 12: "weekdays" is a constant, so it can't change.
+    set item 1 of weekdays to "Sun"
+                  ^^^^^^^^
+It's kept on line 2. If it needs to change, make it with "let weekdays be ..." instead of "keep".
+
+Line 13: "primes" is a constant, so it can't change.
+    insert 1 at position 1 of primes
+                              ^^^^^^
+It's kept on line 3. If it needs to change, make it with "let primes be ..." instead of "keep".
+
+Line 14: "weekdays" is a constant, so it can't change.
+    sort weekdays
+         ^^^^^^^^
+It's kept on line 2. If it needs to change, make it with "let weekdays be ..." instead of "keep".
+
+Line 15: "weekdays" is a constant, so it can't change.
+    add "Thu" to weekdays
+                 ^^^^^^^^
+It's kept on line 2. If it needs to change, make it with "let weekdays be ..." instead of "keep".
+
+Line 16: "primes" is a constant, so it can't change.
+    set primes to a list of 1
+        ^^^^^^
+It's kept on line 3. If it needs to change, make it with "let primes be ..." instead of "keep".

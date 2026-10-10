@@ -66,7 +66,7 @@ Hello, Ada!
 |---|---|
 | Variables | `let total be 0`, `set`/`change ... to`, and `add 5 to total`, `subtract`, `increase`/`decrease`/`multiply`/`divide ... by` |
 | Names | A word (`total`, `clientName`) or several (`let late fee be 25`, `keep hourly rate as 150`, `to add tax to amount:`), recognized everywhere once made; matched without caring about capitals |
-| Constants | `keep tax rate as 0.2`: worked out by the compiler, usable everywhere (including inside functions), and never changed |
+| Constants | `keep tax rate as 0.2`, and fixed lists (`keep weekdays as a list of "Mon", "Tue" and "Wed"`): worked out by the compiler, usable everywhere (including inside functions), and never changed |
 | Values and expressions | Numbers, text, yes/no; arithmetic in words or symbols; comparisons (`is at least`, `>=`, ...); `and`/`or`/`not`; joining text with `and` or `followed by`; `as a number`, `as text`, `length of`, `contents of file` |
 | Output and input | `say` (or `print`, `show`, `display`, `write`), `ask "..." and call the answer name` |
 | Files | `write ... to file`, `append ... to file`, `read file ... and call it ...` |

@@ -329,7 +329,7 @@ keep welcome as "Welcome to " followed by shop.
 say welcome.
 ```
 
-A constant's value has to be known before the program starts, so it can use numbers, text, yes and no, and other constants, but not variables or anything the program works out while it runs. Trying to change a constant is an error that suggests `let` instead. Constants can be used everywhere, including inside functions (chapter 7).
+A constant's value has to be known before the program starts, so it can use numbers, text, yes and no, lists of those written out (`keep weekdays as a list of "Mon", "Tue" and "Wed".`, a fixed list that can't change; see [Lists](#10-lists)), and other constants, but not variables or anything the program works out while it runs. Trying to change a constant is an error that suggests `let` instead. Constants can be used everywhere, including inside functions (chapter 7).
 
 Try it: `./easyscript run examples/programs/variables.es`
 
@@ -794,7 +794,7 @@ to average of marks (a list of numbers), giving back a number:
 
 - **The items of `a list of` are single values up to the next comma or `and`**, so `a list of 1, 2 plus 3` has two items, 1 and 5. To use `and` inside an item, or to write anything after a list, put it in parentheses: `every name in (a list of "a" and "b") followed by "!"`.
 - **`every` takes the rest of the value**, so it has to start it; inside a longer value, put it in parentheses: `say "Curved: " followed by (every score in scores plus 5)`.
-- Lists can't be constants (`keep`), because lists can change. Use `let`.
+- A list kept with `keep` is fixed: `keep weekdays as a list of "Mon", "Tue" and "Wed".` Its items are fixed values (not lists), and adding, removing, setting, inserting or sorting is an error that suggests `let`. `let mine be weekdays` gives `mine` its own copy, which can change.
 
 ### What's checked while the program runs
 

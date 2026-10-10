@@ -226,6 +226,16 @@ bool cg_has_effects(const Codegen *g, const Expr *expr) {
     }
 }
 
+const char *cg_list_operand(Codegen *g, const Expr *expr) {
+    if (expr->kind == EXPR_NAME && cg_is_constant(g, expr->as.name)) {
+        StrBuf sb;
+        sb_init(&sb, g->arena);
+        cg_append_prefixed(&sb, "&es_k_", expr->as.name);  // immortal: releasing it does nothing
+        return sb.data;
+    }
+    return cg_operand(g, expr, false);
+}
+
 const char *cg_operand(Codegen *g, const Expr *expr, bool as_text) {
     StrBuf sb;
     sb_init(&sb, g->arena);
@@ -380,7 +390,12 @@ static void emit_call(Codegen *g, const char *name, Expr *const *args, size_t n,
 
 static void emit_name(Codegen *g, const Expr *expr, StrBuf *out) {
     const char *name = expr->as.name;
-    if (cg_is_constant(g, name)) {
+    if (cg_is_constant(g, name) && type_is_list(expr->type)) {
+        // A fixed list read where it could be kept (and changed) gets copied;
+        // operations that only look at it use it directly (cg_list_operand).
+        cg_append_prefixed(out, "es_list_copy(&es_k_", name);
+        sb_append_char(out, ')');
+    } else if (cg_is_constant(g, name)) {
         cg_append_prefixed(out, "es_k_", name);  // text constants are immortal: no retain
     } else if (cg_find_function(g, name)) {
         emit_call(g, name, NULL, 0, expr->pos, out);  // a function that takes no values
@@ -410,8 +425,11 @@ void cg_emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
         emit_call(g, expr->as.call.name, expr->as.call.args.items, expr->as.call.args.len, expr->pos, out);
         break;
     case EXPR_LENGTH:
-        sb_appendf(out, "%s(%s)", type_is_list(expr->as.operand->type) ? "es_list_length" : "es_length",
-                   cg_operand(g, expr->as.operand, false));
+        if (type_is_list(expr->as.operand->type)) {
+            sb_appendf(out, "es_list_length(%s)", cg_list_operand(g, expr->as.operand));
+        } else {
+            sb_appendf(out, "es_length(%s)", cg_operand(g, expr->as.operand, false));
+        }
         break;
     case EXPR_FILE_CONTENTS:
         sb_appendf(out, "es_read_file(%zu, %s)", cg_site(g, expr->as.operand->pos), cg_operand(g, expr->as.operand, false));

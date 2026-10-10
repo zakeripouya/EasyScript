@@ -235,15 +235,19 @@ typedef enum {
     CONST_NUMBER,
     CONST_TEXT,
     CONST_YESNO,
+    CONST_LIST,  // a fixed list ("keep weekdays as a list of ..."): numbers, text or yes/no, never lists
 } ConstKind;
 
-typedef struct {
+typedef struct ConstValue ConstValue;
+struct ConstValue {
     ConstKind kind;
     double number;
     bool yes;
     const char *text;  // NUL-terminated
-    size_t len;
-} ConstValue;
+    size_t len;        // CONST_TEXT: bytes; CONST_LIST: items
+    Type list_type;    // CONST_LIST: e.g. a list of text
+    ConstValue *items; // CONST_LIST
+};
 
 typedef enum {
     LOOP_COUNT,    // count [down] from A to B [by S] [as N]; go from; for each N from

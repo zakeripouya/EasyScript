@@ -166,8 +166,20 @@ void checker_add_to_list(Checker *c, Stmt *stmt, const Symbol *symbol, TypeVar a
     require_item(c, &target, symbol->var, item, stmt->as.change.amount, amount, false);
 }
 
+// A fixed list ("keep weekdays as a list of ...") can't change.
+static bool reject_fixed_list(Checker *c, const Expr *list) {
+    if (list->kind != EXPR_NAME || checker_find_made(c, list->as.name)) return false;
+    const Constant *k = checker_find_constant(c, list->as.name);
+    if (!k) return false;
+    diag_error(c->diag, list->pos.span, "\"%s\" is a constant, so it can't change.", k->display);
+    diag_note(c->diag, "It's kept on line %zu. If it needs to change, make it with \"let %s be ...\" instead of "
+                       "\"keep\".", k->definition->pos.line, k->display);
+    return true;
+}
+
 void checker_check_list_stmt(Checker *c, const Stmt *stmt) {
     const Expr *list = stmt->as.list.list;
+    if (reject_fixed_list(c, list)) return;
     const Expr *value = stmt->as.list.value;
     TypeVar value_var = 0;
     if (value && stmt->as.list.op != LIST_SET_ITEM) value_var = checker_check_expr(c, value);  // written first

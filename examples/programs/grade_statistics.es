@@ -43,3 +43,9 @@ count from 1 to the length of names as n:
     if item n of letters is "A", add item n of names to honours
 say ""
 say "Honours: " followed by honours
+
+note: a fixed list ("keep"): the grades, which never change
+keep all grades as a list of "A", "B", "C", "D" and "F"
+say ""
+for each grade in all grades:
+    say grade followed by ": " followed by length of (only the letters that are grade)

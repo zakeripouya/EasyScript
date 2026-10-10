@@ -6,6 +6,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Fixed lists:** `keep` works for lists written out of fixed numbers, text or yes/no values (`keep weekdays as a list of "Mon", "Tue" and "Wed".`). Adding, removing, setting, inserting or sorting on one is a compile error that suggests `let`. A fixed list is a static list in the program, never counted or freed; reading it uses it directly, and storing it in a variable or giving it to a function makes a copy that can change. `length of` a fixed list is fixed too. A fixed list can't hold lists.
+
 - **English stack traces in runtime errors.** A runtime error now shows the line with carets under the part that failed, like a compile error, and inside functions the chain of calls that led there: `while working out "average" (count was 0)`, `called from "report" on line 5`, `called from line 8: say report`. Inputs are shown for numbers, yes/no and text (cut short after 30 characters); a function calling itself from the same place is collapsed (`...it called itself 4,998 more times...`). The runtime's call-depth counter became a call stack of frames (the function, the call's site, the values it was given); a call costs three more stores, about 3% on the recursive `fib` benchmark and nothing measurable on the others. Generated programs carry their source lines (`es_source`) and a table of sites (`es_sites`) for this.
 - **`every other item of scores`:** items 1, 3, 5, ... (`every second item` is 2, 4, 6, ...).
 

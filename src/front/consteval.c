@@ -33,26 +33,31 @@ static bool fail(Eval *ev, Span span, const char *hint, const char *fmt, ...) {
     return false;
 }
 
-static const char *kind_name(ConstValue v) {
+static Type kind_type(ConstValue v) {
     switch (v.kind) {
-    case CONST_NUMBER: return "a number";
-    case CONST_TEXT: return "text";
-    default: return "a yes/no value";
+    case CONST_NUMBER: return TYPE_NUMBER;
+    case CONST_TEXT: return TYPE_TEXT;
+    case CONST_YESNO: return TYPE_YESNO;
+    default: return v.list_type;
     }
 }
 
+static const char *kind_name(const Eval *ev, ConstValue v) {
+    return ast_type_name(ev->arena, kind_type(v));
+}
+
 static ConstValue number(double x) {
-    ConstValue v = {CONST_NUMBER, x, false, "", 0};
+    ConstValue v = {.kind = CONST_NUMBER, .number = x, .text = ""};
     return v;
 }
 
 static ConstValue yesno(bool yes) {
-    ConstValue v = {CONST_YESNO, 0, yes, "", 0};
+    ConstValue v = {.kind = CONST_YESNO, .yes = yes, .text = ""};
     return v;
 }
 
 static ConstValue text(const char *s, size_t len) {
-    ConstValue v = {CONST_TEXT, 0, false, s, len};
+    ConstValue v = {.kind = CONST_TEXT, .text = s, .len = len};
     return v;
 }
 
@@ -118,12 +123,60 @@ static bool order(Eval *ev, Span span, ConstValue a, ConstValue b, int *out) {
     }
     bool mixed = (a.kind == CONST_TEXT && b.kind == CONST_NUMBER) || (a.kind == CONST_NUMBER && b.kind == CONST_TEXT);
     return fail(ev, span, mixed ? "Turn the text into a number first with \"as a number\"." : NULL,
-                "I can't compare %s with %s.", kind_name(a), kind_name(b));
+                "I can't compare %s with %s.", kind_name(ev, a), kind_name(ev, b));
 }
 
 // --- Operators ------------------------------------------------------------------
 
 static bool eval(Eval *ev, const Expr *expr, ConstValue *out);
+
+// --- Fixed lists ------------------------------------------------------------------
+
+static const char *const list_note =
+    "A constant can be a list written out, like \"keep weekdays as a list of \"Mon\" and \"Tue\"\" (and its length). "
+    "To work something out from a list, use \"let\" instead of \"keep\".";
+
+static bool reject_list(Eval *ev, Span span) {
+    return fail(ev, span, list_note, "A constant can't work things out from a list.");
+}
+
+// An operator was given a fixed list: only "length of" can use one.
+static bool reject_list_operand(Eval *ev, Span span, ConstValue a, ConstValue b) {
+    if (a.kind != CONST_LIST && b.kind != CONST_LIST) return false;
+    reject_list(ev, span);
+    return true;
+}
+
+static bool reject_nested(Eval *ev, Span span) {
+    return fail(ev, span, "Make it with \"let\" instead of \"keep\".",
+                "A fixed list can't hold lists, because those could change.");
+}
+
+// a list of A, B and C: every item fixed, of one kind, and not a list.
+static bool list(Eval *ev, const Expr *expr, ConstValue *out) {
+    size_t n = expr->as.items.len;
+    ConstValue *items = arena_alloc(ev->arena, n * sizeof *items);
+    for (size_t i = 0; i < n; i++) {
+        const Expr *item = expr->as.items.items[i];
+        if (!eval(ev, item, &items[i])) return false;
+        if (items[i].kind == CONST_LIST) return reject_nested(ev, item->pos.span);
+        if (items[i].kind != items[0].kind) {
+            return fail(ev, item->pos.span, NULL,
+                        "All the items of a list have to be the same kind: the first is %s, but this is %s.",
+                        kind_name(ev, items[0]), kind_name(ev, items[i]));
+        }
+    }
+    ConstValue v = {.kind = CONST_LIST, .text = "", .len = n, .list_type = type_list_of(kind_type(items[0])), .items = items};
+    *out = v;
+    return true;
+}
+
+static bool empty_list(Eval *ev, const Expr *expr, ConstValue *out) {
+    if (type_is_list(type_item(expr->as.list_type))) return reject_nested(ev, expr->pos.span);
+    ConstValue v = {.kind = CONST_LIST, .text = "", .len = 0, .list_type = expr->as.list_type};
+    *out = v;
+    return true;
+}
 
 static bool arithmetic(Eval *ev, const Expr *expr, ConstValue a, ConstValue b, ConstValue *out) {
     BinaryOp op = expr->as.binary.op;
@@ -131,13 +184,13 @@ static bool arithmetic(Eval *ev, const Expr *expr, ConstValue a, ConstValue b, C
     bool numbers = a.kind == CONST_NUMBER && b.kind == CONST_NUMBER;
     if (op == BINARY_ADD && !numbers) {
         return fail(ev, span, (a.kind == CONST_TEXT || b.kind == CONST_TEXT) ? "To join text, use \"and\" or \"followed by\"." : NULL,
-                    "I can't add %s to %s.", kind_name(b), kind_name(a));
+                    "I can't add %s to %s.", kind_name(ev, b), kind_name(ev, a));
     }
-    if (op == BINARY_SUBTRACT && !numbers) return fail(ev, span, NULL, "I can't subtract %s from %s.", kind_name(b), kind_name(a));
-    if (op == BINARY_MULTIPLY && !numbers) return fail(ev, span, NULL, "I can't multiply %s by %s.", kind_name(a), kind_name(b));
-    if (op == BINARY_DIVIDE && !numbers) return fail(ev, span, NULL, "I can't divide %s by %s.", kind_name(a), kind_name(b));
+    if (op == BINARY_SUBTRACT && !numbers) return fail(ev, span, NULL, "I can't subtract %s from %s.", kind_name(ev, b), kind_name(ev, a));
+    if (op == BINARY_MULTIPLY && !numbers) return fail(ev, span, NULL, "I can't multiply %s by %s.", kind_name(ev, a), kind_name(ev, b));
+    if (op == BINARY_DIVIDE && !numbers) return fail(ev, span, NULL, "I can't divide %s by %s.", kind_name(ev, a), kind_name(ev, b));
     if (op == BINARY_MODULO && !numbers) {
-        return fail(ev, span, NULL, "I can't find the remainder of %s divided by %s.", kind_name(a), kind_name(b));
+        return fail(ev, span, NULL, "I can't find the remainder of %s divided by %s.", kind_name(ev, a), kind_name(ev, b));
     }
     if ((op == BINARY_DIVIDE || op == BINARY_MODULO) && b.number == 0) return fail(ev, span, NULL, "You divided by zero.");
     switch (op) {
@@ -160,39 +213,36 @@ static bool and_values(Eval *ev, const Expr *expr, ConstValue a, ConstValue b, C
     if (a.kind == CONST_YESNO || b.kind == CONST_YESNO) {
         bool with_text = a.kind == CONST_TEXT || b.kind == CONST_TEXT;
         return fail(ev, span, with_text ? "To join them, turn the yes/no value into text first with \"as text\"." : NULL,
-                    "I can't use \"and\" between %s and %s.", kind_name(a), kind_name(b));
+                    "I can't use \"and\" between %s and %s.", kind_name(ev, a), kind_name(ev, b));
     }
     if (a.kind == CONST_TEXT || b.kind == CONST_TEXT) {
         *out = join(ev, a, b);
         return true;
     }
-    return fail(ev, span, "To add numbers, use \"plus\".", "I can't use \"and\" between %s and %s.", kind_name(a),
-                kind_name(b));
+    return fail(ev, span, "To add numbers, use \"plus\".", "I can't use \"and\" between %s and %s.", kind_name(ev, a),
+                kind_name(ev, b));
 }
 
 static bool logic(Eval *ev, const Expr *expr, ConstValue *out) {
     bool is_and = expr->as.binary.op == BINARY_AND;
     ConstValue a, b;
     if (!eval(ev, expr->as.binary.left, &a)) return false;
+    if (reject_list_operand(ev, expr->pos.span, a, a)) return false;
     if (a.kind == CONST_YESNO && a.yes != is_and) {  // "no and ..." / "yes or ..." stop here, as at run time
         *out = a;
         return true;
     }
     if (!eval(ev, expr->as.binary.right, &b)) return false;
+    if (reject_list_operand(ev, expr->pos.span, b, b)) return false;
     if (is_and) return and_values(ev, expr, a, b, out);
     if (a.kind != CONST_YESNO) {
-        return fail(ev, expr->pos.span, NULL, "\"or\" needs yes or no on both sides, but the left side is %s.", kind_name(a));
+        return fail(ev, expr->pos.span, NULL, "\"or\" needs yes or no on both sides, but the left side is %s.", kind_name(ev, a));
     }
     if (b.kind != CONST_YESNO) {
-        return fail(ev, expr->pos.span, NULL, "\"or\" needs yes or no on both sides, but the right side is %s.", kind_name(b));
+        return fail(ev, expr->pos.span, NULL, "\"or\" needs yes or no on both sides, but the right side is %s.", kind_name(ev, b));
     }
     *out = b;
     return true;
-}
-
-static bool reject_list(Eval *ev, Span span) {
-    return fail(ev, span, "Make it with \"let\" instead, like \"let primes be a list of 2, 3 and 5\".",
-                "A constant can't use a list, because lists can change.");
 }
 
 static bool binary(Eval *ev, const Expr *expr, ConstValue *out) {
@@ -201,6 +251,7 @@ static bool binary(Eval *ev, const Expr *expr, ConstValue *out) {
     if (op == BINARY_AND || op == BINARY_OR) return logic(ev, expr, out);
     ConstValue a, b;
     if (!eval(ev, expr->as.binary.left, &a) || !eval(ev, expr->as.binary.right, &b)) return false;
+    if (reject_list_operand(ev, expr->pos.span, a, b)) return false;
     int c;
     switch (op) {
     case BINARY_JOIN: *out = join(ev, a, b); return true;
@@ -220,12 +271,13 @@ static bool binary(Eval *ev, const Expr *expr, ConstValue *out) {
 static bool unary(Eval *ev, const Expr *expr, ConstValue *out) {
     ConstValue a;
     if (!eval(ev, expr->as.unary.operand, &a)) return false;
+    if (reject_list_operand(ev, expr->pos.span, a, a)) return false;
     if (expr->as.unary.op == UNARY_NEGATE) {
-        if (a.kind != CONST_NUMBER) return fail(ev, expr->pos.span, NULL, "I can't make %s negative.", kind_name(a));
+        if (a.kind != CONST_NUMBER) return fail(ev, expr->pos.span, NULL, "I can't make %s negative.", kind_name(ev, a));
         *out = number(-a.number);
     } else {
         if (a.kind != CONST_YESNO) {
-            return fail(ev, expr->pos.span, NULL, "\"not\" needs a yes/no value, but this is %s.", kind_name(a));
+            return fail(ev, expr->pos.span, NULL, "\"not\" needs a yes/no value, but this is %s.", kind_name(ev, a));
         }
         *out = yesno(!a.yes);
     }
@@ -256,6 +308,7 @@ static bool parse_number(const char *s, size_t len, double *out) {
 static bool convert(Eval *ev, const Expr *expr, ConstValue *out) {
     ConstValue a;
     if (!eval(ev, expr->as.convert.operand, &a)) return false;
+    if (reject_list_operand(ev, expr->pos.span, a, a)) return false;
     if (expr->as.convert.target == CONVERT_TO_TEXT) {
         *out = to_text(ev, a);
         return true;
@@ -276,8 +329,12 @@ static bool convert(Eval *ev, const Expr *expr, ConstValue *out) {
 static bool length(Eval *ev, const Expr *expr, ConstValue *out) {
     ConstValue a;
     if (!eval(ev, expr->as.operand, &a)) return false;
+    if (a.kind == CONST_LIST) {  // the length of a fixed list
+        *out = number((double)a.len);
+        return true;
+    }
     if (a.kind != CONST_TEXT) {
-        return fail(ev, expr->pos.span, NULL, "I can only find the length of text or a list, but this is %s.", kind_name(a));
+        return fail(ev, expr->pos.span, NULL, "I can only find the length of text or a list, but this is %s.", kind_name(ev, a));
     }
     size_t chars = 0;
     for (size_t i = 0; i < a.len; i++) {
@@ -303,8 +360,8 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
         return fail(ev, span, fixed_note, "A constant can't call a function, because functions only run while the "
                                           "program runs.");
     case EXPR_IT: return fail(ev, span, fixed_note, "\"it\" changes while the program runs, so a constant can't use it.");
-    case EXPR_LIST:
-    case EXPR_EMPTY_LIST:
+    case EXPR_LIST: return list(ev, expr, out);
+    case EXPR_EMPTY_LIST: return empty_list(ev, expr, out);
     case EXPR_ITEM:
     case EXPR_LIST_OP:
     case EXPR_EVERY:

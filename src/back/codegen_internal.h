@@ -93,6 +93,9 @@ const char *cg_operand(Codegen *g, const Expr *expr, bool as_text);
 // more have effects, each goes into a temporary first, and "(es_t1 = A, "...
 // is appended to out; then it returns true and the caller adds a ")".
 bool cg_ordered(Codegen *g, Expr *const *exprs, size_t n, const char **values, StrBuf *out);
+// A list that's only looked at (an item, contains, length, a slice, a loop,
+// every/only, as text): a fixed list is used directly instead of copied.
+const char *cg_list_operand(Codegen *g, const Expr *expr);
 bool cg_is_constant(const Codegen *g, const char *name);
 // The site of a node, for a runtime call that can fail: its index in es_sites.
 size_t cg_site(Codegen *g, SourcePos pos);

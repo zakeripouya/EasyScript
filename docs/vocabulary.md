@@ -161,9 +161,11 @@ The words that start statements are only special at the start of a sentence, so 
 |---|---|---|---|
 | `keep NAME as X` | Make a constant: a name whose value never changes | `keep tax rate as 0.2` | Available |
 | `keep NAME at X` | Same as `as` | `keep speed_limit at 50` | Available |
+| `keep NAME as a list of X, Y and Z` | A fixed list: a list that can't change | `keep weekdays as a list of "Mon", "Tue" and "Wed"` | Available |
 
 - **Fixed before the program starts:** X may use numbers, text, yes and no, arithmetic, joining (`followed by`, `and`), comparisons, `and`/`or`/`not`, `as text`, `as a number`, `length of`, and constants made above it. Variables, function calls, `it`, `nothing`, and `contents of file` are errors, because their values are only known while the program runs. The compiler works the value out, so a constant costs nothing while the program runs.
 - **Visible everywhere,** including inside functions (which can't see variables), and even above the line that makes it.
+- **Fixed lists:** a constant can be a list written out (`a list of ...`, `an empty list of ...`) of fixed numbers, text or yes/no values, but not of lists; `length of` a fixed list is fixed too. Anything else worked out from a list is an error. `add`, `insert`, `remove`, `set item ... to`, and `sort` on a fixed list are errors that suggest `let`. Storing it in a variable or giving it to a function gives that variable or function its own copy, which can change; reading it (items, `contains`, loops, `every`, slices) uses the fixed list itself.
 - **Never changes:** `set`, `change`, `add`, `subtract`, `increase`, `decrease`, `multiply`, and `divide` on a constant are errors that suggest `let` instead. A variable, input, loop number, or function can't have a constant's name.
 - **Top level only:** not inside an `if`, a loop, or a function.
 
@@ -370,7 +372,7 @@ The comparisons after `only L that` are the usual ones with `are` for `is`: `are
 
 ### Sharing
 
-A list is **shared**: `let same be scores` gives the same list another name, and a function given a list can change it. Changes through any name show through all of them. Use `a copy of L` for a separate list. A variable keeps its kind, so a list variable can only be given another list of the same kind. Lists can't be constants.
+A list is **shared**: `let same be scores` gives the same list another name, and a function given a list can change it. Changes through any name show through all of them. Use `a copy of L` for a separate list. A variable keeps its kind, so a list variable can only be given another list of the same kind. A list kept with `keep` is fixed (see [Constants](#constants)).
 
 ## Kinds of values
 

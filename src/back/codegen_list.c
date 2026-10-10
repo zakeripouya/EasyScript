@@ -55,13 +55,14 @@ static void emit_item(Codegen *g, const Expr *expr, StrBuf *out) {
     Expr *parts[] = {expr->as.item.position, expr->as.item.list};
     const char *values[2] = {"0", NULL};
     bool opened = cg_ordered(g, parts, 2, values, out);
+    if (!opened) values[1] = cg_list_operand(g, expr->as.item.list);
     sb_appendf(out, "es_get_%s(%zu, %s, %s, %s)%s", cg_item_suffix(expr->as.item.list->type), cg_site(g, expr->pos),
                values[1], where_code(expr->as.item.where), values[0], opened ? ")" : "");
 }
 
 static void emit_list_op(Codegen *g, const Expr *expr, StrBuf *out) {
     const Expr *operand = expr->as.list_op.operand;
-    const char *code = cg_operand(g, operand, false);
+    const char *code = type_is_list(operand->type) ? cg_list_operand(g, operand) : cg_operand(g, operand, false);
     switch (expr->as.list_op.op) {
     case LIST_SUM: sb_appendf(out, "es_list_sum(%s)", code); break;
     case LIST_BIGGEST:
@@ -87,6 +88,7 @@ static void emit_slice(Codegen *g, const Expr *expr, StrBuf *out) {
     Expr *parts[] = {expr->as.slice.from, expr->as.slice.to, expr->as.slice.list};
     const char *v[3] = {"0", "0", NULL};
     bool opened = cg_ordered(g, parts, 3, v, out);
+    if (!opened) v[2] = cg_list_operand(g, expr->as.slice.list);
     size_t site = kind == SLICE_EVERY ? 0 : cg_site(g, expr->pos);  // SLICE_EVERY can't fail
     switch (kind) {
     case SLICE_RANGE:
@@ -107,6 +109,7 @@ void cg_emit_contains(Codegen *g, const Expr *expr, StrBuf *out) {
     Expr *parts[] = {expr->as.binary.left, expr->as.binary.right};
     const char *values[2];
     bool opened = cg_ordered(g, parts, 2, values, out);
+    if (!opened) values[0] = cg_list_operand(g, expr->as.binary.left);
     sb_appendf(out, "%ses_contains_%s(%s, %s)%s", expr->as.binary.op == BINARY_NOT_CONTAINS ? "!" : "",
                cg_item_suffix(expr->as.binary.left->type), values[0], values[1], opened ? ")" : "");
 }
@@ -288,7 +291,7 @@ static void emit_helper_call(Codegen *g, const Expr *expr, StrBuf *out) {
         collect(g, expr->as.only.condition, &bound, &helper);
     }
     const Expr *list = expr->kind == EXPR_EVERY ? expr->as.every.list : expr->as.only.list;
-    const char *list_code = cg_operand(g, list, false);
+    const char *list_code = cg_list_operand(g, list);
     size_t id = ++g->helpers->count;
     emit_helper(g, expr, &helper, id);
     sb_appendf(out, "es_%s%zu(%s", expr->kind == EXPR_EVERY ? "every" : "only", id, list_code);
@@ -321,7 +324,7 @@ void cg_emit_each_head(Codegen *g, const Stmt *stmt, size_t id, StrBuf *body, si
     Type list = stmt->as.loop.list->type;
     const char *hidden = arena_sprintf(g->arena, "0each%zu", id);
     cg_declare_name(g, hidden, list);
-    const char *value = cg_operand(g, stmt->as.loop.list, false);
+    const char *value = cg_list_operand(g, stmt->as.loop.list);
     StrBuf items;
     sb_init(&items, g->arena);
     cg_append_var(&items, hidden, list);

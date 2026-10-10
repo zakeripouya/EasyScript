@@ -260,9 +260,10 @@ static TypeVar check_name(Checker *c, const Expr *expr) {
     const Constant *k = checker_find_constant(c, expr->as.name);
     if (k) {
         if (!k->ok) return error_var(c);
-        ConstKind kind = k->definition->as.constant.folded.kind;
-        return types_new(c, kind == CONST_NUMBER ? TYPE_NUMBER : kind == CONST_TEXT ? TYPE_TEXT : TYPE_YESNO,
-                         k->definition->pos.line);
+        const ConstValue *v = &k->definition->as.constant.folded;
+        Type type = v->kind == CONST_NUMBER ? TYPE_NUMBER : v->kind == CONST_TEXT ? TYPE_TEXT
+                    : v->kind == CONST_YESNO ? TYPE_YESNO : v->list_type;
+        return types_new(c, type, k->definition->pos.line);
     }
     const Function *f = checker_find_function(c, expr->as.name);
     if (!f) {

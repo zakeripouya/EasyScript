@@ -381,6 +381,55 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
 
 // static const double es_k_rate = 0.20000000000000001;
 // static EsText *const es_k_greeting = &es_s3;  (immortal)
+// A worked-out number as C: "0.20000000000000001", "NAN", "-HUGE_VAL".
+static void append_number(StrBuf *out, double x) {
+    if (isnan(x)) {
+        sb_append(out, "NAN");
+    } else if (isinf(x)) {
+        sb_appendf(out, "%sHUGE_VAL", x < 0 ? "-" : "");
+    } else {
+        sb_appendf(out, "%.17g", x);
+    }
+}
+
+// A fixed list: its items, then a static list marked immortal, so it's never
+// counted, freed, or changed (the checker rejects changes, and codegen copies
+// it wherever it could be kept and changed; see cg_list_operand):
+//   static EsText *es_ki_days[] = {&es_s1, &es_s2};
+//   static EsList es_k_days = {{ES_OBJ_LIST, ES_IMMORTAL}, ES_ITEMS_TEXT, 2, 2, {.t = es_ki_days}};
+static void emit_fixed_list(Codegen *g, const char *name, const ConstValue *v, StrBuf *out) {
+    Type item = type_item(v->list_type);
+    const char *field = item == TYPE_TEXT ? "t" : item == TYPE_YESNO ? "b" : "n";
+    if (v->len > 0) {
+        sb_appendf(out, "static %s", item == TYPE_TEXT ? "EsText *" : item == TYPE_YESNO ? "bool " : "double ");
+        cg_append_prefixed(out, "es_ki_", name);
+        sb_append(out, "[] = {");
+        for (size_t i = 0; i < v->len; i++) {
+            const ConstValue *x = &v->items[i];
+            sb_append(out, i ? ", " : "");
+            if (item == TYPE_TEXT) {
+                sb_appendf(out, "&es_s%zu", cg_static_text(g, x->text, x->len));
+            } else if (item == TYPE_YESNO) {
+                sb_append(out, x->yes ? "true" : "false");
+            } else {
+                append_number(out, x->number);
+            }
+        }
+        sb_append(out, "};\n");
+    }
+    sb_append(out, "static EsList ");
+    cg_append_prefixed(out, "es_k_", name);
+    sb_appendf(out, " = {{ES_OBJ_LIST, ES_IMMORTAL}, %s, %zu, %zu, {", item == TYPE_TEXT ? "ES_ITEMS_TEXT"
+               : item == TYPE_YESNO ? "ES_ITEMS_YESNO" : "ES_ITEMS_NUMBER", v->len, v->len);
+    if (v->len > 0) {
+        sb_appendf(out, ".%s = ", field);
+        cg_append_prefixed(out, "es_ki_", name);
+    } else {
+        sb_append(out, "NULL");
+    }
+    sb_append(out, "}};\n");
+}
+
 static void emit_constant(Codegen *g, const Stmt *stmt, StrBuf *out) {
     const ConstValue *v = &stmt->as.constant.folded;
     const char *name = stmt->as.constant.name.text;
@@ -388,14 +437,11 @@ static void emit_constant(Codegen *g, const Stmt *stmt, StrBuf *out) {
     case CONST_NUMBER:
         sb_append(out, "static const double ");
         cg_append_prefixed(out, "es_k_", name);
-        if (isnan(v->number)) {
-            sb_append(out, " = NAN;\n");
-        } else if (isinf(v->number)) {
-            sb_appendf(out, " = %sHUGE_VAL;\n", v->number < 0 ? "-" : "");
-        } else {
-            sb_appendf(out, " = %.17g;\n", v->number);
-        }
+        sb_append(out, " = ");
+        append_number(out, v->number);
+        sb_append(out, ";\n");
         break;
+    case CONST_LIST: emit_fixed_list(g, name, v, out); break;
     case CONST_TEXT:
         sb_append(out, "static EsText *const ");
         cg_append_prefixed(out, "es_k_", name);
