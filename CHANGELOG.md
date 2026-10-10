@@ -6,6 +6,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Larger examples** that use everything together: `fizzbuzz.es`, `guessing_game.es`, `notes.es`, `hanoi.es`, and `receipt.es` (all run by `make test`). A word counter is planned for Phase 2, once there are text tools to split text.
 - **A better interactive shell:** earlier output isn't printed again, earlier `ask` questions aren't asked again (their answers are replayed), a line ending in `:` starts a block (if, loop, function) that ends at a blank line, and entries with errors are shown and dropped. `exit`, `quit`, or `stop the program` leaves. Tested by `tests/shell/`.
 - **Benchmarks:** `benchmarks/` (recursive Fibonacci, a counting loop to 100 million, nested loops, building a large text) in EasyScript, C, Go, and Python, and `make bench`, which prints time and peak memory and checks that every language gives the same result. Results and history are in `docs/performance.md`; the README has a summary.
 - **Constants:** `keep NAME as X` (or `at X`), top level only. The compiler works the value out before the program runs (numbers, text, yes/no, arithmetic, joining, comparisons, logic, conversions, `length of`, and earlier constants) and generates a C static initializer, so constants cost nothing at run time. Constants are visible everywhere, including inside functions.

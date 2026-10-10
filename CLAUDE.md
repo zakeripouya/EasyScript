@@ -313,7 +313,7 @@ Phase 1 is in progress. Programs in the sentence syntax compile to C and run, in
   - 64 run tests (31 programs, including `if_*`, `loop_*`, `func_*`, `const_basic`, `constant_matches_runtime`, covering numbers, number equality with tolerance, text (including `followed by` precedence), logic and short-circuiting, every comparison, variables, files, `ask` with and without input, `stop`, sentences and synonyms; plus 33 `err_*` runtime-error tests, including left-to-right error order, non-yes/no `if`/loop conditions, bad counts, steps and times, an error's line number inside a loop or function, and endless recursion)
   - 4 shell sessions (`tests/shell/NAME.in` plus `.out`/`.err`: output not repeated, blocks, dropped lines, answers replayed and cut back after a failure, leaving)
   - 47 compile-error tests (checker messages including block scopes, loop numbers, `it`, stop/skip outside loops, unknown functions, argument counts, `give back` outside functions, functions in blocks, function scopes and name clashes, every constant rule, plus one parse error)
-  - 40 examples, 2 README sync checks, and CLI checks
+  - 45 examples, 2 README sync checks, and CLI checks
 - **Benchmarks:** `benchmarks/` has `fib` (fib 38), `count` (to 100 million), `nested` (10,000 × 10,000 with `if`/`mod`) and `text` (10,000 joins), each in `.es`, `.py` and `.go`, plus `.c` except `text`. See "Performance records".
 - **Docs:**
   - `README.md`: front page with "A first program" (runs, and is tested), "A bigger example" (a loop and a function; runs, and is tested), honest status, roadmap with Notebook, design rules, build/CLI, pipeline, links, and "License: TBD".
@@ -321,7 +321,7 @@ Phase 1 is in progress. Programs in the sentence syntax compile to C and run, in
   - `docs/vocabulary.md`: statuses Available / Coming soon.
   - Also `docs/errors.md` (lexer, parser, checker and runtime errors), `docs/performance.md` (benchmarks and history), `docs/architecture.md`, `docs/roadmap.md`, `CHANGELOG.md`, `CONTRIBUTING.md` and `examples/README.md`.
 - **Examples:**
-  - `examples/programs/` (15 runnable): `hello`, `first_program`, `taste` (README), `variables`, `text`, `logic`, `decisions`, `loops`, `logan` (old/logan.code ported), `tax` (a constant used by a function), `factorial`, `fibonacci`, `ask_name` (+ `.in`), `files`, `err_divide_by_zero`.
+  - `examples/programs/` (20 runnable): `hello`, `first_program`, `taste` (README), `variables`, `text`, `logic`, `decisions`, `loops`, `logan` (old/logan.code ported), `tax` (a constant used by a function), `factorial`, `fibonacci`, the larger `fizzbuzz`, `guessing_game` (+ `.in`), `notes`, `hanoi`, `receipt`, `ask_name` (+ `.in`), `files`, `err_divide_by_zero`.
   - `examples/parser/` (16): syntax-tree demos, many using names they never make, plus `err_otherwise_misplaced`.
   - `examples/lexer/` (9).
 - No license has been chosen; the user will pick one.

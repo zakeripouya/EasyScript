@@ -20,6 +20,11 @@ Small programs, one per feature. **Every example is checked by `make test`** aga
 | [factorial.es](programs/factorial.es) | A function that calls itself |
 | [fibonacci.es](programs/fibonacci.es) | Recursion with two calls, and joining results into one line |
 | [taste.es](programs/taste.es) | The README's bigger example: a loop and a function |
+| [fizzbuzz.es](programs/fizzbuzz.es) | A function with several `give back`s, used in a loop |
+| [guessing_game.es](programs/guessing_game.es) | `ask` in a loop, `if`/`otherwise if`, constants (input from `guessing_game.in`) |
+| [notes.es](programs/notes.es) | Writing, appending, and reading back a file, and its length |
+| [hanoi.es](programs/hanoi.es) | The Towers of Hanoi: a recursive function with four inputs |
+| [receipt.es](programs/receipt.es) | Constants, a function, a loop, and running totals |
 | [ask_name.es](programs/ask_name.es) | `ask … and call the answer …` (input from `ask_name.in`) |
 | [files.es](programs/files.es) | `write`, `append`, and `read file` |
 | [err_divide_by_zero.es](programs/err_divide_by_zero.es) | A runtime error: "Line 3: You divided by zero." |

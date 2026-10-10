@@ -61,7 +61,7 @@ The proposed wording for each planned feature is in the [vocabulary](vocabulary.
 
 ### Examples
 
-Done (in [`examples/programs/`](../examples/programs/), checked by `make test`): `hello.es`, `first_program.es`, `variables.es`, `text.es`, `logic.es`, `ask_name.es` (with test input), `files.es`, `decisions.es`, `loops.es`, `logan.es` (the 2024 prototype's loop example, ported), `factorial.es`, `fibonacci.es`, `tax.es` (a constant used by a function), `taste.es` (the README's bigger example), `err_divide_by_zero.es`. The checker's "did you mean" error is tested in `tests/errors/misspelled_variable.es`.
+Done (in [`examples/programs/`](../examples/programs/), checked by `make test`): `hello.es`, `first_program.es`, `variables.es`, `text.es`, `logic.es`, `ask_name.es` (with test input), `files.es`, `decisions.es`, `loops.es`, `logan.es` (the 2024 prototype's loop example, ported), `factorial.es`, `fibonacci.es`, `tax.es` (a constant used by a function), `taste.es` (the README's bigger example), and the larger programs `fizzbuzz.es`, `guessing_game.es` (with test input), `notes.es`, `hanoi.es`, and `receipt.es`, `err_divide_by_zero.es`. The checker's "did you mean" error is tested in `tests/errors/misspelled_variable.es`.
 
 Planned. Each will be added with its expected output in the same commit as its feature:
 
@@ -69,9 +69,11 @@ Planned. Each will be added with its expected output in the same commit as its f
 |---|---|
 | `file_exists.es` | `file ... exists` |
 | `err_ambiguous.es` | an ambiguous block sentence and its suggestions |
+| `word_counter.es` | Phase 2 (text tools): read a file and count its words. Needs a way to split text, which Phase 1 doesn't have |
 
 ## Phase 2: Data and structure
 
+- **Text tools:** splitting text into words and lines, and looking at its characters (needed for the planned `word_counter.es` example)
 - **Records:** named groups of fields ("a point has an x and a y")
 - **Lists:** ordered collections, with `for each item in list`
 - **Maps:** look up values by key
