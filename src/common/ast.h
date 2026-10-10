@@ -113,6 +113,7 @@ typedef enum {
     STMT_APPEND_FILE,  // append E to file F
     STMT_READ_FILE,    // read file F and call it X
     STMT_STOP,         // stop the program
+    STMT_IF,           // if ... / otherwise if ... / otherwise
 } StmtKind;
 
 typedef enum {
@@ -132,6 +133,14 @@ typedef struct Stmt Stmt;
 
 // A block is a list of statements, in order. A program is a block.
 typedef Vec(Stmt *) Block;
+
+// One branch of an if: "if C", "otherwise if C", or a final "otherwise"
+// (condition NULL).
+typedef struct {
+    Expr *condition;
+    Block body;
+    SourcePos pos;  // the branch's first line, from "if"/"otherwise" to its colon
+} IfBranch;
 
 struct Stmt {
     StmtKind kind;
@@ -160,6 +169,10 @@ struct Stmt {
             Expr *path;
             Name name;
         } read_file;
+        struct {
+            Vec(IfBranch) branches;  // the "if" first, then each "otherwise"
+            bool one_line;           // "if C, S." or "if C then S."
+        } if_stmt;
     } as;
 };
 

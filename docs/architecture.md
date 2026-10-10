@@ -51,8 +51,9 @@ What exists today:
 | `src/front/parse.h`, `parse_internal.h` | The parser's public API (`parse_program`), and the internal `Parser` context and helpers shared by the parser files. |
 | `src/front/parse_util.c` | Token helpers, phrase matching (multi-word operators, with "Did you mean" for a missing last word), and error helpers. |
 | `src/front/parse_expr.c` | Done. Recursive-descent expression parser. |
-| `src/front/parse_stmt.c` | Done for simple statements: a table of statement forms, names (with filler and reserved-word errors), and the program loop. Blocks come next. |
-| `src/front/check.{c,h}` | Done for names. `check_program` walks the statements in order with a symbol table of the names made so far. |
+| `src/front/parse_stmt.c` | A table of statement forms, names (with filler and reserved-word errors), and the statement loop (`parse_statements`), used for the whole program and for each block. |
+| `src/front/parse_if.c` | `if` / `otherwise if` / `otherwise`: blocks, one-line forms, and errors for misplaced `otherwise`s. |
+| `src/front/check.{c,h}` | Done for names. `check_program` walks the statements in order with a symbol table of the names made so far; each `if` block is a scope of its own. |
 | `src/back/codegen_c.{c,h}` | Done. `codegen_c` writes the program; see [Code generation](#code-generation). |
 | `runtime/es_runtime.h` | Done for Phase 1. A header-only runtime copied to the top of every generated program. |
 | `tools/embed.c` | A build tool that turns `runtime/es_runtime.h` into `build/gen/es_runtime_embed.c` (a byte array) so the compiler carries the runtime inside itself. |
@@ -66,7 +67,8 @@ Every EasyScript value is an `EsValue`, and every operation is a runtime call th
 es_say((es_t1 = es_v_total, es_sub(4, es_t1, es_num(1))));
 ```
 
-- **Variables** become C globals named `es_v_` plus the name, with `_` doubled and `'` written as `_q`, so names can't collide. (Locals will be hoisted per function when functions arrive.)
+- **`if`** becomes C `if (es_if(line, C)) { ... } else if (...) { ... } else { ... }`; `es_if` stops the program with a friendly error if the condition isn't yes or no.
+- **Variables** become C globals named `es_v_` plus the name, with `_` doubled and `'` written as `_q`, so names can't collide. Names made inside `if` blocks are globals too: the checker makes sure each is only used inside its block, and the same name can be reused by different blocks. (Locals will be hoisted per function when functions arrive.)
 - **Left to right:** the left side of every binary operation is stored in a temporary (`es_t1`, ...) before the right side is evaluated. C doesn't fix argument order, and this keeps evaluation, and so which error appears first, deterministic.
 - **`and` and `or` short-circuit:** `(t = LEFT, es_is_no(t) ? t : es_and(line, t, RIGHT))`. `es_and` then decides at run time between logical and (two yes/no values) and joining text.
 - **Literals:** numbers are re-printed with `%.17g` (so `007` and `08` are plain decimals), and text is a C string with octal escapes for non-ASCII bytes and `\?` for `?` (no trigraphs).

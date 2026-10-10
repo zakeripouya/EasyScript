@@ -1,0 +1,4 @@
+Line 2: I don't know anything called "missing".
+        set missing to 1
+            ^^^^^^^
+Make it first, like "let missing be 0".

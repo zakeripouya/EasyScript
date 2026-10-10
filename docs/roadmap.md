@@ -37,8 +37,9 @@ The goal is to write small, real programs in the new sentence syntax and compile
 - [x] Checker for names: made before use, made once, "did you mean", "you make it later"
 - [x] C code generator and runtime (tagged values, friendly runtime errors), embedded in the compiler
 - [x] Legacy prototype pipeline removed
-- [ ] Blocks: `if`/`otherwise`, loops, and function definitions
-- [ ] Checker: scopes and types
+- [x] Blocks for `if` / `otherwise` (indentation, lining up, scoping)
+- [ ] Blocks for loops and function definitions
+- [ ] Checker: types (block scopes are done)
 - [ ] Runtime errors that show the source line
 
 **Language features**
@@ -48,7 +49,7 @@ The goal is to write small, real programs in the new sentence syntax and compile
 - [x] Output and input: `say` (`print`, `show`, `display`, `write`), `ask … and call the answer`
 - [x] Files: `write … to file`, `append … to file`, `read file … and call it`, `contents of file`
 - [x] `stop the program`, `please`
-- [ ] Decisions: `if`, `otherwise if`, `otherwise` (the conditions already work)
+- [x] Decisions: `if`, `otherwise if`, `otherwise` / `else`, one-line `if ..., S` and `if ... then S`; block scoping for names
 - [ ] Loops: `repeat N times`, `repeat while`, `repeat until`, `for each ... from ... to`, `stop`, `skip`
 - [ ] Functions: `to NAME using ...`, calls, `give back`
 - [ ] `file ... exists`
@@ -57,13 +58,12 @@ The proposed wording for each planned feature is in the [vocabulary](vocabulary.
 
 ### Examples
 
-Done (in [`examples/programs/`](../examples/programs/), checked by `make test`): `hello.es`, `first_program.es`, `variables.es`, `text.es`, `logic.es`, `ask_name.es` (with test input), `files.es`, `err_divide_by_zero.es`. The checker's "did you mean" error is tested in `tests/errors/misspelled_variable.es`.
+Done (in [`examples/programs/`](../examples/programs/), checked by `make test`): `hello.es`, `first_program.es`, `variables.es`, `text.es`, `logic.es`, `ask_name.es` (with test input), `files.es`, `decisions.es`, `err_divide_by_zero.es`. The checker's "did you mean" error is tested in `tests/errors/misspelled_variable.es`.
 
 Planned. Each will be added with its expected output in the same commit as its feature:
 
 | Example | Feature |
 |---|---|
-| `decisions.es` | `if` / `otherwise if` / `otherwise` |
 | `repeat.es` | `repeat N times` |
 | `countdown.es` | `repeat while` (the README taste) |
 | `for_each.es` | `for each ... from ... to`, `stop`, `skip` |

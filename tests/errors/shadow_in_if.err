@@ -1,0 +1,4 @@
+Line 3: You already made "total" on line 1.
+        let total be 1
+            ^^^^^
+To change it, write "set total to ...".

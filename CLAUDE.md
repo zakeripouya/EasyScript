@@ -63,7 +63,7 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 
 ### Statement grammar (implemented in `src/front/parse_stmt.c`)
 
-- **A program is a list of statements.** A statement ends at `.`, NEWLINE, or EOF, and several can share a line when separated by periods. INDENT is rejected ("nothing above it starts a block") until blocks exist. A sentence-initial `.` is an error. Expressions can't stand alone as statements.
+- **A program is a list of statements** (`parse_statements(p, block, in_block)`, used for the program and for every block; in a block it stops after the closing DEDENT). A simple statement ends at `.`, NEWLINE, or EOF, and several can share a line when separated by periods; a block statement (`p->ended_with_block`) ends with its DEDENT instead. An INDENT nothing opened is rejected ("nothing above it starts a block") and its whole block is parsed and discarded, so its DEDENT can't close an enclosing block. A sentence-initial `.` is an error. Expressions can't stand alone as statements. `p->ends_with_name` (set from the form; a one-line if's inner statement overrides it) chooses the leftover message.
 - **Optional `please`:** a leading `please` is skipped. `please` on its own is an error.
 - **Statement forms** (table `forms[]`, keyed by the first word; the AST normalizes synonyms but keeps `Stmt.verb` as written):
 
@@ -95,6 +95,13 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 - **Leftovers:** forms ending in a name or keyword (`add`, `subtract`, `ask`, `read`, `stop`) report extra words as "I expected the sentence to end after …". Others use the expression leftover reporting. Statements with errors are left out of the returned `Block`.
 - **Quoting in messages:** `parser_quoted` renders text spans as `the text "…"` to avoid nested quotes.
 
+### if / otherwise (implemented in `src/front/parse_if.c`)
+
+- **Forms:** `if C:` NEWLINE INDENT block DEDENT, then any number of `otherwise if C:` blocks and at most one final `otherwise:` block. `else` is a synonym (`else if`, `else:`). One-line forms `if C, S` and `if C then S` take exactly one simple statement (not `if`/`otherwise`) and never have an `otherwise`. AST: `STMT_IF` with `Vec(IfBranch) branches` (`condition` NULL for the final `otherwise`, `body`, `pos` spanning the header up to its colon) and `one_line`.
+- **Lining up:** after the if's DEDENT, an `otherwise` at the start of the next statement continues it (the lexer guarantees it's in the same column). Anything else starting with `otherwise`/`else` goes to `parse_orphan_otherwise`, which explains, in order: after a one-line if ("can't have an otherwise"), inside an open if's block (`p->open_ifs`, "doesn't line up with its if… The if on line N starts in column C"), or no if at all. A second plain `otherwise` is "already has an otherwise, on line N".
+- **Header errors** (missing condition, missing colon/comma/then, text after the colon, nothing indented, broken condition) report once, then `parser_skip_line_and_block` skips the line and parses-and-discards an indented block; the rest of the chain is still consumed so it causes no extra errors. `parse_if` sets `ended_with_block` last, because statements inside its blocks reset it.
+- **`:` or `,` right after an operator** (`if x plus:`) is "Something is missing after "plus"" (in `expected_value`).
+
 ### Runtime semantics (implemented in `runtime/es_runtime.h`)
 
 - **Values:** `EsValue` is tagged: nothing, number (`double`), text (pointer and length, always NUL-terminated), or yes/no. Variables are dynamically typed; there are no static types yet.
@@ -111,6 +118,7 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 - **Conversions:** `as a number` accepts optional surrounding spaces, an optional `-`, digits, and optionally `.digits`; anything else is an error. `as text` always works. `length of` counts UTF-8 characters and needs text.
 - **Files:** `write`/`append` write the value's text plus `\n`. Reading a file (`read file`, `contents of file`) strips one final `\n` (and a `\r` before it). A file name must be text. I/O errors read like `I couldn't read the file "x": it doesn't exist.`
 - **Input:** `ask` prints its prompt without a newline, reads one line (stripping `\n`/`\r\n`), and gives empty text at end of input.
+- **`es_if(line, v)`** returns the condition for an `if`/`otherwise if`; anything but yes/no is "An "if" needs yes or no to decide, but this is …" with a "Compare it with something" hint.
 - **`stop the program`** flushes and exits 0. Runtime errors flush stdout, print `Line N: message` (plus an optional hint line) to stderr, and exit 1.
 - **Memory:** runtime text comes from a static block allocator, freed at exit via `atexit`. That's fine while programs have no loops; revisit when loops arrive.
 - **The runtime is header-only** (all `static`) and silences `-Wunused-function` with a GCC/Clang pragma. Generated programs must compile cleanly under `-std=c11 -Wall -Wextra -Wpedantic`.
@@ -194,7 +202,7 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 
 - **Never present unimplemented syntax as working.** Anything that doesn't compile today is labelled "Coming soon" (a proposal whose wording may change). Move an item from the planned-examples list in `docs/roadmap.md` into `examples/` when it ships, and tick its roadmap checkbox.
 - **Error text in the docs is copied from tested `.err` files.** If a message changes, update `docs/errors.md` along with the expected file.
-- Expressions and simple statements are implemented and documented as "Available" (calls and `it` as "Parses only"). The **block** patterns in `docs/vocabulary.md` (`if … otherwise`, `repeat …`, `for each`, `to NAME using …`, `give back`, `stop.`/`skip.`, `file X exists`) are still **proposals, not decisions**. When implementing them, either implement them as written or change the docs in the same commit. Don't let the docs and the parser disagree.
+- Expressions and simple statements are implemented and documented as "Available" (calls and `it` as "Parses only"). The remaining **block** patterns in `docs/vocabulary.md` (`repeat …`, `for each`, `to NAME using …`, `give back`, `stop.`/`skip.`, `file X exists`) are still **proposals, not decisions**. When implementing them, either implement them as written or change the docs in the same commit. Don't let the docs and the parser disagree.
 - Architecture or workflow changes also update `docs/architecture.md` and `CONTRIBUTING.md`. The README's taste program must stay identical to `examples/lexer/taste.es`.
 
 ## Keeping this file current
@@ -203,9 +211,9 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 
 ## Current state of the repo
 
-Phase 1 is in progress. Programs in the sentence syntax compile to C and run; blocks (`if`, loops, functions) don't exist yet.
+Phase 1 is in progress. Programs in the sentence syntax compile to C and run, including `if`/`otherwise` blocks; loops and functions don't exist yet.
 
-- **Layout:** `src/main.c` is the driver. `src/common/` holds arena, util, diag and ast. `src/front/` holds lexer, parse_util, parse_expr, parse_stmt and check. `src/back/` holds codegen_c. `runtime/es_runtime.h` is the runtime, and `tools/embed.c` is a build tool.
+- **Layout:** `src/main.c` is the driver. `src/common/` holds arena, util, diag and ast. `src/front/` holds lexer, parse_util, parse_expr, parse_stmt, parse_if and check. `src/back/` holds codegen_c. `runtime/es_runtime.h` is the runtime, and `tools/embed.c` is a build tool.
 - **Pipeline** (`generate_c` in `src/main.c`, shared by `run`/`build`/`emit`):
   1. Lex and parse.
   2. If there were no errors, run `check_program`.
@@ -216,13 +224,13 @@ Phase 1 is in progress. Programs in the sentence syntax compile to C and run; bl
 - **Stage boundaries:** these now follow the target design. Codegen trusts the checker and reports nothing; it asserts if it ever sees `EXPR_CALL`, `EXPR_IT` or `EXPR_ERROR`. `src/main.c` still has file-scope `arena` and `temp_*` pointers for its `atexit` cleanup (the only global state in the compiler).
 - `src/main.c`: the CLI. `run FILE` / `build FILE -o OUT` / `emit FILE` / `tokens FILE` / `ast FILE`, and `help`. Unknown commands and bad arguments print usage and exit 2.
   - Each invocation creates one `mkdtemp` directory under `$TMPDIR` (or `/tmp`), holding `program.c`, `program` and `session.es`. `atexit` removes it.
-  - **The shell** (no arguments) keeps the session in a `StrBuf`. Each line is appended, written to `session.es` and run through `argv[0] run`, and kept only if that exits 0. So earlier output and `ask` prompts repeat on every line. `exit` or `quit` leaves.
+  - **The shell** (no arguments) keeps the session in a `StrBuf`. Each line is appended, written to `session.es` and run through `argv[0] run`, and kept only if that exits 0. So earlier output and `ask` prompts repeat on every line, and blocks can't be typed (use the one-line `if` forms). `exit` or `quit` leaves.
 - `src/common/arena.{c,h}`: arena allocator (`arena_new`, `arena_alloc` returns zeroed, aligned memory, `arena_strdup`, `arena_sprintf`/`arena_vsprintf`, `arena_free`). It grows in 64 KiB blocks and gives oversized requests their own block. All compiler memory comes from here.
 - `src/common/util.{c,h}`: `StrBuf` (`sb_*`, including `sb_append_quoted`), `Vec(T)` with `vec_push`/`vec_last`/`vec_pop`, `edit_distance` (optimal string alignment, so an adjacent swap counts 1), and `PRINTF_LIKE`.
 - `src/common/diag.{c,h}`: opaque `Diag` made by `diag_new(arena, source, len)`. Report with `diag_error(d, span, fmt, ...)`, then `diag_note(d, fmt, ...)` for help lines attached to the latest error. `Span` is a byte `{offset, length}`. `diag_line` gives the 1-based line and `diag_count` the number of errors. `diag_render` (to a `StrBuf`) and `diag_print` (to a `FILE *`) output every error in report order, separated by blank lines: `Line N: message`, then the source line indented 4 spaces, then carets under the span, then the notes. Carets are clamped to the first line of the span, with at least one. Tabs are copied into the padding, UTF-8 is counted per character, and a trailing `\r` is dropped.
-- `src/common/ast.{h,c}`: `Expr` (kinds ERROR, NUMBER (text plus `is_decimal`), TEXT, BOOLEAN, NOTHING, IT, NAME, CALL, LENGTH, FILE_CONTENTS, UNARY, BINARY, CONVERT), `Stmt` (LET, SET, CHANGE + `ChangeOp`, SAY, ASK, WRITE_FILE, APPEND_FILE, READ_FILE, STOP, each with a `verb` span), `Name {text, pos}`, and `Block` (`Vec(Stmt *)`). Every node has a `SourcePos`. It also has `ast_dump_block` for `easyscript ast`.
+- `src/common/ast.{h,c}`: `Expr` (kinds ERROR, NUMBER (text plus `is_decimal`), TEXT, BOOLEAN, NOTHING, IT, NAME, CALL, LENGTH, FILE_CONTENTS, UNARY, BINARY, CONVERT), `Stmt` (LET, SET, CHANGE + `ChangeOp`, SAY, ASK, WRITE_FILE, APPEND_FILE, READ_FILE, STOP, IF with `IfBranch`es, each with a `verb` span), `Name {text, pos}`, and `Block` (`Vec(Stmt *)`). Every node has a `SourcePos`. It also has `ast_dump_block` for `easyscript ast`.
 - `src/front/lexer.{c,h}`: `lex(arena, diag, source, len)` returns a `TokenList` that always ends with `TOK_EOF`; tokens carry a `filler` span. Also `token_kind_name` and `tokens_dump(tokens, source, out)`.
-- `src/front/parse.h`, `parse_internal.h`, `parse_util.c`, `parse_expr.c`, `parse_stmt.c`: the parser; see the grammar sections above. The expression and statement parsers were each fuzzed with 3,000 inputs under ASan/UBSan, with no findings.
+- `src/front/parse.h`, `parse_internal.h`, `parse_util.c`, `parse_expr.c`, `parse_stmt.c`, `parse_if.c`: the parser; see the grammar sections above. The if parser was fuzzed with 2,500 inputs under ASan/UBSan (no crashes or hangs; all 74 accepted programs compiled with `-Werror`). The expression and statement parsers were each fuzzed with 3,000 inputs under ASan/UBSan, with no findings.
 - `src/front/check.{c,h}`: `check_program(arena, diag, program)`. A `Checker` context holds `made` (names made so far, with lines) and `later` (all names the program makes, for "You make "x" later, on line N").
   - **Making names:** `let` makes a name; making it twice is "You already made …" with a "set" hint. `ask` and `read file … and call it` make the name if it's new and silently reuse it otherwise. `set`/`change`/arithmetic statements and `EXPR_NAME` need an existing name.
   - **Unknown names:** "I don't know anything called "x"." plus one note:
@@ -231,12 +239,14 @@ Phase 1 is in progress. Programs in the sentence syntax compile to C and run; bl
     - "You make "x" later, on line N."
     - otherwise "Make it first, like "let x be 0"."
   - **Not available yet:** `EXPR_CALL` ("I don't know a function called …") and `EXPR_IT` are errors.
+  - **Scopes:** each if branch body is a scope (`check_block`): names made inside are dropped from `made` at its end and recorded in `ended` with the if's line, so a later use says "You made "x" inside the "if" on line N, so it only exists inside that block." A name that exists outside can't be made again inside ("You already made …"); different blocks can make the same name.
 - `src/back/codegen_c.{c,h}`: `codegen_c(arena, program, out)` writes the embedded runtime (the `es_runtime_source` byte array), `static EsValue es_v_<name>;` globals, and `int main(void)`.
   - **Names:** variables are mangled to `es_v_` plus the name, with `_` written as `__` and `'` as `_q`.
   - **Temporaries:** the left operand of every binary operation, and the text of file writes, go into temporaries `es_t1…` declared at the top of `main`. This forces left-to-right evaluation.
   - **Short-circuit:** `and`/`or` compile to `(t = L, es_is_no(t) ? t : es_and(line, t, R))`, and `or` uses `es_is_yes`.
   - **Literals:** numbers are re-printed with `%.17g`, or `HUGE_VAL` if infinite. Text uses octal escapes and `\?`.
   - **Lines:** each statement gets a `/* line N */` comment, and runtime calls receive the node's line.
+  - **if:** `if (es_if(line, C)) { … } else if (es_if(line, C2)) { … } else { … }`, with `Codegen.depth` indenting nested blocks. Names made in blocks are ordinary globals; the checker guarantees they're only used in their block.
   - **Checked:** fuzzed once, with 171 mutated programs that passed the checker. All compiled with `-Wall -Wextra -Werror`.
 - `runtime/es_runtime.h`: see "Runtime semantics" above.
 - `Makefile`: `CC = cc`, `-std=c11 -Wall -Wextra -Isrc`.
@@ -246,19 +256,19 @@ Phase 1 is in progress. Programs in the sentence syntax compile to C and run; bl
   - Zero warnings in both modes. `src/main.c` defines `_XOPEN_SOURCE 700` and `_DARWIN_C_SOURCE`.
 - `tests/`:
   - 40 unit tests
-  - 31 AST tests (16 valid, 15 `err_*`)
+  - 37 AST tests (20 valid, including `if_block`, `if_chain`, `if_inline`, `if_nested`; 17 `err_*`, including `err_if_header`, `err_if_otherwise`)
   - 21 token tests (14 valid, 7 `err_*`)
-  - 31 run tests (13 programs covering numbers, number equality with tolerance, text (including `followed by` precedence), logic and short-circuiting, every comparison, variables, files, `ask` with and without input, `stop`, sentences and synonyms; plus 18 `err_*` runtime-error tests, including left-to-right error order)
-  - 10 compile-error tests (checker messages and one parse error)
-  - 33 examples, 2 README sync checks, and CLI checks
+  - 39 run tests (18 programs, including `if_chain`, `if_nested`, `if_inline`, `if_scope`, `if_short_circuit`, covering numbers, number equality with tolerance, text (including `followed by` precedence), logic and short-circuiting, every comparison, variables, files, `ask` with and without input, `stop`, sentences and synonyms; plus 21 `err_*` runtime-error tests, including left-to-right error order and non-yes/no `if`, `otherwise if` and one-line conditions)
+  - 13 compile-error tests (checker messages including block scopes, and one parse error)
+  - 35 examples, 2 README sync checks, and CLI checks
 - **Docs:**
   - `README.md`: front page with "A first program" (runs, and is tested), "A taste of what's coming" (preview), honest status, roadmap with Notebook, design rules, build/CLI, pipeline, links, and "License: TBD".
-  - `docs/language-guide.md`: chapters 0–4 and 8 available; `if`, loops, functions and `file X exists` coming soon.
+  - `docs/language-guide.md`: chapters 0–5 and 8 available; loops, functions and `file X exists` coming soon.
   - `docs/vocabulary.md`: statuses Available / Parses only (calls, `it`) / Coming soon.
   - Also `docs/errors.md` (lexer, parser, checker and runtime errors), `docs/architecture.md`, `docs/roadmap.md`, `CHANGELOG.md`, `CONTRIBUTING.md` and `examples/README.md`.
 - **Examples:**
-  - `examples/programs/` (8 runnable): `hello`, `first_program`, `variables`, `text`, `logic`, `ask_name` (+ `.in`), `files`, `err_divide_by_zero`.
-  - `examples/parser/` (15): syntax-tree demos, many using names they never make.
+  - `examples/programs/` (9 runnable): `hello`, `first_program`, `variables`, `text`, `logic`, `decisions`, `ask_name` (+ `.in`), `files`, `err_divide_by_zero`.
+  - `examples/parser/` (16): syntax-tree demos, many using names they never make, plus `err_otherwise_misplaced`.
   - `examples/lexer/` (10), including `taste`.
 - No license has been chosen; the user will pick one.
 - `old/`: the 2024 prototype `.code` files. Historical only; they no longer compile.

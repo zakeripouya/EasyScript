@@ -1,0 +1,56 @@
+if (one line) [1:1]
+  branch if [1:1]
+    condition
+      equal [1:4]
+        name x [1:4]
+        number 5 [1:9]
+    then
+      say [1:12]
+        text "comma" [1:16]
+if (one line) [2:1]
+  branch if [2:1]
+    condition
+      equal [2:4]
+        name x [2:4]
+        number 5 [2:9]
+    then
+      say [2:16]
+        text "then" [2:20]
+if (one line) [3:1]
+  branch if [3:1]
+    condition
+      equal [3:4]
+        name x [3:4]
+        number 5 [3:9]
+    then
+      add x [3:12]
+        number 1 [3:16]
+say [3:24]
+  name x [3:28]
+if (one line) [4:1]
+  branch if [4:1]
+    condition
+      equal [4:4]
+        name x [4:4]
+        number 5 [4:9]
+    then
+      say [4:16]
+        text "capitals" [4:20]
+if (one line) [5:8]
+  branch if [5:8]
+    condition
+      equal [5:11]
+        name x [5:11]
+        number 5 [5:16]
+    then
+      say [5:26]
+        text "polite" [5:30]
+if (one line) [6:1]
+  branch if [6:1]
+    condition
+      equal [6:4]
+        name x [6:4]
+        number 5 [6:9]
+    then
+      ask, call the answer reply [6:12]
+        text "?" [6:16]

@@ -14,7 +14,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [2. Values and expressions](#2-values-and-expressions) | Available (calling functions: coming soon) |
 | [3. Variables](#3-variables) | Available |
 | [4. Output and input](#4-output-and-input) | Available |
-| [5. Decisions](#5-decisions) | Coming soon |
+| [5. Decisions](#5-decisions) | Available |
 | [6. Loops](#6-loops) | Coming soon |
 | [7. Functions](#7-functions) | Coming soon |
 | [8. Files](#8-files) | Available, except `file X exists` |
@@ -325,9 +325,10 @@ Try it: `./easyscript run examples/programs/ask_name.es`
 
 ## 5. Decisions
 
-**Status: Coming soon (Phase 1).** These examples are the planned syntax and don't compile yet.
+**Status: Available.**
 
 ```
+let temperature be 24.
 if temperature is greater than 30:
     say "It's hot.".
 otherwise if temperature is less than 10:
@@ -336,7 +337,20 @@ otherwise:
     say "It's nice.".
 ```
 
-The conditions are the comparisons from [chapter 2](#2-values-and-expressions), which already parse today; the `if` sentences around them are coming soon.
+End the `if` line with a colon, and indent the sentences that belong to it (4 spaces is usual). The block ends where the indentation goes back. `otherwise if` adds another choice, checked only if everything before it was no; a plain `otherwise` (or `else`) comes last and catches everything else. An `otherwise` has to start in the same column as its `if`, and blocks can hold more `if`s.
+
+For a single sentence, you can stay on one line with a comma or `then`:
+
+```
+if temperature is 24, say "Exactly 24.".
+if temperature is at least 20 then say "Maybe go for a walk.".
+```
+
+The conditions are the comparisons from [chapter 2](#2-values-and-expressions), and they must be yes or no. `if temperature:` on its own is a runtime error, because a number isn't yes or no.
+
+A name made inside a block only exists inside it. If you need it afterwards, make it before the `if` and change it inside with `set`.
+
+Try it: `./easyscript run examples/programs/decisions.es`
 
 If a sentence could be read two ways, EasyScript doesn't guess. It stops and shows you the possible readings so you can say which one you meant.
 

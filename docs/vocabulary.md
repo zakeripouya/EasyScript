@@ -178,10 +178,21 @@ Reading a file inside an expression also works: `contents of file X` ([Built-in 
 
 | Pattern | Meaning | Example | Status |
 |---|---|---|---|
-| `if CONDITION:` | Run the block only when the condition is yes | `if total is greater than 10:` | Coming soon (Phase 1); the condition itself is Available |
-| `otherwise if CONDITION:` | Checked when the conditions before it were no | `otherwise if total is 10:` | Coming soon (Phase 1) |
-| `otherwise:` | Runs when every condition before it was no | `otherwise:` | Coming soon (Phase 1) |
-| `else` | Synonym of `otherwise` | `else:` | Coming soon (Phase 1) |
+| `if CONDITION:` + indented lines | Run the indented sentences only when the condition is yes | `if total is greater than 10:` | Available |
+| `otherwise if CONDITION:` + indented lines | Checked only when every condition before it was no | `otherwise if total is 10:` | Available |
+| `otherwise:` + indented lines | Runs when every condition before it was no | `otherwise:` | Available |
+| `else` | Synonym of `otherwise` (also `else if`) | `else:` | Available |
+| `if CONDITION, SENTENCE` | One-line form: one simple sentence, on the same line | `if x is 5, say "five".` | Available |
+| `if CONDITION then SENTENCE` | Same as the comma form | `if x is 5 then say "five".` | Available |
+
+Rules:
+
+- **Blocks:** the colon ends the line, and the sentences that belong to it are on the lines below, indented further than the `if` (4 spaces is usual). The block ends where the indentation goes back. Blocks can contain more `if`s.
+- **Lining up:** an `otherwise` belongs to the `if` that starts in the same column, just above it. An `otherwise` indented differently, or with no `if` above it, is an error that says so (and which column the `if` is in).
+- **Order:** any number of `otherwise if`s, then at most one plain `otherwise`, last.
+- **One-line ifs** hold a single simple sentence (not another `if`), and can't have an `otherwise`; the sentence ends at the period or the end of the line, so in `if x is 5, add 1 to x. say x` the `say` always runs.
+- **Conditions must be yes or no.** Anything else is a runtime error with the line number: "Line 3: An "if" needs yes or no to decide, but this is a number." Conditions short-circuit like any `and`/`or`.
+- **Names made inside a block exist only inside it.** Using one after the block is an error that explains this; make the name before the `if` to use it afterwards. A name that exists outside can't be made again inside (use `set` to change it).
 
 ## Loops
 

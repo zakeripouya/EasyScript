@@ -22,7 +22,13 @@ typedef struct {
     StrBuf body;               // statements of main()
     Vec(const char *) globals; // variable names, in the order they're first made
     size_t temps;              // es_t1 ... es_tN, declared at the top of main()
+    size_t depth;              // how many if blocks the current statement is inside
 } Codegen;
+
+// Starts a line of main()'s body at the current nesting depth.
+static void indent(Codegen *g) {
+    sb_append_repeat(&g->body, ' ', 4 * (g->depth + 1));
+}
 
 static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out);
 
@@ -189,7 +195,7 @@ static const char *change_function(ChangeOp op) {
 
 // name = <rest of the line, written by the caller>
 static void begin_assignment(Codegen *g, const char *name) {
-    sb_append(&g->body, "    ");
+    indent(g);
     append_c_name(&g->body, name);
     sb_append(&g->body, " = ");
 }
@@ -212,15 +218,51 @@ static void emit_change(Codegen *g, const Stmt *stmt) {
 
 static void emit_file_write(Codegen *g, const Stmt *stmt) {
     size_t t = new_temp(g);
-    sb_appendf(&g->body, "    es_t%zu = ", t);
+    indent(g);
+    sb_appendf(&g->body, "es_t%zu = ", t);
     emit_expr(g, stmt->as.file_write.text, &g->body);
-    sb_appendf(&g->body, ";\n    es_write_file(%zu, es_t%zu, ", stmt->pos.line, t);
+    sb_append(&g->body, ";\n");
+    indent(g);
+    sb_appendf(&g->body, "es_write_file(%zu, es_t%zu, ", stmt->pos.line, t);
     emit_expr(g, stmt->as.file_write.path, &g->body);
     sb_appendf(&g->body, ", %d);\n", stmt->kind == STMT_APPEND_FILE);
 }
 
+static void emit_stmt(Codegen *g, const Stmt *stmt);
+
+static void emit_block(Codegen *g, const Block *block) {
+    g->depth++;
+    for (size_t i = 0; i < block->len; i++) {
+        emit_stmt(g, block->items[i]);
+    }
+    g->depth--;
+}
+
+// if (es_if(line, C1)) { ... } else if (es_if(line, C2)) { ... } else { ... }
+static void emit_if(Codegen *g, const Stmt *stmt) {
+    for (size_t i = 0; i < stmt->as.if_stmt.branches.len; i++) {
+        const IfBranch *branch = &stmt->as.if_stmt.branches.items[i];
+        if (i == 0) {
+            indent(g);
+        } else {
+            sb_append(&g->body, " else ");
+        }
+        if (branch->condition) {
+            sb_appendf(&g->body, "if (es_if(%zu, ", branch->pos.line);
+            emit_expr(g, branch->condition, &g->body);
+            sb_append(&g->body, ")) ");
+        }
+        sb_append(&g->body, "{\n");
+        emit_block(g, &branch->body);
+        indent(g);
+        sb_append_char(&g->body, '}');
+    }
+    sb_append_char(&g->body, '\n');
+}
+
 static void emit_stmt(Codegen *g, const Stmt *stmt) {
-    sb_appendf(&g->body, "    /* line %zu */\n", stmt->pos.line);
+    indent(g);
+    sb_appendf(&g->body, "/* line %zu */\n", stmt->pos.line);
     switch (stmt->kind) {
     case STMT_LET:
         declare_global(g, stmt->as.assign.name.text);
@@ -229,7 +271,8 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
     case STMT_SET: emit_assign(g, stmt->as.assign.name.text, stmt->as.assign.value); break;
     case STMT_CHANGE: emit_change(g, stmt); break;
     case STMT_SAY:
-        sb_append(&g->body, "    es_say(");
+        indent(g);
+        sb_append(&g->body, "es_say(");
         emit_expr(g, stmt->as.value, &g->body);
         sb_append(&g->body, ");\n");
         break;
@@ -247,7 +290,11 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
         emit_call1(g, "es_read_file", stmt->pos.line, stmt->as.read_file.path, &g->body);
         sb_append(&g->body, ";\n");
         break;
-    case STMT_STOP: sb_append(&g->body, "    es_stop();\n"); break;
+    case STMT_STOP:
+        indent(g);
+        sb_append(&g->body, "es_stop();\n");
+        break;
+    case STMT_IF: emit_if(g, stmt); break;
     }
 }
 

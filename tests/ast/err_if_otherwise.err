@@ -1,0 +1,29 @@
+Line 2: There's no "if" before this "otherwise".
+    otherwise:
+    ^^^^^^^^^
+An "otherwise" continues the "if" that starts in the same column, just above it.
+
+Line 6: This "otherwise" doesn't line up with its "if".
+        otherwise:
+        ^^^^^^^^^
+An "otherwise" has to start in the same column as its "if". The "if" on line 4 starts in column 1.
+
+Line 9: A one-line "if" can't have an "otherwise".
+    otherwise:
+    ^^^^^^^^^
+Write the "if" with a colon and its sentences on indented lines below it; then the "otherwise" can follow.
+
+Line 15: This "if" already has an "otherwise", on line 13.
+    otherwise:
+    ^^^^^^^^^
+The plain "otherwise" has to come last. For more choices, use "otherwise if" before it.
+
+Line 19: I expected a colon after this "otherwise", but found ",".
+    otherwise, say "one-line otherwise"
+             ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 22: Something is missing after "otherwise if".
+    else if:
+    ^^^^^^^
+Add a condition that's yes or no, like "if x is 5:".

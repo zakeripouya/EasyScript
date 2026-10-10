@@ -1,0 +1,13 @@
+if [1:1]
+  branch if [1:1]
+    condition
+      equal [1:4]
+        name x [1:4]
+        number 5 [1:9]
+    then
+      say [2:5]
+        text "five" [2:9]
+      say [3:5]
+        text "still five" [3:9]
+say [4:1]
+  text "after" [4:5]

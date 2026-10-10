@@ -1,0 +1,22 @@
+let x [1:1]
+  number 1 [1:10]
+if [4:1]
+  branch if [4:1]
+    condition
+      equal [4:4]
+        name x [4:4]
+        number 1 [4:9]
+    then
+      say [5:5]
+        text "one" [5:9]
+if (one line) [8:1]
+  branch if [8:1]
+    condition
+      equal [8:4]
+        name x [8:4]
+        number 1 [8:9]
+    then
+      say [8:12]
+        text "one line" [8:16]
+say [24:1]
+  text "end" [24:5]

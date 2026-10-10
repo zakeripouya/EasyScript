@@ -107,8 +107,35 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch) {
     case STMT_APPEND_FILE: return "append to file";
     case STMT_READ_FILE: sb_appendf(scratch, "read file, call it %s", stmt->as.read_file.name.text); break;
     case STMT_STOP: return "stop the program";
+    case STMT_IF: return stmt->as.if_stmt.one_line ? "if (one line)" : "if";
     }
     return scratch->data;
+}
+
+static void dump_stmt(const Stmt *stmt, size_t depth, StrBuf *out);
+
+static void dump_label(size_t depth, StrBuf *out, const char *label) {
+    sb_append_repeat(out, ' ', depth * 2);
+    sb_append(out, label);
+    sb_append_char(out, '\n');
+}
+
+// branch if / branch otherwise if / branch otherwise, then "condition" and
+// "then" sections.
+static void dump_if(const Stmt *stmt, size_t depth, StrBuf *out) {
+    for (size_t i = 0; i < stmt->as.if_stmt.branches.len; i++) {
+        const IfBranch *branch = &stmt->as.if_stmt.branches.items[i];
+        const char *label = i == 0 ? "branch if" : branch->condition ? "branch otherwise if" : "branch otherwise";
+        dump_line(&branch->pos, depth + 1, out, label);
+        if (branch->condition) {
+            dump_label(depth + 2, out, "condition");
+            dump_expr(branch->condition, depth + 3, out);
+        }
+        dump_label(depth + 2, out, "then");
+        for (size_t j = 0; j < branch->body.len; j++) {
+            dump_stmt(branch->body.items[j], depth + 3, out);
+        }
+    }
 }
 
 static void dump_stmt(const Stmt *stmt, size_t depth, StrBuf *out) {
@@ -127,6 +154,7 @@ static void dump_stmt(const Stmt *stmt, size_t depth, StrBuf *out) {
         break;
     case STMT_READ_FILE: dump_expr(stmt->as.read_file.path, depth + 1, out); break;
     case STMT_STOP: break;
+    case STMT_IF: dump_if(stmt, depth, out); break;
     }
 }
 

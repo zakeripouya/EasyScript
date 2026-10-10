@@ -269,6 +269,15 @@ static EsValue es_not(int line, EsValue a) {
     return es_yesno(!a.yes);
 }
 
+/* The condition of an if or "otherwise if" must be yes or no. */
+static bool es_if(int line, EsValue v) {
+    if (v.kind != ES_YESNO) {
+        es_fail(line, "Compare it with something, like \"if x is 5\".",
+                "An \"if\" needs yes or no to decide, but this is %s.", es_kind_name(v));
+    }
+    return v.yes;
+}
+
 /* --- Comparisons ---------------------------------------------------------- */
 
 /* Numbers within a relative 1e-12 of each other count as equal, so

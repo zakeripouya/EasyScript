@@ -9,8 +9,9 @@ typedef struct {
 typedef struct {
     Arena *arena;
     Diag *diag;
-    Vec(Symbol) made;    // names made so far, in order
+    Vec(Symbol) made;    // names that exist here: made so far, in blocks still open
     Vec(Symbol) later;   // every name the program makes anywhere, for "you make it later"
+    Vec(Symbol) ended;   // names whose block has ended; line = the if that held them
 } Checker;
 
 static const Symbol *find(const Symbol *items, size_t len, const char *name) {
@@ -71,7 +72,11 @@ static void report_unknown(Checker *c, const char *name, SourcePos pos) {
     size_t count;
     const Symbol *near = closest(c, name, &count);
     const Symbol *later = find(c->later.items, c->later.len, name);
-    if (near && count == 1) {
+    const Symbol *ended = find(c->ended.items, c->ended.len, name);
+    if (ended) {
+        diag_note(c->diag, "You made \"%s\" inside the \"if\" on line %zu, so it only exists inside that block. "
+                           "To use it afterwards, make it before the \"if\".", name, ended->line);
+    } else if (near && count == 1) {
         diag_note(c->diag, "Did you mean \"%s\"? You made it on line %zu.", near->name, near->line);
     } else if (near) {
         note_choices(c, name, edit_distance(c->arena, name, near->name));
@@ -123,6 +128,30 @@ static void check_let(Checker *c, const Stmt *stmt) {
     make(c, name);
 }
 
+static void check_stmt(Checker *c, const Stmt *stmt);
+
+// A block's statements in a scope of their own: names made inside are
+// forgotten (and remembered as "ended") when it ends.
+static void check_block(Checker *c, const Block *block, size_t if_line) {
+    size_t outer = c->made.len;
+    for (size_t i = 0; i < block->len; i++) {
+        check_stmt(c, block->items[i]);
+    }
+    for (size_t i = outer; i < c->made.len; i++) {
+        Symbol ended = {c->made.items[i].name, if_line};
+        vec_push(c->arena, &c->ended, ended);
+    }
+    c->made.len = outer;
+}
+
+static void check_if(Checker *c, const Stmt *stmt) {
+    for (size_t i = 0; i < stmt->as.if_stmt.branches.len; i++) {
+        const IfBranch *branch = &stmt->as.if_stmt.branches.items[i];
+        if (branch->condition) check_expr(c, branch->condition);
+        check_block(c, &branch->body, stmt->pos.line);
+    }
+}
+
 static void check_stmt(Checker *c, const Stmt *stmt) {
     switch (stmt->kind) {
     case STMT_LET: check_let(c, stmt); break;
@@ -149,6 +178,7 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
         make(c, &stmt->as.read_file.name);
         break;
     case STMT_STOP: break;
+    case STMT_IF: check_if(c, stmt); break;
     }
 }
 
@@ -156,6 +186,12 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
 static void collect_names(Checker *c, const Block *program) {
     for (size_t i = 0; i < program->len; i++) {
         const Stmt *stmt = program->items[i];
+        if (stmt->kind == STMT_IF) {
+            for (size_t b = 0; b < stmt->as.if_stmt.branches.len; b++) {
+                collect_names(c, &stmt->as.if_stmt.branches.items[b].body);
+            }
+            continue;
+        }
         const Name *name = stmt->kind == STMT_LET    ? &stmt->as.assign.name
                            : stmt->kind == STMT_ASK  ? &stmt->as.ask.answer
                            : stmt->kind == STMT_READ_FILE ? &stmt->as.read_file.name

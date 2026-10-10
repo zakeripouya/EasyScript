@@ -13,6 +13,7 @@ Small programs, one per feature. **Every example is checked by `make test`** aga
 | [variables.es](programs/variables.es) | `let`, `add … to`, `increase`, `multiply`, `set` |
 | [text.es](programs/text.es) | Joining text with `and` and `followed by`, `length of`, `as a number` |
 | [logic.es](programs/logic.es) | Comparisons, `and`, `or`, `not` |
+| [decisions.es](programs/decisions.es) | `if`, `otherwise if`, `otherwise`, and the one-line forms |
 | [ask_name.es](programs/ask_name.es) | `ask … and call the answer …` (input from `ask_name.in`) |
 | [files.es](programs/files.es) | `write`, `append`, and `read file` |
 | [err_divide_by_zero.es](programs/err_divide_by_zero.es) | A runtime error: "Line 3: You divided by zero." |
@@ -63,6 +64,7 @@ These show the syntax tree for each kind of sentence (`easyscript ast`). Many us
 | [err_missing_than.es](parser/err_missing_than.es) | Error: "Did you mean "is greater than"?" |
 | [err_chained_comparison.es](parser/err_chained_comparison.es) | Error: `1 < x < 10` |
 | [err_ambiguous_call.es](parser/err_ambiguous_call.es) | Error: a sentence that could mean two things |
+| [err_otherwise_misplaced.es](parser/err_otherwise_misplaced.es) | Error: an `otherwise` that doesn't line up with its `if` |
 
 ```bash
 ./easyscript ast examples/parser/variables.es

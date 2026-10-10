@@ -1,0 +1,40 @@
+if [1:1]
+  branch if [1:1]
+    condition
+      greater or equal [1:4]
+        name score [1:4]
+        number 90 [1:22]
+    then
+      say [2:5]
+        text "A" [2:9]
+  branch otherwise if [3:1]
+    condition
+      greater or equal [3:14]
+        name score [3:14]
+        number 80 [3:32]
+    then
+      say [4:5]
+        text "B" [4:9]
+  branch otherwise if [5:1]
+    condition
+      greater or equal [5:9]
+        name score [5:9]
+        number 70 [5:27]
+    then
+      say [6:5]
+        text "C" [6:9]
+  branch otherwise [7:1]
+    then
+      say [8:5]
+        text "try again" [8:9]
+if [9:1]
+  branch if [9:1]
+    condition
+      name done [9:4]
+    then
+      say [10:5]
+        number 1 [10:9]
+  branch otherwise [11:1]
+    then
+      say [12:5]
+        number 2 [12:9]

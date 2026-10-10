@@ -1,0 +1,4 @@
+Line 4: This "otherwise" doesn't line up with its "if".
+        otherwise:
+        ^^^^^^^^^
+An "otherwise" has to start in the same column as its "if". The "if" on line 2 starts in column 1.

@@ -2,7 +2,7 @@
 #define FRONT_PARSE_INTERNAL_H
 
 // Shared by the parser's source files (parse_util.c, parse_expr.c,
-// parse_stmt.c). Not for use outside src/front/.
+// parse_stmt.c, parse_if.c). Not for use outside src/front/.
 
 #include <stdbool.h>
 #include "common/ast.h"
@@ -17,6 +17,9 @@ typedef struct {
     size_t pos;
     Span prev_span;       // the last token or phrase consumed
     bool sentence_failed; // an error was reported; later ones in this sentence are suppressed
+    bool ended_with_block;  // the statement just parsed ended with an indented block
+    bool ends_with_name;    // ... or ended with a name or keyword ("add 5 to total")
+    Vec(SourcePos) open_ifs; // ifs whose blocks are being parsed, innermost last
 } Parser;
 
 // A word or symbol sequence with a meaning, e.g. "is greater than".
@@ -90,5 +93,23 @@ bool parser_reject_bare_decimal(Parser *p);
 // --- Grammar ---------------------------------------------------------------
 
 Expr *parse_expression(Parser *p);
+
+// One statement, including a leading "please". NULL after an error. Sets
+// ended_with_block and ends_with_name.
+Stmt *parse_statement(Parser *p);
+
+// Statements until the end of the file, or (in_block) until and including
+// the DEDENT that closes the block.
+void parse_statements(Parser *p, Block *block, bool in_block);
+
+// Skips to the end of the line. If an indented block follows, parses and
+// discards it, so a broken header doesn't cause errors about its block.
+void parser_skip_line_and_block(Parser *p);
+
+// parse_if.c
+bool parser_at_otherwise(const Parser *p);  // "otherwise" or "else"
+Stmt *parse_if(Parser *p, const Token *verb);
+// An "otherwise" that doesn't belong to an if just above it.
+void parse_orphan_otherwise(Parser *p, const Stmt *previous);
 
 #endif

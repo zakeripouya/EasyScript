@@ -7,6 +7,7 @@
 //   say/print/show/display/write E      ask E and call the answer X
 //   write E to file F                   append E to file F
 //   read file F and call it X           stop the program
+//   if C: / if C, S / if C then S        (parse_if.c)
 
 #include <string.h>
 #include "front/parse.h"
@@ -242,6 +243,11 @@ static Stmt *parse_read(Parser *p, const Token *verb, const StmtForm *form) {
     return stmt;
 }
 
+static Stmt *parse_if_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parse_if(p, verb);
+}
+
 static Stmt *parse_stop(Parser *p, const Token *verb, const StmtForm *form) {
     if (!expect_phrase(p, "program", "the program", form->example)) return NULL;
     return new_stmt(p, STMT_STOP, verb);
@@ -266,6 +272,7 @@ static const StmtForm forms[] = {
     {"append", parse_append, false, 0, NULL, "append \"hello\" to file \"notes.txt\""},
     {"read", parse_read, true, 0, NULL, "read file \"notes.txt\" and call it notes"},
     {"stop", parse_stop, true, 0, NULL, "stop the program"},
+    {"if", parse_if_form, false, 0, NULL, "if total is 5, say \"five\""},
 };
 
 // --- Sentences ---------------------------------------------------------------
@@ -308,8 +315,9 @@ static void report_unknown_start(Parser *p) {
     }
 }
 
-static Stmt *parse_statement(Parser *p, bool *ends_with_name) {
-    *ends_with_name = false;
+Stmt *parse_statement(Parser *p) {
+    p->ended_with_block = false;
+    p->ends_with_name = false;
     if (parser_at_word(p, 0, "please")) {
         parser_advance(p);
         if (parser_at_sentence_end(p)) {
@@ -326,7 +334,7 @@ static Stmt *parse_statement(Parser *p, bool *ends_with_name) {
         return NULL;
     }
     parser_advance(p);
-    *ends_with_name = form->ends_with_name;
+    p->ends_with_name = form->ends_with_name;  // a one-line if's inner statement overrides this
     Stmt *stmt = form->parse(p, verb, form);
     if (stmt) {
         SourcePos end = {p->prev_span, 0, 0};
@@ -339,6 +347,19 @@ static void skip_sentence(Parser *p) {
     while (!parser_at_sentence_end(p)) parser_advance(p);
 }
 
+void parser_skip_line_and_block(Parser *p) {
+    while (!parser_at(p, 0, TOK_NEWLINE) && !parser_at(p, 0, TOK_EOF) && !parser_at(p, 0, TOK_DEDENT)) {
+        parser_advance(p);
+    }
+    if (parser_at(p, 0, TOK_NEWLINE)) parser_advance(p);
+    p->sentence_failed = false;
+    if (parser_at(p, 0, TOK_INDENT)) {
+        parser_advance(p);
+        Block discarded = {0};
+        parse_statements(p, &discarded, true);
+    }
+}
+
 static void report_extra_words(Parser *p) {
     const Token *token = parser_peek(p, 0);
     if (parser_error(p, token->span, "I expected the sentence to end after %s.", parser_quoted(p, p->prev_span))) {
@@ -347,9 +368,9 @@ static void report_extra_words(Parser *p) {
 }
 
 // After a statement: a period, the end of the line, or the end of the file.
-static void end_statement(Parser *p, bool ends_with_name) {
+static void end_statement(Parser *p) {
     if (!p->sentence_failed && !parser_at_sentence_end(p)) {
-        if (ends_with_name) {
+        if (p->ends_with_name) {
             report_extra_words(p);
         } else {
             parser_report_leftover(p);
@@ -361,12 +382,16 @@ static void end_statement(Parser *p, bool ends_with_name) {
     p->sentence_failed = false;
 }
 
+// An indented block that nothing opened: report it, then parse and discard
+// it so its DEDENT can't close an enclosing block early.
 static void reject_indent(Parser *p) {
     const Token *indent = parser_advance(p);
     if (parser_error(p, indent->span, "This line is indented, but nothing above it starts a block.")) {
         diag_note(p->diag, "Remove the spaces at the start of the line.");
     }
     p->sentence_failed = false;
+    Block discarded = {0};
+    parse_statements(p, &discarded, true);
 }
 
 // A period where a sentence should start: "say 1.." or ".5".
@@ -381,6 +406,35 @@ static void reject_stray_period(Parser *p) {
     p->sentence_failed = false;
 }
 
+void parse_statements(Parser *p, Block *block, bool in_block) {
+    const Stmt *previous = NULL;  // the statement before, for a stray "otherwise"
+    while (!parser_at(p, 0, TOK_EOF)) {
+        TokenKind kind = parser_peek(p, 0)->kind;
+        if (kind == TOK_DEDENT) {
+            parser_advance(p);
+            if (in_block) return;
+        } else if (kind == TOK_INDENT) {
+            reject_indent(p);
+        } else if (kind == TOK_PERIOD) {
+            reject_stray_period(p);
+        } else if (kind == TOK_NEWLINE) {
+            parser_advance(p);
+        } else if (parser_at_otherwise(p)) {
+            parse_orphan_otherwise(p, previous);
+            previous = NULL;
+        } else {
+            Stmt *stmt = parse_statement(p);
+            if (stmt && !p->sentence_failed) vec_push(p->arena, block, stmt);
+            if (p->ended_with_block) {
+                p->sentence_failed = false;
+            } else {
+                end_statement(p);
+            }
+            previous = stmt;
+        }
+    }
+}
+
 Block *parse_program(Arena *arena, Diag *diag, const char *source, const TokenList *tokens) {
     Parser p = {0};
     p.arena = arena;
@@ -390,20 +444,6 @@ Block *parse_program(Arena *arena, Diag *diag, const char *source, const TokenLi
     p.count = tokens->len;
 
     Block *program = arena_alloc(arena, sizeof(Block));
-    while (!parser_at(&p, 0, TOK_EOF)) {
-        TokenKind kind = parser_peek(&p, 0)->kind;
-        if (kind == TOK_INDENT) {
-            reject_indent(&p);
-        } else if (kind == TOK_PERIOD) {
-            reject_stray_period(&p);
-        } else if (kind == TOK_DEDENT || kind == TOK_NEWLINE) {
-            parser_advance(&p);
-        } else {
-            bool ends_with_name;
-            Stmt *stmt = parse_statement(&p, &ends_with_name);
-            if (stmt && !p.sentence_failed) vec_push(arena, program, stmt);
-            end_statement(&p, ends_with_name);
-        }
-    }
+    parse_statements(&p, program, false);
     return program;
 }

@@ -1,0 +1,4 @@
+Line 4: I don't know anything called "secret".
+    say secret
+        ^^^^^^
+You made "secret" inside the "if" on line 2, so it only exists inside that block. To use it afterwards, make it before the "if".

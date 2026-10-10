@@ -11,7 +11,8 @@
 //
 // "let", "ask ... and call the answer X", and "read file ... and call it X"
 // make a name; "set", "change", and the arithmetic statements need one that
-// exists. Only run it on a program that parsed without errors.
+// exists. A name made inside a block (the body of an if branch) exists only
+// until that block ends. Only run it on a program that parsed without errors.
 void check_program(Arena *arena, Diag *diag, const Block *program);
 
 #endif

@@ -149,6 +149,17 @@ The parser also explains:
 
 After an error the parser skips to the end of that sentence and carries on, so you see one error per sentence and every sentence gets checked. The complete, tested set is in [`tests/ast/`](../tests/ast/) (the `err_*.err` files).
 
+**An "otherwise" that doesn't line up with its "if"**: [`err_otherwise_misplaced.es`](../examples/parser/err_otherwise_misplaced.es)
+
+```
+Line 4: This "otherwise" doesn't line up with its "if".
+        otherwise:
+        ^^^^^^^^^
+An "otherwise" has to start in the same column as its "if". The "if" on line 2 starts in column 1.
+```
+
+Other `if` mistakes the parser explains: a missing colon (or comma, or `then`), sentences on the same line after the colon, nothing indented under an `if`, a missing condition, an `otherwise` with no `if` above it or after a one-line `if`, a second plain `otherwise`, and an `if` inside a one-line `if`. See [`tests/ast/err_if_header.es`](../tests/ast/err_if_header.es) and [`err_if_otherwise.es`](../tests/ast/err_if_otherwise.es).
+
 ### From the checker
 
 The checker makes sure every name you use has been made with `let` (or by `ask` or `read file`) before it's used, and that no name is made twice. It only runs when the program has no parser errors, so one mistake never causes a flood of follow-on errors.
@@ -180,6 +191,15 @@ Line 2: You already made "x" on line 1.
 To change it, write "set x to ...".
 ```
 
+**A name made inside an `if`, used after it**: [`scope_after_if.es`](../tests/errors/scope_after_if.es)
+
+```
+Line 4: I don't know anything called "secret".
+    say secret
+        ^^^^^^
+You made "secret" inside the "if" on line 2, so it only exists inside that block. To use it afterwards, make it before the "if".
+```
+
 Calling a function (`greet using "Ada"`) and `it` are also checker errors for now, because what they mean isn't implemented yet. The full, tested set is in [`tests/errors/`](../tests/errors/).
 
 ### While the program runs
@@ -202,6 +222,7 @@ Line 3: I can't subtract text from a number.
 |---|---|
 | Arithmetic with text, yes/no, or nothing | "I can't add text to a number." With text, the hint suggests `and` or `followed by` |
 | Dividing or `mod` by zero | "You divided by zero." |
+| An `if` condition that isn't yes or no (`if count:`) | "An "if" needs yes or no to decide, but this is a number." with a hint to compare it |
 | `and` between two numbers, or between yes/no and text | explains, and suggests `plus` or `as text` |
 | `or` / `not` without yes/no values | says which side wasn't yes or no |
 | Ordering text against a number (`1 is less than "2"`) | "I can't compare a number with text." with a hint to use `as a number` |
@@ -214,6 +235,6 @@ Parts of an expression are worked out left to right, so when two parts would bot
 
 ## Coming soon
 
-**Ambiguous blocks.** Blocks (`if`, loops, functions; coming soon) will follow the same rule as everything else: if a sentence could be read in more than one way, the compiler stops and lists the readings.
+**Ambiguous loops and functions.** Loops and functions (coming soon) will follow the same rule as everything else: if a sentence could be read in more than one way, the compiler stops and lists the readings.
 
 **Source lines in runtime errors.** Runtime errors will show the line of your program and point at the part that failed, like compile errors do.

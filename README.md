@@ -59,6 +59,7 @@ EasyScript is in **Phase 1 (core language)**. Programs written in the sentence s
 | Values and expressions | Numbers, text, yes/no, nothing; arithmetic in words or symbols; comparisons (`is at least`, `>=`, ...); `and`/`or`/`not`; joining text with `and` or `followed by`; `as a number`, `as text`, `length of`, `contents of file` |
 | Output and input | `say` (or `print`, `show`, `display`, `write`), `ask "..." and call the answer name` |
 | Files | `write ... to file`, `append ... to file`, `read file ... and call it ...` |
+| Decisions | `if ... :` with indented blocks, `otherwise if`, `otherwise` (or `else`), and one-line `if x is 5, say "hi".` / `if x is 5 then say "hi".` |
 | Other | `stop the program`; any sentence can start with `please` |
 | Friendly errors | Compile errors show the line, the source, carets, and a suggestion ("Did you mean "total"? You made it on line 1."). Runtime errors say what happened and where: "Line 8: You divided by zero." |
 | Tools | `run`, `build`, `emit`, `tokens`, `ast`, and an interactive shell. Generated programs are self-contained C. |
@@ -66,13 +67,13 @@ EasyScript is in **Phase 1 (core language)**. Programs written in the sentence s
 
 See the runnable [example programs](examples/programs/).
 
-**Coming soon** (Phase 1): decisions (`if`/`otherwise`), loops, your own functions, and a few more built-ins. Follow along in the [roadmap](docs/roadmap.md).
+**Coming soon** (Phase 1): loops, your own functions, and a few more built-ins. Follow along in the [roadmap](docs/roadmap.md).
 
 ## Roadmap
 
 | Phase | Focus | Status |
 |---|---|---|
-| 1 | **Core language:** variables, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | In progress (variables, expressions, output, input, and files run) |
+| 1 | **Core language:** variables, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | In progress (variables, expressions, decisions, output, input, and files run) |
 | 2 | **Data and structure:** records, lists, maps, modules, static types | Coming soon |
 | 3 | **Self-hosting:** the EasyScript compiler, written in EasyScript | Coming soon |
 | 4 | **Real-world programs:** standard library, C interop, concurrency, backend servers | Coming soon |
