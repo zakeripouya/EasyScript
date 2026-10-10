@@ -1,0 +1,9 @@
+Line 3: I can't join a list of numbers with a list of text.
+    say numbers followed by names
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
+Only lists of the same kind join into one list. To join them as text, turn one into text first with "as text".
+
+Line 5: I can't join a list of lists of numbers with a list of numbers.
+    say grid followed by numbers
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+Only lists of the same kind join into one list. To join them as text, turn one into text first with "as text".

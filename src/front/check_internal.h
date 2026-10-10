@@ -33,6 +33,7 @@ typedef enum {
     DEFER_ORDER,      // numbers or text
     DEFER_TO_NUMBER,  // "as a number": a number or text
     DEFER_ONE_OF,     // `left` has one of the kinds in `allowed` (e.g. text or a list for "length of")
+    DEFER_JOIN,       // "followed by": two lists of one kind join into a list; anything else into text
 } DeferKind;
 
 // Kinds for DEFER_ONE_OF.

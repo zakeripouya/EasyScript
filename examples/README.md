@@ -27,7 +27,7 @@ Small programs, one per feature. **Every example is checked by `make test`** aga
 | [receipt.es](programs/receipt.es) | Constants, a function, a loop, and running totals |
 | [kinds.es](programs/kinds.es) | Kinds of values worked out by the compiler, and an input and result with their kinds written down (see [Types](../docs/language-guide.md#9-types)) |
 | [grade_statistics.es](programs/grade_statistics.es) | Lists: a class's scores, with the average, median, highest and lowest, slices (`the last 3 items in`, `items 3 to 6 of`), letter grades, `every`/`only`, and a fixed list (`keep all grades as a list of ...`) (see [Lists](../docs/language-guide.md#10-lists)) |
-| [top_scores.es](programs/top_scores.es) | Lists: a high-score table kept in order with `insert`, `remove`, `contains`, and sorting by length |
+| [top_scores.es](programs/top_scores.es) | Lists: a high-score table kept in order with `insert`, `remove`, `contains`, sorting by length, and joining lists with `followed by` |
 | [million_lines.es](programs/million_lines.es) | A million lines of text made one at a time, in flat memory (see [memory](../docs/memory.md)) |
 | [ask_name.es](programs/ask_name.es) | `ask … and call the answer …` (input from `ask_name.in`) |
 | [files.es](programs/files.es) | `write`, `append`, and `read file` |

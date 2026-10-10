@@ -155,8 +155,31 @@ static bool settle_one_of(Checker *c, const Deferred *d) {
     return true;
 }
 
+// "followed by": two lists of the same kind make a list; if either side is
+// anything else, both are turned into text and joined.
+static bool settle_join(Checker *c, const Deferred *d) {
+    Type left = types_of(c, d->left), right = types_of(c, d->right);
+    size_t line = d->expr->pos.line;
+    if (left == TYPE_ERROR || right == TYPE_ERROR) return types_require(c, d->result, TYPE_ERROR, line);
+    bool left_known = left != TYPE_UNKNOWN, right_known = right != TYPE_UNKNOWN;
+    if ((left_known && !type_is_list(left)) || (right_known && !type_is_list(right))) {
+        return types_require(c, d->result, TYPE_TEXT, line);
+    }
+    if (!left_known || !right_known) return false;  // a list, and a side that may turn out to be one
+    if (!types_unify(c, d->left, d->right)) {
+        report(c, d->expr, "Only lists of the same kind join into one list. To join them as text, turn one into text "
+                           "first with \"as text\".",
+               arena_sprintf(c->arena, "I can't join %s with %s.", ast_type_name(c->arena, left),
+                             ast_type_name(c->arena, right)));
+        return types_require(c, d->result, TYPE_ERROR, line);
+    }
+    types_unify(c, d->result, d->left);
+    return true;
+}
+
 static bool settle(Checker *c, Deferred *d) {
     if (d->kind == DEFER_AND) return settle_and(c, d);
+    if (d->kind == DEFER_JOIN) return settle_join(c, d);
     if (d->kind == DEFER_ONE_OF) return settle_one_of(c, d);
     Type type = types_of(c, d->left);
     if (type == TYPE_UNKNOWN) return false;

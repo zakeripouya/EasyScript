@@ -125,7 +125,11 @@ static TypeVar check_binary(Checker *c, const Expr *expr) {
             report_compare(c, expr, left, right);
         }
         return types_new(c, TYPE_YESNO, line);
-    case BINARY_JOIN: return types_new(c, TYPE_TEXT, line);
+    case BINARY_JOIN: {
+        TypeVar result = types_new(c, TYPE_UNKNOWN, line);
+        types_defer(c, DEFER_JOIN, expr, left, right, result);
+        return result;
+    }
     case BINARY_CONTAINS:
     case BINARY_NOT_CONTAINS: return checker_check_contains(c, expr, left, right);
     default:

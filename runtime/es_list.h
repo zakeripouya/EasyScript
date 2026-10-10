@@ -23,6 +23,17 @@
 
 /* --- Making lists ------------------------------------------------------------ */
 
+/* Room for exactly `cap` items (at least the ones it has). */
+static void es_list_resize(EsList *l, size_t cap) {
+    size_t size = es_item_size(l->items);
+    if (cap > SIZE_MAX / size) es_out_of_memory();
+    es_memory_take((cap - l->cap) * size);
+    void *data = realloc(l->at.any, cap * size);
+    if (!data) es_out_of_memory();
+    l->at.any = data;
+    l->cap = cap;
+}
+
 /* Room for at least `need` items, doubling each time. (Growing by 1.5x was
  * tried: on macOS, realloc then moves the last big block with a deferred
  * copy that's paid at the next big write, such as sorting, so the sort
@@ -31,13 +42,7 @@ static void es_list_reserve(EsList *l, size_t need) {
     if (need <= l->cap) return;
     size_t cap = l->cap ? l->cap * 2 : 4;
     if (cap < need) cap = need;
-    size_t size = es_item_size(l->items);
-    if (cap > SIZE_MAX / size) es_out_of_memory();
-    es_memory_take((cap - l->cap) * size);
-    void *data = realloc(l->at.any, cap * size);
-    if (!data) es_out_of_memory();
-    l->at.any = data;
-    l->cap = cap;
+    es_list_resize(l, cap);
 }
 
 /* Gives back the room the list doesn't use, so it takes exactly its size. */
@@ -152,6 +157,38 @@ static EsList *es_list_pick(const EsList *l, size_t start, size_t count, size_t 
     }
     out->len = count;
     return out;
+}
+
+/* Adds copies of src's items to the end of dst (which has room): text is
+ * shared, lists inside are copied. Only looks at src. */
+static void es_list_append_copies(EsList *dst, const EsList *src) {
+    size_t size = es_item_size(src->items);
+    for (size_t i = 0; i < src->len; i++, dst->len++) {
+        if (src->items == ES_ITEMS_LIST) {
+            dst->at.l[dst->len] = es_list_copy_of(src->at.l[i]);
+        } else {
+            memcpy((char *)dst->at.any + dst->len * size, (const char *)src->at.any + i * size, size);
+            if (src->items == ES_ITEMS_TEXT) es_retain(dst->at.t[dst->len]);
+        }
+    }
+}
+
+/* "A followed by B" for two lists: a new list of exactly A's items then
+ * B's, sharing no lists with them. If nobody else holds A, A grows into it. */
+static EsList *es_list_join(EsList *a, EsList *b) {
+    EsList *joined;
+    if (a->header.refs == 1) {
+        joined = a;
+        es_list_own_deep(joined);
+        if (joined->cap < a->len + b->len) es_list_resize(joined, a->len + b->len);
+    } else {
+        joined = es_list_new(a->items, a->len + b->len);
+        es_list_append_copies(joined, a);
+        es_list_release(a);
+    }
+    es_list_append_copies(joined, b);
+    es_list_release(b);
+    return joined;
 }
 
 /* --- Positions ---------------------------------------------------------------- */

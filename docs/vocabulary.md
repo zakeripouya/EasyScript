@@ -80,6 +80,7 @@ Not available, with the error message suggesting the right one: `is not greater 
 | Pattern | Meaning | Example | Status |
 |---|---|---|---|
 | `X followed by Y` | Turns both sides into text and joins them | `"Total: " followed by total` | Available |
+| `L followed by M` | Two lists of the same kind: a new list with L's items, then M's (lists inside are copied). Lists of different kinds are an error | `morning slots followed by evening slots` | Available |
 
 `followed by` binds more loosely than arithmetic, so the maths happens first: `"Sum: " followed by 2 plus 3` gives `Sum: 5`. It binds more tightly than comparisons, so `name followed by "!" is "Ada!"` compares the joined text. (`and` joins text too, and it binds more loosely still: `"Sum: " and 2 plus 3` also gives `Sum: 5`.)
 
@@ -300,6 +301,7 @@ All list words are **Available**. A list holds values of one kind, in order; pos
 | `a list of (L) and (M)` | A list of lists: each inner list in parentheses (without them it's an error) | `a list of (a list of 1 and 2) and (a list of 3)` |
 | `an empty list of KINDS` | A list with nothing in it yet; KINDS is `numbers`, `text`, `yes/no values` (or `yes or no values`), or `lists of KINDS` | `an empty list of text`<br>`an empty list of lists of numbers` |
 | `a copy of L` | A separate list with the same items (and copies of the lists in it) | `a copy of scores` |
+| `L followed by M` | A new list: L's items, then M's (both lists of the same kind) | `morning slots followed by evening slots` |
 
 ### Items
 

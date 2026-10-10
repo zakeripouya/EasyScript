@@ -38,3 +38,5 @@ let sorted names be a copy of games
 sort sorted names by their length
 say "Shortest name first: " followed by sorted names
 say "From the bottom: " followed by top points reversed
+let late games be a list of "Quinn" and "Rae"
+say "Everyone who played, late arrivals too: " followed by (games followed by late games)

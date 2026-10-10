@@ -372,6 +372,7 @@ Write it like "a list of (a list of 1 and 2) and (a list of 3 and 4)".
 | `sort ... by their length` on numbers | "I can only sort a list of text or lists by their length, but this is a list of numbers." |
 | `is empty` on something other than text or a list | "I can only check whether text or a list is empty, but this is a number." |
 | Working something out from a list in a constant | "A constant can't work things out from a list." (a fixed list written out, and its length, are fine) |
+| Joining lists of different kinds with `followed by` | "I can't join a list of numbers with a list of text." with a hint to use `as text` |
 | A fixed list holding lists | "A fixed list can't hold lists, because those could change." |
 | Changing a fixed list (`add`, `remove`, `set item`, `insert`, `sort`) | ""weekdays" is a constant, so it can't change." with a `let` suggestion |
 | A loop's item named like something that exists | "You already made "score" on line 1." with a name that isn't taken |

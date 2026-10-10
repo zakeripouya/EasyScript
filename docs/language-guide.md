@@ -749,6 +749,7 @@ And to sum up a list:
 - `scores added together`: the total of a list of numbers
 - `the biggest of scores`, `the smallest of scores`: for numbers or text
 - `scores reversed`: a new list, last item first
+- `morning slots followed by evening slots`: a new list with the first list's items, then the second's. Both must be lists of the same kind; with anything else, `followed by` joins text, as always (`"Slots: " followed by morning slots`).
 
 ### Sharing and copying
 

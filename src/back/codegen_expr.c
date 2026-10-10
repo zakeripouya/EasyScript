@@ -318,6 +318,11 @@ static void emit_binary(Codegen *g, const Expr *expr, StrBuf *out) {
         // "and" with text joins, like "followed by":
         // fall through
     case BINARY_JOIN:
+        if (type_is_list(expr->type)) {  // two lists: one list
+            operands(g, left, right, false, out, &l, &r, &close);
+            sb_appendf(out, "es_list_join(%s, %s)%s", l, r, close);
+            return;
+        }
         operands(g, left, right, true, out, &l, &r, &close);
         sb_appendf(out, "es_join(%s, %s)%s", l, r, close);
         return;
