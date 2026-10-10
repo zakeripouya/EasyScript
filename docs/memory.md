@@ -71,13 +71,13 @@ A reference count can't free objects that refer to each other in a loop. With te
 ### Checking it
 
 - **`ES_DEBUG_MEMORY=1`**: every generated program counts its live heap objects. With this set, the program fails at the end (exit 70) if any are still alive: `Memory check: 1 text value was still alive at the end of the program (39 bytes).` `make test` runs every program this way, and a control test in `tests/run.sh` checks that the check really catches a missing release.
-- **`ES_MEMORY_LIMIT=N`**: fail (exit 70) as soon as live heap text takes more than N bytes. `tests/memory/` runs loops of up to a million rounds under a 100,000-byte limit, and also checks that the program's peak memory stays under 16 MB where `/usr/bin/time` can measure it.
+- **`ES_MEMORY_LIMIT=N`**: fail (exit 70) as soon as live heap text would take more than N bytes (it's checked before allocating). `tests/memory/` runs loops of up to a million rounds under a 100,000-byte limit, and also checks that the program's peak memory stays under 16 MB where `/usr/bin/time` can measure it.
 - **`ES_SANITIZE=1`**: the compiler builds programs with AddressSanitizer and UBSan, so a use after free or a double free stops with a report. `make test-debug` sets it for the whole suite.
 - **`make test-debug`** also checks for leaks: LeakSanitizer on Linux, and on macOS `tests/leaks.sh` runs every test program (and the compiler) under the system `leaks` tool.
 
 ### Adding a heap kind
 
 1. Add an `ES_OBJ_...` kind and a struct that starts with `EsObject header`.
-2. Free it (and release anything it holds) in `es_free_object`.
+2. Free it (and release anything it holds) in `es_free_object`. Keep that function out of line (its attributes keep GCC from inlining or specializing it): otherwise GCC sees `free()` reachable from releases of static immortal objects and warns.
 3. Give it a type in the checker and a C type in codegen, and generate retains, releases and drops for it as for text (`emit_drop_all`, the scopes in `codegen_c.c`).
 4. Follow the ownership table: operations consume their arguments, and storing goes through a setter like `es_set`.

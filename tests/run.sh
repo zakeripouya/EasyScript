@@ -22,6 +22,7 @@
 #   examples/parser/      like tests/ast, expected stdout in NAME.ast
 #   unit tests            tests/unit/*.c, built into the UNIT binary
 #   CLI checks            at the bottom of this file
+#   strict C              every generated program compiles with -Werror
 #
 # Programs run in a scratch directory, so nothing is written into the repo.
 # ES and UNIT override the binaries under test (make test-debug uses this).
@@ -409,6 +410,36 @@ if [ -n "$leftover" ]; then
     not_ok "cli/temp-cleanup" "left behind: $leftover"
 else
     ok "cli/temp-cleanup"
+fi
+
+# --- Generated C compiles cleanly ---------------------------------------------
+#
+# Every program that compiles (tests/run, tests/memory, examples/programs,
+# benchmarks) must give C that the system compiler (clang on macOS, gcc on
+# Linux) accepts with all warnings as errors, at -O2 (some warnings, like
+# gcc's -Wfree-nonheap-object, only appear with optimization). The generated C
+# is the same under ES_SANITIZE=1, so make test-debug skips this.
+
+if [ "${ES_SANITIZE:-0}" = 1 ]; then
+    echo "SKIP strict-c/generated-programs (checked by make test)"
+else
+    strict_failed=""
+    for src in "$ROOT"/tests/run/*.es "$ROOT"/tests/memory/*.es "$ROOT"/examples/programs/*.es \
+        "$ROOT"/benchmarks/*/*.es; do
+        [ -e "$src" ] || continue
+        "$ES" emit "$src" >"$WORK/strict.c" 2>/dev/null || continue
+        if ! out=$(cc -std=c11 -Wall -Wextra -Wpedantic -Werror -O2 -c "$WORK/strict.c" \
+            -o "$WORK/strict.o" 2>&1); then
+            strict_failed="$strict_failed
+${src#"$ROOT"/}:
+$(echo "$out" | head -5)"
+        fi
+    done
+    if [ -n "$strict_failed" ]; then
+        not_ok "strict-c/generated-programs" "$strict_failed"
+    else
+        ok "strict-c/generated-programs"
+    fi
 fi
 
 # --- Docs that must match tested files ---------------------------------------

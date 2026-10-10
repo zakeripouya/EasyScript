@@ -18,6 +18,23 @@ make clean
 
 **Both `make test` and `make test-debug` must pass before every commit.** Never commit with a failing test.
 
+### Continuous integration
+
+`.github/workflows/ci.yml` runs `make`, `make test` and `make test-debug` on every push, on two machines:
+
+| Runner | Compiler | Leak checking in `make test-debug` |
+|---|---|---|
+| `ubuntu-latest` | GCC (Linux's `cc`) | LeakSanitizer, for the compiler and every generated program |
+| `macos-latest` | Clang | `tests/leaks.sh` (the system `leaks` tool) |
+
+Both runners also install Python 3 (for the audits at the end of `tests/run.sh`) and Go (so `make bench` can compare against the Go benchmarks); Linux also installs GNU `time` for the peak-memory checks in `tests/memory/`.
+
+A change has to pass on both, so keep the compiler, the runtime and generated C portable:
+
+- **Link the math library.** Anything that uses `<math.h>` functions needs `-lm` on Linux (`LDLIBS` in the Makefile; `src/main.c` passes it when building programs). macOS links it automatically, so a missing `-lm` only shows on Linux.
+- **Generated C must be warning-free under both compilers.** `make test` compiles every generated program with `-Wall -Wextra -Wpedantic -Werror -O2` (the `strict-c/generated-programs` check). GCC and Clang warn about different things, and some GCC warnings only appear after inlining: GCC once warned that `free()` could be called on immortal text, which is why `es_free_object` in `runtime/es_memory.h` is kept out of line. Fix the cause in the runtime rather than turning a warning off; the only warnings generated programs turn off are about the user's program, not the runtime (`-Wunused-function`, `-Winfinite-recursion`).
+- **No platform-only APIs** without a fallback, and nothing that depends on macOS's or glibc's behavior. If you only have one platform, push to a branch and let CI check the other.
+
 ## What a finished change includes
 
 A feature isn't done until all of these are in the **same commit**:

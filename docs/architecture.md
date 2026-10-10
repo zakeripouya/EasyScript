@@ -91,7 +91,7 @@ es_say(es_number_text((es_vn_total - 1.0)));
 - **Variables** become C locals of `main()` (or of their function) named by kind and name: `es_vn_` (number), `es_vt_` (text) or `es_vb_` (yes/no) plus the name, with `_` doubled and `'` written as `_q`. Blocks side by side can make the same name with different kinds. Names made inside `if` and loop blocks, and loop numbers, are hoisted the same way: the checker makes sure each is only used inside its block, and the block's end releases text. Locals rather than globals keep their addresses from escaping, so the C compiler can keep numbers in registers.
 - **Left to right:** when both operands of an operation (or two or more call arguments) can fail or have effects (calls, file reads, dividing, `as a number` on text), the left ones go into temporaries first: `(es_t1 = LEFT, ... RIGHT ...)`. C doesn't fix the order of operands, and this keeps evaluation, and so which error appears first, deterministic. Operands without effects are used directly.
 - **Literals:** numbers are re-printed with `%.17g` (so `007` and `08` are plain decimals), and text is a static immortal text object (`es_s1`, ...) holding a C string with octal escapes for non-ASCII bytes and `\?` for `?` (no trigraphs).
-- **Self-contained:** the generated file starts with the runtime, so `cc -O2 program.c -o program -lm` is all it needs. Generated programs compile without warnings even under `-Wall -Wextra -Wpedantic`.
+- **Self-contained:** the generated file starts with the runtime, so `cc -O2 program.c -o program -lm` is all it needs. Generated programs compile without warnings even under `-Wall -Wextra -Wpedantic`, with both GCC and Clang (checked by `make test`).
 - **Runtime memory:** reference counting; text is freed as soon as nothing uses it. See [Memory in generated programs](#memory-in-generated-programs).
 
 ## Code rules
@@ -129,9 +129,10 @@ These are the rules every module follows (the full list is in [CONTRIBUTING.md](
 | Compile-error tests | `tests/errors/` | Exact compiler error output from `emit` (checker errors, mostly) |
 | Examples | `examples/programs/`, `examples/lexer/`, `examples/parser/` | Every example in the docs, with its expected output |
 | Docs checks | end of `tests/run.sh` | The README's program blocks match their example files |
+| Strict C | end of `tests/run.sh` | Every generated program compiles with `-Werror` under the system compiler |
 | CLI checks | end of `tests/run.sh` | Commands, usage errors, temp-file cleanup |
 
-`make test-debug` runs the same suite against a build with AddressSanitizer and UndefinedBehaviorSanitizer. `make bless` rewrites the expected files from the current output, for intended changes only (see [CONTRIBUTING.md](../CONTRIBUTING.md)).
+`make test` also compiles every generated program with `-Wall -Wextra -Wpedantic -Werror`. `make test-debug` runs the same suite against a build with AddressSanitizer and UndefinedBehaviorSanitizer. GitHub Actions (`.github/workflows/ci.yml`) runs `make`, `make test` and `make test-debug` on every push, on Ubuntu with GCC and on macOS with Clang. `make bless` rewrites the expected files from the current output, for intended changes only (see [CONTRIBUTING.md](../CONTRIBUTING.md)).
 
 ## Memory in generated programs
 

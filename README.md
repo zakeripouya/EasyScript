@@ -77,7 +77,7 @@ Hello, Ada!
 | Memory | Nothing to manage: text is freed as soon as nothing uses it, so loops that make text run in flat memory ([how](docs/memory.md)) |
 | Friendly errors | Compile errors show the line, the source, carets, and a suggestion ("Did you mean "total"? You made it on line 1."). Kind mistakes are compile errors too ("I can't add text to a number."). Runtime errors say what happened and where: "Line 8: You divided by zero." |
 | Tools | `run`, `build`, `emit`, `tokens`, `ast`, and an interactive shell. Generated programs are self-contained C. |
-| Tests | Unit, lexer, parser, program, runtime-error, memory, example, and CLI tests with `make test` (every program also runs with a memory check), plus a sanitizer build with `make test-debug` |
+| Tests | Unit, lexer, parser, program, runtime-error, memory, example, and CLI tests with `make test` (every program also runs with a memory check), plus a sanitizer build with `make test-debug`; GitHub Actions runs both on Linux (GCC) and macOS (Clang) on every push |
 
 See the runnable [example programs](examples/programs/).
 

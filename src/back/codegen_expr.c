@@ -234,7 +234,8 @@ static void emit_binary(Codegen *g, const Expr *expr, StrBuf *out) {
                        operand(g, right, false));
             return;
         }
-        // "and" with text joins: fall through
+        // "and" with text joins, like "followed by":
+        // fall through
     case BINARY_JOIN:
         operands(g, left, right, true, out, &l, &r, &close);
         sb_appendf(out, "es_join(%s, %s)%s", l, r, close);

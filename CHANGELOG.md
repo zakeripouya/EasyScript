@@ -19,6 +19,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
   - One ownership convention throughout: expressions produce owned values, operations and functions consume their arguments, reading a variable retains, storing releases the old value. Blocks release their names when they end, including through `stop the loop`, `skip this one`, `give back`, and `stop the program`.
   - `examples/programs/million_lines.es`.
 - **Memory checks:** `ES_DEBUG_MEMORY=1` makes a program fail (exit 70) if anything is still alive at its end, and every test program now runs this way. `ES_MEMORY_LIMIT=N` fails a program whose live text goes over N bytes; `tests/memory/` runs million-round loops under a limit and checks their peak memory. A control test makes sure the check catches a missing release.
+- **Continuous integration:** a GitHub Actions workflow (`.github/workflows/ci.yml`) runs `make`, `make test` and `make test-debug` on every push, on Ubuntu with GCC and on macOS with Clang.
+- **Strict C check:** `make test` compiles the C generated for every test program, example and benchmark with `-Wall -Wextra -Wpedantic -Werror -O2`, using the system compiler.
 - **Sanitized programs in `make test-debug`:** `ES_SANITIZE=1` makes the compiler build programs with AddressSanitizer and UBSan, so a use after free or double free is caught. On macOS the leak sweep now also covers the memory tests.
 
 ### Changed
@@ -32,6 +34,9 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- **Linux:** the compiler didn't link, because `consteval.c` needs the math library; the Makefile now links `-lm` (generated programs already did).
+- **GCC:** every generated program printed a `-Wfree-nonheap-object` warning, because GCC couldn't tell that releasing immortal text never reaches `free()`. Freeing now happens in a separate function that is never inlined or specialized (`noipa` on GCC), so the free path is visibly separate from immortal objects. GCC's `-Winfinite-recursion` is turned off in generated programs: a function that only calls itself is reported by EasyScript while the program runs.
+- `ES_MEMORY_LIMIT` now stops the program before allocating the text that would go over the limit, not after, so LeakSanitizer doesn't report that text as leaked.
 - Text made while a program ran was only freed when it ended, so long loops that built text kept growing (a known issue in 0.1.0).
 
 ## [0.1.0] - 2026-10-10

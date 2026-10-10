@@ -35,6 +35,12 @@
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic ignored "-Wunused-function"
 #endif
+/* A function that only ever calls itself is a mistake EasyScript reports
+ * while the program runs ("calling each other too deeply"), so it's not one
+ * for the C compiler to warn about. */
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 12)
+#pragma GCC diagnostic ignored "-Winfinite-recursion"
+#endif
 
 /* --- Heap objects --------------------------------------------------------
  *
@@ -82,21 +88,34 @@ static _Noreturn void es_out_of_memory(void) {
     exit(1);
 }
 
+/* The limit is checked before allocating, so stopping never leaves a new
+ * object that nothing points to (LeakSanitizer would report it). */
 static EsObject *es_new_object(EsObjectKind kind, size_t size) {
+    if (es_memory.limit && es_memory.live_bytes + size > es_memory.limit) {
+        fflush(stdout);
+        fprintf(stderr, "Memory check: the program kept more than %zu bytes of text alive at once.\n", es_memory.limit);
+        exit(70);
+    }
     EsObject *obj = malloc(size);
     if (!obj) es_out_of_memory();
     obj->kind = kind;
     obj->refs = 1;
     es_memory.live_objects++;
     es_memory.live_bytes += size;
-    if (es_memory.limit && es_memory.live_bytes > es_memory.limit) {
-        fflush(stdout);
-        fprintf(stderr, "Memory check: the program kept more than %zu bytes of text alive at once.\n", es_memory.limit);
-        exit(70);
-    }
     return obj;
 }
 
+/* Frees a heap object whose count reached zero. It's never inlined (and on
+ * GCC never specialized) into its callers: es_release only calls it for
+ * counted objects, and keeping it out of line keeps that visible to the C
+ * compiler, which otherwise sees free() reachable from releases of static
+ * immortal text and warns (-Wfree-nonheap-object). Freeing is the rare path,
+ * so a real call costs nothing that matters. */
+#if defined(__GNUC__) && !defined(__clang__)
+__attribute__((noipa, cold))
+#elif defined(__clang__)
+__attribute__((noinline, cold))
+#endif
 static void es_free_object(EsObject *obj) {
     switch (obj->kind) {
     case ES_OBJ_TEXT: es_memory.live_bytes -= sizeof(EsText) + ((EsText *)obj)->len + 1; break;

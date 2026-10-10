@@ -1,5 +1,7 @@
 CC = cc
 CFLAGS = -std=c11 -Wall -Wextra -Isrc
+# consteval.c uses fmod/fmax: on Linux the math library is separate.
+LDLIBS = -lm
 RELEASE_FLAGS = -O2
 DEBUG_FLAGS = -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all
 
@@ -31,10 +33,10 @@ $(GEN_RUNTIME): $(RUNTIME) $(EMBED)
 	$(EMBED) $@ es_runtime_source $(RUNTIME)
 
 easyscript: $(call release_objs,$(COMPILER_SRC))
-	$(CC) $(CFLAGS) $(RELEASE_FLAGS) -o $@ $^
+	$(CC) $(CFLAGS) $(RELEASE_FLAGS) -o $@ $^ $(LDLIBS)
 
 $(RELEASE_DIR)/unit_tests: $(call release_objs,$(UNIT_SRC))
-	$(CC) $(CFLAGS) $(RELEASE_FLAGS) -o $@ $^
+	$(CC) $(CFLAGS) $(RELEASE_FLAGS) -o $@ $^ $(LDLIBS)
 
 $(RELEASE_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
@@ -44,10 +46,10 @@ $(RELEASE_DIR)/%.o: %.c
 debug: $(DEBUG_DIR)/easyscript $(DEBUG_DIR)/unit_tests
 
 $(DEBUG_DIR)/easyscript: $(call debug_objs,$(COMPILER_SRC))
-	$(CC) $(CFLAGS) $(DEBUG_FLAGS) -o $@ $^
+	$(CC) $(CFLAGS) $(DEBUG_FLAGS) -o $@ $^ $(LDLIBS)
 
 $(DEBUG_DIR)/unit_tests: $(call debug_objs,$(UNIT_SRC))
-	$(CC) $(CFLAGS) $(DEBUG_FLAGS) -o $@ $^
+	$(CC) $(CFLAGS) $(DEBUG_FLAGS) -o $@ $^ $(LDLIBS)
 
 $(DEBUG_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)

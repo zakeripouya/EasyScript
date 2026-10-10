@@ -1,0 +1,55 @@
+# Builds and tests EasyScript on Linux (gcc) and macOS (clang) on every push,
+# so a problem on one platform shows up straight away.
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} (${{ matrix.cc }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cc: gcc
+          - os: macos-latest
+            cc: clang
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # python3 runs the error and vocabulary audits in tests/run.sh; Go lets
+      # make bench compare against the Go versions of the benchmarks.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+
+      # /usr/bin/time measures peak memory in tests/memory/.
+      - name: Install GNU time (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y time
+
+      # AddressSanitizer can crash at start-up on kernels with high mmap
+      # randomization (Ubuntu 24.04 runners); 28 bits is the old default.
+      - name: Allow AddressSanitizer (Linux)
+        if: runner.os == 'Linux'
+        run: sudo sysctl vm.mmap_rnd_bits=28
+
+      - name: Show compiler
+        run: cc --version
+
+      - name: make
+        run: make
+
+      - name: make test
+        run: make test
+
+      - name: make test-debug
+        run: make test-debug
