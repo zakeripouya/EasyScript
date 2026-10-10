@@ -92,4 +92,4 @@ Generated C and binaries go in a fresh temporary directory that's removed on exi
 | Examples | `examples/legacy/`, `examples/lexer/`, `examples/parser/` | Every example in the docs, with its expected output |
 | CLI checks | end of `tests/run.sh` | Commands, usage errors, temp-file cleanup |
 
-`make test-debug` runs the same suite against a build with AddressSanitizer and UndefinedBehaviorSanitizer.
+`make test-debug` runs the same suite against a build with AddressSanitizer and UndefinedBehaviorSanitizer. `make bless` rewrites the expected files from the current output, for intended changes only (see [CONTRIBUTING.md](../CONTRIBUTING.md)).

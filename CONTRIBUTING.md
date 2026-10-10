@@ -11,6 +11,7 @@ make              # build ./easyscript and the unit tests (must produce no warni
 make test         # run the whole suite
 make debug        # build with AddressSanitizer and UBSan into build/debug/
 make test-debug   # run the whole suite against the sanitizer build
+make bless        # rewrite expected output files from the current output (see below)
 make clean
 ```
 
@@ -46,6 +47,20 @@ Docs must never show syntax as working before it does. Mark planned features "Co
 | CLI checks | the end of `tests/run.sh` | |
 
 Expected-output files must match **byte for byte**. When you change a message on purpose, update its expected file in the same commit.
+
+### Updating expected output: `make bless`
+
+`make bless` reruns every golden test (`tests/run`, `tests/errors`, `tests/tokens`, `tests/ast`, and all of `examples/`). It overwrites the expected `.out`/`.tokens`/`.ast`/`.err` files with the current output, then prints `git diff --stat` and any new expected files.
+- If a test that used to fail now succeeds, its `.err` is removed.
+- It refuses, and exits 1, when no expected file could make a test pass: a `tests/run` program that fails, a `tests/errors` file that now compiles, or a success that writes to stderr.
+
+**Only bless after you've confirmed the new output is intended:**
+
+1. Run `make test` and read every failing diff.
+2. Run `make bless` only if every difference is a change you meant to make.
+3. Review `git diff` line by line before committing.
+
+Never bless just to make the suite go green. A blessed regression becomes the new "expected" output and stops being caught. Unit tests (`tests/unit`) have no golden files and aren't affected.
 
 ## Language rules
 

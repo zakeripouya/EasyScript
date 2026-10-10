@@ -49,9 +49,14 @@ test-debug: debug
 	ES=$(CURDIR)/$(DEBUG_DIR)/easyscript UNIT=$(CURDIR)/$(DEBUG_DIR)/unit_tests \
 	ASAN_OPTIONS=detect_leaks=0 sh tests/run.sh
 
+# Rewrites every golden file from the current output and shows git diff --stat.
+# Only use it after confirming the new output is intended.
+bless: all
+	sh tests/bless.sh
+
 clean:
 	rm -rf build easyscript
 
 -include $(shell find build -name '*.d' 2>/dev/null)
 
-.PHONY: all debug test test-debug clean
+.PHONY: all debug test test-debug bless clean

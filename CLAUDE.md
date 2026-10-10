@@ -151,6 +151,12 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 - `examples/legacy/NAME.es` plus `NAME.out` (run like `tests/run`), `examples/lexer/NAME.es` plus `NAME.tokens`, and `examples/parser/NAME.es` plus `NAME.ast` (both with an optional `.err`) back the docs. `tests/run.sh` fails if any other folder or a loose `.es` appears under `examples/`.
 - `tests/run.sh` runs the unit binary, then the run/errors/tokens tests and the examples (each in an empty scratch directory, via the shared `check_run`/`check_errors`/`check_dump` functions), then the CLI checks. It prints PASS/FAIL per test plus one summary and exits 1 if anything fails. The `ES` and `UNIT` env vars choose which binaries are tested.
 - Expected files record current behavior, including known quirks (for example, the blank line after `FILE READ` in `run/file_io.out`). When fixing a quirk, update the expected file in the same commit.
+- **`make bless`** (`tests/bless.sh`) rewrites every golden file from the current output, then shows `git diff --stat` and any new expected files.
+  - It covers `tests/run`, `tests/errors`, `tests/tokens`, `tests/ast`, `examples/legacy`, `examples/lexer` and `examples/parser`.
+  - In the tokens/ast folders, `.err` is written on failure and removed on success.
+  - It exits 1 with "NOT BLESSED" when no golden file could make a test pass.
+  - **Only bless after confirming the new output is intended.** First read every failing diff from `make test`. Bless only if each difference is a deliberate change. Then review `git diff` before committing, and say in the summary which expected files changed and why.
+  - Never bless just to get a green suite, and never bless output you haven't read.
 
 ## Documentation rules
 
@@ -209,6 +215,7 @@ make                                  # builds ./easyscript and build/release/un
 make test                             # builds, then runs tests/run.sh (unit + program + error + CLI tests)
 make debug                            # ASan/UBSan build in build/debug/
 make test-debug                       # full suite against the sanitizer build (leak checks off for now)
+make bless                            # rewrite golden files from current output, then show git diff --stat
 ./easyscript run old/script.code      # compile + run (generated C/binary go to a temp dir)
 ./easyscript build FILE.es -o OUT     # compile to an executable at OUT
 ./easyscript emit FILE.es             # print generated C to stdout
