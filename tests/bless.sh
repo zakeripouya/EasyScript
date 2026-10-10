@@ -33,22 +33,28 @@ run_es() {
     (cd "$WORK/cwd" && "$ES" "$1" "$2") >"$WORK/stdout" 2>"$WORK/stderr"
 }
 
-# bless_run DIR: programs run with NAME.in (if present) as input; stdout goes
-# to NAME.out. Exit 1 writes stderr to NAME.err (a runtime error); exit 0
-# removes NAME.err.
+# bless_run DIR [ERROR_STATUS]: programs run with NAME.in (if present) as
+# input, under the same memory settings as tests/run.sh; stdout goes to
+# NAME.out. Exit ERROR_STATUS (default 1, a runtime error) writes stderr to
+# NAME.err; exit 0 removes NAME.err. For tests/memory, ERROR_STATUS is 70 (the
+# memory limit).
 bless_run() {
+    error_status=${2:-1}
+    limit=""
+    [ "$error_status" -eq 70 ] && limit=100000
     for src in "$1"/*.es; do
         [ -e "$src" ] || continue
         input="${src%.es}.in"
         [ -f "$input" ] || input=/dev/null
         rm -rf "$WORK/cwd"
         mkdir "$WORK/cwd"
-        (cd "$WORK/cwd" && "$ES" run "$src") <"$input" >"$WORK/stdout" 2>"$WORK/stderr"
+        (cd "$WORK/cwd" && ES_DEBUG_MEMORY=1 ES_MEMORY_LIMIT=$limit "$ES" run "$src") \
+            <"$input" >"$WORK/stdout" 2>"$WORK/stderr"
         status=$?
         if [ $status -eq 0 ] && [ ! -s "$WORK/stderr" ]; then
             cp "$WORK/stdout" "${src%.es}.out"
             rm -f "${src%.es}.err"
-        elif [ $status -eq 1 ]; then
+        elif [ $status -eq "$error_status" ]; then
             cp "$WORK/stdout" "${src%.es}.out"
             cp "$WORK/stderr" "${src%.es}.err"
         else
@@ -106,6 +112,7 @@ bless_shell() {
 
 bless_shell
 bless_run "$ROOT/tests/run"
+bless_run "$ROOT/tests/memory" 70
 bless_errors "$ROOT/tests/errors"
 bless_dump tokens "$ROOT/tests/tokens" out
 bless_dump ast "$ROOT/tests/ast" out

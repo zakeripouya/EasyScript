@@ -4,7 +4,23 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **Memory management with reference counting** (Phase 2, step 13). Text made while a program runs (joins, numbers turned into text, `ask` answers, file contents) is freed as soon as nothing uses it, so loops run in flat memory: the text benchmark went from 280 MB to 1.8 MB, and a million-round loop that makes text stays under 2 MB. Programs don't change; there's nothing to write. See [docs/memory.md](docs/memory.md).
+  - Every heap object has a common header (kind and reference count), ready for lists and records. Text literals and constants are static objects marked immortal.
+  - One ownership convention throughout: expressions produce owned values, operations and functions consume their arguments, reading a variable retains, storing releases the old value. Blocks release their names when they end, including through `stop the loop`, `skip this one`, `give back`, and `stop the program`.
+  - `examples/programs/million_lines.es`.
+- **Memory checks:** `ES_DEBUG_MEMORY=1` makes a program fail (exit 70) if anything is still alive at its end, and every test program now runs this way. `ES_MEMORY_LIMIT=N` fails a program whose live text goes over N bytes; `tests/memory/` runs million-round loops under a limit and checks their peak memory. A control test makes sure the check catches a missing release.
+- **Sanitized programs in `make test-debug`:** `ES_SANITIZE=1` makes the compiler build programs with AddressSanitizer and UBSan, so a use after free or double free is caught. On macOS the leak sweep now also covers the memory tests.
+
+### Changed
+
+- **Faster function calls:** a value is now 16 bytes instead of 48, so it's passed in registers. Recursive fib(38) went from 0.52 s to 0.24 s.
+- The runtime is split into `runtime/es_value.h` (values and memory) and `runtime/es_runtime.h` (operations); `tools/embed.c` joins them. The variables of the main program are now C locals of `main()`.
+
+### Fixed
+
+- Text made while a program ran was only freed when it ended, so long loops that built text kept growing (a known issue in 0.1.0).
 
 ## [0.1.0] - 2026-10-10
 

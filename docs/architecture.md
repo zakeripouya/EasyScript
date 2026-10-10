@@ -18,8 +18,8 @@ Every stage reports errors to one `Diag` context, and the driver prints them all
 | **Parser** | tokens → AST | Recognizes sentence patterns, deterministically. An ambiguous or unknown sentence is an error with suggestions; it never guesses. |
 | **Checker** | AST → diagnostics | Today: resolves names (made before use, made once) with "did you mean" suggestions, and rejects what has no meaning yet (calls, `it`). Later: types. It runs only when parsing succeeded. |
 | **Middle end** | (added later) | An intermediate representation and optimizations. |
-| **C codegen** | checked AST → C source | Writes a self-contained C program: the embedded runtime, one global per variable, and `main()`. It never looks at source text and reports no errors. |
-| **Runtime** | (inside the generated program) | `runtime/es_runtime.h`: the tagged `EsValue` (nothing, number, text, yes/no), every operation, and friendly runtime errors (`Line N: ...`). |
+| **C codegen** | checked AST → C source | Writes a self-contained C program: the embedded runtime, a static object per text literal, the functions, and `main()`, whose variables are C locals. It inserts every retain and release (see [Memory](#memory-in-generated-programs)). It never looks at source text and reports no errors. |
+| **Runtime** | (inside the generated program) | `runtime/es_value.h` and `runtime/es_runtime.h`: the 16-byte tagged `EsValue` (nothing, number, text, yes/no), reference-counted heap objects, every operation, and friendly runtime errors (`Line N: ...`). |
 | **Driver** | | `src/main.c`: runs the passes in order, prints diagnostics, invokes `cc`, and cleans up temp files. |
 
 **Boundaries:** each stage only talks to the next through shared data structures (tokens, the AST, and the symbol table). The parser never emits C, and codegen never reads source text. Every stage reports problems through one `Diag` context, and the driver prints them all at the end.
@@ -58,8 +58,9 @@ What exists today:
 | `src/front/consteval.{c,h}` | Works out constants' values before the program runs, with the same rules and messages as the runtime. |
 | `src/front/check.{c,h}`, `check_const.c`, `check_internal.h` | Done for names. `check_program` walks the statements in order with a symbol table of the names made so far; each `if` block is a scope of its own. |
 | `src/back/codegen_c.{c,h}`, `codegen_expr.c`, `codegen_internal.h` | Done. `codegen_c` writes the program (statements, loops, functions, constants in `codegen_c.c`; expressions in `codegen_expr.c`); see [Code generation](#code-generation). |
-| `runtime/es_runtime.h` | Done for Phase 1. A header-only runtime copied to the top of every generated program. |
-| `tools/embed.c` | A build tool that turns `runtime/es_runtime.h` into `build/gen/es_runtime_embed.c` (a byte array) so the compiler carries the runtime inside itself. |
+| `runtime/es_value.h` | Values, heap objects and reference counting, the memory checks, output, and errors. The first half of the header-only runtime copied to the top of every generated program. |
+| `runtime/es_runtime.h` | The second half: what values can do (text, arithmetic, logic, comparisons, loops, functions, files, input). |
+| `tools/embed.c` | A build tool that joins the runtime files into `build/gen/es_runtime_embed.c` (a byte array) so the compiler carries the runtime inside itself. |
 | `src/main.c` | Done. The driver. |
 
 ## Code generation
@@ -72,21 +73,21 @@ es_say((es_t1 = es_v_total, es_sub(4, es_t1, es_num(1))));
 
 - **`if`** becomes C `if (es_if(line, C)) { ... } else if (...) { ... } else { ... }`; `es_if` stops the program with a friendly error if the condition isn't yes or no.
 - **Loops** become C loops inside their own `{ }`: a count is `EsCount es_cN = es_count_start(...)` plus `for (long long es_iN = 0; es_count_next(&es_cN, es_iN, &es_v_number); es_iN++)`, which works out each number from the start; `repeat N times` is a `for` over `es_times(...)`; `while`/`until` use `es_loop_condition`; `forever` is `for (;;)`. `stop the loop` and `skip this one` are C `break` and `continue`. `it` becomes the innermost count's variable, or `es_num(es_iN)` for a `times` loop.
-- **Constants** become C static initializers, worked out by the compiler: `static const EsValue es_k_tax__rate = {ES_NUMBER, 0.2..., false, "", 0};`. Even joined text is computed ahead of time, so constants cost nothing while the program runs.
+- **Constants** become C static initializers, worked out by the compiler: `static const EsValue es_k_tax__rate = {ES_NUMBER, {.number = 0.2...}};` (text constants point to a static immortal text object). Even joined text is computed ahead of time, so constants cost nothing while the program runs.
 - **Functions** become C functions named `es_f_` plus the name: `static EsValue es_f_area(int es_line, EsValue es_v_width, EsValue es_v_height)`. Prototypes come first, so calls work in any order and functions can call themselves. A function's temporaries and the names it makes are declared at its top (hoisted). It starts with `es_enter(es_line)`, which stops endless recursion with a friendly error, and every exit is `return es_leave(...)`. Calls evaluate their inputs into temporaries first: `(t1 = A, t2 = B, es_f_area(line, t1, t2))`.
-- **Variables** become C globals named `es_v_` plus the name, with `_` doubled and `'` written as `_q`, so names can't collide. Names made inside `if` and loop blocks, and loop numbers, are globals too: the checker makes sure each is only used inside its block, and the same name can be reused by different blocks. (Locals will be hoisted per function when functions arrive.)
+- **Variables** become C locals of `main()` (or of their function) named `es_v_` plus the name, with `_` doubled and `'` written as `_q`, so names can't collide. Names made inside `if` and loop blocks, and loop numbers, are hoisted the same way: the checker makes sure each is only used inside its block, and the block's end releases it. Locals rather than globals keep their addresses from escaping, so the C compiler can keep numbers in registers.
 - **Left to right:** the left side of every binary operation is stored in a temporary (`es_t1`, ...) before the right side is evaluated. C doesn't fix argument order, and this keeps evaluation, and so which error appears first, deterministic.
 - **`and` and `or` short-circuit:** `(t = LEFT, es_is_no(t) ? t : es_and(line, t, RIGHT))`. `es_and` then decides at run time between logical and (two yes/no values) and joining text.
-- **Literals:** numbers are re-printed with `%.17g` (so `007` and `08` are plain decimals), and text is a C string with octal escapes for non-ASCII bytes and `\?` for `?` (no trigraphs).
+- **Literals:** numbers are re-printed with `%.17g` (so `007` and `08` are plain decimals), and text is a static immortal text object (`es_s1`, ...) holding a C string with octal escapes for non-ASCII bytes and `\?` for `?` (no trigraphs).
 - **Self-contained:** the generated file starts with the runtime, so `cc -O2 program.c -o program -lm` is all it needs. Generated programs compile without warnings even under `-Wall -Wextra -Wpedantic`.
-- **Runtime memory:** text built while the program runs comes from a block allocator that's freed at exit. With loops this grows: about 20 bytes per round for a loop that builds a short text each time (21 MB for a million rounds). Reclaiming it sooner is on the roadmap.
+- **Runtime memory:** reference counting; text is freed as soon as nothing uses it. See [Memory in generated programs](#memory-in-generated-programs).
 
 ## Code rules
 
 These are the rules every module follows (the full list is in [CONTRIBUTING.md](../CONTRIBUTING.md)):
 
-- **Memory:** an arena for everything, no per-object `malloc`/`free`, and no fixed-size buffers (in the compiler or in generated C). The compiler has no leaks (checked with `leaks` on macOS; `make test-debug` keeps LeakSanitizer on where it's supported).
-- **No global mutable state** in the compiler. Context structs (`Parser`, `Checker`, `Codegen`) are passed explicitly. (The runtime inside generated programs keeps its allocator in a static, by design.)
+- **Memory:** in the compiler, an arena for everything, no per-object `malloc`/`free`, and no fixed-size buffers (in the compiler or in generated C). The compiler has no leaks (checked with `leaks` on macOS; `make test-debug` keeps LeakSanitizer on where it's supported). Generated programs use reference counting instead (see above).
+- **No global mutable state** in the compiler. Context structs (`Parser`, `Checker`, `Codegen`) are passed explicitly. (The runtime inside generated programs keeps a few statics by design: its memory counters, the function depth, and the shell settings.)
 - **Small modules:** a small public header and private details in the `.c`. Opaque structs where other modules don't need the fields. Helpers are `static`. Files stay under about 600 lines, and functions are short and do one thing.
 - **Errors go through `diag`,** with source spans, and a stage keeps going after an error, so one run reports everything.
 
@@ -119,3 +120,12 @@ These are the rules every module follows (the full list is in [CONTRIBUTING.md](
 | CLI checks | end of `tests/run.sh` | Commands, usage errors, temp-file cleanup |
 
 `make test-debug` runs the same suite against a build with AddressSanitizer and UndefinedBehaviorSanitizer. `make bless` rewrites the expected files from the current output, for intended changes only (see [CONTRIBUTING.md](../CONTRIBUTING.md)).
+
+## Memory in generated programs
+
+The compiler itself uses an arena. Generated programs use **reference counting**, described fully in [memory.md](memory.md). In short:
+
+- Every heap object starts with a header (kind and reference count), so later kinds (lists, records, closures) reuse the same retain and release. Text is the only heap kind so far. Text literals and constants are static objects marked immortal; retain and release skip them.
+- **Ownership convention:** expressions produce owned values; runtime operations and EasyScript functions consume their arguments; reading a variable retains it; storing (`es_set`) takes the new value and releases the old one after the new one is worked out; `give back` returns an owned value.
+- **Scopes:** a block releases the names first made in it when it ends. `stop the loop`, `skip this one`, and `give back` release the names of every block they leave; the end of the program, or `stop the program` in the main program, releases every variable of `main()`.
+- **Checks:** `ES_DEBUG_MEMORY=1` fails a program that ends with anything alive (every test program runs this way), `ES_MEMORY_LIMIT=N` bounds live heap text (`tests/memory/`), and `ES_SANITIZE=1` builds programs with AddressSanitizer and UBSan (`make test-debug`).

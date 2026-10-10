@@ -1,243 +1,95 @@
-/* EasyScript runtime.
- *
- * This file is embedded into the compiler at build time and copied to the top
- * of every generated C program, so programs need nothing else to build.
- * Everything here is static; generated code calls these functions.
- *
- * Values are tagged: nothing, a number (double), text, or yes/no. Text made at
- * run time lives in a simple block allocator that's freed when the program
- * exits. Runtime errors print "Line N: <plain English>" to stderr and exit 1.
- */
+/* EasyScript runtime, part 2: what values can do (text, arithmetic, logic,
+ * comparisons, loops, functions, files). Part 1, es_value.h, comes first. */
 #ifndef ES_RUNTIME_H
 #define ES_RUNTIME_H
 
-#define _POSIX_C_SOURCE 200809L /* getline */
-
-#include <errno.h>
-#include <math.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-/* Programs use only some of these functions; that's expected. */
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic ignored "-Wunused-function"
+#ifndef ES_VALUE_H
+#include "es_value.h"
 #endif
-
-typedef enum { ES_NOTHING, ES_NUMBER, ES_TEXT, ES_YESNO } EsKind;
-
-typedef struct {
-    EsKind kind;
-    double number;
-    bool yes;
-    const char *text; /* always NUL-terminated; len doesn't count the NUL */
-    size_t len;
-} EsValue;
-
-/* --- Memory ------------------------------------------------------------- */
-
-typedef struct EsBlock {
-    struct EsBlock *next;
-    size_t used;
-    size_t cap;
-    char data[];
-} EsBlock;
-
-static EsBlock *es_blocks;
-
-static void es_free_all(void) {
-    while (es_blocks) {
-        EsBlock *next = es_blocks->next;
-        free(es_blocks);
-        es_blocks = next;
-    }
-}
-
-static _Noreturn void es_out_of_memory(void) {
-    fflush(stdout);
-    fprintf(stderr, "The program ran out of memory.\n");
-    exit(1);
-}
-
-static char *es_alloc(size_t n) {
-    if (!es_blocks || es_blocks->cap - es_blocks->used < n) {
-        size_t cap = n > 65536 ? n : 65536;
-        EsBlock *block = malloc(sizeof(EsBlock) + cap);
-        if (!block) es_out_of_memory();
-        block->next = es_blocks;
-        block->used = 0;
-        block->cap = cap;
-        es_blocks = block;
-    }
-    char *p = es_blocks->data + es_blocks->used;
-    es_blocks->used += n;
-    return p;
-}
-
-/* The interactive shell reruns the whole session for every line it keeps,
- * and sets two environment variables (normal programs see neither):
- *   ES_SKIP_OUTPUT=N  don't print the first N bytes (shown on earlier runs)
- *   ES_ANSWERS=path   answers to earlier "ask"s, one per line, used before
- *                     reading the keyboard; new answers are added to it */
-static size_t es_skip_output;
-static FILE *es_answers;
-static bool es_answers_used_up;
-
-static void es_close_answers(void) {
-    if (es_answers) fclose(es_answers);
-}
-
-static void es_init(void) {
-    atexit(es_free_all);
-    const char *skip = getenv("ES_SKIP_OUTPUT");
-    if (skip) es_skip_output = (size_t)strtoull(skip, NULL, 10);
-    const char *answers = getenv("ES_ANSWERS");
-    if (answers) {
-        es_answers = fopen(answers, "a+");
-        if (es_answers) rewind(es_answers);
-        atexit(es_close_answers);
-        setvbuf(stdin, NULL, _IONBF, 0); /* read only our own line: the shell reads the rest */
-    }
-}
-
-/* Everything the program prints goes through here. */
-static void es_out(const char *s, size_t n) {
-    if (es_skip_output >= n) {
-        es_skip_output -= n;
-        return;
-    }
-    s += es_skip_output;
-    n -= es_skip_output;
-    es_skip_output = 0;
-    fwrite(s, 1, n, stdout);
-}
-
-/* --- Errors ------------------------------------------------------------- */
-
-/* Prints "Line N: message", then the hint on its own line if there is one. */
-static _Noreturn void es_fail(int line, const char *hint, const char *fmt, ...) {
-    va_list args;
-    fflush(stdout);
-    fprintf(stderr, "Line %d: ", line);
-    va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
-    va_end(args);
-    fputc('\n', stderr);
-    if (hint) fprintf(stderr, "%s\n", hint);
-    exit(1);
-}
-
-static const char *es_kind_name(EsValue v) {
-    switch (v.kind) {
-    case ES_NUMBER: return "a number";
-    case ES_TEXT: return "text";
-    case ES_YESNO: return "a yes/no value";
-    default: return "nothing";
-    }
-}
-
-static const char *es_reason(int err) {
-    switch (err) {
-    case ENOENT: return "it doesn't exist";
-    case EACCES: return "permission was denied";
-    case EISDIR: return "it's a folder, not a file";
-    case ENOTDIR: return "part of its path isn't a folder";
-    default: return strerror(err);
-    }
-}
-
-/* --- Making values ------------------------------------------------------ */
-
-static EsValue es_nothing(void) {
-    EsValue v = {ES_NOTHING, 0, false, "", 0};
-    return v;
-}
-
-static EsValue es_num(double x) {
-    EsValue v = {ES_NUMBER, x, false, "", 0};
-    return v;
-}
-
-static EsValue es_yesno(bool yes) {
-    EsValue v = {ES_YESNO, 0, yes, "", 0};
-    return v;
-}
-
-/* Text from a literal or other memory that outlives the value. */
-static EsValue es_text_lit(const char *text, size_t len) {
-    EsValue v = {ES_TEXT, 0, false, text, len};
-    return v;
-}
-
-/* Text copied into runtime memory. */
-static EsValue es_text_copy(const char *text, size_t len) {
-    char *p = es_alloc(len + 1);
-    memcpy(p, text, len);
-    p[len] = '\0';
-    return es_text_lit(p, len);
-}
 
 /* --- Text ----------------------------------------------------------------- */
 
+static EsTextObject es_lit_nan = ES_STATIC_TEXT("not a number");
+static EsTextObject es_lit_infinity = ES_STATIC_TEXT("infinity");
+static EsTextObject es_lit_minus_infinity = ES_STATIC_TEXT("-infinity");
+static EsTextObject es_lit_yes = ES_STATIC_TEXT("yes");
+static EsTextObject es_lit_no = ES_STATIC_TEXT("no");
+static EsTextObject es_lit_nothing = ES_STATIC_TEXT("nothing");
+
 /* Whole numbers print without decimals; others with up to 15 significant digits. */
 static EsValue es_number_text(double x) {
-    if (isnan(x)) return es_text_lit("not a number", 12);
-    if (isinf(x)) return x > 0 ? es_text_lit("infinity", 8) : es_text_lit("-infinity", 9);
+    if (isnan(x)) return es_text(&es_lit_nan);
+    if (isinf(x)) return x > 0 ? es_text(&es_lit_infinity) : es_text(&es_lit_minus_infinity);
     if (x == 0) x = 0; /* no "-0" */
     const char *fmt = (x == floor(x) && fabs(x) < 1e15) ? "%.0f" : "%.15g";
     int n = snprintf(NULL, 0, fmt, x);
-    char *p = es_alloc((size_t)n + 1);
+    char *p;
+    EsValue v = es_text_new((size_t)n, &p);
     snprintf(p, (size_t)n + 1, fmt, x);
-    return es_text_lit(p, (size_t)n);
+    return v;
 }
 
+/* Consumes v; text is handed straight back. */
 static EsValue es_to_text(EsValue v) {
     switch (v.kind) {
-    case ES_NUMBER: return es_number_text(v.number);
+    case ES_NUMBER: return es_number_text(v.as.number);
     case ES_TEXT: return v;
-    case ES_YESNO: return v.yes ? es_text_lit("yes", 3) : es_text_lit("no", 2);
-    default: return es_text_lit("nothing", 7);
+    case ES_YESNO: return v.as.yes ? es_text(&es_lit_yes) : es_text(&es_lit_no);
+    default: return es_text(&es_lit_nothing);
     }
 }
 
-/* "followed by": both sides as text, joined. */
+/* "followed by": both sides as text, joined. Joining onto empty text gives
+ * the other side back without copying. */
 static EsValue es_join(EsValue a, EsValue b) {
     EsValue ta = es_to_text(a);
     EsValue tb = es_to_text(b);
-    char *p = es_alloc(ta.len + tb.len + 1);
-    memcpy(p, ta.text, ta.len);
-    memcpy(p + ta.len, tb.text, tb.len);
-    p[ta.len + tb.len] = '\0';
-    return es_text_lit(p, ta.len + tb.len);
+    if (es_len(ta) == 0) {
+        es_release(ta);
+        return tb;
+    }
+    if (es_len(tb) == 0) {
+        es_release(tb);
+        return ta;
+    }
+    char *p;
+    EsValue joined = es_text_new(es_len(ta) + es_len(tb), &p);
+    memcpy(p, es_chars(ta), es_len(ta));
+    memcpy(p + es_len(ta), es_chars(tb), es_len(tb));
+    es_release(ta);
+    es_release(tb);
+    return joined;
 }
 
 static void es_say(EsValue v) {
     EsValue t = es_to_text(v);
-    es_out(t.text, t.len);
+    es_out(es_chars(t), es_len(t));
     es_out("\n", 1);
+    es_release(t);
 }
 
-/* --- Arithmetic --------------------------------------------------------- */
+/* --- Arithmetic ---------------------------------------------------------
+ *
+ * These only succeed on numbers, which own nothing, so there's nothing to
+ * release; anything else stops the program. */
 
 static const char *const es_join_hint = "To join text, use \"and\" or \"followed by\".";
 
 static EsValue es_add(int line, EsValue a, EsValue b) {
-    if (a.kind == ES_NUMBER && b.kind == ES_NUMBER) return es_num(a.number + b.number);
+    if (a.kind == ES_NUMBER && b.kind == ES_NUMBER) return es_num(a.as.number + b.as.number);
     es_fail(line, (a.kind == ES_TEXT || b.kind == ES_TEXT) ? es_join_hint : NULL, "I can't add %s to %s.",
             es_kind_name(b), es_kind_name(a));
     return es_nothing();
 }
 
 static EsValue es_sub(int line, EsValue a, EsValue b) {
-    if (a.kind == ES_NUMBER && b.kind == ES_NUMBER) return es_num(a.number - b.number);
+    if (a.kind == ES_NUMBER && b.kind == ES_NUMBER) return es_num(a.as.number - b.as.number);
     es_fail(line, NULL, "I can't subtract %s from %s.", es_kind_name(b), es_kind_name(a));
     return es_nothing();
 }
 
 static EsValue es_mul(int line, EsValue a, EsValue b) {
-    if (a.kind == ES_NUMBER && b.kind == ES_NUMBER) return es_num(a.number * b.number);
+    if (a.kind == ES_NUMBER && b.kind == ES_NUMBER) return es_num(a.as.number * b.as.number);
     es_fail(line, NULL, "I can't multiply %s by %s.", es_kind_name(a), es_kind_name(b));
     return es_nothing();
 }
@@ -246,36 +98,36 @@ static EsValue es_div(int line, EsValue a, EsValue b) {
     if (a.kind != ES_NUMBER || b.kind != ES_NUMBER) {
         es_fail(line, NULL, "I can't divide %s by %s.", es_kind_name(a), es_kind_name(b));
     }
-    if (b.number == 0) es_fail(line, NULL, "You divided by zero.");
-    return es_num(a.number / b.number);
+    if (b.as.number == 0) es_fail(line, NULL, "You divided by zero.");
+    return es_num(a.as.number / b.as.number);
 }
 
 static EsValue es_mod(int line, EsValue a, EsValue b) {
     if (a.kind != ES_NUMBER || b.kind != ES_NUMBER) {
         es_fail(line, NULL, "I can't find the remainder of %s divided by %s.", es_kind_name(a), es_kind_name(b));
     }
-    if (b.number == 0) es_fail(line, NULL, "You divided by zero.");
-    return es_num(fmod(a.number, b.number));
+    if (b.as.number == 0) es_fail(line, NULL, "You divided by zero.");
+    return es_num(fmod(a.as.number, b.as.number));
 }
 
 static EsValue es_neg(int line, EsValue a) {
     if (a.kind != ES_NUMBER) es_fail(line, NULL, "I can't make %s negative.", es_kind_name(a));
-    return es_num(-a.number);
+    return es_num(-a.as.number);
 }
 
 /* --- Logic ---------------------------------------------------------------- */
 
 static bool es_is_yes(EsValue v) {
-    return v.kind == ES_YESNO && v.yes;
+    return v.kind == ES_YESNO && v.as.yes;
 }
 
 static bool es_is_no(EsValue v) {
-    return v.kind == ES_YESNO && !v.yes;
+    return v.kind == ES_YESNO && !v.as.yes;
 }
 
 /* "and" once the left side is known not to be "no" (that case short-circuits
  * in the generated code). Two yes/no values: logical and. Text on either side
- * (with a number, nothing, or text): joins them. */
+ * (with a number, nothing, or text): joins them (consuming both). */
 static EsValue es_and(int line, EsValue a, EsValue b) {
     if (a.kind == ES_YESNO && b.kind == ES_YESNO) return b;
     if (a.kind == ES_YESNO || b.kind == ES_YESNO) {
@@ -291,7 +143,8 @@ static EsValue es_and(int line, EsValue a, EsValue b) {
     return es_nothing();
 }
 
-/* "or" once the left side is known not to be "yes". */
+/* "or" once the left side is known not to be "yes". Like "not", an "if" and a
+ * loop condition, it only succeeds on yes/no values, which own nothing. */
 static EsValue es_or(int line, EsValue a, EsValue b) {
     if (a.kind != ES_YESNO) es_fail(line, NULL, "\"or\" needs yes or no on both sides, but the left side is %s.", es_kind_name(a));
     if (b.kind != ES_YESNO) es_fail(line, NULL, "\"or\" needs yes or no on both sides, but the right side is %s.", es_kind_name(b));
@@ -300,7 +153,7 @@ static EsValue es_or(int line, EsValue a, EsValue b) {
 
 static EsValue es_not(int line, EsValue a) {
     if (a.kind != ES_YESNO) es_fail(line, NULL, "\"not\" needs a yes/no value, but this is %s.", es_kind_name(a));
-    return es_yesno(!a.yes);
+    return es_yesno(!a.as.yes);
 }
 
 /* The condition of an if or "otherwise if" must be yes or no. */
@@ -309,7 +162,7 @@ static bool es_if(int line, EsValue v) {
         es_fail(line, "Compare it with something, like \"if x is 5\".",
                 "An \"if\" needs yes or no to decide, but this is %s.", es_kind_name(v));
     }
-    return v.yes;
+    return v.as.yes;
 }
 
 /* --- Functions ------------------------------------------------------------- */
@@ -319,14 +172,14 @@ static bool es_if(int line, EsValue v) {
 #define ES_MAX_DEPTH 10000
 static int es_depth;
 
-static void es_enter(int line) {
+static inline void es_enter(int line) {
     if (++es_depth > ES_MAX_DEPTH) {
         es_fail(line, "Check that the function stops calling itself at some point.",
                 "Functions are calling each other too deeply (more than %d calls inside each other).", ES_MAX_DEPTH);
     }
 }
 
-static EsValue es_leave(EsValue result) {
+static inline EsValue es_leave(EsValue result) {
     es_depth--;
     return result;
 }
@@ -351,14 +204,14 @@ static EsCount es_count_start(int line, EsValue from, EsValue to, EsValue step, 
         if (step.kind != ES_NUMBER) {
             es_fail(line, NULL, "The step of a count has to be a number, but this is %s.", es_kind_name(step));
         }
-        if (!(step.number > 0)) {
+        if (!(step.as.number > 0)) {
             es_fail(line, "Counting goes up or down by itself; the step only says how far to go each time.",
-                    "The step of a count has to be more than zero, but it's %s.", es_number_text(step.number).text);
+                    "The step of a count has to be more than zero, but it's %s.", es_chars(es_number_text(step.as.number)));
         }
-        c.step = step.number;
+        c.step = step.as.number;
     }
-    c.from = from.number;
-    c.to = to.number;
+    c.from = from.as.number;
+    c.to = to.as.number;
     if (down) {
         c.direction = -1;
         c.empty = c.from < c.to && !es_close(c.from, c.to);
@@ -368,7 +221,8 @@ static EsCount es_count_start(int line, EsValue from, EsValue to, EsValue step, 
     return c;
 }
 
-/* Sets *var to round i's number, or returns false when the count is past its end.
+/* Sets *var to round i's number (releasing what it held), or returns false
+ * when the count is past its end.
  * Numbers are worked out from the start each time (no drifting), and a number
  * that's equal to the end (see es_close) lands exactly on it. */
 static bool es_count_next(const EsCount *c, long long i, EsValue *var) {
@@ -379,19 +233,19 @@ static bool es_count_next(const EsCount *c, long long i, EsValue *var) {
     } else if (c->direction > 0 ? v > c->to : v < c->to) {
         return false;
     }
-    *var = es_num(v);
+    es_set(var, es_num(v));
     return true;
 }
 
 /* "do this N times": N must be a whole number, zero or more. */
 static long long es_times(int line, EsValue n) {
     if (n.kind != ES_NUMBER) es_fail(line, NULL, "The number of times has to be a number, but this is %s.", es_kind_name(n));
-    if (n.number < 0) es_fail(line, NULL, "The number of times can't be negative, but it's %s.", es_number_text(n.number).text);
-    if (n.number != floor(n.number)) {
-        es_fail(line, NULL, "The number of times has to be a whole number, but it's %s.", es_number_text(n.number).text);
+    if (n.as.number < 0) es_fail(line, NULL, "The number of times can't be negative, but it's %s.", es_chars(es_number_text(n.as.number)));
+    if (n.as.number != floor(n.as.number)) {
+        es_fail(line, NULL, "The number of times has to be a whole number, but it's %s.", es_chars(es_number_text(n.as.number)));
     }
-    if (n.number > 9e18) es_fail(line, NULL, "That's too many times to repeat.");
-    return (long long)n.number;
+    if (n.as.number > 9e18) es_fail(line, NULL, "That's too many times to repeat.");
+    return (long long)n.as.number;
 }
 
 /* The condition of a while or until loop must be yes or no. */
@@ -400,7 +254,7 @@ static bool es_loop_condition(int line, EsValue v) {
         es_fail(line, "Compare it with something, like \"while count is less than 10\".",
                 "A loop needs yes or no to decide whether to keep going, but this is %s.", es_kind_name(v));
     }
-    return v.yes;
+    return v.as.yes;
 }
 
 /* --- Comparisons ---------------------------------------------------------- */
@@ -415,33 +269,39 @@ static bool es_close(double a, double b) {
 static bool es_same(EsValue a, EsValue b) {
     if (a.kind != b.kind) return false;
     switch (a.kind) {
-    case ES_NUMBER: return es_close(a.number, b.number);
-    case ES_TEXT: return a.len == b.len && memcmp(a.text, b.text, a.len) == 0;
-    case ES_YESNO: return a.yes == b.yes;
+    case ES_NUMBER: return es_close(a.as.number, b.as.number);
+    case ES_TEXT: return es_len(a) == es_len(b) && memcmp(es_chars(a), es_chars(b), es_len(a)) == 0;
+    case ES_YESNO: return a.as.yes == b.as.yes;
     default: return true;
     }
 }
 
 static EsValue es_eq(EsValue a, EsValue b) {
-    return es_yesno(es_same(a, b));
+    bool same = es_same(a, b);
+    es_release(a);
+    es_release(b);
+    return es_yesno(same);
 }
 
 static EsValue es_ne(EsValue a, EsValue b) {
-    return es_yesno(!es_same(a, b));
+    bool same = es_same(a, b);
+    es_release(a);
+    es_release(b);
+    return es_yesno(!same);
 }
 
 /* -1, 0 or 1. Numbers compare by value (numbers that count as equal give 0,
  * so "is at most" agrees with "is") and text alphabetically (by bytes). */
 static int es_order(int line, EsValue a, EsValue b) {
     if (a.kind == ES_NUMBER && b.kind == ES_NUMBER) {
-        if (es_close(a.number, b.number)) return 0;
-        return a.number < b.number ? -1 : 1;
+        if (es_close(a.as.number, b.as.number)) return 0;
+        return a.as.number < b.as.number ? -1 : 1;
     }
     if (a.kind == ES_TEXT && b.kind == ES_TEXT) {
-        size_t n = a.len < b.len ? a.len : b.len;
-        int c = memcmp(a.text, b.text, n);
+        size_t n = es_len(a) < es_len(b) ? es_len(a) : es_len(b);
+        int c = memcmp(es_chars(a), es_chars(b), n);
         if (c != 0) return c < 0 ? -1 : 1;
-        return (a.len > b.len) - (a.len < b.len);
+        return (es_len(a) > es_len(b)) - (es_len(a) < es_len(b));
     }
     bool mixed = (a.kind == ES_TEXT && b.kind == ES_NUMBER) || (a.kind == ES_NUMBER && b.kind == ES_TEXT);
     es_fail(line, mixed ? "Turn the text into a number first with \"as a number\"." : NULL, "I can't compare %s with %s.",
@@ -449,10 +309,18 @@ static int es_order(int line, EsValue a, EsValue b) {
     return 0;
 }
 
-static EsValue es_lt(int line, EsValue a, EsValue b) { return es_yesno(es_order(line, a, b) < 0); }
-static EsValue es_le(int line, EsValue a, EsValue b) { return es_yesno(es_order(line, a, b) <= 0); }
-static EsValue es_gt(int line, EsValue a, EsValue b) { return es_yesno(es_order(line, a, b) > 0); }
-static EsValue es_ge(int line, EsValue a, EsValue b) { return es_yesno(es_order(line, a, b) >= 0); }
+/* es_order, consuming both sides. */
+static int es_compare(int line, EsValue a, EsValue b) {
+    int order = es_order(line, a, b);
+    es_release(a);
+    es_release(b);
+    return order;
+}
+
+static EsValue es_lt(int line, EsValue a, EsValue b) { return es_yesno(es_compare(line, a, b) < 0); }
+static EsValue es_le(int line, EsValue a, EsValue b) { return es_yesno(es_compare(line, a, b) <= 0); }
+static EsValue es_gt(int line, EsValue a, EsValue b) { return es_yesno(es_compare(line, a, b) > 0); }
+static EsValue es_ge(int line, EsValue a, EsValue b) { return es_yesno(es_compare(line, a, b) >= 0); }
 
 /* --- Conversions and built-ins -------------------------------------------- */
 
@@ -485,11 +353,14 @@ static EsValue es_as_number(int line, EsValue v) {
     switch (v.kind) {
     case ES_NUMBER: return v;
     case ES_TEXT:
-        if (es_parse_number(v.text, v.len, &x)) return es_num(x);
-        es_fail(line, NULL, "I can't turn \"%.*s\" into a number.", (int)(v.len > 60 ? 60 : v.len), v.text);
+        if (es_parse_number(es_chars(v), es_len(v), &x)) {
+            es_release(v);
+            return es_num(x);
+        }
+        es_fail(line, NULL, "I can't turn \"%.*s\" into a number.", (int)(es_len(v) > 60 ? 60 : es_len(v)), es_chars(v));
         return es_nothing();
     default:
-        es_fail(line, NULL, "I can't turn %s into a number.", v.kind == ES_YESNO ? (v.yes ? "yes" : "no") : "nothing");
+        es_fail(line, NULL, "I can't turn %s into a number.", v.kind == ES_YESNO ? (v.as.yes ? "yes" : "no") : "nothing");
         return es_nothing();
     }
 }
@@ -498,9 +369,10 @@ static EsValue es_as_number(int line, EsValue v) {
 static EsValue es_length(int line, EsValue v) {
     if (v.kind != ES_TEXT) es_fail(line, NULL, "I can only find the length of text, but this is %s.", es_kind_name(v));
     size_t chars = 0;
-    for (size_t i = 0; i < v.len; i++) {
-        if (((unsigned char)v.text[i] & 0xC0) != 0x80) chars++;
+    for (size_t i = 0; i < es_len(v); i++) {
+        if (((unsigned char)es_chars(v)[i] & 0xC0) != 0x80) chars++;
     }
+    es_release(v);
     return es_num((double)chars);
 }
 
@@ -510,37 +382,43 @@ static void es_require_file_name(int line, EsValue path) {
     if (path.kind != ES_TEXT) es_fail(line, NULL, "The name of a file has to be text, but this is %s.", es_kind_name(path));
 }
 
-/* The whole file as text, without its final new line. */
+/* The whole file as new text, without its final new line. Consumes path. */
 static EsValue es_read_file(int line, EsValue path) {
     es_require_file_name(line, path);
-    FILE *f = fopen(path.text, "rb");
-    if (!f) es_fail(line, NULL, "I couldn't read the file \"%s\": %s.", path.text, es_reason(errno));
-    if (fseek(f, 0, SEEK_END) != 0) es_fail(line, NULL, "I couldn't read the file \"%s\": %s.", path.text, es_reason(errno));
+    FILE *f = fopen(es_chars(path), "rb");
+    if (!f) es_fail(line, NULL, "I couldn't read the file \"%s\": %s.", es_chars(path), es_reason(errno));
+    if (fseek(f, 0, SEEK_END) != 0) es_fail(line, NULL, "I couldn't read the file \"%s\": %s.", es_chars(path), es_reason(errno));
     long size = ftell(f);
     if (size < 0 || fseek(f, 0, SEEK_SET) != 0) {
-        es_fail(line, NULL, "I couldn't read the file \"%s\": %s.", path.text, es_reason(errno));
+        es_fail(line, NULL, "I couldn't read the file \"%s\": %s.", es_chars(path), es_reason(errno));
     }
-    char *p = es_alloc((size_t)size + 1);
+    char *p = malloc((size_t)size + 1);
+    if (!p) es_out_of_memory();
     size_t got = fread(p, 1, (size_t)size, f);
     fclose(f);
     if (got > 0 && p[got - 1] == '\n') got--;
     if (got > 0 && p[got - 1] == '\r') got--;
-    p[got] = '\0';
-    return es_text_lit(p, got);
+    EsValue text = es_text_copy(p, got);
+    free(p);
+    es_release(path);
+    return text;
 }
 
-/* Writes the value's text and a new line, replacing or adding to the file. */
+/* Writes the value's text and a new line, replacing or adding to the file.
+ * Consumes both. */
 static void es_write_file(int line, EsValue value, EsValue path, bool append) {
     es_require_file_name(line, path);
     EsValue text = es_to_text(value);
-    FILE *f = fopen(path.text, append ? "ab" : "wb");
+    FILE *f = fopen(es_chars(path), append ? "ab" : "wb");
     if (!f) {
-        es_fail(line, NULL, "I couldn't write to the file \"%s\": %s.", path.text,
+        es_fail(line, NULL, "I couldn't write to the file \"%s\": %s.", es_chars(path),
                 errno == ENOENT ? "the folder it should go in doesn't exist" : es_reason(errno));
     }
-    fwrite(text.text, 1, text.len, f);
+    fwrite(es_chars(text), 1, es_len(text), f);
     fputc('\n', f);
-    if (fclose(f) != 0) es_fail(line, NULL, "I couldn't write to the file \"%s\": %s.", path.text, es_reason(errno));
+    if (fclose(f) != 0) es_fail(line, NULL, "I couldn't write to the file \"%s\": %s.", es_chars(path), es_reason(errno));
+    es_release(text);
+    es_release(path);
 }
 
 /* Reads one line: a replayed answer (in the shell) if any are left,
@@ -561,11 +439,13 @@ static ssize_t es_read_answer(char **buffer, size_t *cap) {
     return n;
 }
 
-/* Prints the question, then reads one line. At the end of input the answer is empty text. */
+/* Prints the question (consuming it), then reads one line as new text. At
+ * the end of input the answer is empty text. */
 static EsValue es_ask(int line, EsValue prompt) {
     (void)line;
     EsValue question = es_to_text(prompt);
-    es_out(question.text, question.len);
+    es_out(es_chars(question), es_len(question));
+    es_release(question);
     fflush(stdout);
     char *buffer = NULL;
     size_t cap = 0;
@@ -573,13 +453,15 @@ static EsValue es_ask(int line, EsValue prompt) {
     size_t len = n > 0 ? (size_t)n : 0;
     if (len > 0 && buffer[len - 1] == '\n') len--;
     if (len > 0 && buffer[len - 1] == '\r') len--;
-    EsValue answer = es_text_copy(len > 0 ? buffer : "", len);
+    EsValue answer = len > 0 ? es_text_copy(buffer, len) : es_text(&es_empty_text);
     free(buffer);
     return answer;
 }
 
+/* "stop the program" inside a function, once the function has released its
+ * own names (in main() it jumps to the end instead). See es_finish. */
 static _Noreturn void es_stop(void) {
-    fflush(stdout);
+    es_finish(false);
     exit(0);
 }
 

@@ -233,6 +233,10 @@ This is the "no guessing" rule in action. See [`examples/parser/`](../examples/p
 
 ---
 
+### Memory
+
+There's nothing to manage. Text made while the program runs, like a join or a number turned into text, is freed as soon as nothing uses it any more, so a loop that makes a million texts uses no more memory than one that makes one. See [How EasyScript manages memory](memory.md).
+
 ## 3. Variables
 
 **Status: Available.**

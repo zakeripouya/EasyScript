@@ -1,8 +1,9 @@
 #!/bin/sh
 # Leak sweep for macOS, where AddressSanitizer can't detect leaks: runs the
 # compiler under the system `leaks` tool for every test input, in the mode
-# its folder uses (tokens, ast, emit, run), plus every generated program and
-# every shell session. Fails if any process leaks. On Linux, `make
+# its folder uses (tokens, ast, emit, run), plus every generated program
+# (built without sanitizers, which `leaks` can't inspect) and every shell
+# session. Fails if any process leaks. On Linux, `make
 # test-debug` gets the same check from LeakSanitizer instead.
 #
 # Run by `make test-debug` when `leaks` is available.
@@ -56,9 +57,10 @@ sweep tokens "$ROOT/tests/tokens" "$ROOT/examples/lexer"
 sweep ast "$ROOT/tests/ast" "$ROOT/examples/parser"
 sweep emit "$ROOT/tests/errors" "$ROOT/tests/run" "$ROOT/examples/programs"
 
-# Generated programs (the runtime), including ones that stop with an error.
-for src in "$ROOT"/tests/run/*.es "$ROOT"/examples/programs/*.es; do
-    "$ES" build "$src" -o "$WORK/program" 2>/dev/null || continue
+# Generated programs (the runtime and its reference counting), including ones
+# that stop with an error, and the million-round memory tests.
+for src in "$ROOT"/tests/run/*.es "$ROOT"/examples/programs/*.es "$ROOT"/tests/memory/*.es; do
+    ES_SANITIZE=0 "$ES" build "$src" -o "$WORK/program" 2>/dev/null || continue
     check "program ${src#$ROOT/}" "$(input_for "$src")" "$WORK/program"
 done
 

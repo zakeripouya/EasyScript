@@ -17,20 +17,21 @@ The C versions keep their totals `volatile` so the compiler can't remove the loo
 
 ## Latest results
 
-Machine: Apple M4, 24 GB, macOS 15.3.1. Apple clang 17.0.0, Go 1.27.1, Python 3.14.7. EasyScript 0.1.0, 2026-10-10.
+Machine: Apple M4, 24 GB, macOS 15.3.1. Apple clang 17.0.0, Go 1.27.1, Python 3.14.7. EasyScript 0.1.0 plus reference counting (Phase 2, step 13), 2026-10-10.
 
 | Program | EasyScript | C | Go | Python |
 |---|---|---|---|---|
-| fib | 0.52 s, 1.2 MB | 0.07 s, 1.2 MB | 0.08 s, 3.8 MB | 2.78 s, 11.3 MB |
-| count | 0.06 s, 1.2 MB | 0.02 s, 1.2 MB | 0.02 s, 3.9 MB | 4.12 s, 11.3 MB |
-| nested | 0.87 s, 1.3 MB | 0.03 s, 1.2 MB | 0.03 s, 3.9 MB | 5.09 s, 11.4 MB |
-| text | 0.03 s, **280.2 MB** | (none) | 0.01 s, 13.7 MB | 0.01 s, 11.5 MB |
+| fib | 0.24 s, 1.2 MB | 0.07 s, 1.2 MB | 0.08 s, 3.8 MB | 2.87 s, 11.5 MB |
+| count | 0.07 s, 1.2 MB | 0.02 s, 1.2 MB | 0.02 s, 3.8 MB | 4.05 s, 11.6 MB |
+| nested | 0.86 s, 1.2 MB | 0.03 s, 1.2 MB | 0.03 s, 3.8 MB | 4.93 s, 11.4 MB |
+| text | 0.00 s, 1.8 MB | (none) | 0.01 s, 10.4 MB | 0.01 s, 11.7 MB |
 
 ## Reading the results
 
-- **Against Python,** EasyScript is 5 to 60 times faster on loops and function calls, because it's compiled rather than interpreted.
-- **Against C and Go,** it's 3 to 30 times slower. In Phase 1 every value is *tagged*: each `plus`, comparison, or `mod` is a runtime call that checks what kind of value it has before doing the work, so it can give a friendly error. `nested` shows this most, with several of those calls per round. **Static types arrive in Phase 2**: when the compiler knows a value is always a number, it can generate plain C arithmetic, which is where the gap to C should mostly close.
-- **Memory is the known weak spot.** Text made while a program runs is only freed when the program ends. Building a 50,000-character text by adding to it 10,000 times keeps every in-between version, about 280 MB, where Go and Python use under 14 MB. Loops and recursion that don't build text use almost no memory. Reclaiming memory while a program runs is on the [roadmap](roadmap.md).
+- **Against Python,** EasyScript is 10 to 60 times faster on loops and function calls, because it's compiled rather than interpreted.
+- **Against C and Go,** it's 3 to 30 times slower. Every value is still *tagged*: each `plus`, comparison, or `mod` checks what kind of value it has before doing the work, so it can give a friendly error. `nested` shows this most, with several of those checks per round. **Static types arrive later in Phase 2**: when the compiler knows a value is always a number, it can generate plain C arithmetic, which is where the gap to C should mostly close.
+- **Memory stays flat.** Text is freed as soon as nothing uses it ([how](memory.md)), so building a 50,000-character text by adding to it 10,000 times takes 1.8 MB at its peak, less than Go or Python (it was 280 MB before reference counting, when every in-between version was kept until the program ended).
+- **Why fib got faster with reference counting:** values shrank from 48 to 16 bytes, so they're passed to functions in registers instead of through memory (0.52 s to 0.24 s). Variables of the main program are C locals, so even though a release might call `free()`, the C compiler still keeps numbers in registers in loops like `count`.
 
 ## History
 
@@ -40,3 +41,4 @@ One row per milestone, with EasyScript's numbers on that milestone's machine. **
 |---|---|---|---|---|---|---|
 | 2026-10-10 | 0.1.0-dev (after `580a056`) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.52 s, 1.3 MB | 0.07 s, 1.2 MB | 0.87 s, 1.3 MB | 0.04 s, 280.2 MB |
 | 2026-10-10 | 0.1.0 (Phase 1 complete) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.52 s, 1.2 MB | 0.06 s, 1.2 MB | 0.87 s, 1.3 MB | 0.03 s, 280.2 MB |
+| 2026-10-10 | 0.1.0 + reference counting (Phase 2, step 13) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.2 MB | 0.07 s, 1.2 MB | 0.86 s, 1.2 MB | 0.00 s, 1.8 MB |

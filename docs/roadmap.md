@@ -5,7 +5,7 @@ EasyScript grows in five phases. Each phase ends with working, tested, documente
 | Phase | Focus | Status |
 |---|---|---|
 | [1](#phase-1-core-language) | Core language | **Complete** (v0.1.0, 2026-10-10) |
-| [2](#phase-2-data-and-structure) | Records, lists, maps, modules, static types | **Next** |
+| [2](#phase-2-data-and-structure) | Records, lists, maps, modules, static types | **In progress** |
 | [3](#phase-3-self-hosting) | Self-hosting | Coming soon |
 | [4](#phase-4-real-world-programs) | Standard library, C interop, concurrency, servers | Coming soon |
 | [5](#phase-5-systems-mode) | Systems mode and an operating system | Coming soon |
@@ -18,7 +18,7 @@ Alongside the phases:
 
 ## Phase 1: Core language
 
-**Complete as of v0.1.0 (2026-10-10).** Four items that were planned for Phase 1 moved to [Phase 2](#phase-2-data-and-structure) instead of holding up the release: reclaiming memory while programs run, type checking, runtime errors that show the source line, and `file ... exists`. They're marked "moved to Phase 2" below.
+**Complete as of v0.1.0 (2026-10-10).** Four items that were planned for Phase 1 moved to [Phase 2](#phase-2-data-and-structure) instead of holding up the release: reclaiming memory while programs run (since done), type checking, runtime errors that show the source line, and `file ... exists`. They're marked "moved to Phase 2" below.
 
 The goal is to write small, real programs in the new sentence syntax and compile them to fast native executables, with friendly errors.
 
@@ -42,7 +42,7 @@ The goal is to write small, real programs in the new sentence syntax and compile
 - [x] Blocks for `if` / `otherwise` (indentation, lining up, scoping)
 - [x] Blocks for loops
 - [x] Functions: definitions, `give back`, calls as sentences and values, recursion, use before definition
-- Runtime memory reclaimed during loops (moved to Phase 2; today text made while a program runs is freed only at exit)
+- [x] Runtime memory reclaimed during loops (moved to Phase 2, and done there: [reference counting](memory.md))
 - Checker: types (moved to Phase 2's static types; block scopes are done)
 - Runtime errors that show the source line (moved to Phase 2)
 
@@ -75,8 +75,10 @@ Planned. Each will be added with its expected output in the same commit as its f
 
 ## Phase 2: Data and structure
 
+- [x] **Memory management:** reference counting. Text made while a program runs is freed as soon as nothing uses it, so loops run in flat memory (the text benchmark went from 280 MB to under 2 MB). Users never write anything about memory. See [memory.md](memory.md).
+  - **Needed once records arrive:** reference counting can't free objects that refer to each other in a cycle. Text can't form cycles, but records (and lists of records) can, so they'll need **weak references or a cycle collector**.
 - **Text tools:** splitting text into words and lines, and looking at its characters (needed for the planned `word_counter.es` example)
-- **From Phase 1:** reclaiming memory while programs run (so long loops that build text don't grow), type checking (as part of static types), runtime errors that show the line of the program like compile errors do, and `file ... exists`
+- **From Phase 1:** type checking (as part of static types), runtime errors that show the line of the program like compile errors do, and `file ... exists`
 - **Records:** named groups of fields ("a point has an x and a y")
 - **Lists:** ordered collections, with `for each item in list`
 - **Maps:** look up values by key

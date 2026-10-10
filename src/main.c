@@ -172,9 +172,17 @@ static int run_process(char *const argv[]) {
     return -1;
 }
 
+// With ES_SANITIZE=1 (used by make test-debug), the program is built with
+// AddressSanitizer and UBSan, so a reference-counting mistake in the runtime
+// or the generated code (a use after free, a double free, or, on Linux, a
+// leak) stops it with a report.
 static int compile_c(const char *output_path) {
-    char *argv[] = {"cc", "-O2", temp_c_path, "-o", (char *)output_path, "-lm", NULL};
-    if (run_process(argv) != 0) {
+    const char *sanitize = getenv("ES_SANITIZE");
+    bool sanitized = sanitize && strcmp(sanitize, "1") == 0;
+    char *plain[] = {"cc", "-O2", temp_c_path, "-o", (char *)output_path, "-lm", NULL};
+    char *checked[] = {"cc", "-O1", "-fno-omit-frame-pointer", "-fsanitize=address,undefined",
+                       "-fno-sanitize-recover=all", temp_c_path, "-o", (char *)output_path, "-lm", NULL};
+    if (run_process(sanitized ? checked : plain) != 0) {
         fprintf(stderr, "The C compiler couldn't build the program. This is a bug in EasyScript; please report it.\n");
         return 1;
     }

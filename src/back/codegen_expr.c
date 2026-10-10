@@ -44,8 +44,19 @@ static bool is_param(const Codegen *g, const char *name) {
     return false;
 }
 
-// A name made by the program: a global in main(), a hoisted local in a function.
+static bool in_scope(const Codegen *g, const char *name) {
+    for (size_t i = 0; i < g->scopes.len; i++) {
+        if (contains(g->scopes.items[i].names.items, g->scopes.items[i].names.len, name)) return true;
+    }
+    return false;
+}
+
+// A name made by the program: a global in main(), a hoisted local in a
+// function. The innermost block it's first made in releases it at its end.
 void cg_declare_name(Codegen *g, const char *name) {
+    if (!is_param(g, name) && !in_scope(g, name) && g->scopes.len > 0) {
+        vec_push(g->arena, &vec_last(&g->scopes).names, name);
+    }
     if (g->function) {
         if (!is_param(g, name) && !contains(g->locals.items, g->locals.len, name)) {
             vec_push(g->arena, &g->locals, name);
@@ -89,6 +100,15 @@ void cg_append_c_string(StrBuf *out, const char *s, size_t len) {
         }
     }
     sb_append_char(out, '"');
+}
+
+// static EsTextObject es_s1 = {{ES_OBJ_TEXT, ES_IMMORTAL}, 6, "Name? "};
+size_t cg_static_text(Codegen *g, const char *s, size_t len) {
+    size_t id = ++g->texts->count;
+    sb_appendf(&g->texts->code, "static EsTextObject es_s%zu = {{ES_OBJ_TEXT, ES_IMMORTAL}, %zu, ", id, len);
+    cg_append_c_string(&g->texts->code, s, len);
+    sb_append(&g->texts->code, "};\n");
+    return id;
 }
 
 static void emit_number(const Expr *expr, StrBuf *out) {
@@ -170,7 +190,9 @@ static void emit_it(Codegen *g, StrBuf *out) {
     for (size_t i = g->loops.len; i > 0; i--) {
         const LoopCode *loop = &g->loops.items[i - 1];
         if (loop->stmt->as.loop.kind == LOOP_COUNT) {
+            sb_append(out, "es_retain(");
             cg_append_name(out, loop->stmt->as.loop.var.text);
+            sb_append_char(out, ')');
             return;
         }
         if (loop->stmt->as.loop.kind == LOOP_TIMES) {
@@ -182,7 +204,8 @@ static void emit_it(Codegen *g, StrBuf *out) {
     sb_append(out, "es_nothing()");
 }
 
-// (t1 = A, t2 = B, es_f_area(line, t1, t2)): arguments left to right.
+// (t1 = A, t2 = B, es_f_area(line, t1, t2)): arguments left to right. The
+// function owns its arguments and releases them when it ends.
 static void emit_call(Codegen *g, const Expr *expr, StrBuf *out) {
     size_t n = expr->as.call.args.len;
     size_t first = g->temps + 1;
@@ -206,20 +229,20 @@ void cg_emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     switch (expr->kind) {
     case EXPR_NUMBER: emit_number(expr, out); break;
     case EXPR_TEXT:
-        sb_append(out, "es_text_lit(");
-        cg_append_c_string(out, expr->as.text.value, expr->as.text.len);
-        sb_appendf(out, ", %zu)", expr->as.text.len);
+        sb_appendf(out, "es_text(&es_s%zu)", cg_static_text(g, expr->as.text.value, expr->as.text.len));
         break;
     case EXPR_BOOLEAN: sb_appendf(out, "es_yesno(%d)", expr->as.boolean ? 1 : 0); break;
     case EXPR_NOTHING: sb_append(out, "es_nothing()"); break;
     case EXPR_NAME:
         if (is_constant(g, expr->as.name)) {
-            cg_append_prefixed(out, "es_k_", expr->as.name);
+            cg_append_prefixed(out, "es_k_", expr->as.name);  // immortal: no retain
         } else if (is_function(g, expr->as.name)) {
             cg_append_prefixed(out, "es_f_", expr->as.name);  // a function that takes no values
             sb_appendf(out, "(%zu)", line);
         } else {
+            sb_append(out, "es_retain(");  // reading a variable: one more owner
             cg_append_name(out, expr->as.name);
+            sb_append_char(out, ')');
         }
         break;
     case EXPR_CALL: emit_call(g, expr, out); break;

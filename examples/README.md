@@ -25,6 +25,7 @@ Small programs, one per feature. **Every example is checked by `make test`** aga
 | [notes.es](programs/notes.es) | Writing, appending, and reading back a file, and its length |
 | [hanoi.es](programs/hanoi.es) | The Towers of Hanoi: a recursive function with four inputs |
 | [receipt.es](programs/receipt.es) | Constants, a function, a loop, and running totals |
+| [million_lines.es](programs/million_lines.es) | A million lines of text made one at a time, in flat memory (see [memory](../docs/memory.md)) |
 | [ask_name.es](programs/ask_name.es) | `ask … and call the answer …` (input from `ask_name.in`) |
 | [files.es](programs/files.es) | `write`, `append`, and `read file` |
 | [err_divide_by_zero.es](programs/err_divide_by_zero.es) | A runtime error: "Line 3: You divided by zero." |

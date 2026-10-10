@@ -3,13 +3,17 @@
 #
 #   tests/run/NAME.es     compiled and run (stdin from NAME.in if present);
 #                         stdout must match NAME.out. With NAME.err it must
-#                         exit 1 with that stderr, otherwise exit 0 silently
+#                         exit 1 with that stderr, otherwise exit 0 silently.
+#                         Run with ES_DEBUG_MEMORY=1: no heap text may be
+#                         alive at the end
 #   tests/errors/NAME.es  compiled (emit); must fail, and stderr must match
 #                         NAME.err exactly
 #   tests/tokens/NAME.es  lexed with `easyscript tokens`; stdout must match
 #                         NAME.out. If NAME.err exists the run must fail and
 #                         stderr must match it; otherwise it must succeed with
 #                         empty stderr
+#   tests/memory/NAME.es  built text in big loops, run under a memory limit
+#                         (see the Memory section below)
 #   tests/shell/NAME.in   typed into the interactive shell; stdout must match
 #                         NAME.out and stderr NAME.err (empty if none)
 #   examples/programs/    like tests/run
@@ -91,7 +95,8 @@ fi
 # check_run DIR LABEL: each DIR/NAME.es is compiled and run, with NAME.in as
 # its input if present (otherwise no input). Stdout must match NAME.out. With
 # a NAME.err the program must exit 1 with exactly that stderr (a runtime
-# error); without one it must exit 0 with empty stderr.
+# error); without one it must exit 0 with empty stderr. Programs run with
+# ES_DEBUG_MEMORY=1, so one that ends with heap text still alive fails.
 check_run() {
     for src in "$1"/*.es; do
         [ -e "$src" ] || continue
@@ -105,7 +110,7 @@ check_run() {
             continue
         fi
         fresh_dir
-        (cd "$WORK/cwd" && "$ES" run "$src") <"$input" >"$WORK/stdout" 2>"$WORK/stderr"
+        (cd "$WORK/cwd" && ES_DEBUG_MEMORY=1 "$ES" run "$src") <"$input" >"$WORK/stdout" 2>"$WORK/stderr"
         status=$?
         if [ -f "$expected_err" ]; then
             want_status=1
@@ -206,6 +211,66 @@ done
 for src in "$ROOT"/examples/*.es; do
     [ -e "$src" ] || continue
     not_ok "examples/$(basename "$src")" "examples must live in examples/programs/, examples/lexer/ or examples/parser/"
+done
+
+# --- Memory -------------------------------------------------------------------
+#
+# tests/memory/NAME.es builds text in loops of up to a million rounds. Each is
+# built, then run with ES_DEBUG_MEMORY=1 and ES_MEMORY_LIMIT=MEMORY_LIMIT, so
+# the runtime stops it (exit 70) if live heap text ever takes more than that.
+# Stdout must match NAME.out; with NAME.err it must exit 70 with that stderr.
+# Where /usr/bin/time can report it, the program's peak memory (resident set
+# size) must also stay under MAX_PEAK_KB, so memory really goes back (not
+# under ES_SANITIZE=1, where AddressSanitizer's bookkeeping takes memory).
+
+MEMORY_LIMIT=100000
+MAX_PEAK_KB=16384
+
+# Peak resident set size in KB from /usr/bin/time's report, or empty.
+peak_kb() {
+    if [ "$(uname)" = Darwin ]; then
+        awk '/maximum resident set size/{printf "%d", $1 / 1024}' "$1"
+    else
+        awk -F': ' '/Maximum resident set size/{printf "%d", $2}' "$1"
+    fi
+}
+
+timer=""
+if [ -x /usr/bin/time ]; then
+    if [ "$(uname)" = Darwin ]; then timer="/usr/bin/time -l"; else timer="/usr/bin/time -v"; fi
+fi
+
+for src in "$ROOT"/tests/memory/*.es; do
+    [ -e "$src" ] || continue
+    name="memory/$(basename "$src" .es)"
+    expected="${src%.es}.out"
+    expected_err="${src%.es}.err"
+    input="${src%.es}.in"
+    [ -f "$input" ] || input=/dev/null
+    fresh_dir
+    if ! "$ES" build "$src" -o "$WORK/program" 2>"$WORK/stderr"; then
+        not_ok "$name" "$(cat "$WORK/stderr")"
+        continue
+    fi
+    rm -f "$WORK/time"
+    (cd "$WORK/cwd" && ES_DEBUG_MEMORY=1 ES_MEMORY_LIMIT=$MEMORY_LIMIT $timer ${timer:+-o "$WORK/time"} \
+        "$WORK/program") <"$input" >"$WORK/stdout" 2>"$WORK/stderr"
+    status=$?
+    if [ -f "$expected_err" ]; then want_status=70; else want_status=0; expected_err=/dev/null; fi
+    peak=""
+    [ -f "$WORK/time" ] && peak=$(peak_kb "$WORK/time")
+    if [ $status -ne $want_status ]; then
+        not_ok "$name" "exit status $status, expected $want_status
+$(cat "$WORK/stderr")"
+    elif ! out=$(diff -u "$expected" "$WORK/stdout"); then
+        not_ok "$name" "$out"
+    elif ! out=$(diff -u "$expected_err" "$WORK/stderr"); then
+        not_ok "$name" "$out"
+    elif [ $want_status -eq 0 ] && [ -n "$peak" ] && [ "${ES_SANITIZE:-0}" != 1 ] && [ "$peak" -gt $MAX_PEAK_KB ]; then
+        not_ok "$name" "peak memory ${peak} KB, more than ${MAX_PEAK_KB} KB"
+    else
+        ok "$name"
+    fi
 done
 
 # --- Interactive shell --------------------------------------------------------
@@ -320,6 +385,20 @@ expect_failure "cli/o-twice" 2 "Give -o only once." \
     "$ES" build "$HELLO" -o x -o y
 expect_failure "cli/two-sources" 2 "Give one .es file at a time." \
     "$ES" run "$HELLO" "$HELLO"
+
+# The memory check itself must catch a leak: the same program with one
+# release taken out of the runtime (in es_say) has to fail it.
+leak_control() {
+    printf 'let n be 5\nsay "n is " followed by n\n' >leak.es &&
+        "$ES" emit leak.es >leak.c &&
+        awk 'skip { skip = 0; if ($0 ~ /es_release\(t\);/) next } { print } /es_out\("\\n", 1\);/ { skip = 1 }' \
+            leak.c >broken.c &&
+        ! cmp -s leak.c broken.c &&
+        cc -O2 broken.c -o broken -lm 2>/dev/null &&
+        ES_DEBUG_MEMORY=1 ./broken
+}
+expect_failure "memory/check-catches-a-leak" 70 \
+    "Memory check: 1 text value was still alive at the end of the program (39 bytes)." leak_control
 
 # Temp directories made by the compiler must be cleaned up, including on errors.
 fresh_dir

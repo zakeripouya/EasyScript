@@ -40,7 +40,8 @@ Docs must never show syntax as working before it does. Mark planned features "Co
 | `tests/unit/*.c` | C functions `static void test_x(TestContext *t)`, registered in the file's `*_tests` function | `CHECK`, `CHECK_SIZE`, `CHECK_STR` |
 | `tests/tokens/` | `NAME.es` plus `NAME.out`, and `NAME.err` for error cases | `easyscript tokens` |
 | `tests/ast/` | `NAME.es` plus `NAME.out`, and `NAME.err` for error cases | `easyscript ast` |
-| `tests/run/` | `NAME.es` plus `NAME.out`; optional `NAME.in` (input) and `NAME.err` (runtime error) | `easyscript run`: stdout must match; with `.err` it must exit 1 with exactly that stderr, otherwise exit 0 with empty stderr |
+| `tests/run/` | `NAME.es` plus `NAME.out`; optional `NAME.in` (input) and `NAME.err` (runtime error) | `easyscript run` with `ES_DEBUG_MEMORY=1`: stdout must match; with `.err` it must exit 1 with exactly that stderr, otherwise exit 0 with empty stderr (and nothing alive at the end) |
+| `tests/memory/` | `NAME.es` plus `NAME.out`; optional `NAME.in` and `NAME.err` | Built, then run with `ES_DEBUG_MEMORY=1 ES_MEMORY_LIMIT=100000`: stdout must match, nothing may be alive at the end, and live text may never pass 100,000 bytes (peak memory under 16 MB where measurable). With `.err` it must hit the limit (exit 70) with exactly that stderr |
 | `tests/errors/` | `NAME.es` plus `NAME.err` | `easyscript emit` (must fail to compile; exact stderr). Mostly checker errors |
 | `examples/lexer/` | `NAME.es` plus `NAME.tokens`, and `NAME.err` for error cases | `easyscript tokens` |
 | `examples/parser/` | `NAME.es` plus `NAME.ast`, and `NAME.err` for error cases | `easyscript ast` |
@@ -54,7 +55,7 @@ Expected-output files must match **byte for byte**. When you change a message on
 
 ### Updating expected output: `make bless`
 
-`make bless` reruns every golden test (`tests/run`, `tests/errors`, `tests/tokens`, `tests/ast`, and all of `examples/`). It overwrites the expected `.out`/`.tokens`/`.ast`/`.err` files with the current output, then prints `git diff --stat` and any new expected files.
+`make bless` reruns every golden test (`tests/run`, `tests/memory`, `tests/errors`, `tests/tokens`, `tests/ast`, and all of `examples/`). It overwrites the expected `.out`/`.tokens`/`.ast`/`.err` files with the current output, then prints `git diff --stat` and any new expected files.
 - If a test that used to fail now succeeds, its `.err` is removed.
 - It refuses, and exits 1, when no expected file could make a test pass: a `tests/run` program that fails, a `tests/errors` file that now compiles, or a success that writes to stderr.
 
@@ -72,7 +73,8 @@ Never bless just to make the suite go green. A blessed regression becomes the ne
 - Keywords are case-insensitive, and `the`/`a`/`an` are ignored. No word is reserved; the parser decides meaning from context.
 - Error messages are plain English. See [docs/errors.md](docs/errors.md).
 - Runtime errors are plain English too, with the line number ("Line 8: You divided by zero."). They're written in `runtime/es_runtime.h`.
-- `runtime/es_runtime.h` is embedded into the compiler at build time (`tools/embed.c` generates `build/gen/es_runtime_embed.c`; never edit that file). Generated programs must compile without warnings under `-Wall -Wextra -Wpedantic`.
+- The runtime is `runtime/es_value.h` (values and memory) plus `runtime/es_runtime.h` (operations), embedded into the compiler at build time (`tools/embed.c` joins them into `build/gen/es_runtime_embed.c`; never edit that file). Generated programs must compile without warnings under `-Wall -Wextra -Wpedantic`.
+- **Generated programs use reference counting** ([docs/memory.md](docs/memory.md)). Follow the ownership convention exactly: expressions produce owned values, runtime functions and EasyScript functions consume their arguments, reading a variable retains, and storing goes through `es_set`. A new runtime function that takes text must release what it's given. Every run test runs with `ES_DEBUG_MEMORY=1`, so a missed release fails `make test`; a double release or a missing retain shows up as a use after free in `make test-debug`. A loop that should run in flat memory belongs in `tests/memory/`.
 
 ## Code organization
 
@@ -88,7 +90,7 @@ runtime/          support code linked into generated programs
 
 Rules:
 
-- **Memory:** allocate everything from the arena (`src/common/arena.h`). No `malloc`/`free` per object, no `strdup`, and **no fixed-size buffers**: use `StrBuf` and `Vec`. Generated C mustn't use fixed-size buffers either.
+- **Memory (compiler):** allocate everything from the arena (`src/common/arena.h`). No `malloc`/`free` per object, no `strdup`, and **no fixed-size buffers**: use `StrBuf` and `Vec`. Generated C mustn't use fixed-size buffers either.
 - **No global mutable state.** Pass context structs (`Compiler`, `Parser`, `Checker`, `Codegen`) explicitly.
 - **Errors** go through `diag` with a source `Span`, and a stage keeps going after an error.
 - **Group code by job**, not one file per function. Each module has a small public `.h`, and its private details stay in the `.c`. Prefer opaque structs when other modules don't need the fields.

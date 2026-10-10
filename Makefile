@@ -6,7 +6,9 @@ DEBUG_FLAGS = -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-s
 COMMON_SRC = src/common/arena.c src/common/util.c src/common/diag.c src/common/ast.c
 FRONT_SRC = src/front/lexer.c src/front/parse_util.c src/front/parse_expr.c src/front/parse_stmt.c src/front/parse_if.c src/front/parse_loop.c src/front/parse_func.c src/front/consteval.c src/front/check.c src/front/check_const.c
 BACK_SRC = src/back/codegen_c.c src/back/codegen_expr.c
-# The runtime, embedded into the compiler as a byte array by tools/embed.c.
+# The runtime (its files in order), embedded into the compiler as a byte
+# array by tools/embed.c.
+RUNTIME = runtime/es_value.h runtime/es_runtime.h
 GEN_RUNTIME = build/gen/es_runtime_embed.c
 EMBED = build/tools/embed
 COMPILER_SRC = src/main.c src/shell.c $(FRONT_SRC) $(BACK_SRC) $(COMMON_SRC) $(GEN_RUNTIME)
@@ -24,9 +26,9 @@ $(EMBED): tools/embed.c
 	@mkdir -p $(dir $@)
 	$(CC) -std=c11 -Wall -Wextra -O2 -o $@ $<
 
-$(GEN_RUNTIME): runtime/es_runtime.h $(EMBED)
+$(GEN_RUNTIME): $(RUNTIME) $(EMBED)
 	@mkdir -p $(dir $@)
-	$(EMBED) runtime/es_runtime.h $@ es_runtime_source
+	$(EMBED) $@ es_runtime_source $(RUNTIME)
 
 easyscript: $(call release_objs,$(COMPILER_SRC))
 	$(CC) $(CFLAGS) $(RELEASE_FLAGS) -o $@ $^
@@ -54,12 +56,13 @@ $(DEBUG_DIR)/%.o: %.c
 test: all
 	sh tests/run.sh
 
-# Full suite against the sanitizer build, then a leak check. On Linux,
-# LeakSanitizer (on by default) checks every process in the suite; macOS's
-# AddressSanitizer can't, so there tests/leaks.sh runs every test input
-# under the system `leaks` tool instead.
+# Full suite against the sanitizer build, with every generated program also
+# built with sanitizers (ES_SANITIZE=1), then a leak check. On Linux,
+# LeakSanitizer (on by default) checks every process in the suite, compiler
+# and programs; macOS's AddressSanitizer can't, so there tests/leaks.sh runs
+# every test input and generated program under the system `leaks` tool.
 test-debug: debug all
-	ES=$(CURDIR)/$(DEBUG_DIR)/easyscript UNIT=$(CURDIR)/$(DEBUG_DIR)/unit_tests sh tests/run.sh
+	ES_SANITIZE=1 ES=$(CURDIR)/$(DEBUG_DIR)/easyscript UNIT=$(CURDIR)/$(DEBUG_DIR)/unit_tests sh tests/run.sh
 	@if [ "$$(uname)" = Darwin ]; then sh tests/leaks.sh; fi
 
 # Rewrites every golden file from the current output and shows git diff --stat.

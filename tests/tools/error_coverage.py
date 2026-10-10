@@ -36,7 +36,7 @@ def tested_text():
         text += open(path, encoding='utf-8', errors='replace').read() + '\n'
     run_sh = open(os.path.join(ROOT, 'tests', 'run.sh'), encoding='utf-8').read()
     # CLI checks: the expected first line of stderr is a quoted argument of expect_failure
-    for m in re.finditer(r'expect_failure "[^"]*" \d+ "((?:[^"\\]|\\.)*)"', run_sh):
+    for m in re.finditer(r'expect_failure "[^"]*" \d+ (?:\\\n\s*)?"((?:[^"\\]|\\.)*)"', run_sh):
         text += m.group(1).replace('\\"', '"') + '\n'
     return text
 

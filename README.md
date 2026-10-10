@@ -73,13 +73,14 @@ Hello, Ada!
 | Loops | `count from 1 to 10:` (up or down, `by`/`in steps of`, `as n`), `for each`, `repeat 3 times:`, `while`/`as long as`, `keep doing this until`, `forever`, with `stop the loop` and `skip this one`; `it` is the loop's number |
 | Functions | `to greet someone:` / `to area with width and height:`, `give back` / `return`, calls as sentences (`greet "Paris".`, `call greet with "Paris".`) or values (`area of 3 and 4`); recursion, and calling a function before it's defined |
 | Other | `stop the program`; any sentence can start with `please` |
+| Memory | Nothing to manage: text is freed as soon as nothing uses it, so loops that make text run in flat memory ([how](docs/memory.md)) |
 | Friendly errors | Compile errors show the line, the source, carets, and a suggestion ("Did you mean "total"? You made it on line 1."). Runtime errors say what happened and where: "Line 8: You divided by zero." |
 | Tools | `run`, `build`, `emit`, `tokens`, `ast`, and an interactive shell. Generated programs are self-contained C. |
-| Tests | Unit, lexer, parser, program, runtime-error, example, and CLI tests with `make test`, plus a sanitizer build with `make test-debug` |
+| Tests | Unit, lexer, parser, program, runtime-error, memory, example, and CLI tests with `make test` (every program also runs with a memory check), plus a sanitizer build with `make test-debug` |
 
 See the runnable [example programs](examples/programs/).
 
-**Next, Phase 2:** static types, records, lists, maps, modules, and text tools, plus four items moved from Phase 1: reclaiming memory while programs run, runtime errors that show the source line, and `file ... exists` (type checking comes with static types). Follow along in the [roadmap](docs/roadmap.md).
+**Phase 2 has started.** Done so far: **memory management**. Text is freed as soon as nothing uses it, so long loops run in flat memory, and you never write anything about memory ([how it works](docs/memory.md)). **Coming next:** static types, records, lists, maps, modules, and text tools, plus items moved from Phase 1: runtime errors that show the source line, and `file ... exists` (type checking comes with static types). Follow along in the [roadmap](docs/roadmap.md).
 
 ## Performance
 
@@ -87,19 +88,19 @@ Time (and peak memory) for each benchmark, measured with `make bench`:
 
 | Program | EasyScript | C | Go | Python |
 |---|---|---|---|---|
-| Recursive fib(38) | 0.52 s | 0.07 s | 0.08 s | 2.78 s |
-| Count to 100 million | 0.06 s | 0.02 s | 0.02 s | 4.12 s |
-| Nested loops (100 million rounds) | 0.87 s | 0.03 s | 0.03 s | 5.09 s |
-| Build a 50,000-character text | 0.03 s, 280 MB | (none) | 0.01 s, 14 MB | 0.01 s, 12 MB |
+| Recursive fib(38) | 0.24 s | 0.07 s | 0.08 s | 2.87 s |
+| Count to 100 million | 0.07 s | 0.02 s | 0.02 s | 4.05 s |
+| Nested loops (100 million rounds) | 0.86 s | 0.03 s | 0.03 s | 4.93 s |
+| Build a 50,000-character text | 0.00 s, 1.8 MB | (none) | 0.01 s, 10 MB | 0.01 s, 12 MB |
 
-Apple M4, macOS 15.3.1, EasyScript 0.1.0, 2026-10-10. Phase 1 uses tagged values (every operation checks what kind of value it has); static types arrive in Phase 2. The memory used when building text is a known issue. Details and history: [docs/performance.md](docs/performance.md).
+Apple M4, macOS 15.3.1, EasyScript 0.1.0 plus reference counting, 2026-10-10. Values are still tagged (every operation checks what kind of value it has); static types arrive later in Phase 2. Text is freed as soon as nothing uses it, so building text takes as much memory as the text, not every version of it. Details and history: [docs/performance.md](docs/performance.md).
 
 ## Roadmap
 
 | Phase | Focus | Status |
 |---|---|---|
 | 1 | **Core language:** variables, constants, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | **Complete** (v0.1.0) |
-| 2 | **Data and structure:** records, lists, maps, modules, static types, text tools | **Next** |
+| 2 | **Data and structure:** memory management, records, lists, maps, modules, static types, text tools | **In progress** (memory management done) |
 | 3 | **Self-hosting:** the EasyScript compiler, written in EasyScript | Coming soon |
 | 4 | **Real-world programs:** standard library, C interop, concurrency, backend servers | Coming soon |
 | 5 | **Systems mode:** low-level control, no runtime, and an operating system | Coming soon |
