@@ -2,7 +2,7 @@
 #define FRONT_CHECK_INTERNAL_H
 
 // Shared by the checker's source files (check.c, check_expr.c, check_types.c,
-// check_const.c). Not for use outside src/front/.
+// check_const.c, check_list.c). Not for use outside src/front/.
 
 #include <stdbool.h>
 #include "common/ast.h"
@@ -19,23 +19,32 @@
 
 typedef size_t TypeVar;
 
+// A list's type is a variable too: "a list of" its item's variable, so
+// "item 1 of xs" can have a kind before anything decides what xs holds.
 typedef struct {
     TypeVar parent;
-    Type type;    // of the root; TYPE_UNKNOWN until decided
-    size_t line;  // where it was decided
+    Type type;     // of the root: TYPE_UNKNOWN until decided, a kind, or TYPE_LIST (a list of `item`)
+    size_t line;   // where it was decided
+    TypeVar item;  // the kind of the items when type is TYPE_LIST
 } TypeSlot;
 
 typedef enum {
     DEFER_AND,        // logical (yes/no) or joining (text)
     DEFER_ORDER,      // numbers or text
     DEFER_TO_NUMBER,  // "as a number": a number or text
+    DEFER_ONE_OF,     // `left` has one of the kinds in `allowed` (e.g. text or a list for "length of")
 } DeferKind;
+
+// Kinds for DEFER_ONE_OF.
+enum { KIND_NUMBER = 1, KIND_TEXT = 2, KIND_YESNO = 4, KIND_LIST = 8 };
 
 typedef struct {
     DeferKind kind;
     const Expr *expr;
     TypeVar left, right, result;  // right/result unused for DEFER_TO_NUMBER and DEFER_ORDER
     bool done;
+    unsigned allowed;     // DEFER_ONE_OF: KIND_ bits
+    const char *message;  // DEFER_ONE_OF: "<message>, but this is <the kind of right>."
 } Deferred;
 
 typedef struct {
@@ -47,12 +56,14 @@ typedef struct {
     const char *name;
     size_t line;        // where it was made
     const char *where;  // in `ended`: "the \"if\"" or "the loop" that held it
-    bool loop_number;   // a loop's own number ("count ... as n")
+    bool loop_number;   // a loop's own number ("count ... as n") or item ("for each x in")
     TypeVar var;        // its kind
+    bool loop_item;     // a "for each" loop's item
 } Symbol;
 
 typedef struct {
-    bool has_it;  // count and times loops have a number that "it" refers to
+    bool has_it;  // count, times and for-each loops (and "every"/"only") have something "it" refers to
+    TypeVar it;   // its kind: a number, or the item's kind
 } Loop;
 
 typedef struct {
@@ -88,7 +99,9 @@ typedef struct {
 } Checker;
 
 // check_types.c
-TypeVar types_new(Checker *c, Type type, size_t line);
+TypeVar types_new(Checker *c, Type type, size_t line);  // a list type gets a variable for its items
+TypeVar types_new_list(Checker *c, TypeVar item, size_t line);
+TypeVar types_item(Checker *c, TypeVar list);  // a list's item variable (it must be a list)
 Type types_of(Checker *c, TypeVar var);  // TYPE_UNKNOWN if not decided
 // Joins two variables. False (and nothing changes) if they have different kinds.
 bool types_unify(Checker *c, TypeVar a, TypeVar b);
@@ -96,11 +109,16 @@ bool types_unify(Checker *c, TypeVar a, TypeVar b);
 bool types_require(Checker *c, TypeVar var, Type type, size_t line);
 size_t types_line(Checker *c, TypeVar var);  // where its kind was decided
 void types_defer(Checker *c, DeferKind kind, const Expr *expr, TypeVar left, TypeVar right, TypeVar result);
+// `var` must turn out to have one of the `allowed` kinds; otherwise reports
+// "<message>, but this is <the kind of shown>." at expr.
+void types_defer_one_of(Checker *c, const Expr *expr, TypeVar var, TypeVar shown, unsigned allowed,
+                        const char *message);
 // Settles the deferred operators, reports kinds nothing decided (if no error
 // was reported since first_error), and writes every kind into the program.
 void types_finish(Checker *c, size_t first_error);
 
 // check.c
+const char *checker_kind(Checker *c, TypeVar var);  // "a number", "a list of text", ...
 const Symbol *checker_find_made(const Checker *c, const char *name);
 // A name the main program makes anywhere (with the line it's first made on).
 const Symbol *checker_find_later(const Checker *c, const char *name);
@@ -122,6 +140,18 @@ TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value);
 void checker_require(Checker *c, TypeVar var, Type type, const Expr *at, const char *message, const char *hint);
 // The type-checked arithmetic rule: both sides numbers, with the runtime's wording.
 void checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Span span, size_t line);
+
+// The name each item of a list gets ("for each score in", "every score in").
+void checker_make_item_name(Checker *c, const Name *name, TypeVar item);
+
+// check_list.c
+// The kind of a list's items; if `var` isn't a list, reports "<message>, but this is <kind>."
+TypeVar checker_require_list(Checker *c, TypeVar var, const Expr *at, const char *message);
+TypeVar checker_check_list_expr(Checker *c, const Expr *expr);  // EXPR_LIST ... EXPR_ONLY
+TypeVar checker_check_contains(Checker *c, const Expr *expr, TypeVar left, TypeVar right);
+void checker_check_list_stmt(Checker *c, const Stmt *stmt);
+// "add E to X" where X is a list: adds to its end when that's the only meaning.
+void checker_add_to_list(Checker *c, Stmt *stmt, const Symbol *symbol, TypeVar amount);
 
 // check_const.c
 void checker_collect_constants(Checker *c, const Block *program);

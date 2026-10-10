@@ -268,7 +268,7 @@ The checker also explains `skip this one` outside a loop, `it` outside a countin
 
 ### Kinds of values
 
-The checker knows the kind of every value (number, text, or yes/no) before the program runs, so mixing them up is a compile error with the line and carets. These used to be runtime errors, and they keep the same wording.
+The checker knows the kind of every value (number, text, yes/no, or a list of one of these) before the program runs, so mixing them up is a compile error with the line and carets. These used to be runtime errors, and they keep the same wording.
 
 **Mixing up kinds of values**: [`type_subtract_text.es`](../tests/errors/type_subtract_text.es)
 
@@ -306,7 +306,7 @@ Say which kind in the definition, like "to forever_down with n, giving back a nu
 | `or` / `not` without yes/no values | says which side wasn't yes or no |
 | Comparing different kinds, or ordering yes/no values | "I can't compare a number with text." with a hint to use `as a number` |
 | `as a number` on a yes/no value | "I can't turn a yes/no value into a number." |
-| `length of` something that isn't text | "I can only find the length of text, but this is a number." |
+| `length of` something that isn't text or a list | "I can only find the length of text or a list, but this is a number." |
 | A file name that isn't text | "The name of a file has to be text, but this is a number." |
 | Storing another kind in a variable | ""total" is a number (made on line 1), but this is text." |
 | A function given different kinds, or the wrong kind for a written-down kind | ""halve" needs a number for "x", but this is text." with where the kind came from |
@@ -318,6 +318,59 @@ Say which kind in the definition, like "to forever_down with n, giving back a nu
 
 The full, tested set is the `type_*.err` files in [`tests/errors/`](../tests/errors/).
 
+### Lists
+
+A list holds one kind of value, so putting another kind in it, or using a list where it doesn't fit, is a compile error too.
+
+**Putting the wrong kind in a list**: [`list_type_errors.es`](../tests/errors/list_type_errors.es)
+
+```
+Line 5: "scores" is a list of numbers, so it can't hold text.
+    add "ninety" to the end of scores
+        ^^^^^^^^
+A list holds one kind of value. To keep text too, make a separate list for it.
+```
+
+**`add X to` a list of numbers**: [`list_add_two_meanings.es`](../tests/errors/list_add_two_meanings.es)
+
+```
+Line 2: "scores" is a list of numbers, so this could mean two things.
+    add 5 to scores
+    ^^^^^^^^^^^^^^^
+To put it at the end of the list, write "add ... to the end of scores". To add it to every item, write "set scores to every n in scores plus ...".
+```
+
+**A list inside a list without parentheses**: [`err_list_forms.es`](../tests/ast/err_list_forms.es)
+
+```
+Line 1: A list inside a list needs parentheses.
+    let rows be a list of a list of 1 and 2, and a list of 3
+                            ^^^^^^^
+Write it like "a list of (a list of 1 and 2) and (a list of 3 and 4)".
+```
+
+| Problem | Message (summary) |
+|---|---|
+| Items of different kinds in `a list of` | "All the items of a list have to be the same kind: the first is a number, but this is text." |
+| Looking for the wrong kind with `contains` | ""scores" is a list of numbers, so it can't contain text." |
+| A list operation on something that isn't a list | "I can only take an item from a list, but this is a number." (and likewise for adding, inserting, removing, changing items, sorting, reversing, copying, `for each`, `every`, and `only`) |
+| A position that isn't a number | "The position of an item has to be a number, but this is text." |
+| `added together` on something other than numbers | "I can only add together a list of numbers, but this is a list of text." |
+| `biggest of` / `smallest of` / `sort` on yes/no values or lists | "I can only sort a list of numbers or text, but this is a list of yes/no values." |
+| `sort ... by their length` on numbers | "I can only sort a list of text or lists by their length, but this is a list of numbers." |
+| `is empty` on something other than text or a list | "I can only check whether text or a list is empty, but this is a number." |
+| A list in a constant | "A constant can't use a list, because lists can change." with a `let` example |
+| A loop's item named like something that exists | "You already made "score" on line 1." with a name that isn't taken |
+| A loop's item used after the loop | "I don't know anything called "mark"." with "it only exists inside that loop" |
+| A position worked out with arithmetic, without parentheses | "A position worked out with arithmetic needs parentheses." |
+| `item` without a position | "Something is missing after "item"." |
+| `every` in the middle of a value | ""every" has to start the value, because everything after it is worked out for each item." |
+| `only L that` without a comparison | "I expected a comparison like "are at least" here, but found "70"." |
+| `sort ... by their length, biggest first` | "With "by their length", say "longest first" or "shortest first"." |
+| `sort names, longest first` | ""longest first" sorts by length, so it needs "by their length"." |
+
+The full, tested set is the `list_*.err` files in [`tests/errors/`](../tests/errors/) and [`err_list_forms.err`](../tests/ast/err_list_forms.err).
+
 ### While the program runs
 
 Runtime errors are one line, `Line N:` and what went wrong, sometimes followed by a hint. Anything the program printed before the error stays printed. Only mistakes that kinds can't catch are left for this.
@@ -326,6 +379,13 @@ Runtime errors are one line, `Line N:` and what went wrong, sometimes followed b
 
 ```
 Line 3: You divided by zero.
+```
+
+**A list item that isn't there**: [`err_list_position_zero.es`](../tests/run/err_list_position_zero.es)
+
+```
+Line 2: There's no item 0 in the list: it has 1 item.
+Positions start at 1: the first item is item 1.
 ```
 
 | Problem | Message (summary) |
@@ -337,6 +397,10 @@ Line 3: You divided by zero.
 | `as a number` on text that isn't a number | "I can't turn "12abc" into a number." |
 | A file that can't be read or written | "I couldn't read the file "nope.txt": it doesn't exist." |
 | A function that gives back a value but reaches its end without `give back` | "The function "sign" ended without giving anything back." with a hint |
+| A list item that isn't there | "There's no item 4 in the list: it has 3 items." (or "it's empty"); item 0 adds "Positions start at 1: the first item is item 1." |
+| A position that isn't a whole number | "The position of an item has to be a whole number, but it's 1.5." |
+| The first, last, biggest or smallest item of an empty list | "There's no first item: the list is empty." |
+| Inserting past the end | "I can't insert at position 6: the position has to be from 1 to 5 (the list has 4 items)." |
 
 Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).
 

@@ -19,6 +19,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [7. Functions](#7-functions) | Available |
 | [8. Files](#8-files) | Available, except `file X exists` |
 | [9. Types](#9-types) | Available |
+| [10. Lists](#10-lists) | Available |
 
 ---
 
@@ -150,6 +151,7 @@ EasyScript also understands a few symbols: `+ - * / %` for arithmetic, `( )` for
 | Numbers | `42`, `19.99` |
 | Text | `"Hello, world!"` |
 | Yes and no | `yes`, `no` (or `true`, `false`) |
+| Lists | `a list of 72, 95 and 88`, `an empty list of text` ([chapter 10](#10-lists)) |
 | Names | `total`, `player_2`, `guest's` |
 
 Every value has one of these kinds: a number, text, or yes/no. The compiler works out the kind of every value before the program runs ([chapter 9](#9-types)). `nothing` is only what a function gives back when it doesn't give back a value; it can't be used as a value itself.
@@ -409,7 +411,7 @@ count from 0 to 100 by 25 as percent:
     say percent followed by "%".
 ```
 
-If the start is bigger than the end, the count goes down by itself: `count from 3 to 1` says 3, 2, 1. `for each i from 1 to 10:` and `go from 0 to 1 in steps of 0.25:` are other ways to say the same thing.
+If the start is bigger than the end, the count goes down by itself: `count from 3 to 1` says 3, 2, 1. `for each i from 1 to 10:` and `go from 0 to 1 in steps of 0.25:` are other ways to say the same thing. `for each score in scores:` goes through a list instead (see [Lists](#10-lists)); there, `it` is the item.
 
 To repeat something a number of times, or while something is true:
 
@@ -517,7 +519,7 @@ Try it: `./easyscript run examples/programs/files.es`
 
 **Status: Available.**
 
-Every value has a **kind** (its type): a number, text, or yes/no. The compiler works out the kind of every value before the program runs, so mistakes like adding text to a number are reported with the line and a caret, the same way as a misspelled name, instead of stopping the program halfway. The program then runs faster too, because it never has to check kinds while it runs.
+Every value has a **kind** (its type): a number, text, yes/no, or a list of one of these (see [Lists](#10-lists)). The compiler works out the kind of every value before the program runs, so mistakes like adding text to a number are reported with the line and a caret, the same way as a misspelled name, instead of stopping the program halfway. The program then runs faster too, because it never has to check kinds while it runs.
 
 Most programs never mention kinds. They come from:
 
@@ -565,7 +567,7 @@ to both with first (yes or no) and second (yes or no):
     give back first and second.
 ```
 
-The kinds are `a number`, `text`, and `yes or no` (or `yes/no`); `giving back nothing` says the function gives back no value. Kinds are optional, and you can write some and leave out others; whatever you write is checked like everything else.
+The kinds are `a number`, `text`, `yes or no` (or `yes/no`), and lists like `a list of numbers`; `giving back nothing` says the function gives back no value. Kinds are optional, and you can write some and leave out others; whatever you write is checked like everything else.
 
 **Why this wording?** It had to read like English and not look like the `as a number` / `as text` conversions, which change a value. Other choices that were considered:
 
@@ -579,7 +581,152 @@ The kinds are `a number`, `text`, and `yes or no` (or `yes/no`); `giving back no
 
 ### What's still checked while the program runs
 
-Kinds can't tell you everything. These are still found while the program runs, with the line they happened on: dividing by zero, counting with a step that isn't more than zero, a number of times that isn't a whole number, text that isn't a number in `as a number`, files that can't be read or written, a function that gives back a value but reaches its end without `give back`, and functions calling each other too deeply.
+Kinds can't tell you everything. These are still found while the program runs, with the line they happened on: asking for a list item that isn't there, dividing by zero, counting with a step that isn't more than zero, a number of times that isn't a whole number, text that isn't a number in `as a number`, files that can't be read or written, a function that gives back a value but reaches its end without `give back`, and functions calling each other too deeply.
 
 Try it: `./easyscript run examples/programs/kinds.es`
+---
+
+## 10. Lists
+
+**Status: Available.**
+
+A list holds several values in order, like the scores of a class or the names of the players. Write one out with `a list of`, separating the items with commas and `and`:
+
+```
+let scores be a list of 72, 95 and 88.
+let names be a list of "Ann" and "Bob".
+say scores.
+```
+
+says `72, 95 and 88`. A list holds **one kind** of value: a list of numbers, a list of text, a list of yes/no values, or a list of lists. To start with nothing in it, say which kind it will hold: `let names be an empty list of text.` (or `an empty list of numbers`, `an empty list of yes/no values`, `an empty list of lists of numbers`).
+
+### Items
+
+Items are numbered from 1, as in English:
+
+```
+say item 2 of scores.        # 95
+say the first item in scores.
+say the last item of scores.
+```
+
+`of` and `in` mean the same here. The position is a number, a name, or something in parentheses: `item n of scores`, `item (n plus 1) of scores`. Asking for an item that isn't there stops the program, saying which item and how long the list is:
+
+```
+Line 3: There's no item 4 in the list: it has 3 items.
+```
+
+### Asking about a list
+
+- `the length of scores` or `the number of items in scores`: how many items it has
+- `scores contains 95`, `scores does not contain 95` (or `doesn't contain`): yes or no
+- `scores is empty`, `scores is not empty` (or `isn't empty`); these work for text too (`name is empty`)
+- `scores is a list of 72, 95 and 88`: two lists are equal when they have equal items in the same order
+
+### Changing a list
+
+```
+add 60 to the end of scores.
+insert 7 at position 1 of scores.
+remove item 2 from scores.
+remove the last item from scores.
+set item 1 of scores to 100.
+sort scores.
+```
+
+`remove` and `set` also take `the first item` and `the last item`. `insert` can put an item anywhere from position 1 to one past the end.
+
+**`add X to Y`** adds X to the end of Y when Y is a list and that's the only thing it can mean: `add "Bob" to names` adds a name. With a list of numbers it could also mean adding to every number, so EasyScript asks you to say which:
+
+```
+Line 2: "scores" is a list of numbers, so this could mean two things.
+    add 5 to scores
+    ^^^^^^^^^^^^^^^
+To put it at the end of the list, write "add ... to the end of scores". To add it to every item, write "set scores to every n in scores plus ...".
+```
+
+**Sorting** puts numbers smallest first and text in alphabetical order (by character codes, so capital letters come first). Add `, biggest first` (or `smallest first`) to choose the order, and sort text, or lists of lists, by their length with `sort names by their length` (`, longest first` or `shortest first`). Items that are equal stay in the order they were in. Sorting changes the list itself.
+
+### Going through a list
+
+```
+for each score in scores:
+    say score.
+```
+
+Inside the loop, `it` is the item too. `stop the loop` and `skip this one` work as in every loop. The loop goes through the items the list had when it started, so adding to or removing from the list inside the loop doesn't change which items it visits.
+
+### New lists from old ones
+
+`every NAME in L` works out the rest of the value for each item and gives the results as a new list:
+
+```
+say every score in scores plus 5.          # 77, 100 and 93
+say every name in names followed by "!".
+```
+
+`only L that are ...` keeps the items for which a comparison is yes. The comparisons are the usual ones with `are` instead of `is` (`are at least`, `are less than`, `are not`, `are empty`, ...):
+
+```
+let passing be only the scores that are at least 70.
+```
+
+And to sum up a list:
+
+- `scores added together`: the total of a list of numbers
+- `the biggest of scores`, `the smallest of scores`: for numbers or text
+- `scores reversed`: a new list, last item first
+
+### Sharing and copying
+
+A list is **shared**: `let same be scores` gives the same list a second name, so a change through either name shows through both. A function you give a list to gets that same list, so it can change it. To get a separate list, make a copy:
+
+```
+let backup be a copy of scores.
+add 1 to the end of scores.        # backup doesn't change
+```
+
+`a copy of` copies the lists inside a list too, so nothing in the copy is shared with the original.
+
+### Lists of lists
+
+A list can hold lists. Write each inner list in parentheses, because its own commas and `and`s would otherwise be ambiguous:
+
+```
+let grid be a list of (a list of 1 and 2) and (a list of 3).
+say grid.                          # (1 and 2) and (3)
+add 5 to the end of item 2 of grid.
+say item 1 of item 1 of grid.      # 1
+```
+
+### Lists and kinds
+
+A list's kind is worked out like any other ([Types](#9-types)): a list of numbers can't hold text, and the compiler says so before the program runs:
+
+```
+Line 5: "scores" is a list of numbers, so it can't hold text.
+    add "ninety" to the end of scores
+        ^^^^^^^^
+A list holds one kind of value. To keep text too, make a separate list for it.
+```
+
+Write list kinds in definitions as `(a list of numbers)`, `(a list of text)`, `(a list of yes/no values)` or `(a list of lists of numbers)`:
+
+```
+to average of marks (a list of numbers), giving back a number:
+    give back marks added together divided by the length of marks.
+```
+
+### Things to watch
+
+- **The items of `a list of` are single values up to the next comma or `and`**, so `a list of 1, 2 plus 3` has two items, 1 and 5. To use `and` inside an item, or to write anything after a list, put it in parentheses: `every name in (a list of "a" and "b") followed by "!"`.
+- **`every` takes the rest of the value**, so it has to start it; inside a longer value, put it in parentheses: `say "Curved: " followed by (every score in scores plus 5)`.
+- Lists can't be constants (`keep`), because lists can change. Use `let`.
+
+### What's checked while the program runs
+
+Asking for an item that isn't there (or item 0, or item 1.5), inserting past the end, and asking for the first, last, biggest or smallest item of an empty list stop the program with the line and what went wrong. Everything else about lists, including every kind mistake, is checked before the program runs.
+
+Try it: `./easyscript run examples/programs/grade_statistics.es` and `./easyscript run examples/programs/top_scores.es`
+
 

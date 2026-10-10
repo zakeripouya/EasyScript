@@ -1,17 +1,20 @@
 #ifndef BACK_CODEGEN_INTERNAL_H
 #define BACK_CODEGEN_INTERNAL_H
 
-// Shared by the C code generator's files (codegen_c.c, codegen_expr.c). Not
-// for use outside src/back/.
+// Shared by the C code generator's files (codegen_c.c, codegen_expr.c,
+// codegen_list.c). Not for use outside src/back/.
 
 #include <stdbool.h>
 #include "back/codegen_c.h"
 
 // A loop being generated, for "it", "stop the loop" and "skip this one".
+// "every" and "only" helpers have one too (stmt NULL), for "it".
 typedef struct {
     const Stmt *stmt;
-    size_t id;     // es_cN / es_iN / es_nN
-    size_t scope;  // index in Codegen.scopes of the loop's body
+    size_t id;         // es_cN / es_iN / es_nN
+    size_t scope;      // index in Codegen.scopes of the loop's body
+    const char *item;  // for-each loops and helpers: the variable "it" reads
+    Type item_type;
 } LoopCode;
 
 // A variable: its name and kind. The C name depends on both (es_vn_, es_vt_,
@@ -21,9 +24,9 @@ typedef struct {
     Type type;
 } VarCode;
 
-// The text variables first made in one block, released when the block ends
-// (or is left early by stop the loop, skip this one, give back). Numbers and
-// yes/no values own nothing, so they're never released.
+// The text and list variables first made in one block, released when the
+// block ends (or is left early by stop the loop, skip this one, give back).
+// Numbers and yes/no values own nothing, so they're never released.
 typedef struct {
     Vec(VarCode) names;
 } NameScope;
@@ -35,9 +38,16 @@ typedef struct {
     size_t count;
 } TextPool;
 
+// The C functions that "every" and "only" become (es_every1, es_only2, ...).
+typedef struct {
+    StrBuf code;
+    size_t count;
+} HelperPool;
+
 typedef struct {
     Arena *arena;
     TextPool *texts;
+    HelperPool *helpers;
     StrBuf body;                 // statements of main() or of the function
     Vec(VarCode) vars;           // variables made there, hoisted to its top
     Vec(Type) temps;             // es_t1 ... es_tN (index + 1), declared at its top
@@ -49,6 +59,7 @@ typedef struct {
     const Stmt *function;        // the function being generated, or NULL for main()
     Vec(NameScope) scopes;       // blocks the current statement is inside; [0] is the top level
     bool stops;                  // main() has a "stop the program" (goto es_end)
+    Vec(VarCode) captured;       // in a helper: the variables it's given (its parameters)
 } Codegen;
 
 // codegen_expr.c
@@ -60,7 +71,21 @@ void cg_emit_text(Codegen *g, const Expr *expr, StrBuf *out);
 // dividing, "as a number" on text). Two such values keep their order through
 // a temporary, because C doesn't fix the order of operands.
 bool cg_has_effects(const Codegen *g, const Expr *expr);
-const char *cg_ctype(Type type);  // "double", "bool", "EsText *", "void"
+const char *cg_ctype(Type type);  // "double", "bool", "EsText *", "EsList *", "void"
+// For text and lists (type_counted): the runtime functions that retain,
+// release, store into and drop a variable, and what an empty variable holds.
+const char *cg_retain(Type type);   // "es_retain", "es_list_retain"
+const char *cg_release(Type type);  // "es_release", "es_list_release"
+const char *cg_set(Type type);      // "es_set", "es_list_set"
+const char *cg_drop(Type type);     // "es_drop", "es_list_drop"
+const char *cg_empty(Type type);    // "&es_empty_text", "&es_no_list", "false", "0"
+// The C code for one value, as text or as its own kind.
+const char *cg_operand(Codegen *g, const Expr *expr, bool as_text);
+// n values worked out left to right, their code in values[]: when two or
+// more have effects, each goes into a temporary first, and "(es_t1 = A, "...
+// is appended to out; then it returns true and the caller adds a ")".
+bool cg_ordered(Codegen *g, Expr *const *exprs, size_t n, const char **values, StrBuf *out);
+bool cg_is_constant(const Codegen *g, const char *name);
 // A C name: prefix plus the name with "_" doubled and "'" as "_q".
 void cg_append_prefixed(StrBuf *out, const char *prefix, const char *name);
 void cg_append_var(StrBuf *out, const char *name, Type type);  // es_vn_total, es_vt_name, ...
@@ -73,5 +98,19 @@ void cg_declare_name(Codegen *g, const char *name, Type type);
 size_t cg_new_temp(Codegen *g, Type type);
 // A function's definition, by name.
 const Stmt *cg_find_function(const Codegen *g, const char *name);
+// Reading a variable: "es_vn_total", or "es_retain(es_vt_name)" for text and lists.
+void cg_emit_var(StrBuf *out, const char *name, Type type);
+
+// codegen_c.c
+// Temporaries and hoisted variables, at the top of main(), a function, or a helper.
+void cg_emit_declarations(const Codegen *g, StrBuf *out);
+
+// codegen_list.c
+const char *cg_item_suffix(Type list);  // the runtime's suffix for its items: "n", "b", "t", "l"
+void cg_emit_list_expr(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_LIST ... EXPR_ONLY
+void cg_emit_contains(Codegen *g, const Expr *expr, StrBuf *out);   // L contains X
+// The C loop header of "for each N in L" (after its variables are declared).
+void cg_emit_each_head(Codegen *g, const Stmt *stmt, size_t id, StrBuf *body, size_t depth);
+const char *cg_list_stmt(Codegen *g, const Stmt *stmt);  // a list sentence as one C statement (no ";")
 
 #endif

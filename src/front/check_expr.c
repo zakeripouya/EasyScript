@@ -19,8 +19,10 @@ static TypeVar error_var(Checker *c) {
     return types_new(c, TYPE_ERROR, 0);
 }
 
-// How a kind is written in a definition: "a number", "text", "yes or no".
-static const char *kind_words(Type type) {
+// How a kind is written in a definition: "a number", "text", "yes or no",
+// "a list of numbers".
+static const char *kind_words(const Checker *c, Type type) {
+    if (type_is_list(type)) return ast_type_name(c->arena, type);
     switch (type) {
     case TYPE_NUMBER: return "a number";
     case TYPE_TEXT: return "text";
@@ -40,10 +42,10 @@ static const char *header(const Checker *c, const Function *f, size_t marked, Ty
         sb_append(&sb, i == 0 ? " with " : " and ");
         sb_append(&sb, def->as.function.params.items[i].text);
         Type kind = i == marked ? mark : def->as.function.declared.items[i];
-        if (kind != TYPE_UNKNOWN) sb_appendf(&sb, " (%s)", kind_words(kind));
+        if (kind != TYPE_UNKNOWN) sb_appendf(&sb, " (%s)", kind_words(c, kind));
     }
     if (def->as.function.declared_result != TYPE_UNKNOWN) {
-        sb_appendf(&sb, ", giving back %s", kind_words(def->as.function.declared_result));
+        sb_appendf(&sb, ", giving back %s", kind_words(c, def->as.function.declared_result));
     }
     return sb.data;
 }
@@ -56,7 +58,7 @@ const char *checker_function_header(const Checker *c, const Function *f) {
 
 void checker_require(Checker *c, TypeVar var, Type type, const Expr *at, const char *message, const char *hint) {
     if (types_require(c, var, type, at->pos.line)) return;
-    diag_error(c->diag, at->pos.span, "%s, but this is %s.", message, ast_type_name(types_of(c, var)));
+    diag_error(c->diag, at->pos.span, "%s, but this is %s.", message, checker_kind(c, var));
     if (hint) diag_note(c->diag, "%s", hint);
 }
 
@@ -64,7 +66,7 @@ void checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Sp
     bool ok_left = types_require(c, left, TYPE_NUMBER, line);
     bool ok_right = types_require(c, right, TYPE_NUMBER, line);
     if (ok_left && ok_right) return;
-    const char *l = ast_type_name(types_of(c, left)), *r = ast_type_name(types_of(c, right));
+    const char *l = checker_kind(c, left), *r = checker_kind(c, right);
     switch (op) {
     case BINARY_ADD:
         diag_error(c->diag, span, "I can't add %s to %s.", r, l);
@@ -81,7 +83,7 @@ void checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Sp
 
 static void report_compare(Checker *c, const Expr *expr, TypeVar left, TypeVar right) {
     Type l = types_of(c, left), r = types_of(c, right);
-    diag_error(c->diag, expr->pos.span, "I can't compare %s with %s.", ast_type_name(l), ast_type_name(r));
+    diag_error(c->diag, expr->pos.span, "I can't compare %s with %s.", checker_kind(c, left), checker_kind(c, right));
     if ((l == TYPE_TEXT && r == TYPE_NUMBER) || (l == TYPE_NUMBER && r == TYPE_TEXT)) {
         diag_note(c->diag, "Turn the text into a number first with \"as a number\".");
     }
@@ -90,7 +92,7 @@ static void report_compare(Checker *c, const Expr *expr, TypeVar left, TypeVar r
 static void require_or_side(Checker *c, TypeVar var, const Expr *expr, const char *side) {
     if (types_require(c, var, TYPE_YESNO, expr->pos.line)) return;
     diag_error(c->diag, expr->pos.span, "\"or\" needs yes or no on both sides, but the %s side is %s.", side,
-               ast_type_name(types_of(c, var)));
+               checker_kind(c, var));
 }
 
 static TypeVar check_binary(Checker *c, const Expr *expr) {
@@ -123,6 +125,8 @@ static TypeVar check_binary(Checker *c, const Expr *expr) {
         }
         return types_new(c, TYPE_YESNO, line);
     case BINARY_JOIN: return types_new(c, TYPE_TEXT, line);
+    case BINARY_CONTAINS:
+    case BINARY_NOT_CONTAINS: return checker_check_contains(c, expr, left, right);
     default:
         checker_arithmetic(c, op, left, right, expr->pos.span, line);
         return types_new(c, TYPE_NUMBER, line);
@@ -136,26 +140,27 @@ static TypeVar check_unary(Checker *c, const Expr *expr) {
         return types_new(c, TYPE_YESNO, expr->pos.line);
     }
     if (!types_require(c, operand, TYPE_NUMBER, expr->pos.line)) {
-        diag_error(c->diag, expr->pos.span, "I can't make %s negative.", ast_type_name(types_of(c, operand)));
+        diag_error(c->diag, expr->pos.span, "I can't make %s negative.", checker_kind(c, operand));
     }
     return types_new(c, TYPE_NUMBER, expr->pos.line);
 }
 
 // --- Names and calls ---------------------------------------------------------------
 
-// "it" is the number of the innermost loop that has one (count and times loops).
-static bool check_it(Checker *c, const Expr *expr) {
+// "it" is the number of the innermost loop that has one (count and times
+// loops), or the item of a for-each loop (or of "every" and "only").
+static TypeVar check_it(Checker *c, const Expr *expr) {
     for (size_t i = c->loops.len; i > 0; i--) {
-        if (c->loops.items[i - 1].has_it) return true;
+        if (c->loops.items[i - 1].has_it) return c->loops.items[i - 1].it;
     }
     diag_error(c->diag, expr->pos.span, "\"it\" doesn't refer to anything here.");
     if (c->loops.len > 0) {
-        diag_note(c->diag, "\"it\" means the number of a counting loop or a \"repeat ... times\" loop, "
-                           "but this loop doesn't count. Use a variable instead.");
+        diag_note(c->diag, "\"it\" means the number of a counting loop or a \"repeat ... times\" loop, or the item "
+                           "of a \"for each\" loop, but this loop has neither. Use a variable instead.");
     } else {
-        diag_note(c->diag, "\"it\" only means something inside a loop, where it's the loop's number.");
+        diag_note(c->diag, "\"it\" only means something inside a loop, where it's the loop's number or item.");
     }
-    return false;
+    return error_var(c);
 }
 
 static void report_unknown_function(Checker *c, const char *name, SourcePos pos) {
@@ -203,15 +208,15 @@ static void report_argument_kind(Checker *c, const Function *f, size_t i, const 
     const Stmt *def = f->definition;
     const char *param = def->as.function.params.items[i].text;
     Type wanted = types_of(c, f->params.items[i]);
-    diag_error(c->diag, arg->pos.span, "\"%s\" needs %s for \"%s\", but this is %s.", f->name, ast_type_name(wanted),
-               param, ast_type_name(types_of(c, given)));
+    diag_error(c->diag, arg->pos.span, "\"%s\" needs %s for \"%s\", but this is %s.", f->name,
+               ast_type_name(c->arena, wanted), param, checker_kind(c, given));
     if (def->as.function.declared.items[i] != TYPE_UNKNOWN) {
         diag_note(c->diag, "It's defined on line %zu: \"%s\".", def->pos.line, checker_function_header(c, f));
         return;
     }
     diag_note(c->diag, "\"%s\" is %s because of line %zu. An input has one kind of value everywhere; to make it "
                        "clear, write it in the definition, like \"%s:\".",
-              param, ast_type_name(wanted), types_line(c, f->params.items[i]), header(c, f, i, wanted));
+              param, ast_type_name(c->arena, wanted), types_line(c, f->params.items[i]), header(c, f, i, wanted));
 }
 
 // What a call gives back. A function that gives back no value can only be
@@ -279,13 +284,15 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
         diag_note(c->diag, "Use 0, empty text (\"\"), or no instead. Only a function can give back nothing, "
                            "with \"return\" on its own.");
         return error_var(c);
-    case EXPR_IT: return check_it(c, expr) ? types_new(c, TYPE_NUMBER, line) : error_var(c);
+    case EXPR_IT: return check_it(c, expr);
     case EXPR_NAME: return check_name(c, expr);
     case EXPR_CALL: return checker_check_call(c, expr, true);
-    case EXPR_LENGTH:
-        checker_require(c, checker_check_expr(c, expr->as.operand), TYPE_TEXT, expr->as.operand,
-                        "I can only find the length of text", NULL);
+    case EXPR_LENGTH: {
+        TypeVar operand = checker_check_expr(c, expr->as.operand);
+        types_defer_one_of(c, expr->as.operand, operand, operand, KIND_TEXT | KIND_LIST,
+                           "I can only find the length of text or a list");
         return types_new(c, TYPE_NUMBER, line);
+    }
     case EXPR_FILE_CONTENTS:
         checker_require(c, checker_check_expr(c, expr->as.operand), TYPE_TEXT, expr->as.operand,
                         "The name of a file has to be text", NULL);
@@ -298,6 +305,12 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
         types_defer(c, DEFER_TO_NUMBER, expr, operand, operand, operand);
         return types_new(c, TYPE_NUMBER, line);
     }
+    case EXPR_LIST:
+    case EXPR_EMPTY_LIST:
+    case EXPR_ITEM:
+    case EXPR_LIST_OP:
+    case EXPR_EVERY:
+    case EXPR_ONLY: return checker_check_list_expr(c, expr);
     case EXPR_ERROR: return error_var(c);
     }
     return error_var(c);

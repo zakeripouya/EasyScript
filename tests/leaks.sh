@@ -57,9 +57,14 @@ sweep tokens "$ROOT/tests/tokens" "$ROOT/examples/lexer"
 sweep ast "$ROOT/tests/ast" "$ROOT/examples/parser"
 sweep emit "$ROOT/tests/errors" "$ROOT/tests/run" "$ROOT/examples/programs"
 
-# Generated programs (the runtime and its reference counting), including ones
-# that stop with an error, and the million-round memory tests.
+# Generated programs (the runtime and its reference counting), and the
+# million-round memory tests. Programs that stop with a runtime error (they
+# have a .err) are left out: by design they exit without releasing anything,
+# so whether `leaks` still finds a pointer to a variable's list or text
+# depends only on which registers the C compiler reused before exit. Their
+# compiler runs are still checked above.
 for src in "$ROOT"/tests/run/*.es "$ROOT"/examples/programs/*.es "$ROOT"/tests/memory/*.es; do
+    [ -f "${src%.es}.err" ] && continue
     ES_SANITIZE=0 "$ES" build "$src" -o "$WORK/program" 2>/dev/null || continue
     check "program ${src#$ROOT/}" "$(input_for "$src")" "$WORK/program"
 done

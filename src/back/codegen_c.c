@@ -1,17 +1,18 @@
 // C code generation. The checker has decided the kind of every value, so the
-// program uses plain C types: a number is a double, yes/no a bool, and text
-// an EsText * (runtime/es_memory.h). There is no tagged value. Runtime calls
-// that can fail get the source line, so their errors can say where.
+// program uses plain C types: a number is a double, yes/no a bool, text an
+// EsText * and a list an EsList * (runtime/es_memory.h). There is no tagged
+// value. Runtime calls that can fail get the source line, so their errors can
+// say where. Lists are in codegen_list.c.
 //
-// Memory (docs/memory.md), for text only: every text expression produces an
-// owned value, and runtime calls and EasyScript functions consume their text
-// arguments, so nested calls need no bookkeeping. Reading a text variable
-// retains it; storing goes through es_set, which releases the old text after
-// the new one is worked out. A block releases the text variables first made
-// in it when it ends; stop the loop, skip this one and give back release the
-// ones of every block they leave, and main()'s are released when the program
-// ends. Numbers and yes/no values own nothing and are never retained or
-// released.
+// Memory (docs/memory.md), for text and lists: every text or list expression
+// produces an owned value, and runtime calls and EasyScript functions consume
+// their text and list arguments, so nested calls need no bookkeeping. Reading
+// a variable retains it; storing goes through es_set/es_list_set, which
+// releases the old value after the new one is worked out. A block releases
+// the variables first made in it when it ends; stop the loop, skip this one
+// and give back release the ones of every block they leave, and main()'s are
+// released when the program ends. Numbers and yes/no values own nothing and
+// are never retained or released.
 //
 // Variables are C locals of main() or of their function, so their addresses
 // never escape and the C compiler can keep numbers in registers.
@@ -31,20 +32,20 @@ static void indent(Codegen *g) {
     sb_append_repeat(&g->body, ' ', 4 * (g->depth + 1));
 }
 
-// --- Releasing text variables ---------------------------------------------------
+// --- Releasing text and list variables ------------------------------------------
 
-static void emit_drop(Codegen *g, const char *name) {
+static void emit_drop(Codegen *g, const char *name, Type type) {
     indent(g);
-    sb_append(&g->body, "es_drop(&");
-    cg_append_var(&g->body, name, TYPE_TEXT);
+    sb_appendf(&g->body, "%s(&", cg_drop(type));
+    cg_append_var(&g->body, name, type);
     sb_append(&g->body, ");\n");
 }
 
-// Releases the text variables of scopes[from] and every scope inside it.
+// Releases the variables of scopes[from] and every scope inside it.
 static void emit_drop_scopes(Codegen *g, size_t from) {
     for (size_t i = g->scopes.len; i > from; i--) {
         const NameScope *scope = &g->scopes.items[i - 1];
-        for (size_t j = 0; j < scope->names.len; j++) emit_drop(g, scope->names.items[j].name);
+        for (size_t j = 0; j < scope->names.len; j++) emit_drop(g, scope->names.items[j].name, scope->names.items[j].type);
     }
 }
 
@@ -53,35 +54,34 @@ static void push_scope(Codegen *g) {
     vec_push(g->arena, &g->scopes, scope);
 }
 
-// Releases the innermost scope's text variables, then leaves it.
+// Releases the innermost scope's variables, then leaves it.
 static void pop_scope(Codegen *g) {
     emit_drop_scopes(g, g->scopes.len - 1);
     g->scopes.len--;
 }
 
-// Leaving a function (its text inputs and every text variable it makes) or
-// the program (every text variable of main()).
+// Leaving a function (its text and list inputs and every such variable it
+// makes) or the program (every text and list variable of main()).
 static void emit_drop_all(Codegen *g) {
     if (g->function) {
         for (size_t i = 0; i < g->function->as.function.params.len; i++) {
-            if (g->function->as.function.param_types.items[i] == TYPE_TEXT) {
-                emit_drop(g, g->function->as.function.params.items[i].text);
-            }
+            Type type = g->function->as.function.param_types.items[i];
+            if (type_counted(type)) emit_drop(g, g->function->as.function.params.items[i].text, type);
         }
     }
     for (size_t i = 0; i < g->vars.len; i++) {
-        if (g->vars.items[i].type == TYPE_TEXT) emit_drop(g, g->vars.items[i].name);
+        if (type_counted(g->vars.items[i].type)) emit_drop(g, g->vars.items[i].name, g->vars.items[i].type);
     }
 }
 
 // --- Statements ----------------------------------------------------------------
 
 // A variable gets a value: "es_vn_x = VALUE;", or "es_set(&es_vt_x, VALUE);"
-// for text, which releases the text it held.
+// for text (es_list_set for lists), which releases what it held.
 static void emit_store(Codegen *g, const char *name, Type type, const char *value) {
     indent(g);
-    if (type == TYPE_TEXT) {
-        sb_append(&g->body, "es_set(&");
+    if (type_counted(type)) {
+        sb_appendf(&g->body, "%s(&", cg_set(type));
         cg_append_var(&g->body, name, type);
         sb_appendf(&g->body, ", %s);\n", value);
     } else {
@@ -105,8 +105,18 @@ static const char *text_code(Codegen *g, const Expr *expr) {
 }
 
 // add/subtract/increase/decrease/multiply/divide: x = x + amount, or es_div.
+// "add E to L" where L is a list adds E to its end.
 static void emit_change(Codegen *g, const Stmt *stmt) {
     const char *name = stmt->as.change.target.text;
+    if (stmt->as.change.append) {
+        Type list = type_list_of(stmt->as.change.amount->type);
+        const char *amount = expr_code(g, stmt->as.change.amount);
+        indent(g);
+        sb_appendf(&g->body, "es_add_%s(es_list_retain(", cg_item_suffix(list));
+        cg_append_var(&g->body, name, list);
+        sb_appendf(&g->body, "), %s);\n", amount);
+        return;
+    }
     StrBuf var;
     sb_init(&var, g->arena);
     cg_append_var(&var, name, TYPE_NUMBER);
@@ -123,8 +133,10 @@ static void emit_change(Codegen *g, const Stmt *stmt) {
 
 // write/append: the text first, then the file name (left to right).
 static void emit_file_write(Codegen *g, const Stmt *stmt) {
-    const char *text = text_code(g, stmt->as.file_write.text);
-    if (cg_has_effects(g, stmt->as.file_write.text) && cg_has_effects(g, stmt->as.file_write.path)) {
+    const Expr *value = stmt->as.file_write.text;
+    const char *text = text_code(g, value);
+    bool value_effects = cg_has_effects(g, value) || type_is_list(value->type);  // turning a list into text reads it
+    if (value_effects && cg_has_effects(g, stmt->as.file_write.path)) {
         size_t t = cg_new_temp(g, TYPE_TEXT);
         indent(g);
         sb_appendf(&g->body, "es_t%zu = %s;\n", t, text);
@@ -212,6 +224,7 @@ static void emit_loop_head(Codegen *g, const Stmt *stmt, size_t id) {
         indent(g);
         sb_append(&g->body, "for (;;) {\n");
         break;
+    case LOOP_EACH: cg_emit_each_head(g, stmt, id, &g->body, g->depth); break;
     }
 }
 
@@ -223,8 +236,14 @@ static void emit_loop(Codegen *g, const Stmt *stmt) {
     g->depth++;
     push_scope(g);
     if (stmt->as.loop.kind == LOOP_COUNT) cg_declare_name(g, stmt->as.loop.var.text, TYPE_NUMBER);
+    LoopCode loop = {stmt, id, 0, NULL, TYPE_UNKNOWN};
+    if (stmt->as.loop.kind == LOOP_EACH) {
+        loop.item = stmt->as.loop.var.text;
+        loop.item_type = type_item(stmt->as.loop.list->type);
+        cg_declare_name(g, loop.item, loop.item_type);
+    }
     emit_loop_head(g, stmt, id);
-    LoopCode loop = {stmt, id, g->scopes.len};
+    loop.scope = g->scopes.len;
     vec_push(g->arena, &g->loops, loop);
     emit_block(g, &stmt->as.loop.body);
     g->loops.len--;
@@ -264,8 +283,8 @@ static void emit_call_statement(Codegen *g, const Stmt *stmt) {
     Type result = fn ? fn->as.function.result : TYPE_NOTHING;
     const char *call = expr_code(g, stmt->as.call);
     indent(g);
-    if (result == TYPE_TEXT) {
-        sb_appendf(&g->body, "es_release(%s);\n", call);
+    if (type_counted(result)) {
+        sb_appendf(&g->body, "%s(%s);\n", cg_release(result), call);
     } else if (result == TYPE_NOTHING) {
         sb_appendf(&g->body, "%s;\n", call);
     } else {
@@ -326,6 +345,12 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
     case STMT_CONSTANT: break;  // a static initializer, worked out by the compiler
     case STMT_RETURN: emit_return(g, stmt); break;
     case STMT_CALL: emit_call_statement(g, stmt); break;
+    case STMT_LIST: {
+        const char *code = cg_list_stmt(g, stmt);
+        indent(g);
+        sb_appendf(&g->body, "%s;\n", code);
+        break;
+    }
     case STMT_BREAK:
     case STMT_CONTINUE:
         emit_drop_scopes(g, vec_last(&g->loops).scope);
@@ -375,27 +400,28 @@ static void append_signature(StrBuf *out, const Stmt *fn) {
     for (size_t i = 0; i < fn->as.function.params.len; i++) {
         Type type = fn->as.function.param_types.items[i];
         sb_appendf(out, ", %s", cg_ctype(type));
-        if (type != TYPE_TEXT) sb_append_char(out, ' ');
+        if (!type_counted(type)) sb_append_char(out, ' ');
         cg_append_var(out, fn->as.function.params.items[i].text, type);
     }
     sb_append_char(out, ')');
 }
 
-// Temporaries, then hoisted variables (text starts as the empty text), then
-// (void) for numbers and yes/no values that might never be read.
-static void emit_declarations(const Codegen *g, StrBuf *out) {
+// Temporaries, then hoisted variables (text starts as the empty text, a list
+// as es_no_list), then (void) for numbers and yes/no values that might never
+// be read.
+void cg_emit_declarations(const Codegen *g, StrBuf *out) {
     for (size_t t = 0; t < g->temps.len; t++) {
         Type type = g->temps.items[t];
-        sb_appendf(out, "    %s%ses_t%zu;\n", cg_ctype(type), type == TYPE_TEXT ? "" : " ", t + 1);
+        sb_appendf(out, "    %s%ses_t%zu;\n", cg_ctype(type), type_counted(type) ? "" : " ", t + 1);
     }
     for (size_t i = 0; i < g->vars.len; i++) {
         Type type = g->vars.items[i].type;
-        sb_appendf(out, "    %s%s", cg_ctype(type), type == TYPE_TEXT ? "" : " ");
+        sb_appendf(out, "    %s%s", cg_ctype(type), type_counted(type) ? "" : " ");
         cg_append_var(out, g->vars.items[i].name, type);
-        sb_append(out, type == TYPE_TEXT ? " = &es_empty_text;\n" : type == TYPE_YESNO ? " = false;\n" : " = 0;\n");
+        sb_appendf(out, " = %s;\n", cg_empty(type));
     }
     for (size_t i = 0; i < g->vars.len; i++) {
-        if (g->vars.items[i].type == TYPE_TEXT) continue;
+        if (type_counted(g->vars.items[i].type)) continue;
         sb_append(out, "    (void)");
         cg_append_var(out, g->vars.items[i].name, g->vars.items[i].type);
         sb_append(out, ";\n");
@@ -409,6 +435,7 @@ static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     Codegen f = {0};
     f.arena = g->arena;
     f.texts = g->texts;
+    f.helpers = g->helpers;
     f.functions = g->functions;
     f.constants = g->constants;
     f.function = fn;
@@ -422,7 +449,7 @@ static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
 
     append_signature(out, fn);
     sb_append(out, " {\n");
-    emit_declarations(&f, out);
+    cg_emit_declarations(&f, out);
     for (size_t i = 0; i < fn->as.function.params.len; i++) {  // inputs it might never use
         sb_append(out, "    (void)");
         cg_append_var(out, fn->as.function.params.items[i].text, fn->as.function.param_types.items[i]);
@@ -446,9 +473,12 @@ static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
 void codegen_c(Arena *arena, const Block *program, StrBuf *out) {
     TextPool texts = {0};
     sb_init(&texts.code, arena);
+    HelperPool helpers = {0};
+    sb_init(&helpers.code, arena);
     Codegen g = {0};
     g.arena = arena;
     g.texts = &texts;
+    g.helpers = &helpers;
     sb_init(&g.body, arena);
     push_scope(&g);
     for (size_t i = 0; i < program->len; i++) {
@@ -479,9 +509,10 @@ void codegen_c(Arena *arena, const Block *program, StrBuf *out) {
         sb_append(out, ";\n");
     }
     sb_append_char(out, '\n');
+    sb_append_n(out, helpers.code.data, helpers.code.len);  // "every" and "only", before the functions that use them
     sb_append_n(out, functions.data, functions.len);
     sb_append(out, "int main(void) {\n");
-    emit_declarations(&g, out);
+    cg_emit_declarations(&g, out);
     for (size_t i = 0; i < g.constants.len; i++) {  // constants nothing uses (costs nothing)
         sb_append(out, "    (void)");
         cg_append_prefixed(out, "es_k_", g.constants.items[i]->as.constant.name.text);

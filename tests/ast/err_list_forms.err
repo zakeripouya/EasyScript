@@ -1,0 +1,78 @@
+Line 1: A list inside a list needs parentheses.
+    let rows be a list of a list of 1 and 2, and a list of 3
+                            ^^^^^^^
+Write it like "a list of (a list of 1 and 2) and (a list of 3 and 4)".
+
+Line 2: A position worked out with arithmetic needs parentheses.
+    say item n plus 1 of scores
+               ^^^^
+Write it like "item (n plus 1) of scores".
+
+Line 3: Something is missing after "item".
+    say item of scores
+        ^^^^
+Say which item, like "item 1", "the first item", or "the last item".
+
+Line 4: Something is missing after "item".
+    remove item from scores
+           ^^^^
+Say which item, like "item 1", "the first item", or "the last item".
+
+Line 5: "every" has to start the value, because everything after it is worked out for each item.
+    say 2 plus every n in scores
+               ^^^^^
+Put it in parentheses, like "(every score in scores plus 5)".
+
+Line 6: I expected a comparison like "are at least" here, but found "70".
+    say only the scores that 70
+                             ^^
+Write it like "only the scores that are at least 70".
+
+Line 7: With "by their length", say "longest first" or "shortest first".
+    sort names by their length, biggest first
+                                ^^^^^^^^^^^^^
+
+Line 8: "longest first" sorts by length, so it needs "by their length".
+    sort names, longest first
+                ^^^^^^^^^^^^^
+Write it like "sort names by their length, longest first".
+
+Line 9: I expected "item" here, but found "95".
+    remove 95 from scores
+           ^^
+Write it like "remove item 2 from scores".
+
+Line 10: Something is missing after "insert".
+    insert at position 1 of scores
+    ^^^^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 11: Comparisons can't be chained like this.
+    say scores is empty is yes
+                        ^^
+Compare one pair at a time and join them with "and".
+
+Line 12: I don't know the kind of value "number".
+    let kinds be an empty list of number
+                                  ^^^^^^
+A list holds "numbers", "text", "yes/no values", or "lists of" something, like "a list of numbers".
+
+Line 13: EasyScript doesn't have "are not above".
+    say only the scores that are not above 3
+                             ^^^^^^^^^^^^^
+Did you mean "are at most"?
+
+Line 14: "are above or equal to" isn't a comparison.
+    say only the scores that are above or equal to 3
+                             ^^^^^^^^^^^^^^^^^^^^^
+Did you mean "are at least"?
+
+Line 15: I don't know the kind of value "banana".
+    to f with x (a list of banana):
+                           ^^^^^^
+A list holds "numbers", "text", "yes/no values", or "lists of" something, like "a list of numbers".
+
+Line 17: Something is missing after "list of".
+    to g with y (a list of):
+                   ^^^^^^^
+Say what the list holds, like "a list of numbers".

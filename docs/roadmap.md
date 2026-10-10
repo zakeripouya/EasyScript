@@ -63,7 +63,7 @@ The proposed wording for each planned feature is in the [vocabulary](vocabulary.
 
 ### Examples
 
-Done (in [`examples/programs/`](../examples/programs/), checked by `make test`): `hello.es`, `first_program.es`, `variables.es`, `text.es`, `logic.es`, `ask_name.es` (with test input), `files.es`, `decisions.es`, `loops.es`, `logan.es` (the 2024 prototype's loop example, ported), `factorial.es`, `fibonacci.es`, `tax.es` (a constant used by a function), `taste.es` (the README's bigger example), and the larger programs `fizzbuzz.es`, `guessing_game.es` (with test input), `notes.es`, `hanoi.es`, and `receipt.es`, `err_divide_by_zero.es`. The checker's "did you mean" error is tested in `tests/errors/misspelled_variable.es`.
+Done (in [`examples/programs/`](../examples/programs/), checked by `make test`): `hello.es`, `first_program.es`, `variables.es`, `text.es`, `logic.es`, `ask_name.es` (with test input), `files.es`, `decisions.es`, `loops.es`, `logan.es` (the 2024 prototype's loop example, ported), `factorial.es`, `fibonacci.es`, `tax.es` (a constant used by a function), `taste.es` (the README's bigger example), and the larger programs `fizzbuzz.es`, `guessing_game.es` (with test input), `notes.es`, `hanoi.es`, and `receipt.es`, `err_divide_by_zero.es`. Phase 2 added `million_lines.es` (memory), `kinds.es` (types), and `grade_statistics.es` and `top_scores.es` (lists). The checker's "did you mean" error is tested in `tests/errors/misspelled_variable.es`.
 
 Planned. Each will be added with its expected output in the same commit as its feature:
 
@@ -75,13 +75,13 @@ Planned. Each will be added with its expected output in the same commit as its f
 
 ## Phase 2: Data and structure
 
-- [x] **Memory management:** reference counting. Text made while a program runs is freed as soon as nothing uses it, so loops run in flat memory (the text benchmark went from 280 MB to under 2 MB). Users never write anything about memory. See [memory.md](memory.md).
-  - **Needed once records arrive:** reference counting can't free objects that refer to each other in a cycle. Text can't form cycles, but records (and lists of records) can, so they'll need **weak references or a cycle collector**.
+- [x] **Memory management:** reference counting. Text (and, since lists arrived, lists) made while a program runs is freed as soon as nothing uses it, so loops run in flat memory (the text benchmark went from 280 MB to under 2 MB). Users never write anything about memory. See [memory.md](memory.md).
+  - **Needed once records arrive:** reference counting can't free objects that refer to each other in a cycle. Text and lists can't form cycles (a list never holds a list of its own kind), but records (and lists of records) can, so they'll need **weak references or a cycle collector**.
 - **Text tools:** splitting text into words and lines, and looking at its characters (needed for the planned `word_counter.es` example)
 - [x] **Static types:** the compiler works out whether every value is a number, text, or yes/no, inferring function inputs and results from how they're used and called, with optional kinds in definitions (`to area with width (a number), giving back a number:`). Kind mistakes are compile errors with the runtime's old wording plus carets; generated code uses plain C `double`/`bool` and only text is reference counted. See [Types](language-guide.md#9-types).
 - **From Phase 1:** runtime errors that show the line of the program like compile errors do, and `file ... exists`
 - **Records:** named groups of fields ("a point has an x and a y")
-- **Lists:** ordered collections, with `for each item in list`
+- [x] **Lists:** ordered collections of one kind, shared by reference (`a copy of` makes a separate one), with 1-based positions, `for each score in scores:`, `every`/`only`, totals, a stable sort, nested lists, and friendly errors for positions that aren't there. Reference counted like text; a list can't hold itself, so there are no cycles. See [Lists](language-guide.md#10-lists).
 - **Maps:** look up values by key
 - **Modules:** split programs across files and reuse code
 

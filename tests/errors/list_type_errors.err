@@ -1,0 +1,119 @@
+Line 5: "scores" is a list of numbers, so it can't hold text.
+    add "ninety" to the end of scores
+        ^^^^^^^^
+A list holds one kind of value. To keep text too, make a separate list for it.
+
+Line 6: All the items of a list have to be the same kind: the first is a number, but this is text.
+    let mixed be a list of 1, "two" and 3
+                              ^^^^^
+
+Line 7: "scores" is a list of numbers, so it can't contain text.
+    say scores contains "72"
+                        ^^^^
+A list holds one kind of value. To keep text too, make a separate list for it.
+
+Line 8: I can only take an item from a list, but this is a number.
+    say item 1 of 5
+                  ^
+
+Line 9: The position of an item has to be a number, but this is text.
+    say item "one" of scores
+             ^^^^^
+
+Line 10: "names" is a list of text, so it can't hold a number.
+    set item 1 of names to 3
+                           ^
+A list holds one kind of value. To keep a number too, make a separate list for it.
+
+Line 11: "scores" is a list of numbers, so it can't hold a yes/no value.
+    insert no at position 1 of scores
+           ^^
+A list holds one kind of value. To keep a yes/no value too, make a separate list for it.
+
+Line 12: I can only remove an item from a list, but this is text.
+    remove item 1 from "text"
+                       ^^^^^^
+
+Line 13: I can only add to the end of a list, but this is a number.
+    add 1 to the end of 5
+                        ^
+
+Line 14: I can only add together a list of numbers, but this is a list of text.
+    say names added together
+        ^^^^^
+
+Line 15: I can only find the biggest item of a list of numbers or text, but this is a list of yes/no values.
+    say the biggest of flags
+                       ^^^^^
+
+Line 16: I can only find the smallest item of a list of numbers or text, but this is a number.
+    say the smallest of 7
+                        ^
+
+Line 17: I can only sort a list of numbers or text, but this is a list of yes/no values.
+    sort flags
+         ^^^^^
+
+Line 18: I can only sort a list of text or lists by their length, but this is a list of numbers.
+    sort scores by their length
+         ^^^^^^
+
+Line 19: I can only sort a list of numbers or text, but this is a list of lists of numbers.
+    sort grid
+         ^^^^
+
+Line 20: I can only reverse a list, but this is a number.
+    say 5 reversed
+        ^
+
+Line 21: I can only copy a list, but this is text.
+    say a copy of "text"
+                  ^^^^^^
+
+Line 22: I can only check whether text or a list is empty, but this is a number.
+    say 5 is empty
+        ^
+
+Line 23: "every" needs a list to go through, but this is a number.
+    say every n in 5 plus 1
+                   ^
+
+Line 24: I can't compare text with a number.
+    say only the names that are above 3
+                            ^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 25: A "for each" loop needs a list to go through, but this is a number.
+    for each n in 7:
+                  ^
+
+Line 27: I can't compare a list of numbers with a list of numbers.
+    say scores is less than scores
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 28: I can't turn a list of numbers into a number.
+    say scores as a number
+        ^^^^^^^^^^^^^^^^^^
+
+Line 29: I can't use "and" between a list of numbers and a list of lists of numbers.
+    say scores and grid
+        ^^^^^^^^^^^^^^^
+
+Line 30: "scores" is a list of numbers (made on line 1), but this is a list of text.
+    set scores to names
+                  ^^^^^
+A variable keeps the kind of value it was made with. To keep a list of text, make a new variable for it.
+
+Line 31: "grid" is a list of lists of numbers, so it can't hold a list of lists of numbers.
+    add grid to the end of grid
+        ^^^^
+A list holds one kind of value. To keep a list of lists of numbers too, make a separate list for it.
+
+Line 33: "total" is a number (made on line 32), but this is a list of numbers.
+    set total to scores
+                 ^^^^^^
+A variable keeps the kind of value it was made with. To keep a list of numbers, make a new variable for it.
+
+Line 34: I can only find the length of text or a list, but this is a number.
+    say length of 5
+                  ^

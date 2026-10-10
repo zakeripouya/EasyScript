@@ -22,6 +22,7 @@ typedef struct {
     Vec(SourcePos) open_ifs; // ifs whose blocks are being parsed, innermost last
     bool as_ends_value;     // in a count loop's header, "as" names the loop variable
     Vec(const char *) functions; // names after "to" at the start of a line (pre-scan)
+    Expr *pending_item;     // "every NAME in L": the item's name, the first value of what follows
 } Parser;
 
 // A word or symbol sequence with a meaning, e.g. "is greater than".
@@ -95,6 +96,11 @@ bool parser_reject_bare_decimal(Parser *p);
 // --- Grammar ---------------------------------------------------------------
 
 Expr *parse_expression(Parser *p);
+// A single value: a literal, a name, a call, a group, or a prefix form
+// ("length of X", "item 2 of X"), with nothing after it.
+Expr *parse_primary(Parser *p);
+// A value up to a comparison: arithmetic and "followed by".
+Expr *parse_join(Parser *p);
 
 // One statement, including a leading "please". NULL after an error. Sets
 // ended_with_block and ends_with_name.
@@ -148,6 +154,22 @@ Stmt *parse_return(Parser *p, const Token *verb);     // give back / return
 Stmt *parse_constant(Parser *p, const Token *verb);   // keep NAME as E
 // "call NAME ..." (verb "call") or "NAME ..." (verb is a function's name).
 Stmt *parse_call_statement(Parser *p, const Token *verb);
+
+// parse_list.c
+// A kind of value: "number" (after the dropped "a"), "text", "yes or no" (or
+// "yes/no"), "list of" what it holds, and, when nothing_ok, "nothing".
+bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type);
+// "item P", "first item" or "last item", followed by one of `after`.
+bool parser_at_item(const Parser *p, const char *const *after);
+// A list form starting with a word ("list of", "empty list of", "item",
+// "number of items in", "copy of", "biggest of", ...), or NULL if none starts here.
+Expr *parser_parse_list_word(Parser *p);
+// "add E to the end of L", once "add E to" is parsed and "end of" is next.
+Stmt *parser_finish_add_end(Parser *p, Stmt *stmt, Expr *value);
+Stmt *parser_parse_set_item(Parser *p, const Token *verb);  // set item P of L to E
+Stmt *parser_parse_remove(Parser *p, const Token *verb);
+Stmt *parser_parse_insert(Parser *p, const Token *verb);
+Stmt *parser_parse_sort(Parser *p, const Token *verb);
 
 // parse_loop.c: a loop starting with `verb` (count, go, for, do, repeat,
 // while, as, keep, forever), and stop/break/skip/continue/move on.

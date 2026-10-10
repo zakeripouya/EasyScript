@@ -399,7 +399,7 @@ leak_control() {
         ES_DEBUG_MEMORY=1 ./broken
 }
 expect_failure "memory/check-catches-a-leak" 70 \
-    "Memory check: 1 text value was still alive at the end of the program (39 bytes)." leak_control
+    "Memory check: 1 value was still alive at the end of the program (39 bytes)." leak_control
 
 # Temp directories made by the compiler must be cleaned up, including on errors.
 fresh_dir

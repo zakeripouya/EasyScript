@@ -190,8 +190,14 @@ static bool logic(Eval *ev, const Expr *expr, ConstValue *out) {
     return true;
 }
 
+static bool reject_list(Eval *ev, Span span) {
+    return fail(ev, span, "Make it with \"let\" instead, like \"let primes be a list of 2, 3 and 5\".",
+                "A constant can't use a list, because lists can change.");
+}
+
 static bool binary(Eval *ev, const Expr *expr, ConstValue *out) {
     BinaryOp op = expr->as.binary.op;
+    if (op == BINARY_CONTAINS || op == BINARY_NOT_CONTAINS) return reject_list(ev, expr->pos.span);
     if (op == BINARY_AND || op == BINARY_OR) return logic(ev, expr, out);
     ConstValue a, b;
     if (!eval(ev, expr->as.binary.left, &a) || !eval(ev, expr->as.binary.right, &b)) return false;
@@ -271,7 +277,7 @@ static bool length(Eval *ev, const Expr *expr, ConstValue *out) {
     ConstValue a;
     if (!eval(ev, expr->as.operand, &a)) return false;
     if (a.kind != CONST_TEXT) {
-        return fail(ev, expr->pos.span, NULL, "I can only find the length of text, but this is %s.", kind_name(a));
+        return fail(ev, expr->pos.span, NULL, "I can only find the length of text or a list, but this is %s.", kind_name(a));
     }
     size_t chars = 0;
     for (size_t i = 0; i < a.len; i++) {
@@ -297,6 +303,12 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
         return fail(ev, span, fixed_note, "A constant can't call a function, because functions only run while the "
                                           "program runs.");
     case EXPR_IT: return fail(ev, span, fixed_note, "\"it\" changes while the program runs, so a constant can't use it.");
+    case EXPR_LIST:
+    case EXPR_EMPTY_LIST:
+    case EXPR_ITEM:
+    case EXPR_LIST_OP:
+    case EXPR_EVERY:
+    case EXPR_ONLY: return reject_list(ev, span);
     case EXPR_FILE_CONTENTS:
         return fail(ev, span, fixed_note, "A constant can't read a file, because files are read while the program runs.");
     case EXPR_ERROR: return false;

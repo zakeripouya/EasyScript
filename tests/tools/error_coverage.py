@@ -24,11 +24,14 @@ EXEMPT = {
 }
 
 def pattern(fmt):
+    """A regex for the message: each % conversion matches anything on the same
+    line (a message is one line, and staying on it keeps formats with several
+    conversions from backtracking across the whole text)."""
     out, i = '', 0
     for m in re.finditer(r'%[-+ #0-9.*]*(?:zu|ld|lld|[sdxXuc])', fmt):
-        out += re.escape(fmt[i:m.start()]) + '.+?'
+        out += re.escape(fmt[i:m.start()]) + '[^\n]+?'
         i = m.end()
-    return re.compile(out + re.escape(fmt[i:]), re.S)
+    return re.compile(out + re.escape(fmt[i:]))
 
 def tested_text():
     text = ''

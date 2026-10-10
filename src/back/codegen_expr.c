@@ -2,9 +2,10 @@
 // the program around them are in codegen_c.c.
 //
 // The checker has decided every kind, so a number is a C double, yes/no a C
-// bool, and text an EsText * (reference counted, see docs/memory.md). Number
-// and yes/no operations are plain C (+, <, &&, ...) or small inline runtime
-// helpers (es_div checks for zero; es_close compares with a tolerance).
+// bool, text an EsText * and a list an EsList * (both reference counted, see
+// docs/memory.md). Number and yes/no operations are plain C (+, <, &&, ...)
+// or small inline runtime helpers (es_div checks for zero; es_close compares
+// with a tolerance). List values are in codegen_list.c.
 
 #include <assert.h>
 #include <math.h>
@@ -30,6 +31,7 @@ void cg_append_prefixed(StrBuf *out, const char *prefix, const char *name) {
 }
 
 const char *cg_ctype(Type type) {
+    if (type_is_list(type)) return "EsList *";
     switch (type) {
     case TYPE_NUMBER: return "double";
     case TYPE_YESNO: return "bool";
@@ -39,12 +41,55 @@ const char *cg_ctype(Type type) {
     }
 }
 
-// A variable: "es_vn_total" (number), "es_vt_name" (text), "es_vb_done" (yes/no).
+// A variable: "es_vn_total" (number), "es_vt_name" (text), "es_vb_done"
+// (yes/no), "es_vl1n_scores" (a list of numbers), "es_vl2t_rows" (a list of
+// lists of text).
 void cg_append_var(StrBuf *out, const char *name, Type type) {
-    cg_append_prefixed(out, type == TYPE_TEXT ? "es_vt_" : type == TYPE_YESNO ? "es_vb_" : "es_vn_", name);
+    char base = type_base(type) == TYPE_TEXT ? 't' : type_base(type) == TYPE_YESNO ? 'b' : 'n';
+    if (type_is_list(type)) {
+        sb_appendf(out, "es_vl%u%c", type / TYPE_LIST, base);
+        cg_append_prefixed(out, "_", name);
+        return;
+    }
+    sb_appendf(out, "es_v%c", base);
+    cg_append_prefixed(out, "_", name);
+}
+
+const char *cg_retain(Type type) {
+    return type_is_list(type) ? "es_list_retain" : "es_retain";
+}
+
+const char *cg_release(Type type) {
+    return type_is_list(type) ? "es_list_release" : "es_release";
+}
+
+const char *cg_set(Type type) {
+    return type_is_list(type) ? "es_list_set" : "es_set";
+}
+
+const char *cg_drop(Type type) {
+    return type_is_list(type) ? "es_list_drop" : "es_drop";
+}
+
+const char *cg_empty(Type type) {
+    if (type_is_list(type)) return "&es_no_list";
+    return type == TYPE_TEXT ? "&es_empty_text" : type == TYPE_YESNO ? "false" : "0";
+}
+
+void cg_emit_var(StrBuf *out, const char *name, Type type) {
+    if (!type_counted(type)) {
+        cg_append_var(out, name, type);
+        return;
+    }
+    sb_appendf(out, "%s(", cg_retain(type));  // reading text or a list: one more owner
+    cg_append_var(out, name, type);
+    sb_append_char(out, ')');
 }
 
 static bool is_param(const Codegen *g, const char *name) {
+    for (size_t i = 0; i < g->captured.len; i++) {
+        if (strcmp(g->captured.items[i].name, name) == 0) return true;
+    }
     if (!g->function) return false;
     for (size_t i = 0; i < g->function->as.function.params.len; i++) {
         if (strcmp(g->function->as.function.params.items[i].text, name) == 0) return true;
@@ -69,13 +114,13 @@ static bool in_scope(const Codegen *g, const char *name, Type type) {
 void cg_declare_name(Codegen *g, const char *name, Type type) {
     if (is_param(g, name)) return;
     VarCode var = {name, type};
-    if (type == TYPE_TEXT && !in_scope(g, name, type) && g->scopes.len > 0) {
+    if (type_counted(type) && !in_scope(g, name, type) && g->scopes.len > 0) {
         vec_push(g->arena, &vec_last(&g->scopes).names, var);
     }
     if (!has_var(g->vars.items, g->vars.len, name, type)) vec_push(g->arena, &g->vars, var);
 }
 
-static bool is_constant(const Codegen *g, const char *name) {
+bool cg_is_constant(const Codegen *g, const char *name) {
     for (size_t i = 0; i < g->constants.len; i++) {
         if (strcmp(g->constants.items[i]->as.constant.name.text, name) == 0) return true;
     }
@@ -140,25 +185,37 @@ size_t cg_new_temp(Codegen *g, Type type) {
     return g->temps.len;
 }
 
+// Reading what's in a list counts as an effect too: a call could change the
+// list, so a call next to it has to keep its place in the order.
 bool cg_has_effects(const Codegen *g, const Expr *expr) {
     switch (expr->kind) {
     case EXPR_CALL:
-    case EXPR_FILE_CONTENTS: return true;
+    case EXPR_FILE_CONTENTS:
+    case EXPR_ITEM:
+    case EXPR_LIST_OP:
+    case EXPR_EVERY:
+    case EXPR_ONLY: return true;
+    case EXPR_LIST:
+        for (size_t i = 0; i < expr->as.items.len; i++) {
+            if (cg_has_effects(g, expr->as.items.items[i])) return true;
+        }
+        return false;
     case EXPR_NAME: return cg_find_function(g, expr->as.name) != NULL;
-    case EXPR_LENGTH: return cg_has_effects(g, expr->as.operand);
+    case EXPR_LENGTH: return type_is_list(expr->as.operand->type) || cg_has_effects(g, expr->as.operand);
     case EXPR_UNARY: return cg_has_effects(g, expr->as.unary.operand);
     case EXPR_CONVERT:
         return (expr->as.convert.target == CONVERT_TO_NUMBER && expr->as.convert.operand->type == TYPE_TEXT) ||
                cg_has_effects(g, expr->as.convert.operand);
     case EXPR_BINARY:
         return expr->as.binary.op == BINARY_DIVIDE || expr->as.binary.op == BINARY_MODULO ||
-               cg_has_effects(g, expr->as.binary.left) || cg_has_effects(g, expr->as.binary.right);
+               expr->as.binary.op == BINARY_CONTAINS || expr->as.binary.op == BINARY_NOT_CONTAINS ||
+               type_is_list(expr->as.binary.left->type) || cg_has_effects(g, expr->as.binary.left) ||
+               cg_has_effects(g, expr->as.binary.right);
     default: return false;
     }
 }
 
-// The C code for one operand, as text or as its own kind.
-static const char *operand(Codegen *g, const Expr *expr, bool as_text) {
+const char *cg_operand(Codegen *g, const Expr *expr, bool as_text) {
     StrBuf sb;
     sb_init(&sb, g->arena);
     if (as_text) {
@@ -174,10 +231,12 @@ static const char *operand(Codegen *g, const Expr *expr, bool as_text) {
 // *close is set to the ")" that ends it.
 static void operands(Codegen *g, const Expr *left, const Expr *right, bool as_text, StrBuf *out, const char **l,
                      const char **r, const char **close) {
-    *l = operand(g, left, as_text);
-    *r = operand(g, right, as_text);
+    *l = cg_operand(g, left, as_text);
+    *r = cg_operand(g, right, as_text);
     *close = "";
-    if (!cg_has_effects(g, left) || !cg_has_effects(g, right)) return;
+    // Turning a list into text reads it, so it keeps its place like an effect.
+    bool left_effects = cg_has_effects(g, left) || (as_text && type_is_list(left->type));
+    if (!left_effects || !cg_has_effects(g, right)) return;
     size_t t = cg_new_temp(g, as_text ? TYPE_TEXT : left->type);
     sb_appendf(out, "(es_t%zu = %s, ", t, *l);
     *l = arena_sprintf(g->arena, "es_t%zu", t);
@@ -214,7 +273,8 @@ static void emit_compare(Codegen *g, const Expr *expr, StrBuf *out) {
     if (equality && type == TYPE_YESNO) {
         sb_appendf(out, "(%s %s %s)", l, op == BINARY_EQUAL ? "==" : "!=", r);
     } else if (equality) {
-        sb_appendf(out, "%s%s(%s, %s)", negate, type == TYPE_TEXT ? "es_text_same" : "es_close", l, r);
+        const char *same = type_is_list(type) ? "es_list_same" : type == TYPE_TEXT ? "es_text_same" : "es_close";
+        sb_appendf(out, "%s%s(%s, %s)", negate, same, l, r);
     } else {
         sb_appendf(out, "(%s(%s, %s) %s 0)", type == TYPE_TEXT ? "es_text_order" : "es_number_order", l, r,
                    order_operator(op));
@@ -230,8 +290,8 @@ static void emit_binary(Codegen *g, const Expr *expr, StrBuf *out) {
     case BINARY_AND:
     case BINARY_OR:
         if (expr->type == TYPE_YESNO) {  // && and || work left to right and stop early, as "and"/"or" do
-            sb_appendf(out, "(%s %s %s)", operand(g, left, false), op == BINARY_AND ? "&&" : "||",
-                       operand(g, right, false));
+            sb_appendf(out, "(%s %s %s)", cg_operand(g, left, false), op == BINARY_AND ? "&&" : "||",
+                       cg_operand(g, right, false));
             return;
         }
         // "and" with text joins, like "followed by":
@@ -251,15 +311,21 @@ static void emit_binary(Codegen *g, const Expr *expr, StrBuf *out) {
         operands(g, left, right, false, out, &l, &r, &close);
         sb_appendf(out, "(%s %s %s)%s", l, arithmetic_operator(op), r, close);
         return;
+    case BINARY_CONTAINS:
+    case BINARY_NOT_CONTAINS: cg_emit_contains(g, expr, out); return;
     default: emit_compare(g, expr, out); return;
     }
 }
 
-// "it": the number of the innermost count or times loop (the checker made
-// sure there is one).
+// "it": the number of the innermost count or times loop, or the item of a
+// for-each loop or helper (the checker made sure there is one).
 static void emit_it(Codegen *g, StrBuf *out) {
     for (size_t i = g->loops.len; i > 0; i--) {
         const LoopCode *loop = &g->loops.items[i - 1];
+        if (loop->item) {
+            cg_emit_var(out, loop->item, loop->item_type);
+            return;
+        }
         if (loop->stmt->as.loop.kind == LOOP_COUNT) {
             cg_append_var(out, loop->stmt->as.loop.var.text, TYPE_NUMBER);
             return;
@@ -275,36 +341,38 @@ static void emit_it(Codegen *g, StrBuf *out) {
 // es_f_area(line, A, B). When two or more arguments have effects, they go
 // into temporaries first, left to right: (t1 = A, t2 = B, es_f_area(line, t1, t2)).
 // The function owns its text arguments and releases them when it ends.
-static void emit_call(Codegen *g, const char *name, Expr *const *args, size_t n, size_t line, StrBuf *out) {
+bool cg_ordered(Codegen *g, Expr *const *exprs, size_t n, const char **values, StrBuf *out) {
     size_t effects = 0;
-    for (size_t i = 0; i < n; i++) effects += cg_has_effects(g, args[i]);
-    const char **values = arena_alloc(g->arena, (n + 1) * sizeof(char *));
+    for (size_t i = 0; i < n; i++) effects += exprs[i] && cg_has_effects(g, exprs[i]);
     if (effects >= 2) sb_append_char(out, '(');
     for (size_t i = 0; i < n; i++) {
-        values[i] = operand(g, args[i], false);
+        if (!exprs[i]) continue;
+        values[i] = cg_operand(g, exprs[i], false);
         if (effects < 2) continue;
-        size_t t = cg_new_temp(g, args[i]->type);
+        size_t t = cg_new_temp(g, exprs[i]->type);
         sb_appendf(out, "es_t%zu = %s, ", t, values[i]);
         values[i] = arena_sprintf(g->arena, "es_t%zu", t);
     }
+    return effects >= 2;
+}
+
+static void emit_call(Codegen *g, const char *name, Expr *const *args, size_t n, size_t line, StrBuf *out) {
+    const char **values = arena_alloc(g->arena, (n + 1) * sizeof(char *));
+    bool opened = cg_ordered(g, args, n, values, out);
     cg_append_prefixed(out, "es_f_", name);
     sb_appendf(out, "(%zu", line);
     for (size_t i = 0; i < n; i++) sb_appendf(out, ", %s", values[i]);
-    sb_append(out, effects >= 2 ? "))" : ")");
+    sb_append(out, opened ? "))" : ")");
 }
 
 static void emit_name(Codegen *g, const Expr *expr, StrBuf *out) {
     const char *name = expr->as.name;
-    if (is_constant(g, name)) {
+    if (cg_is_constant(g, name)) {
         cg_append_prefixed(out, "es_k_", name);  // text constants are immortal: no retain
     } else if (cg_find_function(g, name)) {
         emit_call(g, name, NULL, 0, expr->pos.line, out);  // a function that takes no values
-    } else if (expr->type == TYPE_TEXT) {
-        sb_append(out, "es_retain(");  // reading a text variable: one more owner
-        cg_append_var(out, name, TYPE_TEXT);
-        sb_append_char(out, ')');
     } else {
-        cg_append_var(out, name, expr->type);
+        cg_emit_var(out, name, expr->type);
     }
 }
 
@@ -313,7 +381,7 @@ static void emit_convert(Codegen *g, const Expr *expr, StrBuf *out) {
     if (expr->as.convert.target == CONVERT_TO_TEXT) {
         cg_emit_text(g, operand_expr, out);
     } else if (operand_expr->type == TYPE_TEXT) {
-        sb_appendf(out, "es_text_number(%zu, %s)", expr->pos.line, operand(g, operand_expr, false));
+        sb_appendf(out, "es_text_number(%zu, %s)", expr->pos.line, cg_operand(g, operand_expr, false));
     } else {
         cg_emit_expr(g, operand_expr, out);
     }
@@ -328,17 +396,26 @@ void cg_emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     case EXPR_CALL:
         emit_call(g, expr->as.call.name, expr->as.call.args.items, expr->as.call.args.len, expr->pos.line, out);
         break;
-    case EXPR_LENGTH: sb_appendf(out, "es_length(%s)", operand(g, expr->as.operand, false)); break;
+    case EXPR_LENGTH:
+        sb_appendf(out, "%s(%s)", type_is_list(expr->as.operand->type) ? "es_list_length" : "es_length",
+                   cg_operand(g, expr->as.operand, false));
+        break;
     case EXPR_FILE_CONTENTS:
-        sb_appendf(out, "es_read_file(%zu, %s)", expr->pos.line, operand(g, expr->as.operand, false));
+        sb_appendf(out, "es_read_file(%zu, %s)", expr->pos.line, cg_operand(g, expr->as.operand, false));
         break;
     case EXPR_UNARY:
         sb_appendf(out, "(%s%s)", expr->as.unary.op == UNARY_NEGATE ? "-" : "!",
-                   operand(g, expr->as.unary.operand, false));
+                   cg_operand(g, expr->as.unary.operand, false));
         break;
     case EXPR_BINARY: emit_binary(g, expr, out); break;
     case EXPR_CONVERT: emit_convert(g, expr, out); break;
     case EXPR_IT: emit_it(g, out); break;
+    case EXPR_LIST:
+    case EXPR_EMPTY_LIST:
+    case EXPR_ITEM:
+    case EXPR_LIST_OP:
+    case EXPR_EVERY:
+    case EXPR_ONLY: cg_emit_list_expr(g, expr, out); break;
     case EXPR_NOTHING:
     case EXPR_ERROR:
         // The checker rejects these before codegen runs.
@@ -348,10 +425,14 @@ void cg_emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
 }
 
 void cg_emit_text(Codegen *g, const Expr *expr, StrBuf *out) {
+    if (type_is_list(expr->type)) {
+        sb_appendf(out, "es_list_text(%s)", cg_operand(g, expr, false));
+        return;
+    }
     switch (expr->type) {
     case TYPE_TEXT: cg_emit_expr(g, expr, out); break;
-    case TYPE_NUMBER: sb_appendf(out, "es_number_text(%s)", operand(g, expr, false)); break;
-    case TYPE_YESNO: sb_appendf(out, "es_yesno_text(%s)", operand(g, expr, false)); break;
+    case TYPE_NUMBER: sb_appendf(out, "es_number_text(%s)", cg_operand(g, expr, false)); break;
+    case TYPE_YESNO: sb_appendf(out, "es_yesno_text(%s)", cg_operand(g, expr, false)); break;
     default: assert(!"a value without a kind reached codegen"); break;
     }
 }

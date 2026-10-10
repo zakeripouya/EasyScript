@@ -9,6 +9,7 @@
 //   read file F and call it X           stop the program
 //   if C: / if C, S / if C then S        (parse_if.c)
 //   loops, stop the loop, skip this one   (parse_loop.c)
+//   add E to the end of L, remove, insert, set item N of L to E, sort  (parse_list.c)
 
 #include <string.h>
 #include "front/parse.h"
@@ -156,6 +157,8 @@ static Stmt *parse_let(Parser *p, const Token *verb, const StmtForm *form) {
 
 static Stmt *parse_set(Parser *p, const Token *verb, const StmtForm *form) {
     static const char *const after[] = {"to", NULL};
+    static const char *const of_in[] = {"of", "in", NULL};
+    if (parser_at_item(p, of_in)) return parser_parse_set_item(p, verb);
     Stmt *stmt = parser_new_stmt(p, STMT_SET, verb);
     if (!parser_parse_name(p, &stmt->as.assign.name, after) || !parser_expect_word(p, after, form->example)) return NULL;
     stmt->as.assign.value = parse_expression(p);
@@ -170,6 +173,9 @@ static Stmt *parse_amount_first(Parser *p, const Token *verb, const StmtForm *fo
     if (reject_missing_value(p, form->connector)) return NULL;
     stmt->as.change.amount = parse_expression(p);
     if (p->sentence_failed || !parser_expect_word(p, connector, form->example)) return NULL;
+    if (form->op == CHANGE_ADD && parser_match_words(p, "end of")) {
+        return parser_finish_add_end(p, stmt, stmt->as.change.amount);
+    }
     if (!parser_parse_name(p, &stmt->as.change.target, NULL)) return NULL;
     return stmt;
 }
@@ -280,6 +286,21 @@ static Stmt *parse_control_form(Parser *p, const Token *verb, const StmtForm *fo
     return parse_loop_control(p, verb);
 }
 
+static Stmt *parse_remove_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parser_parse_remove(p, verb);
+}
+
+static Stmt *parse_insert_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parser_parse_insert(p, verb);
+}
+
+static Stmt *parse_sort_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parser_parse_sort(p, verb);
+}
+
 static const StmtForm forms[] = {
     {"let", parse_let, false, 0, NULL, "let total be 0"},
     {"set", parse_set, false, 0, NULL, "set total to 10"},
@@ -317,6 +338,9 @@ static const StmtForm forms[] = {
     {"give", parse_return_form, false, 0, NULL, "give back total"},
     {"return", parse_return_form, false, 0, NULL, "return total"},
     {"call", parse_call_form, false, 0, NULL, "call greet with \"Paris\""},
+    {"remove", parse_remove_form, true, 0, NULL, "remove item 2 from scores"},
+    {"insert", parse_insert_form, true, 0, NULL, "insert 7 at position 1 of scores"},
+    {"sort", parse_sort_form, false, 0, NULL, "sort scores"},
 };
 
 // --- Sentences ---------------------------------------------------------------

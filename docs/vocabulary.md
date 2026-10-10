@@ -31,13 +31,14 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | `yes`, `true` | The yes value | `done is yes` | Available |
 | `no`, `false` | The no value | `ready is false` | Available |
 | `nothing` | What a function gives back when it gives back no value. It can't be used as a value | `return` (gives back nothing) | Available |
-| `it` | The number of the loop you're in (see [Loops](#it-and-names-in-loops)) | `say it` | Available |
+| `it` | The number of the loop you're in, or the item of a `for each` loop (see [Loops](#it-and-names-in-loops)) | `say it` | Available |
+| `a list of X, Y and Z` | A list (see [Lists](#lists)) | `a list of 72, 95 and 88` | Available |
 | names | Start with a letter, then letters, digits, `_`, or an apostrophe between letters. A name is one word | `total`, `player_2`, `guest's` | Available |
 | `( X )` | Grouping: work this out first | `(price plus tax) times 2` | Available |
 
-**How values print:** whole numbers print without decimals (`7`, not `7.0`), other numbers with up to 15 significant digits (`0.1 plus 0.2` prints `0.3`), and yes/no as `yes`/`no`.
+**How values print:** whole numbers print without decimals (`7`, not `7.0`), other numbers with up to 15 significant digits (`0.1 plus 0.2` prints `0.3`), yes/no as `yes`/`no`, and lists in English: `72, 95 and 88`.
 
-**Kinds:** every value is a number, text, or yes/no, worked out before the program runs (see [Kinds of values](#kinds-of-values)).
+**Kinds:** every value is a number, text, yes/no, or a list, worked out before the program runs (see [Kinds of values](#kinds-of-values)).
 
 **Words that can't be names:** the operator words `and`, `or`, `not`, `is`, `isn't`, `equals`, `reaches`, `plus`, `minus`, `times`, `multiplied`, `divided`, `mod`, `followed`, `as`, and `using`. The value words `yes`, `no`, `true`, `false`, `nothing`, and `it` can't be names either. Every other word can be, including `count`, `length`, `contents`, and `file`.
 
@@ -50,16 +51,16 @@ Expressions combine values. They're listed here from the **loosest** to the **ti
 | Pattern | Meaning | Example | Status |
 |---|---|---|---|
 | `X or Y` | Yes if either side is yes | `day is "sat" or day is "sun"` | Available |
-| `X and Y` | With two yes/no values: yes if both are yes. If either side is text: joins them, turning a number or nothing into text | `age is at least 13 and age is under 20`<br>`"Hello, " and name` | Available |
+| `X and Y` | With two yes/no values: yes if both are yes. If either side is text: joins them, turning a number or a list on the other side into text | `age is at least 13 and age is under 20`<br>`"Hello, " and name` | Available |
 | `not X` | The opposite of a yes/no value | `not done` | Available |
 
-`and` is decided while the program runs. If the left side is `no`, the answer is `no` and the right side isn't worked out at all; likewise `or` stops at a `yes` on the left. `and` between yes/no and text, or between two numbers, is a runtime error that explains what to write instead (`"as text"`, or `plus`). `and` followed by the word `call` ends the expression, so `ask ... and call the answer X` works.
+Which `and` it is gets decided before the program runs, from the kinds of its sides. If the left side is `no`, the answer is `no` and the right side isn't worked out at all; likewise `or` stops at a `yes` on the left. `and` between yes/no and text, or between two numbers, is an error that explains what to write instead (`"as text"`, or `plus`). `and` followed by the word `call` ends the expression, so `ask ... and call the answer X` works.
 
 ### Comparisons
 
-All comparisons are **Available**. Equal and not equal work between any two values (different kinds are never equal).
+All comparisons are **Available**. Equal and not equal work between any two values of the same kind (comparing different kinds is an error); two lists are equal when their items are, in order.
 
-**Numbers are equal when they're within a relative 1e-12 of each other** (a millionth of a millionth of the larger number), so tiny rounding differences don't matter: `0.1 plus 0.2 is 0.3` is `yes`, even though computers store `0.1 plus 0.2` as 0.30000000000000004. This applies to `is`, `is not`, `isn't`, `equals`, `is equal to`, `=`, `==` and `!=`. The other comparisons agree with it: numbers that count as equal are neither less nor greater, so `0.1 plus 0.2 is at most 0.3` is `yes` too. The tolerance is far smaller than any difference you'd write on purpose: `1 is 1.0000000001` is `no`, and so is `1000000000 is 1000000000.5`. Because it's relative to the larger number, it's tiny near zero (`0 is 0.000000000001` is `no`). The ordering comparisons need two numbers or two texts (texts compare alphabetically, by character code); comparing text with a number is a runtime error. A sentence can only have one comparison in a row: `1 < x < 10` is an error that suggests `1 < x and x < 10`.
+**Numbers are equal when they're within a relative 1e-12 of each other** (a millionth of a millionth of the larger number), so tiny rounding differences don't matter: `0.1 plus 0.2 is 0.3` is `yes`, even though computers store `0.1 plus 0.2` as 0.30000000000000004. This applies to `is`, `is not`, `isn't`, `equals`, `is equal to`, `=`, `==` and `!=`. The other comparisons agree with it: numbers that count as equal are neither less nor greater, so `0.1 plus 0.2 is at most 0.3` is `yes` too. The tolerance is far smaller than any difference you'd write on purpose: `1 is 1.0000000001` is `no`, and so is `1000000000 is 1000000000.5`. Because it's relative to the larger number, it's tiny near zero (`0 is 0.000000000001` is `no`). The ordering comparisons need two numbers or two texts (texts compare alphabetically, by character code); comparing text with a number is an error. A sentence can only have one comparison in a row: `1 < x < 10` is an error that suggests `1 < x and x < 10`.
 
 | Means | Words | Symbols | Example |
 |---|---|---|---|
@@ -95,7 +96,7 @@ All arithmetic is **Available**.
 
 `times` multiplies only when a value follows it, so a sentence like `repeat 3 times:` keeps its own `times`.
 
-Arithmetic needs numbers on both sides; anything else is a runtime error such as "Line 12: I can't subtract text from a number." To join text, use `and` or `followed by` (which turns numbers into text for you). Dividing or taking the remainder by zero is the error "You divided by zero."
+Arithmetic needs numbers on both sides; anything else is an error before the program runs, such as "Line 12: I can't subtract text from a number." To join text, use `and` or `followed by` (which turns numbers into text for you). Dividing or taking the remainder by zero is the error "You divided by zero."
 
 ### Conversions
 
@@ -110,7 +111,7 @@ Arithmetic needs numbers on both sides; anything else is a runtime error such as
 
 | Pattern | Meaning | Example | Status |
 |---|---|---|---|
-| `length of X` | How many characters a text has | `length of name` | Available |
+| `length of X` | How many characters a text has, or how many items a list has | `length of name` | Available |
 | `contents of file X` | Everything in a file, as text | `contents of file "notes.txt"` | Available |
 
 These take a single value, so `length of name plus 1` means `(length of name) plus 1`. Write `length of (name plus 1)` for the other meaning.
@@ -142,7 +143,7 @@ The words that start statements are only special at the start of a sentence, so 
 | `let NAME equal X` | Synonym of `let NAME be X` | `let count equal 3` | Available |
 | `set NAME to X` | Change a variable's value (it must already exist) | `set total to 10` | Available |
 | `change NAME to X` | Synonym of `set` | `change total to 10` | Available |
-| `add X to NAME` | `NAME` becomes `NAME plus X` | `add 5 to total` | Available |
+| `add X to NAME` | `NAME` becomes `NAME plus X`. When `NAME` is a list, adds X to its end (see [Lists](#lists)) | `add 5 to total` | Available |
 | `subtract X from NAME` | `NAME` becomes `NAME minus X` | `subtract 1 from count` | Available |
 | `increase NAME by X` | Same as `add X to NAME` | `increase score by 10` | Available |
 | `decrease NAME by X` | Same as `subtract X from NAME` | `decrease lives by 1` | Available |
@@ -208,7 +209,7 @@ Rules:
 - **Lining up:** an `otherwise` belongs to the `if` that starts in the same column, just above it. An `otherwise` indented differently, or with no `if` above it, is an error that says so (and which column the `if` is in).
 - **Order:** any number of `otherwise if`s, then at most one plain `otherwise`, last.
 - **One-line ifs** hold a single simple sentence (not another `if`), and can't have an `otherwise`; the sentence ends at the period or the end of the line, so in `if x is 5, add 1 to x. say x` the `say` always runs.
-- **Conditions must be yes or no.** Anything else is a runtime error with the line number: "Line 3: An "if" needs yes or no to decide, but this is a number." Conditions short-circuit like any `and`/`or`.
+- **Conditions must be yes or no.** Anything else is an error before the program runs: "Line 3: An "if" needs yes or no to decide, but this is a number." Conditions short-circuit like any `and`/`or`.
 - **Names made inside a block exist only inside it.** Using one after the block is an error that explains this; make the name before the `if` to use it afterwards. A name that exists outside can't be made again inside (use `set` to change it).
 
 ## Loops
@@ -225,6 +226,7 @@ All loops are **Available**. Every loop ends its first line with a colon and put
 | `count down from A to B:` | Count down only; runs zero times if A is smaller than B | `count down from 10 to 1:` |
 | `go from A to B in steps of S:` | Same as `count from` (the step is optional) | `go from 0 to 1 in steps of 0.25:` |
 | `for each N from A to B:` | Same as `count from ... as N` (also takes `by` / `in steps of`) | `for each i from 0 to limit:` |
+| `for each N in L:` | Go through a list, item by item (see [Lists](#lists)) | `for each score in scores:` |
 
 - A, B, and S are worked out once, before the first round, and must be numbers.
 - The count includes B when it lands on it: `count from 1 to 10 by 4` gives 1, 5, 9. Each number is worked out from the start (no drifting), and a number equal to B lands exactly on it, so `count from 0 to 1 by 0.1` ends at exactly 1.
@@ -252,7 +254,7 @@ Using either outside a loop is an error. `stop the program` still ends the whole
 
 ### `it` and names in loops
 
-- **`it`** is the number of the innermost counting or `repeat ... times` loop: the count, or the round (1, 2, 3, ...) of a `times` loop. Inside a `while`, `until`, or `forever` loop it refers to the nearest counting loop around it. Anywhere else, `it` is an error.
+- **`it`** is the number of the innermost counting or `repeat ... times` loop (the count, or the round: 1, 2, 3, ...), or the item of the innermost `for each N in L` loop, `every`, or `only`. Inside a `while`, `until`, or `forever` loop it refers to the nearest such loop around it. Anywhere else, `it` is an error.
 - **A loop's number, and names made in its body, exist only inside the loop.** Each round starts fresh. A loop's number can't reuse a name that already exists (including an outer loop's `number`), so nested counts need names: `count from 1 to 3 as row:`.
 
 ## Functions
@@ -266,7 +268,7 @@ All function sentences are **Available**.
 | `to NAME with INPUT and INPUT:` | Define a function with inputs (`of` and `using` work like `with`; commas work like `and`) | `to area with width and height:` |
 | `give back X` / `return X` | End the function and hand X back to whoever called it | `give back width times height` |
 | `return` | End the function early, handing back nothing (`give back nothing` is the same) | `return` |
-| `INPUT (KIND)` | Say what kind of value an input is (optional) | `to area with width (a number) and height (a number):` |
+| `INPUT (KIND)` | Say what kind of value an input is (optional) | `to area with width (a number) and height (a number):`<br>`to average of scores (a list of numbers):` |
 | `, giving back KIND` | Say what kind of value the function gives back (optional; the comma is optional) | `to roll, giving back a number:` |
 | `NAME X and Y` | Call a function as a sentence | `greet "Paris".` |
 | `NAME with X and Y` | Same | `greet with "Paris".` |
@@ -282,6 +284,76 @@ Rules:
 - **Checks before running:** calling a function that doesn't exist suggests the closest one; giving it the wrong number of inputs says how many it needs and where it's defined.
 - **Deep recursion** stops with "Functions are calling each other too deeply (more than 10000 calls inside each other)." instead of crashing.
 
+## Lists
+
+All list words are **Available**. A list holds values of one kind, in order; positions start at 1. See the [language guide](language-guide.md#10-lists).
+
+### Making lists
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `a list of X, Y and Z` | A list of these items. Commas separate items until the first `and`; after that only `and` does. Each item is a value up to the next comma or `and`: arithmetic and `followed by` are part of it, comparisons end the list | `a list of 72, 95 and 88`<br>`a list of yes and no` |
+| `a list of (L) and (M)` | A list of lists: each inner list in parentheses (without them it's an error) | `a list of (a list of 1 and 2) and (a list of 3)` |
+| `an empty list of KINDS` | A list with nothing in it yet; KINDS is `numbers`, `text`, `yes/no values` (or `yes or no values`), or `lists of KINDS` | `an empty list of text`<br>`an empty list of lists of numbers` |
+| `a copy of L` | A separate list with the same items (and copies of the lists in it) | `a copy of scores` |
+
+### Items
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `item N of L` / `item N in L` | The item at position N (from 1). N is a number, a name, `it`, or something in parentheses | `item 2 of scores`, `item (n plus 1) of scores` |
+| `the first item in L` / `the first item of L` | The first item | `the first item in names` |
+| `the last item in L` / `the last item of L` | The last item | `the last item of scores` |
+
+A position that isn't in the list (0, past the end, or not whole) stops the program with an error that says the length. `item`, `first`, and `last` are only special in these forms, so they can still be names (`add item to total`).
+
+### Asking about lists
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `the length of L` / `the number of items in L` | How many items | `the number of items in scores` |
+| `L contains X` | Yes if some item is equal to X | `scores contains 95` |
+| `L does not contain X` / `L doesn't contain X` | The opposite | `names doesn't contain "Zoe"` |
+| `L is empty` | Yes if it has no items (also works for text: `name is empty`) | `if scores is empty, say "none"` |
+| `L is not empty` / `L isn't empty` | The opposite | `while queue isn't empty:` |
+| `L added together` | The total of a list of numbers (0 for an empty list) | `scores added together` |
+| `the biggest of L` / `the smallest of L` | The biggest or smallest item of a list of numbers or text (an empty list is an error) | `the biggest of scores` |
+| `L reversed` | A new list, last item first | `scores reversed` |
+
+`contains`, `is empty` and the other questions are comparisons, so `scores contains 95 and scores is not empty` works. `added together` and `reversed` bind tightly, like `as text`: `scores added together divided by 2` halves the total.
+
+### Changing lists
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `add X to the end of L` | Put X after the last item | `add 60 to the end of scores` |
+| `add X to L` | The same, when L is a list that doesn't hold numbers; for a list of numbers it's an error asking which you meant | `add "Bob" to names` |
+| `insert X at position N of L` / `... in L` | Put X at position N (1 to one past the end); the items from there move along | `insert 7 at position 1 of scores` |
+| `remove item N from L` | Take out the item at position N | `remove item 2 from scores` |
+| `remove the first item from L` / `remove the last item from L` | Take out the first or last item | `remove the last item from names` |
+| `set item N of L to X` / `change item N of L to X` | Replace an item (also `the first item`, `the last item`) | `set item 1 of scores to 100` |
+| `sort L` | Numbers smallest first, text alphabetically (by character code) | `sort scores` |
+| `sort L, biggest first` / `sort L, smallest first` | Choose the order (the comma is optional) | `sort scores, biggest first` |
+| `sort L by their length` | Text by how many characters, lists by how many items | `sort names by their length` |
+| `sort L by their length, longest first` / `..., shortest first` | Choose the order | `sort names by their length, longest first` |
+
+Sorting keeps equal items in the order they were in. `remove`, `insert`, and `sort` start sentences, so they can't be function names.
+
+### Going through lists
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `for each N in L:` + indented lines | Run the lines once for each item, with N (and `it`) the item. Goes through the items the list had when it started | `for each score in scores:` |
+| `every N in L REST` | A new list: REST worked out for each item, as if it started with N. Only at the start of a value (or in parentheses) | `every score in scores plus 5` |
+| `only L that COMPARISON X` | A new list of the items for which the comparison is yes | `only the scores that are at least 70` |
+| `only L that are empty` / `... that are not empty` / `... that aren't empty` | The items (text or lists) that are, or aren't, empty | `only the names that aren't empty` |
+
+The comparisons after `only L that` are the usual ones with `are` for `is`: `are`, `are not`, `aren't`, `are equal to`, `are not equal to`, `aren't equal to`, `are greater than`, `are more than`, `are bigger than`, `are above`, `are over`, `are less than`, `are smaller than`, `are below`, `are under`, `are at least`, `are at most`, `are greater than or equal to`, `are more than or equal to`, `are bigger than or equal to`, `are less than or equal to`, and `are smaller than or equal to`.
+
+### Sharing
+
+A list is **shared**: `let same be scores` gives the same list another name, and a function given a list can change it. Changes through any name show through all of them. Use `a copy of L` for a separate list. A variable keeps its kind, so a list variable can only be given another list of the same kind. Lists can't be constants.
+
 ## Kinds of values
 
 Every value has a kind, worked out by the compiler before the program runs (**Available**). Kind mistakes are compile errors with the line and a caret. See the [language guide](language-guide.md#9-types).
@@ -292,7 +364,8 @@ Every value has a kind, worked out by the compiler before the program runs (**Av
 | text | `(text)`, `giving back text` | text values, `followed by`, `and` with text, `as text`, `ask`, reading a file |
 | yes/no | `(yes or no)` or `(yes/no)`, `giving back yes or no` | `yes`/`no`, comparisons, `and`/`or`/`not` between yes/no values |
 | nothing | `giving back nothing` | a function with no `give back X` (only as what a function gives back) |
+| list | `(a list of numbers)`, `(a list of text)`, `(a list of yes/no values)` or `(a list of yes or no values)`, `(a list of lists of numbers)`, `giving back a list of text` | `a list of ...`, `an empty list of ...`, `every`, `only`, `reversed`, `a copy of` |
 
 ## Later phases
 
-Records, lists, maps, and modules (Phase 2), and everything after, will be added here as their designs settle. See the [roadmap](roadmap.md).
+Records, maps, and modules (Phase 2), and everything after, will be added here as their designs settle. See the [roadmap](roadmap.md).

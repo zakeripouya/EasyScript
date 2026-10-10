@@ -1,21 +1,23 @@
-/* EasyScript runtime, part 1: text objects and memory.
+/* EasyScript runtime, part 1: heap objects (text and lists) and memory.
  *
- * The runtime is two files, embedded into the compiler at build time (in this
- * order) and copied to the top of every generated C program, so programs need
- * nothing else to build. Everything is static; generated code calls it.
+ * The runtime is three files, embedded into the compiler at build time (in
+ * this order: es_memory.h, es_runtime.h, es_list.h) and copied to the top of
+ * every generated C program, so programs need nothing else to build.
+ * Everything is static; generated code calls it.
  *
  * The compiler knows the kind of every value, so generated code uses plain C
- * types: a number is a double, yes/no is a bool, and text is an EsText *.
- * Only text lives on the heap. Text made while the program runs has a
- * reference count and is freed as soon as nothing uses it (see
- * docs/memory.md); text written in the program (literals, constants) is a
- * static object marked immortal, which is never counted or freed.
+ * types: a number is a double, yes/no is a bool, text is an EsText *, and a
+ * list is an EsList *. Text and lists live on the heap with a reference
+ * count, and are freed as soon as nothing uses them (see docs/memory.md);
+ * text written in the program (literals, constants) is a static object marked
+ * immortal, which is never counted or freed.
  *
- * Ownership: every text an expression produces is owned. Runtime functions
- * that take EsText * consume it (release it, or hand it back in their
- * result); reading a variable retains; storing into one (es_set) takes the
- * new text and releases the old one. Runtime errors print
- * "Line N: <plain English>" to stderr and exit 1 without cleaning up.
+ * Ownership: every text or list an expression produces is owned. Runtime
+ * functions that take EsText * or EsList * consume it (release it, or hand it
+ * back in their result); reading a variable retains; storing into one
+ * (es_set, es_list_set) takes the new value and releases the old one.
+ * Runtime errors print "Line N: <plain English>" to stderr and exit 1 without
+ * cleaning up.
  */
 #ifndef ES_MEMORY_H
 #define ES_MEMORY_H
@@ -44,11 +46,11 @@
 
 /* --- Heap objects --------------------------------------------------------
  *
- * Every heap object starts with this header, so later kinds (lists, records)
- * share the same retain/release machinery. A header whose count is
- * ES_IMMORTAL is never counted or freed. */
+ * Every heap object starts with this header, so all kinds (text, lists, and
+ * later records) share the same retain/release machinery. A header whose
+ * count is ES_IMMORTAL is never counted or freed. */
 
-typedef enum { ES_OBJ_TEXT } EsObjectKind;
+typedef enum { ES_OBJ_TEXT, ES_OBJ_LIST } EsObjectKind;
 
 #define ES_IMMORTAL SIZE_MAX
 
@@ -68,12 +70,43 @@ typedef struct {
 
 static EsText es_empty_text = ES_STATIC_TEXT("");
 
+/* What a list holds. Text and lists inside a list are counted references
+ * that the list owns. */
+typedef enum { ES_ITEMS_NUMBER, ES_ITEMS_YESNO, ES_ITEMS_TEXT, ES_ITEMS_LIST } EsItems;
+
+typedef struct EsList {
+    EsObject header;
+    EsItems items;
+    size_t len;  /* items in it */
+    size_t cap;  /* room for this many before growing */
+    union {
+        double *n;
+        bool *b;
+        EsText **t;
+        struct EsList **l;
+        EsObject **o; /* text or lists, either way */
+        void *any;
+    } at;
+} EsList;
+
+static size_t es_item_size(EsItems items) {
+    return items == ES_ITEMS_NUMBER ? sizeof(double) : items == ES_ITEMS_YESNO ? sizeof(bool) : sizeof(void *);
+}
+
+static bool es_items_counted(EsItems items) {
+    return items == ES_ITEMS_TEXT || items == ES_ITEMS_LIST;
+}
+
+/* What a list variable holds before it's given a list (never read, never
+ * changed): it lets releasing need no NULL checks, like es_empty_text. */
+static EsList es_no_list = {{ES_OBJ_LIST, ES_IMMORTAL}, ES_ITEMS_NUMBER, 0, 0, {NULL}};
+
 /* --- Memory --------------------------------------------------------------
  *
  * Live objects and bytes are always counted (it's cheap). Two environment
  * variables turn on checks, used by the tests:
  *   ES_DEBUG_MEMORY=1   at the end, fail if any heap object is still alive
- *   ES_MEMORY_LIMIT=N   fail as soon as live heap text takes more than N bytes */
+ *   ES_MEMORY_LIMIT=N   fail as soon as live text and lists would take more than N bytes */
 
 static struct {
     size_t live_objects;
@@ -88,22 +121,29 @@ static _Noreturn void es_out_of_memory(void) {
     exit(1);
 }
 
-/* The limit is checked before allocating, so stopping never leaves a new
- * object that nothing points to (LeakSanitizer would report it). */
-static EsObject *es_new_object(EsObjectKind kind, size_t size) {
+/* Counts `size` more live bytes, checking the limit first, so stopping
+ * never leaves memory that nothing points to (LeakSanitizer would report it). */
+static void es_memory_take(size_t size) {
     if (es_memory.limit && es_memory.live_bytes + size > es_memory.limit) {
         fflush(stdout);
-        fprintf(stderr, "Memory check: the program kept more than %zu bytes of text alive at once.\n", es_memory.limit);
+        fprintf(stderr, "Memory check: the program kept more than %zu bytes of text and lists alive at once.\n",
+                es_memory.limit);
         exit(70);
     }
+    es_memory.live_bytes += size;
+}
+
+static EsObject *es_new_object(EsObjectKind kind, size_t size) {
+    es_memory_take(size);
     EsObject *obj = malloc(size);
     if (!obj) es_out_of_memory();
     obj->kind = kind;
     obj->refs = 1;
     es_memory.live_objects++;
-    es_memory.live_bytes += size;
     return obj;
 }
+
+static inline void es_object_release(EsObject *obj);
 
 /* Frees a heap object whose count reached zero. It's never inlined (and on
  * GCC never specialized) into its callers: es_release only calls it for
@@ -117,11 +157,26 @@ __attribute__((noipa, cold))
 __attribute__((noinline, cold))
 #endif
 static void es_free_object(EsObject *obj) {
+    size_t size = 0;
     switch (obj->kind) {
-    case ES_OBJ_TEXT: es_memory.live_bytes -= sizeof(EsText) + ((EsText *)obj)->len + 1; break;
+    case ES_OBJ_TEXT: size = sizeof(EsText) + ((EsText *)obj)->len + 1; break;
+    case ES_OBJ_LIST: {
+        EsList *l = (EsList *)obj;
+        if (es_items_counted(l->items)) {
+            for (size_t i = 0; i < l->len; i++) es_object_release(l->at.o[i]);
+        }
+        free(l->at.any);
+        size = sizeof(EsList) + l->cap * es_item_size(l->items);
+        break;
     }
+    }
+    es_memory.live_bytes -= size;
     es_memory.live_objects--;
     free(obj);
+}
+
+static inline void es_object_release(EsObject *obj) {
+    if (obj->refs != ES_IMMORTAL && --obj->refs == 0) es_free_object(obj);
 }
 
 static inline EsText *es_retain(EsText *t) {
@@ -130,7 +185,28 @@ static inline EsText *es_retain(EsText *t) {
 }
 
 static inline void es_release(EsText *t) {
-    if (t->header.refs != ES_IMMORTAL && --t->header.refs == 0) es_free_object(&t->header);
+    es_object_release(&t->header);
+}
+
+static inline EsList *es_list_retain(EsList *l) {
+    if (l->header.refs != ES_IMMORTAL) l->header.refs++;
+    return l;
+}
+
+static inline void es_list_release(EsList *l) {
+    es_object_release(&l->header);
+}
+
+/* Stores into a list variable: takes l, releases what was there. */
+static inline void es_list_set(EsList **slot, EsList *l) {
+    EsList *old = *slot;
+    *slot = l;
+    es_list_release(old);
+}
+
+/* Releases a list variable at the end of its block. */
+static inline void es_list_drop(EsList **slot) {
+    es_list_set(slot, &es_no_list);
 }
 
 /* Stores into a text variable: takes t, releases what was there. */
@@ -204,7 +280,7 @@ static void es_init(void) {
 static void es_finish(bool check) {
     fflush(stdout);
     if (check && es_memory.check && es_memory.live_objects != 0) {
-        fprintf(stderr, "Memory check: %zu text value%s still alive at the end of the program (%zu bytes).\n",
+        fprintf(stderr, "Memory check: %zu value%s still alive at the end of the program (%zu bytes).\n",
                 es_memory.live_objects, es_memory.live_objects == 1 ? " was" : "s were", es_memory.live_bytes);
         exit(70);
     }

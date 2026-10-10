@@ -8,6 +8,10 @@
 #include "front/check_internal.h"
 
 
+const char *checker_kind(Checker *c, TypeVar var) {
+    return ast_type_name(c->arena, types_of(c, var));
+}
+
 static const Symbol *find(const Symbol *items, size_t len, const char *name) {
     for (size_t i = 0; i < len; i++) {
         if (strcmp(items[i].name, name) == 0) return &items[i];
@@ -58,7 +62,7 @@ bool checker_clashes(Checker *c, const Name *name) {
 
 static void make(Checker *c, const Name *name, TypeVar var) {
     if (checker_find_made(c, name->text) || checker_clashes(c, name)) return;
-    Symbol symbol = {name->text, name->pos.line, NULL, false, var};
+    Symbol symbol = {name->text, name->pos.line, NULL, false, var, false};
     vec_push(c->arena, &c->made, symbol);
 }
 
@@ -110,6 +114,9 @@ void checker_report_unknown(Checker *c, const char *name, SourcePos pos) {
     if (outside) {
         diag_note(c->diag, "A function only sees its own inputs and the names it makes. To use \"%s\" here, "
                            "pass it in as an input.", name);
+    } else if (ended && ended->loop_item) {
+        diag_note(c->diag, "\"%s\" is each item of the loop on line %zu, so it only exists inside that loop. "
+                           "To keep one, make a variable before the loop and set it inside.", name, ended->line);
     } else if (ended && ended->loop_number) {
         diag_note(c->diag, "\"%s\" is the number of the loop on line %zu, so it only exists inside that loop. "
                            "To keep it, make a variable before the loop and set it inside.", name, ended->line);
@@ -148,9 +155,9 @@ static const Symbol *check_target(Checker *c, const Name *name) {
 static void store(Checker *c, const Symbol *symbol, TypeVar value, Span span) {
     if (types_unify(c, symbol->var, value)) return;
     diag_error(c->diag, span, "\"%s\" is %s (made on line %zu), but this is %s.", symbol->name,
-               ast_type_name(types_of(c, symbol->var)), symbol->line, ast_type_name(types_of(c, value)));
+               checker_kind(c, symbol->var), symbol->line, checker_kind(c, value));
     diag_note(c->diag, "A variable keeps the kind of value it was made with. To keep %s, make a new variable for it.",
-              ast_type_name(types_of(c, value)));
+              checker_kind(c, value));
 }
 
 static void check_set(Checker *c, const Stmt *stmt) {
@@ -165,7 +172,12 @@ static void check_change(Checker *c, const Stmt *stmt) {
     static const BinaryOp ops[] = {BINARY_ADD, BINARY_SUBTRACT, BINARY_MULTIPLY, BINARY_DIVIDE};
     TypeVar amount = checker_check_expr(c, stmt->as.change.amount);
     const Symbol *symbol = check_target(c, &stmt->as.change.target);
-    if (symbol) checker_arithmetic(c, ops[stmt->as.change.op], symbol->var, amount, stmt->pos.span, stmt->pos.line);
+    if (!symbol) return;
+    if (stmt->as.change.op == CHANGE_ADD && type_is_list(types_of(c, symbol->var))) {
+        checker_add_to_list(c, (Stmt *)stmt, symbol, amount);
+        return;
+    }
+    checker_arithmetic(c, ops[stmt->as.change.op], symbol->var, amount, stmt->pos.span, stmt->pos.line);
 }
 
 // "ask ... and call the answer X" and "read file ... and call it X" make X as
@@ -213,7 +225,7 @@ static void check_return(Checker *c, const Stmt *stmt) {
         diag_note(c->diag, "It's defined on line %zu: \"%s\".", f->definition->pos.line, checker_function_header(c, f));
     } else if (!types_unify(c, f->result, value)) {
         diag_error(c->diag, stmt->as.returned->pos.span, "\"%s\" gives back %s (since line %zu), but this is %s.",
-                   f->name, ast_type_name(result), types_line(c, f->result), ast_type_name(types_of(c, value)));
+                   f->name, ast_type_name(c->arena, result), types_line(c, f->result), checker_kind(c, value));
         diag_note(c->diag, "A function gives back the same kind of value every time.");
     }
 }
@@ -226,7 +238,8 @@ static void check_stmt(Checker *c, const Stmt *stmt);
 // and remembered as "ended" in `where` on `line`.
 static void end_scope(Checker *c, size_t outer, size_t line, const char *where) {
     for (size_t i = outer; where && i < c->made.len; i++) {
-        Symbol ended = {c->made.items[i].name, line, where, c->made.items[i].loop_number, 0};
+        Symbol ended = {c->made.items[i].name, line, where, c->made.items[i].loop_number, 0,
+                        c->made.items[i].loop_item};
         vec_push(c->arena, &c->ended, ended);
     }
     c->made.len = outer;
@@ -296,14 +309,28 @@ static void check_if(Checker *c, const Stmt *stmt) {
     }
 }
 
-static void check_loop_variable(Checker *c, const Stmt *stmt) {
-    const Name *var = &stmt->as.loop.var;
-    const Symbol *existing = checker_find_made(c, var->text);
-    if (!existing && checker_clashes(c, var)) return;
-    if (!existing) {
-        Symbol symbol = {var->text, var->pos.line, NULL, true, types_new(c, TYPE_NUMBER, var->pos.line)};
-        vec_push(c->arena, &c->made, symbol);
+void checker_make_item_name(Checker *c, const Name *name, TypeVar item) {
+    const Symbol *existing = checker_find_made(c, name->text);
+    if (existing) {
+        diag_error(c->diag, name->pos.span, "You already made \"%s\" on line %zu.", name->text, existing->line);
+        diag_note(c->diag, "Give the items a name that isn't taken yet, like \"each_%s\".", name->text);
         return;
+    }
+    if (checker_clashes(c, name)) return;
+    Symbol symbol = {name->text, name->pos.line, NULL, true, item, true};
+    vec_push(c->arena, &c->made, symbol);
+}
+
+// A count's number; returns its kind (a number).
+static TypeVar check_loop_variable(Checker *c, const Stmt *stmt) {
+    const Name *var = &stmt->as.loop.var;
+    TypeVar number = types_new(c, TYPE_NUMBER, var->pos.line);
+    const Symbol *existing = checker_find_made(c, var->text);
+    if (!existing && checker_clashes(c, var)) return number;
+    if (!existing) {
+        Symbol symbol = {var->text, var->pos.line, NULL, true, number, false};
+        vec_push(c->arena, &c->made, symbol);
+        return number;
     }
     if (stmt->as.loop.var_named) {
         diag_error(c->diag, var->pos.span, "You already made \"%s\" on line %zu.", var->text, existing->line);
@@ -312,6 +339,7 @@ static void check_loop_variable(Checker *c, const Stmt *stmt) {
                                            "\"number\" on line %zu.", existing->line);
     }
     diag_note(c->diag, "Give this loop's number its own name, like \"count from 1 to 10 as n\".");
+    return number;
 }
 
 // The loop's own values are checked outside it; its number and anything
@@ -328,9 +356,20 @@ static void check_loop(Checker *c, const Stmt *stmt) {
     check_loop_value(c, stmt->as.loop.condition, TYPE_YESNO,
                      "A loop needs yes or no to decide whether to keep going",
                      "Compare it with something, like \"while count is less than 10\".");
+    TypeVar item = 0;
+    if (stmt->as.loop.list) {
+        item = checker_require_list(c, checker_check_expr(c, stmt->as.loop.list), stmt->as.loop.list,
+                                    "A \"for each\" loop needs a list to go through");
+    }
     size_t outer = c->made.len;
-    if (stmt->as.loop.kind == LOOP_COUNT) check_loop_variable(c, stmt);
-    Loop loop = {stmt->as.loop.kind == LOOP_COUNT || stmt->as.loop.kind == LOOP_TIMES};
+    Loop loop = {stmt->as.loop.kind == LOOP_COUNT || stmt->as.loop.kind == LOOP_TIMES, 0};
+    if (stmt->as.loop.kind == LOOP_COUNT) loop.it = check_loop_variable(c, stmt);
+    if (stmt->as.loop.kind == LOOP_TIMES) loop.it = types_new(c, TYPE_NUMBER, stmt->pos.line);
+    if (stmt->as.loop.kind == LOOP_EACH) {
+        checker_make_item_name(c, &stmt->as.loop.var, item);
+        loop.has_it = true;
+        loop.it = item;
+    }
     vec_push(c->arena, &c->loops, loop);
     c->blocks++;
     check_statements(c, &stmt->as.loop.body);
@@ -380,6 +419,7 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
     case STMT_RETURN: check_return(c, stmt); break;
     case STMT_CALL: checker_check_call(c, stmt->as.call, false); break;
     case STMT_CONSTANT: checker_check_constant(c, stmt); break;
+    case STMT_LIST: checker_check_list_stmt(c, stmt); break;
     }
 }
 
@@ -403,7 +443,7 @@ static void collect_names(Checker *c, const Block *program) {
                            : stmt->kind == STMT_READ_FILE ? &stmt->as.read_file.name
                                                           : NULL;
         if (name && !find(c->later.items, c->later.len, name->text)) {
-            Symbol symbol = {name->text, name->pos.line, NULL, false, 0};
+            Symbol symbol = {name->text, name->pos.line, NULL, false, 0, false};
             vec_push(c->arena, &c->later, symbol);
         }
     }

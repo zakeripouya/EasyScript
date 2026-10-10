@@ -1,4 +1,4 @@
 Line 1: "it" doesn't refer to anything here.
     say it
         ^^
-"it" only means something inside a loop, where it's the loop's number.
+"it" only means something inside a loop, where it's the loop's number or item.

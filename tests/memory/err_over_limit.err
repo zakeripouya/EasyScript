@@ -1,1 +1,1 @@
-Memory check: the program kept more than 100000 bytes of text alive at once.
+Memory check: the program kept more than 100000 bytes of text and lists alive at once.

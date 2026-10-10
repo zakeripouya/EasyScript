@@ -35,6 +35,16 @@ static EsText *es_number_text(double x) {
     return t;
 }
 
+/* A number as text for an error message. The program stops right after,
+ * so the text is never released; keeping it in a static slot keeps it
+ * reachable, so leak checkers don't report it. */
+static EsText *es_error_number;
+
+static const char *es_shown(double x) {
+    es_error_number = es_number_text(x);
+    return es_error_number->chars;
+}
+
 static EsText *es_yesno_text(bool yes) {
     return yes ? &es_lit_yes : &es_lit_no;
 }
@@ -66,13 +76,24 @@ static void es_say(EsText *t) {
 }
 
 /* Length in characters (UTF-8 aware). */
-static double es_length(EsText *t) {
+static size_t es_text_chars(const EsText *t) {
     size_t chars = 0;
     for (size_t i = 0; i < t->len; i++) {
         if (((unsigned char)t->chars[i] & 0xC0) != 0x80) chars++;
     }
+    return chars;
+}
+
+static double es_length(EsText *t) {
+    size_t chars = es_text_chars(t);
     es_release(t);
     return (double)chars;
+}
+
+static bool es_text_is_empty(EsText *t) {
+    bool empty = t->len == 0;
+    es_release(t);
+    return empty;
 }
 
 /* --- Numbers ---------------------------------------------------------------- */
@@ -213,7 +234,7 @@ static EsCount es_count_start(int line, double from, double to, double step, boo
     if (has_step) {
         if (!(step > 0)) {
             es_fail(line, "Counting goes up or down by itself; the step only says how far to go each time.",
-                    "The step of a count has to be more than zero, but it's %s.", es_number_text(step)->chars);
+                    "The step of a count has to be more than zero, but it's %s.", es_shown(step));
         }
         c.step = step;
     }
@@ -249,9 +270,9 @@ static inline double es_count_value(const EsCount *c, long long i) {
 
 /* "do this N times": N must be a whole number, zero or more. */
 static long long es_times(int line, double n) {
-    if (n < 0) es_fail(line, NULL, "The number of times can't be negative, but it's %s.", es_number_text(n)->chars);
+    if (n < 0) es_fail(line, NULL, "The number of times can't be negative, but it's %s.", es_shown(n));
     if (n != floor(n)) {
-        es_fail(line, NULL, "The number of times has to be a whole number, but it's %s.", es_number_text(n)->chars);
+        es_fail(line, NULL, "The number of times has to be a whole number, but it's %s.", es_shown(n));
     }
     if (n > 9e18) es_fail(line, NULL, "That's too many times to repeat.");
     return (long long)n;

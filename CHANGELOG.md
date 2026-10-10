@@ -6,6 +6,16 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Lists** (Phase 2, step 15). A list holds values of one kind, in order. See the new [Lists chapter](docs/language-guide.md#10-lists).
+  - Making them: `let scores be a list of 72, 95 and 88.`, `let names be an empty list of text.`, lists of lists (`a list of (a list of 1 and 2) and (a list of 3)`), `a copy of scores` (a separate list, copying the lists inside it too).
+  - Items, from position 1: `item 2 of scores`, `the first item in scores`, `the last item of scores`. A position that isn't there stops the program with the position and the length: "There's no item 4 in the list: it has 3 items."
+  - Changing them: `add 5 to the end of scores`, `insert 7 at position 1 of scores`, `remove item 2 from scores` (or the first or last item), `set item 2 of scores to 100`, and `sort scores` (`, biggest first`; `by their length, longest first`), a stable merge sort with the comparison inlined. `add X to L` adds to the end when L is a list that doesn't hold numbers; with a list of numbers it could also mean adding to each number, so it's an error that shows both ways to say it.
+  - Asking: `the length of scores` / `the number of items in scores`, `scores contains 95` (`does not contain`), `scores is empty` (also for text), and `is` between whole lists.
+  - Going through them: `for each score in scores:` (with `it` as the item; the loop goes through the items the list had when it started), `every score in scores plus 5`, `only the scores that are at least 70` (with every comparison, `are` for `is`), `scores added together`, `the biggest of scores`, `the smallest of scores`, `scores reversed`.
+  - Lists are shared: every name for a list sees its changes, and functions can change the lists they're given. They're reference counted with everything in them, and a list can never hold itself, so nothing leaks. `say scores` prints "72, 95 and 88".
+  - Kinds: a list's kind is inferred like any other ("\"scores\" is a list of numbers, so it can't hold text."), and definitions can say `(a list of numbers)`, `(a list of lists of text)`, `giving back a list of text`.
+  - `examples/programs/grade_statistics.es` and `top_scores.es`; a `sort` benchmark against C's `qsort`, Go and Python (EasyScript 0.06 s, C 0.08 s, Go 0.08 s, Python 0.31 s); tests for every list form and error, sharing and copying, nesting, and lists in million-round loops under the memory limit.
+
 - **Static types with inference** (Phase 2, step 14). The compiler works out whether every value is a number, text, or yes/no, so most programs need no annotations. See the new [Types chapter](docs/language-guide.md#9-types).
   - Variables take their kind from their `let` and keep it ("\"total\" is a number (made on line 1), but this is text."). `ask` and reading a file give text; `length of` gives a number; constants take the kind of their value.
   - Function inputs and results are inferred from how they're used and called; calling a function with different kinds, giving back two kinds, or using a function that gives back nothing as a value are friendly compile errors. When nothing decides a kind, the error suggests writing it.
@@ -25,6 +35,9 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- The macOS leak sweep leaves out programs that stop with a runtime error (they exit without clean-up by design, so `leaks` could report their variables depending on register allocation). Numbers shown in runtime error messages are kept reachable (`es_shown`).
+- `it` is also the item of a `for each` loop, and `length of` also counts a list's items, so their error notes mention lists. The memory check's messages say "values" and "text and lists" instead of "text". `and` between text and a list joins them, like `followed by`.
+
 - **Generated code uses plain C types:** numbers are `double`, yes/no is `bool`, text is `EsText *`, and a function that gives back nothing is `void`. The tagged value is gone from generated code entirely; only text is reference counted, so no retain or release is generated for numbers or yes/no. Nested loops went from 0.85 s to 0.10 s and counting from 0.07 s to 0.05 s; `mod` uses the integer remainder for whole numbers, and counting loops work out their last round once.
 - `nothing` can no longer be used as a value (it's only what a function that gives back no value gives back), and comparing values of different kinds is an error instead of always "no". `give back nothing` is the same as `return`.
 - The runtime's first file is now `runtime/es_memory.h` (it was `es_value.h`). Compile errors are listed in source order.
@@ -33,6 +46,9 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - The runtime is split into `runtime/es_value.h` (values and memory) and `runtime/es_runtime.h` (operations); `tools/embed.c` joins them. The variables of the main program are now C locals of `main()`.
 
 ### Fixed
+
+- A function with no inputs couldn't say what it gives back with a comma (`to roll, giving back a number:`), although the vocabulary showed it.
+- The error audit (`tests/tools/error_coverage.py`) could take minutes on messages with several `%s`; each now only matches within a line.
 
 - **Linux:** the compiler didn't link, because `consteval.c` needs the math library; the Makefile now links `-lm` (generated programs already did).
 - **GCC:** every generated program printed a `-Wfree-nonheap-object` warning, because GCC couldn't tell that releasing immortal text never reaches `free()`. Freeing now happens in a separate function that is never inlined or specialized (`noipa` on GCC), so the free path is visibly separate from immortal objects. GCC's `-Winfinite-recursion` is turned off in generated programs: a function that only calls itself is reported by EasyScript while the program runs.

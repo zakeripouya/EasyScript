@@ -1,0 +1,8 @@
+Line 2: "scores" is a list of numbers, so this could mean two things.
+    add 5 to scores
+    ^^^^^^^^^^^^^^^
+To put it at the end of the list, write "add ... to the end of scores". To add it to every item, write "set scores to every n in scores plus ...".
+
+Line 6: I can't subtract a number from a list of numbers.
+    subtract 1 from scores
+    ^^^^^^^^^^^^^^^^^^^^^^

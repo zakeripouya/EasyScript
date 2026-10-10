@@ -1,15 +1,17 @@
 // Expression grammar, lowest to highest precedence:
 //
+//   every       every NAME in L <the rest>   (only at the start of a value)
 //   or          A or B
 //   and         A and B           (stops before "and call")
 //   not         not A
-//   comparison  A is B, A is greater than B, A >= B, ...   (no chaining)
+//   comparison  A is B, A is greater than B, A >= B, L contains X, L is empty, ...   (no chaining)
 //   join        A followed by B   (below arithmetic, so math happens first)
 //   additive    A plus B, A minus B, + -
 //   multiply    A times B, A multiplied by B, A divided by B, A mod B, * / %
 //   unary       -A
-//   postfix     A as a number, A as text
-//   primary     literals, names, calls, ( ), length of X, contents of file X
+//   postfix     A as a number, A as text, L added together, L reversed
+//   primary     literals, names, calls, ( ), length of X, contents of file X,
+//               lists (parse_list.c), only L that are ...
 
 #include <string.h>
 #include "front/parse_internal.h"
@@ -48,6 +50,50 @@ static const Phrase comparison_ops[] = {
     {">", ">", BINARY_GREATER, false},
     {"<=", "<=", BINARY_LESS_EQUAL, false},
     {">=", ">=", BINARY_GREATER_EQUAL, false},
+    {"contains", "contains", BINARY_CONTAINS, false},
+    {"does not contain", "does not contain", BINARY_NOT_CONTAINS, false},
+    {"doesn't contain", "doesn't contain", BINARY_NOT_CONTAINS, false},
+};
+
+// "only the scores that are at least 70": the comparisons, with "are" for "is".
+static const Phrase item_comparisons[] = {
+    {"are greater than or equal to", "are greater than or equal to", BINARY_GREATER_EQUAL, false},
+    {"are more than or equal to", "are more than or equal to", BINARY_GREATER_EQUAL, false},
+    {"are bigger than or equal to", "are bigger than or equal to", BINARY_GREATER_EQUAL, false},
+    {"are less than or equal to", "are less than or equal to", BINARY_LESS_EQUAL, false},
+    {"are smaller than or equal to", "are smaller than or equal to", BINARY_LESS_EQUAL, false},
+    {"are greater than", "are greater than", BINARY_GREATER, false},
+    {"are more than", "are more than", BINARY_GREATER, false},
+    {"are bigger than", "are bigger than", BINARY_GREATER, false},
+    {"are above", "are above", BINARY_GREATER, false},
+    {"are over", "are over", BINARY_GREATER, false},
+    {"are less than", "are less than", BINARY_LESS, false},
+    {"are smaller than", "are smaller than", BINARY_LESS, false},
+    {"are below", "are below", BINARY_LESS, false},
+    {"are under", "are under", BINARY_LESS, false},
+    {"are at least", "are at least", BINARY_GREATER_EQUAL, false},
+    {"are at most", "are at most", BINARY_LESS_EQUAL, false},
+    {"are equal to", "are equal to", BINARY_EQUAL, false},
+    {"are not equal to", "are not equal to", BINARY_NOT_EQUAL, false},
+    {"aren't equal to", "aren't equal to", BINARY_NOT_EQUAL, false},
+    {"are not", "are not", BINARY_NOT_EQUAL, false},
+    {"aren't", "aren't", BINARY_NOT_EQUAL, false},
+    {"are", "are", BINARY_EQUAL, false},
+};
+
+// "L is empty" (lists and text); "is empty list of ..." compares with an empty list instead.
+static const Phrase empty_tests[] = {
+    {"is empty", "is empty", LIST_IS_EMPTY, false},
+    {"is not empty", "is not empty", LIST_NOT_EMPTY, false},
+    {"isn't empty", "isn't empty", LIST_NOT_EMPTY, false},
+    {"are empty", "are empty", LIST_IS_EMPTY, false},
+    {"are not empty", "are not empty", LIST_NOT_EMPTY, false},
+    {"aren't empty", "aren't empty", LIST_NOT_EMPTY, false},
+};
+
+static const Phrase list_postfix[] = {
+    {"added together", "added together", LIST_SUM, false},
+    {"reversed", "reversed", LIST_REVERSED, false},
 };
 
 static const Phrase additive_ops[] = {
@@ -83,7 +129,6 @@ typedef Expr *(*ParseFn)(Parser *p);
 
 static Expr *parse_or(Parser *p);
 static Expr *parse_unary(Parser *p);
-static Expr *parse_primary(Parser *p);
 
 static Expr *new_binary(Parser *p, BinaryOp op, Span op_span, Expr *left, Expr *right) {
     Expr *expr = ast_new_expr(p->arena, EXPR_BINARY, ast_pos_join(left->pos, right->pos));
@@ -103,6 +148,15 @@ static Expr *new_unary(Parser *p, UnaryOp op, const Token *op_token, Expr *opera
     return expr;
 }
 
+static Expr *new_list_op(Parser *p, ListOp op, Span op_span, Expr *operand) {
+    SourcePos end = {op_span, 0, 0};
+    Expr *expr = ast_new_expr(p->arena, EXPR_LIST_OP, ast_pos_join(operand->pos, end));
+    expr->as.list_op.op = op;
+    expr->as.list_op.op_span = op_span;
+    expr->as.list_op.operand = operand;
+    return expr;
+}
+
 // operand (op operand)*, left to right.
 static Expr *parse_left_assoc(Parser *p, const Phrase *ops, size_t n, ParseFn operand) {
     Expr *left = operand(p);
@@ -116,8 +170,32 @@ static Expr *parse_left_assoc(Parser *p, const Phrase *ops, size_t n, ParseFn op
     }
 }
 
+static bool at_every(const Parser *p) {
+    const Token *name = parser_peek(p, 1);
+    return parser_at_word(p, 0, "every") && name->kind == TOK_WORD && !parser_is_operator_word(name->text) &&
+           !parser_is_value_word(name->text) && parser_at_word(p, 2, "in");
+}
+
+// every NAME in L <the rest>: the rest of the value is worked out for each
+// item, as if it started with NAME ("every score in scores plus 5").
+static Expr *parse_every(Parser *p) {
+    Expr *every = ast_new_expr(p->arena, EXPR_EVERY, parser_token_pos(parser_advance(p)));
+    const Token *name = parser_advance(p);
+    every->as.every.var.text = name->text;
+    every->as.every.var.pos = parser_token_pos(name);
+    parser_advance(p);  // in
+    every->as.every.list = parse_primary(p);
+    Expr *item = ast_new_expr(p->arena, EXPR_NAME, parser_token_pos(name));
+    item->as.name = name->text;
+    p->pending_item = item;
+    every->as.every.body = parse_or(p);
+    p->pending_item = NULL;
+    every->pos = ast_pos_join(every->pos, every->as.every.body->pos);
+    return every;
+}
+
 Expr *parse_expression(Parser *p) {
-    return parse_or(p);
+    return at_every(p) ? parse_every(p) : parse_or(p);
 }
 
 // --- or, and, not -----------------------------------------------------------
@@ -147,14 +225,13 @@ static Expr *parse_or(Parser *p) {
 static Expr *parse_comparison(Parser *p);
 
 static Expr *parse_not(Parser *p) {
-    if (!parser_at_word(p, 0, "not")) return parse_comparison(p);
+    if (p->pending_item || !parser_at_word(p, 0, "not")) return parse_comparison(p);
     const Token *op = parser_advance(p);
     return new_unary(p, UNARY_NOT, op, parse_not(p));
 }
 
 // --- Comparisons ------------------------------------------------------------
 
-static Expr *parse_join(Parser *p);
 
 static bool is_word_among(const Token *token, const char *const *words, size_t n) {
     if (token->kind != TOK_WORD) return false;
@@ -164,16 +241,18 @@ static bool is_word_among(const Token *token, const char *const *words, size_t n
     return false;
 }
 
-// "is not greater than" isn't a comparison; suggest the one that is.
+// "is not greater than" isn't a comparison; suggest the one that is ("are
+// at most" after "are not").
 static bool reject_negated_comparison(Parser *p, BinaryOp op, Span op_span) {
     static const char *const bigger[] = {"greater", "more", "bigger", "above", "over"};
     static const char *const smaller[] = {"less", "smaller", "below", "under"};
     if (op != BINARY_NOT_EQUAL) return false;
     const Token *next = parser_peek(p, 0);
-    const char *instead = is_word_among(next, bigger, COUNT(bigger))    ? "is at most"
-                          : is_word_among(next, smaller, COUNT(smaller)) ? "is at least"
+    const char *instead = is_word_among(next, bigger, COUNT(bigger))    ? "at most"
+                          : is_word_among(next, smaller, COUNT(smaller)) ? "at least"
                                                                          : NULL;
     if (!instead) return false;
+    instead = arena_sprintf(p->arena, "%s %s", p->source[op_span.offset] == 'a' ? "are" : "is", instead);
     const Token *last = parser_at_word(p, 1, "than") ? parser_peek(p, 1) : next;
     Span span = {op_span.offset, last->span.offset + last->span.length - op_span.offset};
     if (parser_error(p, span, "EasyScript doesn't have \"%s\".", parser_text(p, span))) {
@@ -191,7 +270,9 @@ static bool reject_or_equal_to(Parser *p, BinaryOp op, Span op_span) {
     Span span = {op_span.offset, tail.offset + tail.length - op_span.offset};
     if (parser_error(p, span, "\"%s\" isn't a comparison.", parser_text(p, span))) {
         bool symbol = p->source[op_span.offset] == '<' || p->source[op_span.offset] == '>';
-        const char *instead = op == BINARY_GREATER ? (symbol ? ">=" : "is at least") : (symbol ? "<=" : "is at most");
+        const char *verb = p->source[op_span.offset] == 'a' ? "are" : "is";
+        const char *instead = symbol ? (op == BINARY_GREATER ? ">=" : "<=")
+                                     : arena_sprintf(p->arena, "%s at %s", verb, op == BINARY_GREATER ? "least" : "most");
         diag_note(p->diag, "Did you mean \"%s\"?", instead);
     }
     return true;
@@ -211,9 +292,30 @@ static Expr *report_chained(Parser *p, Expr *comparison, size_t op_len) {
     return error;
 }
 
+// "is empty", "isn't empty", ... (but not "is empty list of", which compares
+// with an empty list). NULL if none is next.
+static Expr *parse_empty_test(Parser *p, Expr *left, size_t first, size_t n) {
+    for (size_t i = first; i < first + n; i++) {
+        size_t len = parser_match_words(p, empty_tests[i].words);
+        if (len > 0 && !parser_at_word(p, len, "list")) {
+            return new_list_op(p, (ListOp)empty_tests[i].value, parser_consume(p, len), left);
+        }
+    }
+    return NULL;
+}
+
 static Expr *parse_comparison(Parser *p) {
     Expr *left = parse_join(p);
     size_t len;
+    Expr *empty = parse_empty_test(p, left, 0, 3);
+    if (empty && parser_match_phrase(p, comparison_ops, COUNT(comparison_ops), &len)) {
+        Span op = parser_consume(p, len);
+        if (parser_error(p, op, "Comparisons can't be chained like this.")) {
+            diag_note(p->diag, "Compare one pair at a time and join them with \"and\".");
+        }
+        return parser_error_expr(p);
+    }
+    if (empty) return empty;
     const Phrase *op = parser_match_phrase(p, comparison_ops, COUNT(comparison_ops), &len);
     if (!op) return left;
     Span op_span = parser_consume(p, len);
@@ -238,7 +340,7 @@ static Expr *parse_additive(Parser *p) {
     return parse_left_assoc(p, additive_ops, COUNT(additive_ops), parse_multiplicative);
 }
 
-static Expr *parse_join(Parser *p) {
+Expr *parse_join(Parser *p) {
     return parse_left_assoc(p, join_ops, COUNT(join_ops), parse_additive);
 }
 
@@ -247,6 +349,11 @@ static Expr *parse_postfix(Parser *p) {
     for (;;) {
         if (p->as_ends_value && parser_at_word(p, 0, "as")) return expr;
         size_t len;
+        const Phrase *list_op = parser_match_phrase(p, list_postfix, COUNT(list_postfix), &len);
+        if (list_op) {
+            expr = new_list_op(p, (ListOp)list_op->value, parser_consume(p, len), expr);
+            continue;
+        }
         const Phrase *conversion = parser_match_phrase(p, conversions, COUNT(conversions), &len);
         if (!conversion) return expr;
         Span op_span = parser_consume(p, len);
@@ -260,7 +367,7 @@ static Expr *parse_postfix(Parser *p) {
 }
 
 static Expr *parse_unary(Parser *p) {
-    if (!parser_at(p, 0, TOK_MINUS)) return parse_postfix(p);
+    if (p->pending_item || !parser_at(p, 0, TOK_MINUS)) return parse_postfix(p);
     const Token *op = parser_advance(p);
     return new_unary(p, UNARY_NEGATE, op, parse_unary(p));
 }
@@ -391,6 +498,57 @@ static Expr *parse_call(Parser *p, const Token *name) {
     return parser_finish_call(p, call);
 }
 
+// only L that are <comparison>: the items of L for which the comparison is
+// yes. The item is the comparison's left side (an "it").
+static Expr *parse_only(Parser *p) {
+    static const char *const that[] = {"that", NULL};
+    static const char *const example = "only the scores that are at least 70";
+    Expr *only = ast_new_expr(p->arena, EXPR_ONLY, parser_token_pos(parser_advance(p)));
+    only->as.only.list = parse_primary(p);
+    if (p->sentence_failed || !parser_expect_word(p, that, example)) return parser_error_expr(p);
+    Expr *it = ast_new_expr(p->arena, EXPR_IT, parser_token_pos(parser_peek(p, 0)));
+    Expr *condition = parse_empty_test(p, it, 3, 3);
+    if (!condition) {
+        size_t len;
+        const Phrase *op = parser_match_phrase(p, item_comparisons, COUNT(item_comparisons), &len);
+        if (!op) {
+            const Token *token = parser_peek(p, 0);
+            if (parser_error(p, token->span, "I expected a comparison like \"are at least\" here, but found %s.",
+                             parser_describe(p, token))) {
+                diag_note(p->diag, "Write it like \"%s\".", example);
+            }
+            return parser_error_expr(p);
+        }
+        Span op_span = parser_consume(p, len);
+        BinaryOp kind = (BinaryOp)op->value;
+        if (reject_negated_comparison(p, kind, op_span) || reject_or_equal_to(p, kind, op_span)) {
+            return parser_error_expr(p);
+        }
+        it->pos.span = op_span;
+        condition = new_binary(p, kind, op_span, it, parse_join(p));
+    }
+    only->as.only.condition = condition;
+    only->pos = ast_pos_join(only->pos, condition->pos);
+    return only;
+}
+
+// "only scores that" or "only (" starts a choice; "only" alone is a name.
+static bool at_only(const Parser *p) {
+    if (!parser_at_word(p, 0, "only")) return false;
+    const Token *next = parser_peek(p, 1);
+    return next->kind == TOK_LPAREN || (next->kind == TOK_WORD && parser_at_word(p, 2, "that"));
+}
+
+// "every NAME in" anywhere but the start of a value.
+static Expr *reject_inner_every(Parser *p) {
+    Span span = parser_advance(p)->span;
+    if (parser_error(p, span, "\"every\" has to start the value, because everything after it is worked out for "
+                              "each item.")) {
+        diag_note(p->diag, "Put it in parentheses, like \"(every score in scores plus 5)\".");
+    }
+    return parser_error_expr(p);
+}
+
 static Expr *parse_word(Parser *p) {
     const Token *token = parser_peek(p, 0);
     const char *word = token->text;
@@ -412,6 +570,10 @@ static Expr *parse_word(Parser *p) {
         return parser_error_expr(p);
     }
     if (parser_is_operator_word(word)) return expected_value(p);
+    Expr *list = parser_parse_list_word(p);
+    if (list) return list;
+    if (at_only(p)) return parse_only(p);
+    if (at_every(p)) return reject_inner_every(p);
 
     parser_advance(p);
     if (parser_at_word(p, 0, "using") || parser_at_word(p, 0, "of") || parser_at_word(p, 0, "with")) {
@@ -422,7 +584,12 @@ static Expr *parse_word(Parser *p) {
     return expr;
 }
 
-static Expr *parse_primary(Parser *p) {
+Expr *parse_primary(Parser *p) {
+    if (p->pending_item) {  // "every NAME in L ...": the item comes first
+        Expr *item = p->pending_item;
+        p->pending_item = NULL;
+        return item;
+    }
     switch (parser_peek(p, 0)->kind) {
     case TOK_NUMBER: return parse_number(p);
     case TOK_STRING: return parse_text(p);

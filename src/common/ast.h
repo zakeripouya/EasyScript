@@ -18,18 +18,32 @@ typedef struct {
 
 // --- Types -----------------------------------------------------------------
 
-// The kind of a value, worked out by the checker before the program runs.
-typedef enum {
-    TYPE_UNKNOWN,  // not decided (yet)
+// The kind of a value, worked out by the checker before the program runs. A
+// list holds one kind of item, so a list type is its innermost kind plus
+// TYPE_LIST for each level of list: TYPE_LIST + TYPE_NUMBER is a list of
+// numbers, 2 * TYPE_LIST + TYPE_TEXT a list of lists of text. Two types are
+// the same exactly when they're equal numbers.
+typedef unsigned Type;
+
+enum {
+    TYPE_UNKNOWN,  // not decided (yet); TYPE_LIST + TYPE_UNKNOWN is a list of something not decided
     TYPE_NUMBER,
     TYPE_TEXT,
     TYPE_YESNO,
     TYPE_NOTHING,  // only what a function gives back when it gives back no value
     TYPE_ERROR,    // stands in after a type error, so one mistake gives one message
-} Type;
+    TYPE_LIST = 8,
+};
 
-// "a number", "text", "a yes/no value", "nothing".
-const char *ast_type_name(Type type);
+static inline Type type_list_of(Type item) { return item + TYPE_LIST; }
+static inline bool type_is_list(Type type) { return type >= TYPE_LIST; }
+static inline Type type_item(Type list) { return list - TYPE_LIST; }
+static inline Type type_base(Type type) { return type % TYPE_LIST; }  // the innermost kind
+static inline bool type_counted(Type type) { return type == TYPE_TEXT || type_is_list(type); }  // reference counted
+
+// "a number", "text", "a yes/no value", "nothing", "a list of numbers",
+// "a list of lists of text", "a list" (items not decided).
+const char *ast_type_name(Arena *arena, Type type);
 
 // --- Expressions -----------------------------------------------------------
 
@@ -47,6 +61,12 @@ typedef enum {
     EXPR_UNARY,
     EXPR_BINARY,
     EXPR_CONVERT,        // X as a number / X as text
+    EXPR_LIST,           // a list of A, B and C
+    EXPR_EMPTY_LIST,     // an empty list of numbers
+    EXPR_ITEM,           // item N of L / the first item in L / the last item in L
+    EXPR_LIST_OP,        // L added together, the biggest of L, L reversed, L is empty, a copy of L, ...
+    EXPR_EVERY,          // every NAME in L <rest of the expression, worked out for each item>
+    EXPR_ONLY,           // only L that are <comparison>
 } ExprKind;
 
 typedef enum {
@@ -69,6 +89,8 @@ typedef enum {
     BINARY_MULTIPLY,
     BINARY_DIVIDE,
     BINARY_MODULO,
+    BINARY_CONTAINS,      // L contains X
+    BINARY_NOT_CONTAINS,  // L does not contain X
 } BinaryOp;
 
 typedef enum {
@@ -76,7 +98,30 @@ typedef enum {
     CONVERT_TO_TEXT,
 } ConvertTarget;
 
+// Which item of a list: item N, the first item, or the last item.
+typedef enum {
+    ITEM_AT,
+    ITEM_FIRST,
+    ITEM_LAST,
+} ItemWhere;
+
+typedef enum {
+    LIST_SUM,        // L added together
+    LIST_BIGGEST,    // the biggest of L
+    LIST_SMALLEST,   // the smallest of L
+    LIST_REVERSED,   // L reversed
+    LIST_COPY,       // a copy of L
+    LIST_IS_EMPTY,   // L is empty (lists and text)
+    LIST_NOT_EMPTY,  // L is not empty / isn't empty
+} ListOp;
+
 typedef struct Expr Expr;
+
+// A name written in the program, e.g. a variable.
+typedef struct {
+    const char *text;  // lowercased
+    SourcePos pos;
+} Name;
 
 struct Expr {
     ExprKind kind;
@@ -114,6 +159,27 @@ struct Expr {
             Span op_span;
             Expr *operand;
         } convert;
+        Vec(Expr *) items;  // EXPR_LIST, in order (at least one)
+        Type list_type;     // EXPR_EMPTY_LIST: the list's type, e.g. a list of numbers
+        struct {
+            ItemWhere where;
+            Expr *position;  // ITEM_AT; NULL for the first and last item
+            Expr *list;
+        } item;
+        struct {
+            ListOp op;
+            Span op_span;
+            Expr *operand;
+        } list_op;
+        struct {
+            Name var;    // the name each item gets
+            Expr *list;
+            Expr *body;  // worked out for each item; starts with the item's name
+        } every;
+        struct {
+            Expr *list;
+            Expr *condition;  // a comparison whose left side is EXPR_IT (the item)
+        } only;
     } as;
 };
 
@@ -137,6 +203,7 @@ typedef enum {
     STMT_RETURN,       // give back E / return E / return
     STMT_CALL,         // greet "Paris" / greet with "Paris" / call greet with "Paris"
     STMT_CONSTANT,     // keep NAME as E / keep NAME at E  (top level only)
+    STMT_LIST,         // add E to the end of L, insert, remove, set item N of L to E, sort
 } StmtKind;
 
 // A constant's value, worked out by the compiler (see front/consteval.h).
@@ -160,6 +227,7 @@ typedef enum {
     LOOP_WHILE,    // while C / as long as C / repeat while C
     LOOP_UNTIL,    // keep doing this until C / repeat until C (checked before each round)
     LOOP_FOREVER,  // forever
+    LOOP_EACH,     // for each N in L ("it" is the item too)
 } LoopKind;
 
 typedef enum {
@@ -169,11 +237,13 @@ typedef enum {
     CHANGE_DIVIDE,    // divide X by E
 } ChangeOp;
 
-// A variable name written in a statement.
-typedef struct {
-    const char *text;  // lowercased
-    SourcePos pos;
-} Name;
+typedef enum {
+    LIST_ADD_END,   // add E to the end of L
+    LIST_INSERT,    // insert E at position N of L
+    LIST_REMOVE,    // remove item N from L (or the first or last item)
+    LIST_SET_ITEM,  // set item N of L to E (or the first or last item)
+    LIST_SORT,      // sort L [by their length] [, biggest/smallest/longest/shortest first]
+} ListChange;
 
 typedef struct Stmt Stmt;
 
@@ -201,6 +271,7 @@ struct Stmt {
             ChangeOp op;
             Name target;
             Expr *amount;
+            bool append;  // filled in by the checker: "add E to L" where L is a list
         } change;
         Expr *value;  // STMT_SAY
         struct {
@@ -239,12 +310,22 @@ struct Stmt {
             LoopKind kind;
             Expr *from, *to, *step;  // LOOP_COUNT (step NULL: 1)
             bool down;               // "count down": never counts up
-            Name var;                // LOOP_COUNT: "number" unless named
+            Name var;                // LOOP_COUNT: "number" unless named; LOOP_EACH: each item
             bool var_named;          // the program chose the name (otherwise it's "number")
             Expr *times;             // LOOP_TIMES
             Expr *condition;         // LOOP_WHILE, LOOP_UNTIL
+            Expr *list;              // LOOP_EACH
             Block body;
         } loop;
+        struct {
+            ListChange op;
+            Expr *list;
+            Expr *value;      // LIST_ADD_END, LIST_INSERT, LIST_SET_ITEM
+            ItemWhere where;  // LIST_REMOVE, LIST_SET_ITEM
+            Expr *position;   // LIST_INSERT, and ITEM_AT for LIST_REMOVE, LIST_SET_ITEM
+            bool by_length;   // LIST_SORT: "by their length"
+            bool descending;  // LIST_SORT: "biggest first" / "longest first"
+        } list;
     } as;
 };
 
@@ -260,6 +341,7 @@ SourcePos ast_pos_join(SourcePos first, SourcePos last);
 const char *ast_binary_op_name(BinaryOp op);
 const char *ast_unary_op_name(UnaryOp op);
 const char *ast_change_op_name(ChangeOp op);
+const char *ast_list_op_name(ListOp op);
 
 // Indented outline, one node per line: "label [line:column]", children
 // indented two spaces. Statement children come in source order (for files:

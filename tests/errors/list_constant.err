@@ -1,0 +1,14 @@
+Line 1: A constant can't use a list, because lists can change.
+    keep primes as a list of 2, 3 and 5
+                     ^^^^^^^^^^^^^^^^^^
+Make it with "let" instead, like "let primes be a list of 2, 3 and 5".
+
+Line 2: A constant can't use a list, because lists can change.
+    keep size as length of (a list of 1)
+                           ^^^^^^^^^^^^^
+Make it with "let" instead, like "let primes be a list of 2, 3 and 5".
+
+Line 3: A constant can't use a list, because lists can change.
+    keep has_two as primes contains 2
+                    ^^^^^^^^^^^^^^^^^
+Make it with "let" instead, like "let primes be a list of 2, 3 and 5".

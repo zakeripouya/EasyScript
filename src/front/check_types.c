@@ -8,10 +8,20 @@
 
 // --- Variables -------------------------------------------------------------------
 
-TypeVar types_new(Checker *c, Type type, size_t line) {
-    TypeSlot slot = {c->types.len, type, line};
+static TypeVar new_slot(Checker *c, Type type, size_t line, TypeVar item) {
+    TypeSlot slot = {c->types.len, type, line, item};
     vec_push(c->arena, &c->types, slot);
     return c->types.len - 1;
+}
+
+TypeVar types_new(Checker *c, Type type, size_t line) {
+    if (!type_is_list(type)) return new_slot(c, type, line, 0);
+    TypeVar item = types_new(c, type_item(type), type_item(type) == TYPE_UNKNOWN ? 0 : line);
+    return new_slot(c, TYPE_LIST, line, item);
+}
+
+TypeVar types_new_list(Checker *c, TypeVar item, size_t line) {
+    return new_slot(c, TYPE_LIST, line, item);
 }
 
 static TypeVar root(Checker *c, TypeVar var) {
@@ -23,40 +33,71 @@ static TypeVar root(Checker *c, TypeVar var) {
     return var;
 }
 
+TypeVar types_item(Checker *c, TypeVar list) {
+    return c->types.items[root(c, list)].item;
+}
+
 Type types_of(Checker *c, TypeVar var) {
-    return c->types.items[root(c, var)].type;
+    const TypeSlot *slot = &c->types.items[root(c, var)];
+    if (slot->type != TYPE_LIST) return slot->type;
+    Type item = types_of(c, slot->item);
+    return item == TYPE_ERROR ? TYPE_ERROR : type_list_of(item);
 }
 
 size_t types_line(Checker *c, TypeVar var) {
     return c->types.items[root(c, var)].line;
 }
 
-// TYPE_ERROR joins with anything without complaint, and spreads: a value
-// that's already wrong shouldn't cause a second message.
-bool types_unify(Checker *c, TypeVar a, TypeVar b) {
+// Whether `var` appears in `in` (so joining them would make a list that
+// holds itself).
+static bool occurs(Checker *c, TypeVar var, TypeVar in) {
+    TypeVar r = root(c, in);
+    if (r == var) return true;
+    return c->types.items[r].type == TYPE_LIST && occurs(c, var, c->types.items[r].item);
+}
+
+static bool compatible(Checker *c, TypeVar a, TypeVar b) {
     TypeVar ra = root(c, a), rb = root(c, b);
     if (ra == rb) return true;
-    TypeSlot *sa = &c->types.items[ra], *sb = &c->types.items[rb];
-    if (sa->type != TYPE_UNKNOWN && sb->type != TYPE_UNKNOWN && sa->type != sb->type &&
-        sa->type != TYPE_ERROR && sb->type != TYPE_ERROR) {
-        return false;
+    Type ta = c->types.items[ra].type, tb = c->types.items[rb].type;
+    if (ta == TYPE_ERROR || tb == TYPE_ERROR) return true;
+    if (ta == TYPE_UNKNOWN) return !occurs(c, ra, rb);
+    if (tb == TYPE_UNKNOWN) return !occurs(c, rb, ra);
+    if (ta == TYPE_LIST && tb == TYPE_LIST) return compatible(c, c->types.items[ra].item, c->types.items[rb].item);
+    return ta == tb;
+}
+
+// Joins two compatible variables. The one that knows more becomes the root;
+// TYPE_ERROR wins over everything, so a value that's already wrong spreads
+// silently instead of causing a second message.
+static void join(Checker *c, TypeVar a, TypeVar b) {
+    TypeVar ra = root(c, a), rb = root(c, b);
+    if (ra == rb) return;
+    Type ta = c->types.items[ra].type, tb = c->types.items[rb].type;
+    if (ta == TYPE_ERROR || tb == TYPE_UNKNOWN) {
+        c->types.items[rb].parent = ra;
+    } else if (tb == TYPE_ERROR || ta == TYPE_UNKNOWN) {
+        c->types.items[ra].parent = rb;
+    } else {
+        if (ta == TYPE_LIST) join(c, c->types.items[ra].item, c->types.items[rb].item);
+        c->types.items[rb].parent = ra;
     }
-    if (sb->type == TYPE_ERROR || sa->type == TYPE_UNKNOWN) {
-        sa->type = sb->type;
-        sa->line = sb->line;
-    }
-    sb->parent = ra;
+}
+
+bool types_unify(Checker *c, TypeVar a, TypeVar b) {
+    if (!compatible(c, a, b)) return false;
+    join(c, a, b);
     return true;
 }
 
 bool types_require(Checker *c, TypeVar var, Type type, size_t line) {
-    TypeSlot *slot = &c->types.items[root(c, var)];
-    if (slot->type == TYPE_UNKNOWN || type == TYPE_ERROR) {
-        slot->type = type;
+    if (type == TYPE_ERROR) {
+        TypeSlot *slot = &c->types.items[root(c, var)];
+        slot->type = TYPE_ERROR;
         slot->line = line;
         return true;
     }
-    return slot->type == type || slot->type == TYPE_ERROR;
+    return types_unify(c, var, types_new(c, type, line));
 }
 
 // --- Operators that wait for their sides -------------------------------------------
@@ -72,13 +113,20 @@ static bool settle_and(Checker *c, const Deferred *d) {
     Type left = types_of(c, d->left), right = types_of(c, d->right);
     size_t line = d->expr->pos.line;
     if (left == TYPE_ERROR || right == TYPE_ERROR) return types_require(c, d->result, TYPE_ERROR, line);
+    if (type_is_list(left) || type_is_list(right)) {  // a list joins text (as "72, 95 and 88"), nothing else
+        if (left == TYPE_UNKNOWN || right == TYPE_UNKNOWN) return false;
+        if (left == TYPE_TEXT || right == TYPE_TEXT) return types_require(c, d->result, TYPE_TEXT, line);
+        report(c, d->expr, NULL, arena_sprintf(c->arena, "I can't use \"and\" between %s and %s.",
+                                               ast_type_name(c->arena, left), ast_type_name(c->arena, right)));
+        return types_require(c, d->result, TYPE_ERROR, line);
+    }
     if (left == TYPE_YESNO || right == TYPE_YESNO) {
         TypeVar other = left == TYPE_YESNO ? d->right : d->left;
         if (types_require(c, other, TYPE_YESNO, line)) return types_require(c, d->result, TYPE_YESNO, line);
         bool with_text = left == TYPE_TEXT || right == TYPE_TEXT;
         report(c, d->expr, with_text ? "To join them, turn the yes/no value into text first with \"as text\"." : NULL,
-               arena_sprintf(c->arena, "I can't use \"and\" between %s and %s.", ast_type_name(left),
-                             ast_type_name(right)));
+               arena_sprintf(c->arena, "I can't use \"and\" between %s and %s.", ast_type_name(c->arena, left),
+                             ast_type_name(c->arena, right)));
         return types_require(c, d->result, TYPE_ERROR, line);
     }
     if (left == TYPE_NUMBER && right == TYPE_NUMBER) {
@@ -93,22 +141,48 @@ static bool settle_and(Checker *c, const Deferred *d) {
     return types_of(c, d->left) != TYPE_UNKNOWN && types_of(c, d->right) != TYPE_UNKNOWN;
 }
 
-static bool settle(Checker *c, Deferred *d) {
-    if (d->kind == DEFER_AND) return settle_and(c, d);
+static unsigned kind_bit(Type type) {
+    if (type_is_list(type)) return KIND_LIST;
+    return type == TYPE_NUMBER ? KIND_NUMBER : type == TYPE_TEXT ? KIND_TEXT : type == TYPE_YESNO ? KIND_YESNO : 0;
+}
+
+static bool settle_one_of(Checker *c, const Deferred *d) {
     Type type = types_of(c, d->left);
     if (type == TYPE_UNKNOWN) return false;
-    if (type == TYPE_YESNO && d->kind == DEFER_ORDER) {
-        report(c, d->expr, NULL, "I can't compare a yes/no value with a yes/no value.");
-    } else if (type == TYPE_YESNO) {
-        report(c, d->expr, NULL, "I can't turn a yes/no value into a number.");
+    if (type != TYPE_ERROR && !(kind_bit(type) & d->allowed)) {
+        report(c, d->expr, NULL, arena_sprintf(c->arena, "%s, but this is %s.", d->message, checker_kind(c, d->right)));
     }
     return true;
 }
 
-void types_defer(Checker *c, DeferKind kind, const Expr *expr, TypeVar left, TypeVar right, TypeVar result) {
-    Deferred d = {kind, expr, left, right, result, false};
+static bool settle(Checker *c, Deferred *d) {
+    if (d->kind == DEFER_AND) return settle_and(c, d);
+    if (d->kind == DEFER_ONE_OF) return settle_one_of(c, d);
+    Type type = types_of(c, d->left);
+    if (type == TYPE_UNKNOWN) return false;
+    const char *name = ast_type_name(c->arena, type);
+    if ((type == TYPE_YESNO || type_is_list(type)) && d->kind == DEFER_ORDER) {
+        report(c, d->expr, NULL, arena_sprintf(c->arena, "I can't compare %s with %s.", name, name));
+    } else if (type == TYPE_YESNO || type_is_list(type)) {
+        report(c, d->expr, NULL, arena_sprintf(c->arena, "I can't turn %s into a number.", name));
+    }
+    return true;
+}
+
+static void defer(Checker *c, Deferred d) {
     d.done = settle(c, &d);  // usually the kinds are known already
     if (!d.done) vec_push(c->arena, &c->deferred, d);
+}
+
+void types_defer(Checker *c, DeferKind kind, const Expr *expr, TypeVar left, TypeVar right, TypeVar result) {
+    Deferred d = {kind, expr, left, right, result, false, 0, NULL};
+    defer(c, d);
+}
+
+void types_defer_one_of(Checker *c, const Expr *expr, TypeVar var, TypeVar shown, unsigned allowed,
+                        const char *message) {
+    Deferred d = {DEFER_ONE_OF, expr, var, shown, var, false, allowed, message};
+    defer(c, d);
 }
 
 // Settling one operator can decide kinds another one waits for, so go round
@@ -126,8 +200,19 @@ static void settle_all(Checker *c) {
 
 // --- Kinds nothing decided ---------------------------------------------------------
 
+// What to suggest writing for a kind nothing decided: "a number", or "a list
+// of numbers" when it's known to be a list.
+static const char *suggested_kind(Checker *c, TypeVar var) {
+    Type type = types_of(c, var);
+    return type_is_list(type) ? ast_type_name(c->arena, type - TYPE_UNKNOWN + TYPE_NUMBER) : "a number";
+}
+
+static bool undecided(Checker *c, TypeVar var) {
+    return type_base(types_of(c, var)) == TYPE_UNKNOWN;
+}
+
 // "to show with x (a number)", with the given input marked.
-static const char *header_with_kind(const Checker *c, const Function *f, size_t marked) {
+static const char *header_with_kind(Checker *c, const Function *f, size_t marked) {
     StrBuf sb;
     sb_init(&sb, c->arena);
     sb_appendf(&sb, "to %s", f->name);
@@ -135,7 +220,7 @@ static const char *header_with_kind(const Checker *c, const Function *f, size_t 
     for (size_t i = 0; i < def->as.function.params.len; i++) {
         sb_append(&sb, i == 0 ? " with " : " and ");
         sb_append(&sb, def->as.function.params.items[i].text);
-        if (i == marked) sb_append(&sb, " (a number)");
+        if (i == marked) sb_appendf(&sb, " (%s)", suggested_kind(c, f->params.items[i]));
     }
     return sb.data;
 }
@@ -143,17 +228,17 @@ static const char *header_with_kind(const Checker *c, const Function *f, size_t 
 static void report_undecided(Checker *c, const Function *f) {
     const Stmt *def = f->definition;
     for (size_t i = 0; i < f->params.len; i++) {
-        if (types_of(c, f->params.items[i]) != TYPE_UNKNOWN) continue;
+        if (!undecided(c, f->params.items[i])) continue;
         const Name *param = &def->as.function.params.items[i];
         diag_error(c->diag, param->pos.span, "I can't tell what kind of value \"%s\" is.", param->text);
         diag_note(c->diag, "Nothing in the program decides it. Say which kind in the definition, like \"%s:\".",
                   header_with_kind(c, f, i));
         types_require(c, f->params.items[i], TYPE_ERROR, 0);  // and everything that depends on it
     }
-    if (types_of(c, f->result) != TYPE_UNKNOWN) return;
+    if (!undecided(c, f->result)) return;
     diag_error(c->diag, def->as.function.name.pos.span, "I can't tell what kind of value \"%s\" gives back.", f->name);
-    diag_note(c->diag, "Say which kind in the definition, like \"%s, giving back a number:\".",
-              checker_function_header(c, f));
+    diag_note(c->diag, "Say which kind in the definition, like \"%s, giving back %s:\".",
+              checker_function_header(c, f), suggested_kind(c, f->result));
     types_require(c, f->result, TYPE_ERROR, 0);
 }
 

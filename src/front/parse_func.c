@@ -4,6 +4,7 @@
 //   to greet someone:                    give back E / return E / return
 //   to area with width and height:       ("of" and "using" work like "with")
 //   to area with width (a number) and height (a number), giving back a number:
+//   to average of scores (a list of numbers), giving back a number:
 //                                        (the kinds are optional; the checker
 //                                        works them out when they're left out)
 //
@@ -58,48 +59,16 @@ static bool report_missing_input(Parser *p) {
     return false;
 }
 
-// --- Kinds of values -------------------------------------------------------------
+// --- Kinds of values (parser_parse_kind is in parse_list.c) ----------------------
 
 static bool at_giving_back(const Parser *p) {
     return parser_at_word(p, 0, "giving") && parser_at_word(p, 1, "back");
 }
 
-// "number" (after the dropped "a"), "text", "yes or no" (or "yes/no"), and,
-// when nothing_ok, "nothing". Sets *type and returns true, or reports.
-static bool parse_kind(Parser *p, bool nothing_ok, Type *type) {
-    const Token *word = parser_peek(p, 0);
-    size_t words = 0;
-    if (parser_at_word(p, 0, "number")) {
-        *type = TYPE_NUMBER, words = 1;
-    } else if (parser_at_word(p, 0, "text")) {
-        *type = TYPE_TEXT, words = 1;
-    } else if ((words = parser_match_words(p, "yes or no")) > 0) {
-        *type = TYPE_YESNO;
-    } else if (parser_at_word(p, 0, "yes") && parser_at(p, 1, TOK_SLASH) && parser_at_word(p, 2, "no")) {
-        *type = TYPE_YESNO, words = 3;
-    } else if (nothing_ok && parser_at_word(p, 0, "nothing")) {
-        *type = TYPE_NOTHING, words = 1;
-    }
-    if (words > 0) {
-        parser_consume(p, words);
-        return true;
-    }
-    Span span = word->kind == TOK_COLON || parser_at_sentence_end(p) ? p->prev_span : word->span;
-    if (word->kind == TOK_COLON || parser_at_sentence_end(p)) {
-        if (parser_error(p, span, "Something is missing after %s.", parser_quoted(p, span))) {
-            diag_note(p->diag, "Say which kind of value: \"a number\", \"text\", or \"yes or no\".");
-        }
-    } else if (parser_error(p, span, "I don't know the kind of value %s.", parser_describe(p, word))) {
-        diag_note(p->diag, "The kinds are \"a number\", \"text\", and \"yes or no\"%s.",
-                  nothing_ok ? " (and \"nothing\" for a function that gives back no value)" : "");
-    }
-    return false;
-}
-
 // "(a number)" after an input's name.
 static bool parse_param_kind(Parser *p, Type *type) {
     parser_advance(p);  // (
-    if (!parse_kind(p, false, type)) return false;
+    if (!parser_parse_kind(p, false, type)) return false;
     if (parser_at(p, 0, TOK_RPAREN)) {
         parser_advance(p);
         return true;
@@ -122,6 +91,7 @@ static bool parse_params(Parser *p, Stmt *stmt) {
         return parser_parse_name(p, &ignored, NULL);  // "to greet a:": explains that "a" is filler
     }
     if (introduced && (next->kind == TOK_COLON || parser_at_sentence_end(p))) return report_missing_input(p);
+    if (!introduced && parser_at(p, 0, TOK_COMMA) && parser_at_word(p, 1, "giving")) parser_advance(p);  // no inputs
     while (!parser_at(p, 0, TOK_COLON) && !parser_at_sentence_end(p) && !at_giving_back(p)) {
         Name param = {0};
         Type declared = TYPE_UNKNOWN;
@@ -134,7 +104,7 @@ static bool parse_params(Parser *p, Stmt *stmt) {
     }
     if (at_giving_back(p)) {
         parser_consume(p, 2);
-        return parse_kind(p, true, &stmt->as.function.declared_result);
+        return parser_parse_kind(p, true, &stmt->as.function.declared_result);
     }
     return true;
 }
