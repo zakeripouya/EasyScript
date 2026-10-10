@@ -2,7 +2,8 @@
 #define FRONT_PARSE_INTERNAL_H
 
 // Shared by the parser's source files (parse_util.c, parse_expr.c,
-// parse_stmt.c, parse_if.c). Not for use outside src/front/.
+// parse_value.c, parse_stmt.c, parse_if.c, parse_loop.c, parse_func.c,
+// parse_list.c). Not for use outside src/front/.
 
 #include <stdbool.h>
 #include "common/ast.h"
@@ -101,6 +102,14 @@ Expr *parse_expression(Parser *p);
 Expr *parse_primary(Parser *p);
 // A value up to a comparison: arithmetic and "followed by".
 Expr *parse_join(Parser *p);
+// A single value with an optional "-" before it and conversions after it.
+Expr *parse_unary(Parser *p);
+// The arithmetic or "followed by" operator next, if any (with its token count in *len).
+const Phrase *parser_match_arithmetic(Parser *p, size_t *len);
+// "every NAME in" (parse_expr.c), and "only L that ..." (only L that are COMPARISON V).
+bool parser_at_every(const Parser *p);
+bool parser_at_only(const Parser *p);
+Expr *parser_parse_only(Parser *p);
 
 // One statement, including a leading "please". NULL after an error. Sets
 // ended_with_block and ends_with_name.

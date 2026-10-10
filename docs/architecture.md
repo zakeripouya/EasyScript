@@ -50,7 +50,8 @@ What exists today:
 | `src/common/ast.{h,c}` | Done for expressions and simple statements. Tagged-union `Expr` and `Stmt` nodes from the arena, each with a `SourcePos` (span, line, column); statements also keep the verb as written. Blocks are lists of statements. Also includes the outline printer used by `easyscript ast`. |
 | `src/front/parse.h`, `parse_internal.h` | The parser's public API (`parse_program`), and the internal `Parser` context and helpers shared by the parser files. |
 | `src/front/parse_util.c` | Token helpers, phrase matching (multi-word operators, with "Did you mean" for a missing last word), and error helpers. |
-| `src/front/parse_expr.c` | Done. Recursive-descent expression parser. |
+| `src/front/parse_expr.c` | Done. Recursive-descent expression parser: the operator levels (`every`, `or`, `and`, `not`, comparisons, `followed by`, arithmetic, unary minus, postfix conversions and list operations) and `only`'s comparison. |
+| `src/front/parse_value.c` | Done. The tightest level: literals, names, calls (with their argument rules), groups, `length of`/`contents of file`, and the dispatch to the list forms that start with a word. |
 | `src/front/parse_stmt.c` | A table of statement forms, names (with filler and reserved-word errors), and the statement loop (`parse_statements`), used for the whole program and for each block. |
 | `src/front/parse_if.c` | `if` / `otherwise if` / `otherwise`: blocks, one-line forms, and errors for misplaced `otherwise`s. Also the shared block parser. |
 | `src/front/parse_loop.c` | Every loop form, and `stop the loop` / `skip this one`. |
