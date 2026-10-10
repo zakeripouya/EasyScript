@@ -97,6 +97,9 @@ AST *statement(Parser *parser) {
             eat(parser, TOKEN_CLOSE);
             node = create_ast(AST_FILE_CLOSE, parser->current_token);
             eat(parser, TOKEN_ID);
+        } else {
+            fprintf(stderr, "Error: Unknown FILE action %s\n", action->value);
+            exit(1);
         }
     } else {
         node = term(parser);

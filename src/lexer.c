@@ -14,7 +14,7 @@ Lexer *create_lexer(char *source) {
 
 void advance(Lexer *lexer) {
     lexer->position++;
-    if (lexer->position > strlen(lexer->source) - 1) {
+    if ((size_t)lexer->position >= strlen(lexer->source)) {
         lexer->current_char = '\0';
     } else {
         lexer->current_char = lexer->source[lexer->position];

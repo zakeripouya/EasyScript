@@ -15,7 +15,7 @@ int var_map_index = 0;
 int var_counter = 0;
 
 void sanitize_filename(char *filename, char *sanitized) {
-    for (int i = 0; i < strlen(filename); i++) {
+    for (size_t i = 0; i < strlen(filename); i++) {
         if (filename[i] == '.') {
             sanitized[i] = '_';
         } else {
