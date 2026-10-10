@@ -198,7 +198,7 @@ static int cmd_tokens(const char *source_path) {
 
     StrBuf out;
     sb_init(&out, arena);
-    tokens_dump(&tokens, &out);
+    tokens_dump(&tokens, source, &out);
     fwrite(out.data, 1, out.len, stdout);
     if (diag_count(diag) > 0) {
         diag_print(diag, stderr);

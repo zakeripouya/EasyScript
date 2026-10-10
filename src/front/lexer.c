@@ -23,6 +23,7 @@ typedef struct {
     size_t col;
 
     Vec(size_t) indents;   // open block indentation widths, bottom is 0
+    Span pending_filler;   // a filler word dropped since the last token (length 0 if none)
     Vec(Token) tokens;
 } Lexer;
 
@@ -84,7 +85,11 @@ static size_t column(Lexer *lx, size_t offset) {
 }
 
 static void emit(Lexer *lx, TokenKind kind, size_t start, size_t end, const char *text, size_t text_len) {
-    Token token = {kind, text, text_len, {start, end - start}, lx->line, column(lx, start)};
+    Token token = {kind, text, text_len, {start, end - start}, lx->line, column(lx, start), {0, 0}};
+    if (kind != TOK_INDENT && kind != TOK_DEDENT) {
+        token.filler = lx->pending_filler;
+        lx->pending_filler.length = 0;
+    }
     vec_push(lx->arena, &lx->tokens, token);
 }
 
@@ -174,7 +179,10 @@ static void lex_word(Lexer *lx) {
     for (size_t i = 0; i < n; i++) {
         text[i] = to_lower(lx->src[start + i]);
     }
-    if (is_filler(text)) return;
+    if (is_filler(text)) {
+        lx->pending_filler = span_between(start, lx->pos);
+        return;
+    }
     emit_content(lx, TOK_WORD, start, lx->pos, text, n);
 }
 
@@ -416,6 +424,7 @@ static void end_line(Lexer *lx) {
     size_t start = lx->pos > lx->line_start && lx->src[lx->pos - 1] == '\r' ? lx->pos - 1 : lx->pos;
     if (lx->line_has_tokens) emit_layout(lx, TOK_NEWLINE, start, lx->pos + 1);
     lx->line_has_tokens = false;
+    lx->pending_filler.length = 0;  // a filler-only line gives nothing to the next line
     lx->pos++;
     lx->line++;
     lx->line_start = lx->pos;
@@ -466,13 +475,13 @@ const char *token_kind_name(TokenKind kind) {
 #define KIND_WIDTH 13      // strlen("GREATER_EQUAL")
 #define POSITION_WIDTH 8
 
-static void dump_token(const Token *token, StrBuf *out) {
+static void dump_token(const Token *token, const char *source, StrBuf *out) {
     const char *name = token_kind_name(token->kind);
     sb_append(out, name);
     sb_append_repeat(out, ' ', KIND_WIDTH + 1 - strlen(name));
     int pos_len = snprintf(NULL, 0, "%zu:%zu", token->line, token->column);
     sb_appendf(out, "%zu:%zu", token->line, token->column);
-    if (token->kind == TOK_STRING || token->text_len > 0) {
+    if (token->kind == TOK_STRING || token->text_len > 0 || token->filler.length > 0) {
         sb_append_repeat(out, ' ', pos_len < POSITION_WIDTH ? (size_t)(POSITION_WIDTH - pos_len) : 1);
         if (token->kind == TOK_STRING) {
             sb_append_quoted(out, token->text, token->text_len);
@@ -480,11 +489,15 @@ static void dump_token(const Token *token, StrBuf *out) {
             sb_append_n(out, token->text, token->text_len);
         }
     }
+    if (token->filler.length > 0) {
+        if (token->kind == TOK_STRING || token->text_len > 0) sb_append(out, "  ");
+        sb_appendf(out, "[after \"%.*s\"]", (int)token->filler.length, source + token->filler.offset);
+    }
     sb_append_char(out, '\n');
 }
 
-void tokens_dump(const TokenList *tokens, StrBuf *out) {
+void tokens_dump(const TokenList *tokens, const char *source, StrBuf *out) {
     for (size_t i = 0; i < tokens->len; i++) {
-        dump_token(&tokens->items[i], out);
+        dump_token(&tokens->items[i], source, out);
     }
 }

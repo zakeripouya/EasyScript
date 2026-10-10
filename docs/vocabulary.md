@@ -111,26 +111,56 @@ These take a single value, so `length of name plus 1` means `(length of name) pl
 
 Each input is a single value (a negative number, a conversion, or anything in parentheses is fine). Arithmetic straight after the inputs could belong to the last input or to the whole result, so `double using 21 plus 1` is an error that asks you to write `(double using 21) plus 1` or `double using (21 plus 1)`. Comparisons and `and`/`or` end the inputs: `double using 2 is 4` compares the result with 4.
 
-## Variables
+## Statements
+
+A program is a list of statements: sentences that each start with a word saying what to do. A period or the end of the line ends a statement, and several statements can share a line when periods separate them: `let x be 1. say x.` A statement may start with **`please`**, which is skipped: `please say "hi"` is the same as `say "hi"`.
+
+The words that start statements are only special at the start of a sentence, so `say`, `add`, `file`, or `count` can still be variable names elsewhere.
+
+### Variables
 
 | Pattern | Meaning | Example | Status |
 |---|---|---|---|
-| `set NAME to X.` | Create a variable or change its value | `set total to 0.` | Coming soon (Phase 1) |
-| `add X to NAME.` | `NAME` becomes `NAME plus X` | `add 5 to total.` | Coming soon (Phase 1) |
-| `subtract X from NAME.` | `NAME` becomes `NAME minus X` | `subtract 1 from count.` | Coming soon (Phase 1) |
-| `multiply NAME by X.` | `NAME` becomes `NAME times X` | `multiply price by 2.` | Coming soon (Phase 1) |
-| `divide NAME by X.` | `NAME` becomes `NAME divided by X` | `divide total by 4.` | Coming soon (Phase 1) |
-| `increase NAME by X.` | Synonym of `add X to NAME.` | `increase score by 10.` | Coming soon (Phase 1) |
-| `decrease NAME by X.` | Synonym of `subtract X from NAME.` | `decrease lives by 1.` | Coming soon (Phase 1) |
+| `let NAME be X` | Create a variable | `let total be 0` | Available (parser) |
+| `let NAME equal X` | Synonym of `let NAME be X` | `let count equal 3` | Available (parser) |
+| `set NAME to X` | Change a variable's value | `set total to 10` | Available (parser) |
+| `change NAME to X` | Synonym of `set` | `change total to 10` | Available (parser) |
+| `add X to NAME` | `NAME` becomes `NAME plus X` | `add 5 to total` | Available (parser) |
+| `subtract X from NAME` | `NAME` becomes `NAME minus X` | `subtract 1 from count` | Available (parser) |
+| `increase NAME by X` | Same as `add X to NAME` | `increase score by 10` | Available (parser) |
+| `decrease NAME by X` | Same as `subtract X from NAME` | `decrease lives by 1` | Available (parser) |
+| `multiply NAME by X` | `NAME` becomes `NAME times X` | `multiply price by 2` | Available (parser) |
+| `divide NAME by X` | `NAME` becomes `NAME divided by X` | `divide total by 4` | Available (parser) |
 
-## Output and input
+**Names** are single words (see [Values](#values)). `a`, `an`, and `the` can't be names because EasyScript ignores them, so `let a be 5` is an error that explains this. Words that already mean something (`yes`, `no`, `true`, `false`, `nothing`, `it`, and the operator words) can't be names either.
+
+### Output and input
 
 | Pattern | Meaning | Example | Status |
 |---|---|---|---|
-| `say X.` | Print a value and a new line | `say "Hello!".` | Coming soon (Phase 1) |
-| `print X.` | Synonym of `say` | `print total.` | Coming soon (Phase 1) |
-| `show X.` | Synonym of `say` | `show total.` | Coming soon (Phase 1) |
-| `ask X into NAME.` | Print a question, then read a line typed by the user into `NAME` | `ask "What's your name?" into name.` | Coming soon (Phase 1) |
+| `say X` | Print a value and a new line | `say "Hello!"` | Available (parser) |
+| `print X` | Synonym of `say` | `print total` | Available (parser) |
+| `show X` | Synonym of `say` | `show total` | Available (parser) |
+| `display X` | Synonym of `say` | `display total` | Available (parser) |
+| `write X` | Synonym of `say` (unless followed by `to file`; see [Files](#files)) | `write "done"` | Available (parser) |
+| `ask X and call the answer NAME` | Print a question, then read a line of text typed by the user into `NAME` | `ask "What's your name? " and call the answer name` | Available (parser) |
+
+### Files
+
+| Pattern | Meaning | Example | Status |
+|---|---|---|---|
+| `write X to file F` | Replace a file's contents with `X` | `write "hello" to file "notes.txt"` | Available (parser) |
+| `append X to file F` | Add `X` to the end of a file | `append "more" to file "notes.txt"` | Available (parser) |
+| `read file F and call it NAME` | Read a whole file into a variable | `read file "notes.txt" and call it notes` | Available (parser) |
+| `file X exists` | A condition: does the file exist? | `if file "notes.txt" exists:` | Coming soon (Phase 1) |
+
+Reading a file inside an expression also works: `contents of file X` ([Built-in values](#built-in-values)).
+
+### Ending the program
+
+| Pattern | Meaning | Example | Status |
+|---|---|---|---|
+| `stop the program` | End the program right away | `stop the program` | Available (parser) |
 
 ## Decisions
 
@@ -150,7 +180,7 @@ Each input is a single value (a negative number, a conversion, or anything in pa
 | `while CONDITION:` | Synonym of `repeat while` | `while lives is more than 0:` | Coming soon (Phase 1) |
 | `repeat until CONDITION:` | Run the block until the condition becomes yes | `repeat until done:` | Coming soon (Phase 1) |
 | `for each NAME from X to Y:` | Count from the first number to the second, inclusive | `for each n from 1 to 10:` | Coming soon (Phase 1) |
-| `stop.` | Leave the innermost loop | `stop.` | Coming soon (Phase 1) |
+| `stop.` | Leave the innermost loop (`stop the program` ends the whole program) | `stop.` | Coming soon (Phase 1) |
 | `skip.` | Go straight to the next round of the innermost loop | `skip.` | Coming soon (Phase 1) |
 
 ## Functions
@@ -163,17 +193,6 @@ Each input is a single value (a negative number, a conversion, or anything in pa
 | `return X.` | Synonym of `give back` | `return number times 2.` | Coming soon (Phase 1) |
 
 Calling a function is an expression; see [Calling a function](#calling-a-function).
-
-## Files
-
-| Pattern | Meaning | Example | Status |
-|---|---|---|---|
-| `write X to file Y.` | Replace a file's contents | `write "hello" to file "notes.txt".` | Coming soon (Phase 1) |
-| `append X to file Y.` | Add to the end of a file | `append "more" to file "notes.txt".` | Coming soon (Phase 1) |
-| `read file X into NAME.` | Read a whole file into a variable | `read file "notes.txt" into text.` | Coming soon (Phase 1) |
-| `file X exists` | A condition: does the file exist? | `if file "notes.txt" exists:` | Coming soon (Phase 1) |
-
-Reading a file inside an expression is already available: `contents of file X` ([Built-in values](#built-in-values)).
 
 ## Later phases
 

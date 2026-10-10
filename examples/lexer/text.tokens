@@ -15,7 +15,7 @@ STRING        6:5     "A backslash: \\"
 PERIOD        6:22    .
 NEWLINE       6:23
 WORD          8:1     say
-WORD          8:9     guest's
+WORD          8:9     guest's  [after "the"]
 WORD          8:17    name
 PERIOD        8:21    .
 NEWLINE       8:22

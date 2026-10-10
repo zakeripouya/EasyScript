@@ -68,14 +68,43 @@ The complete, tested set is in [`tests/tokens/`](../tests/tokens/) (the `err_*.e
 
 ## Errors from the parser
 
-These come from the expression parser. Run `easyscript ast yourfile.es` to see them.
+These come from the parser. Run `easyscript ast yourfile.es` to see them.
+
+**A misspelled first word**: [`err_unknown_statement.es`](../examples/parser/err_unknown_statement.es)
+
+```
+Line 2: I don't know a sentence that starts with "sya".
+    sya "hello"
+    ^^^
+Did you mean "say"?
+```
+
+**A filler word used as a name**: [`err_filler_name.es`](../examples/parser/err_filler_name.es). The compiler remembers where it dropped `a`, `an`, or `the`, so it can explain what happened instead of complaining about the next word.
+
+```
+Line 2: "a" can't be used as a name.
+    let a be 5
+        ^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+```
+
+**A word that already means something**: [`err_reserved_name.es`](../examples/parser/err_reserved_name.es)
+
+```
+Line 2: "yes" can't be used as a name.
+    let yes be 1
+        ^^^
+"yes" already means something in EasyScript.
+Try a different name, like "my_yes".
+```
 
 **A comparison with a word missing**: [`err_missing_than.es`](../examples/parser/err_missing_than.es)
 
 ```
 Line 2: Something is missing after "is greater".
-    score is greater 10
-          ^^^^^^^^^^
+    say score is greater 10
+              ^^^^^^^^^^
 Did you mean "is greater than"?
 ```
 
@@ -83,8 +112,8 @@ Did you mean "is greater than"?
 
 ```
 Line 2: Comparisons can't be chained like this.
-    1 < x < 10
-    ^^^^^^^^^^
+    say 1 < x < 10
+        ^^^^^^^^^^
 Compare one pair at a time and join them with "and": "1 < x and x < 10".
 ```
 
@@ -92,8 +121,8 @@ Compare one pair at a time and join them with "and": "1 < x and x < 10".
 
 ```
 Line 2: "double using 21 plus 1" could mean two things.
-    double using 21 plus 1
-    ^^^^^^^^^^^^^^^^^^^^^^
+    say double using 21 plus 1
+        ^^^^^^^^^^^^^^^^^^^^^^
 Use parentheses to say which: "(double using 21) plus 1" or "double using (21 plus 1)".
 ```
 
@@ -109,6 +138,10 @@ The parser also explains:
 | An operator word used as a value (`plus 5`) | "I expected a value here, but found "plus"." |
 | `(` without `)`, or `)` without `(` | points at the unmatched parenthesis |
 | `.5` | suggests writing `0.5` |
+| A statement missing a word (`let x 5`, `add 5 total`, `ask "Name?"`, `stop`) | "I expected "be" here ..." or "Something is missing after ...", with a correct example of the statement |
+| The wrong connecting words (`ask ... and call it x`, `read file ... and call the answer x`) | quotes what was written and what was expected |
+| Words after a finished statement (`add 5 to total plus 1`) | "I expected the sentence to end after "total"." |
+| `x is 5` or `total = 5` as a sentence | suggests `let x be ...` or `set x to ...` |
 
 After an error the parser skips to the end of that sentence and carries on, so you see one error per sentence and every sentence gets checked. The complete, tested set is in [`tests/ast/`](../tests/ast/) (the `err_*.err` files).
 
@@ -123,7 +156,7 @@ Line 4: I don't know anything called "totl".
 Did you mean "total"? You made it on line 1.
 ```
 
-**Ambiguous statements.** Statements (coming soon) follow the same rule as expressions: if a sentence could be read in more than one way, the parser stops and lists the readings.
+**Ambiguous blocks.** Blocks (`if`, loops, functions; coming soon) will follow the same rule: if a sentence could be read in more than one way, the parser stops and lists the readings.
 
 ## Legacy prototype errors
 

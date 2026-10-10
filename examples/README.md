@@ -23,23 +23,30 @@ The new sentence syntax can't run yet; only its lexer is finished. These example
 ./easyscript tokens examples/lexer/blocks.es
 ```
 
-## `parser/`: expressions, as understood by the parser
+## `parser/`: statements and expressions, as understood by the parser
 
-Expressions parse today, but don't run yet. Until statements arrive, each line of these files is one expression. `NAME.ast` holds the expected output of `easyscript ast NAME.es` (the syntax tree), and `err_*` examples also have `NAME.err`.
+Statements and expressions parse today, but don't run yet. `NAME.ast` holds the expected output of `easyscript ast NAME.es` (the syntax tree), and `err_*` examples also have `NAME.err`.
 
 | Example | Shows |
 |---|---|
+| [variables.es](parser/variables.es) | `let`, `set`, `change`, `add … to` and the other arithmetic sentences |
+| [output.es](parser/output.es) | `say`, `print`, `show`, `display`, `write`, `please` |
+| [input.es](parser/input.es) | `ask … and call the answer …` |
+| [files.es](parser/files.es) | `write … to file`, `append … to file`, `read file … and call it`, `stop the program` |
 | [arithmetic.es](parser/arithmetic.es) | Words and symbols, precedence, parentheses |
 | [comparisons.es](parser/comparisons.es) | `is at least`, `is greater than or equal to`, `isn't`, `reaches`, `!=` |
 | [logic.es](parser/logic.es) | `and`, `or`, `not` |
 | [text.es](parser/text.es) | Joining text, `as text`, `as a number`, `length of`, `contents of file` |
 | [calls.es](parser/calls.es) | `NAME using X, Y` |
+| [err_unknown_statement.es](parser/err_unknown_statement.es) | Error: a misspelled first word |
+| [err_filler_name.es](parser/err_filler_name.es) | Error: `let a be 5` |
+| [err_reserved_name.es](parser/err_reserved_name.es) | Error: `let yes be 1` |
 | [err_missing_than.es](parser/err_missing_than.es) | Error: "Did you mean "is greater than"?" |
 | [err_chained_comparison.es](parser/err_chained_comparison.es) | Error: `1 < x < 10` |
 | [err_ambiguous_call.es](parser/err_ambiguous_call.es) | Error: a sentence that could mean two things |
 
 ```bash
-./easyscript ast examples/parser/arithmetic.es
+./easyscript ast examples/parser/variables.es
 ```
 
 ## `legacy/`: the 2024 prototype syntax

@@ -38,6 +38,9 @@ Span parser_consume(Parser *p, size_t n);
 SourcePos parser_token_pos(const Token *token);
 bool parser_at_sentence_end(const Parser *p);
 
+// yes, no, true, false, nothing, it: values, so they can't be names.
+bool parser_is_value_word(const char *word);
+
 // True if `token` could begin a value.
 bool parser_starts_operand(const Token *token);
 // Words with an operator meaning; they can't be used as names.
@@ -47,6 +50,9 @@ bool parser_is_operator_word(const char *word);
 
 // Number of tokens if the next tokens spell `words`, else 0.
 size_t parser_match_words(const Parser *p, const char *words);
+
+// How many leading words of `words` the next tokens spell.
+size_t parser_leading_words(const Parser *p, const char *words);
 
 // The longest phrase in the table that the next tokens spell, with its token
 // count in *len. If the next tokens are a phrase missing its last word
@@ -65,11 +71,21 @@ Expr *parser_error_expr(Parser *p);
 // The source text of a span (arena copy).
 const char *parser_text(const Parser *p, Span span);
 
+// A span quoted for a message: "plus", or the text "Name?" for text.
+const char *parser_quoted(const Parser *p, Span span);
+
 // How messages refer to a token: "plus", "the end of the line", ...
 const char *parser_describe(const Parser *p, const Token *token);
 
 // Reports whatever is left in a sentence after a complete expression.
 void parser_report_leftover(Parser *p);
+
+// The candidates closest to `word` by edit distance, as "a" or "a" or "b";
+// NULL if none is close enough.
+const char *parser_closest_words(const Parser *p, const char *word, const char *const *candidates, size_t n);
+
+// ".5": reports "write 0.5", consumes both tokens, and returns true.
+bool parser_reject_bare_decimal(Parser *p);
 
 // --- Grammar ---------------------------------------------------------------
 

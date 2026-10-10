@@ -1,11 +1,11 @@
-x is greater 5
-x is more 5
-x is at 5
-x is equal 5
-x is not equal 5
-x is greater than or equal 5
-x multiplied 3
-x divided 3
-"a" followed "b"
-y as numbr
-contents of "a.txt"
+say x is greater 5
+say x is more 5
+say x is at 5
+say x is equal 5
+say x is not equal 5
+say x is greater than or equal 5
+say x multiplied 3
+say x divided 3
+say "a" followed "b"
+say y as numbr
+say contents of "a.txt"

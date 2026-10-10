@@ -7,7 +7,7 @@ COLON         6:6     :
 WORD          6:8     this
 WORD          6:13    is
 WORD          6:16    not
-WORD          6:22    comment
+WORD          6:22    comment  [after "a"]
 NEWLINE       6:29
 WORD          7:1     note
 COLON         7:6     :

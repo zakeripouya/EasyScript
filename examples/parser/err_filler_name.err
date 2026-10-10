@@ -1,0 +1,5 @@
+Line 2: "a" can't be used as a name.
+    let a be 5
+        ^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".

@@ -46,11 +46,11 @@ What exists today:
 | `src/common/util.{c,h}` | Done. Growable string builder (`StrBuf`), dynamic arrays (`Vec`), edit distance. |
 | `src/common/diag.{c,h}` | Done. Collects errors with source spans and notes, and prints them in the [standard format](errors.md). |
 | `src/front/lexer.{c,h}` | Done. The new lexer, available through `easyscript tokens`. |
-| `src/common/ast.{h,c}` | Done for expressions. Tagged-union `Expr` and `Stmt` nodes from the arena, each with a `SourcePos` (span, line, column). Blocks are lists of statements. Also includes the outline printer used by `easyscript ast`. |
+| `src/common/ast.{h,c}` | Done for expressions and simple statements. Tagged-union `Expr` and `Stmt` nodes from the arena, each with a `SourcePos` (span, line, column); statements also keep the verb as written. Blocks are lists of statements. Also includes the outline printer used by `easyscript ast`. |
 | `src/front/parse.h`, `parse_internal.h` | The parser's public API (`parse_program`), and the internal `Parser` context and helpers shared by the parser files. |
 | `src/front/parse_util.c` | Token helpers, phrase matching (multi-word operators, with "Did you mean" for a missing last word), and error helpers. |
 | `src/front/parse_expr.c` | Done. Recursive-descent expression parser. |
-| `src/front/parse_stmt.c` | For now, the program loop for expression-per-line files. Statements come next. |
+| `src/front/parse_stmt.c` | Done for simple statements: a table of statement forms, names (with filler and reserved-word errors), and the program loop. Blocks come next. |
 | `src/front/check.c` | Coming soon |
 | `src/back/codegen_c.c`, `runtime/` | Coming soon |
 | `main.c` (repo root) | The driver. It moves to `src/main.c` as the new pipeline takes over. |

@@ -1,6 +1,6 @@
-x as a number
-x as number
-x as text
-"42" as a number plus 1
-x as text as a number
-X AS A NUMBER
+say x as a number
+say x as number
+say x as text
+say "42" as a number plus 1
+say x as text as a number
+say X AS A NUMBER

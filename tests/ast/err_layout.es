@@ -1,4 +1,5 @@
 .5 plus 1
-1 plus 2..
-x
-    y
+say .5
+say 1 plus 2..
+say x
+    say y

@@ -1,14 +1,19 @@
-Line 1: There's a period here with no sentence before it.
+Line 1: A number needs a digit before its decimal point.
     .5 plus 1
-    ^
-Write decimals with a digit before the point, like 0.5.
+    ^^
+Write 0.5 instead of .5.
 
-Line 2: There's a period here with no sentence before it.
-    1 plus 2..
-             ^
+Line 2: A number needs a digit before its decimal point.
+    say .5
+        ^^
+Write 0.5 instead of .5.
+
+Line 3: There's a period here with no sentence before it.
+    say 1 plus 2..
+                 ^
 Remove the extra period.
 
-Line 4: This line is indented, but nothing above it starts a block.
-        y
+Line 5: This line is indented, but nothing above it starts a block.
+        say y
     ^^^^
 Remove the spaces at the start of the line.

@@ -1,0 +1,54 @@
+Line 1: I don't know a sentence that starts with "sya".
+    sya "hi"
+    ^^^
+Did you mean "say"?
+
+Line 2: I don't know a sentence that starts with "prnt".
+    prnt total
+    ^^^^
+Did you mean "print"?
+
+Line 3: I don't know a sentence that starts with "shw".
+    shw total
+    ^^^
+Did you mean "show"?
+
+Line 4: I don't know a sentence that starts with "x".
+    x is 5
+    ^
+To make a variable, write "let x be ...". To change one, write "set x to ...".
+
+Line 5: I don't know a sentence that starts with "total".
+    total = 5
+    ^^^^^
+To make a variable, write "let total be ...". To change one, write "set total to ...".
+
+Line 6: A sentence can't start with "1".
+    1 plus 2
+    ^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 7: A sentence can't start with the text "hello".
+    "hello"
+    ^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 8: I don't know a sentence that starts with "blah".
+    blah blah
+    ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 9: A sentence can't start with "(".
+    (say 1)
+    ^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 10: Something is missing after "please".
+    please
+    ^^^^^^
+Write a sentence after it, like "please say "hello"".
+
+Line 11: I don't know a sentence that starts with "dance".
+    please dance
+           ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".

@@ -1,34 +1,34 @@
 Line 1: EasyScript doesn't have "is not greater than".
-    x is not greater than 5
-      ^^^^^^^^^^^^^^^^^^^
+    say x is not greater than 5
+          ^^^^^^^^^^^^^^^^^^^
 Did you mean "is at most"?
 
 Line 2: EasyScript doesn't have "isn't less than".
-    x isn't less than 5
-      ^^^^^^^^^^^^^^^
+    say x isn't less than 5
+          ^^^^^^^^^^^^^^^
 Did you mean "is at least"?
 
 Line 3: EasyScript doesn't have "is not above".
-    x is not above 5
-      ^^^^^^^^^^^^
+    say x is not above 5
+          ^^^^^^^^^^^^
 Did you mean "is at most"?
 
 Line 4: "is above or equal to" isn't a comparison.
-    x is above or equal to 5
-      ^^^^^^^^^^^^^^^^^^^^
+    say x is above or equal to 5
+          ^^^^^^^^^^^^^^^^^^^^
 Did you mean "is at least"?
 
 Line 5: "< or equal to" isn't a comparison.
-    x < or equal to 5
-      ^^^^^^^^^^^^^
+    say x < or equal to 5
+          ^^^^^^^^^^^^^
 Did you mean "<="?
 
 Line 6: Comparisons can't be chained like this.
-    1 < x < 10
-    ^^^^^^^^^^
+    say 1 < x < 10
+        ^^^^^^^^^^
 Compare one pair at a time and join them with "and": "1 < x and x < 10".
 
 Line 7: Comparisons can't be chained like this.
-    p is q is r
-    ^^^^^^^^^^^
+    say p is q is r
+        ^^^^^^^^^^^
 Compare one pair at a time and join them with "and": "p is q and q is r".

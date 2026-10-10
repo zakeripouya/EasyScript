@@ -1,14 +1,14 @@
 Line 2: I expected a value here, but found "plus".
-    1 plus plus 2
-           ^^^^
+    say 1 plus plus 2
+               ^^^^
 A value is a number, some text in quotes, yes or no, nothing, or a name.
 
 Line 4: Something is missing after "is greater".
-    x is greater 1. y is less 2.
-      ^^^^^^^^^^
+    say x is greater 1. say y is less 2.
+          ^^^^^^^^^^
 Did you mean "is greater than"?
 
 Line 4: Something is missing after "is less".
-    x is greater 1. y is less 2.
-                      ^^^^^^^
+    say x is greater 1. say y is less 2.
+                              ^^^^^^^
 Did you mean "is less than"?

@@ -1,6 +1,6 @@
-WORD          2:1     set
+WORD          2:1     let
 WORD          2:5     count
-WORD          2:11    to
+WORD          2:11    be
 NUMBER        2:14    3
 PERIOD        2:15    .
 NEWLINE       2:16

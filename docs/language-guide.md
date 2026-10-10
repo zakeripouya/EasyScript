@@ -12,12 +12,12 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [0. Getting set up](#0-getting-set-up) | Available |
 | [1. How EasyScript reads your sentences](#1-how-easyscript-reads-your-sentences) | Available (lexer) |
 | [2. Values and expressions](#2-values-and-expressions) | Available (parser) |
-| [3. Variables](#3-variables) | Coming soon |
-| [4. Output and input](#4-output-and-input) | Coming soon |
+| [3. Variables](#3-variables) | Available (parser) |
+| [4. Output and input](#4-output-and-input) | Available (parser) |
 | [5. Decisions](#5-decisions) | Coming soon |
 | [6. Loops](#6-loops) | Coming soon |
 | [7. Functions](#7-functions) | Coming soon |
-| [8. Files](#8-files) | Coming soon |
+| [8. Files](#8-files) | Available (parser), except `file X exists` |
 | [Appendix: the legacy prototype](#appendix-the-legacy-prototype) | Available (legacy) |
 
 ---
@@ -133,7 +133,7 @@ EasyScript also understands a few symbols: `+ - * / %` for arithmetic, `( )` for
 
 ## 2. Values and expressions
 
-**Status: Available (parser).** The parser understands everything in this chapter, and `easyscript ast` shows how it reads each line. Nothing runs yet. Until statements arrive, a file for `easyscript ast` is simply a list of expressions, one per line.
+**Status: Available (parser).** The parser understands everything in this chapter, and `easyscript ast` shows how it reads each line. Nothing runs yet. The examples show expressions on their own; in a program they appear inside statements, such as `say price plus tax` (chapter 4).
 
 ### Values
 
@@ -213,8 +213,8 @@ Each input is a single value. If arithmetic comes straight after, EasyScript can
 
 ```
 Line 2: "double using 21 plus 1" could mean two things.
-    double using 21 plus 1
-    ^^^^^^^^^^^^^^^^^^^^^^
+    say double using 21 plus 1
+        ^^^^^^^^^^^^^^^^^^^^^^
 Use parentheses to say which: "(double using 21) plus 1" or "double using (21 plus 1)".
 ```
 
@@ -224,14 +224,17 @@ This is the "no guessing" rule in action. See [`examples/parser/`](../examples/p
 
 ## 3. Variables
 
-**Status: Coming soon (Phase 1).** These examples are the planned syntax and don't compile yet.
+**Status: Available (parser).** These sentences parse today (`easyscript ast` shows them) but don't run yet.
 
-A variable is a named value. `set` creates it or changes it:
+A variable is a named value. `let` creates one, and `set` changes it:
 
 ```
-set total to 0.
-set name to "Ada".
+let total be 0.
+let name be "Ada".
+set total to 10.
 ```
+
+`let total equal 0` means the same as `let total be 0`, and `change total to 10` the same as `set total to 10`. As everywhere, `the` is ignored, so `let the total be 0` reads naturally.
 
 Changing a number has its own sentences:
 
@@ -242,9 +245,21 @@ multiply total by 2.
 divide total by 4.
 ```
 
-`increase total by 5.` and `decrease total by 1.` mean the same as `add` and `subtract`.
+`increase total by 5` and `decrease total by 1` mean the same as `add` and `subtract`.
 
-If you use a name that doesn't exist, the compiler tells you, and suggests the closest name you did create:
+A name is one word. It can't be `a`, `an`, or `the`, because EasyScript ignores those words, and the compiler explains this if you try:
+
+```
+Line 2: "a" can't be used as a name.
+    let a be 5
+        ^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+```
+
+Words that already mean something, like `yes`, `nothing`, or `it`, can't be names either.
+
+**Coming soon:** using a name that doesn't exist will be an error that suggests the closest name you did create (the error format is ready; the checker that produces it isn't):
 
 ```
 Line 4: I don't know anything called "totl".
@@ -253,26 +268,43 @@ Line 4: I don't know anything called "totl".
 Did you mean "total"? You made it on line 1.
 ```
 
+Try it: `./easyscript ast examples/parser/variables.es`
+
 ---
 
 ## 4. Output and input
 
-**Status: Coming soon (Phase 1).** These examples are the planned syntax and don't compile yet.
+**Status: Available (parser).** These sentences parse today but don't run yet.
 
-`say` prints a value on its own line (`print` and `show` mean the same thing):
+`say` prints a value on its own line. `print`, `show`, `display`, and `write` mean the same thing:
 
 ```
 say "Hello, world!".
-say total.
-say "Total: " followed by total as text.
+print total.
+show "Total: " followed by total as text.
 ```
 
-`ask` prints a question and stores what the user types:
+`ask` prints a question and keeps the line of text the user types:
 
 ```
-ask "What's your name?" into name.
+ask "What's your name? " and call the answer name.
 say "Nice to meet you, " and name and ".".
 ```
+
+Any sentence can begin with `please`, which is skipped: `please say "hi"`.
+
+`stop the program` ends the program straight away.
+
+If the first word of a sentence isn't one EasyScript knows, the compiler suggests the closest one:
+
+```
+Line 2: I don't know a sentence that starts with "sya".
+    sya "hello"
+    ^^^
+Did you mean "say"?
+```
+
+Try it: `./easyscript ast examples/parser/output.es` and `examples/parser/input.es`
 
 ---
 
@@ -343,17 +375,25 @@ say double using 21.
 
 ## 8. Files
 
-**Status: Coming soon (Phase 1).** These examples are the planned syntax and don't compile yet.
+**Status: Available (parser), except `file X exists` (coming soon).** These sentences parse today but don't run yet.
 
 ```
 write "first line\n" to file "notes.txt".
 append "second line\n" to file "notes.txt".
-read file "notes.txt" into contents.
-say contents.
+read file "notes.txt" and call it notes.
+say notes.
+```
 
+`write X to file F` replaces the file's contents, and `append` adds to the end. Inside an expression, `contents of file "notes.txt"` gives the whole file as text.
+
+Coming soon: checking whether a file exists.
+
+```
 if file "settings.txt" exists:
     say "Found the settings.".
 ```
+
+Try it: `./easyscript ast examples/parser/files.es`
 
 ---
 

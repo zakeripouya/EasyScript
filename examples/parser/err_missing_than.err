@@ -1,4 +1,4 @@
 Line 2: Something is missing after "is greater".
-    score is greater 10
-          ^^^^^^^^^^
+    say score is greater 10
+              ^^^^^^^^^^
 Did you mean "is greater than"?

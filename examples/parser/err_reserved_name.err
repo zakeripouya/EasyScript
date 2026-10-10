@@ -1,0 +1,5 @@
+Line 2: "yes" can't be used as a name.
+    let yes be 1
+        ^^^
+"yes" already means something in EasyScript.
+Try a different name, like "my_yes".

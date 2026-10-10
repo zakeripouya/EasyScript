@@ -1,8 +1,8 @@
-note: Parser example. Statements are coming soon, so for now each line is one expression.
+note: Parser example. Statements parse today but do not run yet.
 note: `easyscript ast` shows how it is understood.
-age is at least 18
-score is greater than or equal to target
-name isn't ""
-lives is below 1
-points reaches 100
-x != y
+say age is at least 18
+say score is greater than or equal to target
+say name isn't ""
+say lives is below 1
+say points reaches 100
+say x != y

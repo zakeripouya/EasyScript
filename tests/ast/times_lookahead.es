@@ -1,5 +1,5 @@
 note: "times" multiplies only when p value follows it
-3 times 4
-3 times x
-3 times (x plus 1)
-3 times -1
+say 3 times 4
+say 3 times x
+say 3 times (x plus 1)
+say 3 times -1

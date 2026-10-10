@@ -104,8 +104,29 @@ struct Expr {
 // --- Statements ------------------------------------------------------------
 
 typedef enum {
-    STMT_EXPR,  // a bare expression; the only statement until statements are added
+    STMT_LET,          // let X be E                 (creates X)
+    STMT_SET,          // set X to E / change X to E (changes X)
+    STMT_CHANGE,       // add/subtract/increase/decrease/multiply/divide
+    STMT_SAY,          // say/print/show/display/write E
+    STMT_ASK,          // ask E and call the answer X
+    STMT_WRITE_FILE,   // write E to file F
+    STMT_APPEND_FILE,  // append E to file F
+    STMT_READ_FILE,    // read file F and call it X
+    STMT_STOP,         // stop the program
 } StmtKind;
+
+typedef enum {
+    CHANGE_ADD,       // add E to X, increase X by E
+    CHANGE_SUBTRACT,  // subtract E from X, decrease X by E
+    CHANGE_MULTIPLY,  // multiply X by E
+    CHANGE_DIVIDE,    // divide X by E
+} ChangeOp;
+
+// A variable name written in a statement.
+typedef struct {
+    const char *text;  // lowercased
+    SourcePos pos;
+} Name;
 
 typedef struct Stmt Stmt;
 
@@ -114,9 +135,31 @@ typedef Vec(Stmt *) Block;
 
 struct Stmt {
     StmtKind kind;
-    SourcePos pos;
+    SourcePos pos;  // the whole statement, without its period
+    Span verb;      // the word that chose the statement as written, e.g. "display"
     union {
-        Expr *expr;
+        struct {
+            Name name;
+            Expr *value;
+        } assign;  // STMT_LET, STMT_SET
+        struct {
+            ChangeOp op;
+            Name target;
+            Expr *amount;
+        } change;
+        Expr *value;  // STMT_SAY
+        struct {
+            Expr *prompt;
+            Name answer;
+        } ask;
+        struct {
+            Expr *text;
+            Expr *path;
+        } file_write;  // STMT_WRITE_FILE, STMT_APPEND_FILE
+        struct {
+            Expr *path;
+            Name name;
+        } read_file;
     } as;
 };
 
@@ -131,9 +174,11 @@ SourcePos ast_pos_join(SourcePos first, SourcePos last);
 
 const char *ast_binary_op_name(BinaryOp op);
 const char *ast_unary_op_name(UnaryOp op);
+const char *ast_change_op_name(ChangeOp op);
 
-// Indented outline, one node per line: "name [line:column]". Used by
-// `easyscript ast`.
+// Indented outline, one node per line: "label [line:column]", children
+// indented two spaces. Statement children come in source order (for files:
+// the text, then the file). Used by `easyscript ast`.
 void ast_dump_block(const Block *block, StrBuf *out);
 
 #endif

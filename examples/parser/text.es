@@ -1,8 +1,8 @@
-note: Parser example. Statements are coming soon, so for now each line is one expression.
+note: Parser example. Statements parse today but do not run yet.
 note: `easyscript ast` shows how it is understood.
 # and joins text; so does followed by
-"Hello, " and name
-"Total: " followed by total as text
-length of name
-contents of file "notes.txt"
-"42" as a number plus 1
+say "Hello, " and name
+say "Total: " followed by total as text
+say length of name
+say contents of file "notes.txt"
+say "42" as a number plus 1

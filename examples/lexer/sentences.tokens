@@ -1,5 +1,5 @@
 WORD          4:1     set
-WORD          4:9     total
+WORD          4:9     total  [after "the"]
 WORD          4:15    to
 NUMBER        4:18    0
 PERIOD        4:19    .
@@ -10,7 +10,7 @@ WORD          5:7     to
 WORD          5:10    total
 NEWLINE       5:15
 WORD          6:1     say
-WORD          6:9     total
+WORD          6:9     total  [after "the"]
 PERIOD        6:14    .
 NEWLINE       6:15
 EOF           7:1

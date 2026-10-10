@@ -259,10 +259,11 @@ static Expr *parse_unary(Parser *p) {
 // --- Primaries --------------------------------------------------------------
 
 static Expr *expected_value(Parser *p) {
+    if (parser_reject_bare_decimal(p)) return parser_error_expr(p);
     const Token *token = parser_peek(p, 0);
     bool after_open_paren = p->pos > 0 && p->tokens[p->pos - 1].kind == TOK_LPAREN;
     if (parser_at_sentence_end(p) || (token->kind == TOK_RPAREN && after_open_paren)) {
-        if (parser_error(p, p->prev_span, "Something is missing after \"%s\".", parser_text(p, p->prev_span))) {
+        if (parser_error(p, p->prev_span, "Something is missing after %s.", parser_quoted(p, p->prev_span))) {
             diag_note(p->diag, "Add a value there, like a number, some text in quotes, or a name.");
         }
     } else if (token->kind == TOK_RPAREN) {

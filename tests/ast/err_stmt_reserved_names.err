@@ -1,0 +1,53 @@
+Line 1: "yes" can't be used as a name.
+    let yes be 1
+        ^^^
+"yes" already means something in EasyScript.
+Try a different name, like "my_yes".
+
+Line 2: "nothing" can't be used as a name.
+    let nothing be 2
+        ^^^^^^^
+"nothing" already means something in EasyScript.
+Try a different name, like "my_nothing".
+
+Line 3: "it" can't be used as a name.
+    set it to 3
+        ^^
+"it" already means something in EasyScript.
+Try a different name, like "my_it".
+
+Line 4: "true" can't be used as a name.
+    let true be 4
+        ^^^^
+"true" already means something in EasyScript.
+Try a different name, like "my_true".
+
+Line 5: "and" can't be used as a name.
+    let and be 5
+        ^^^
+"and" already means something in EasyScript.
+Try a different name, like "my_and".
+
+Line 6: "plus" can't be used as a name.
+    let plus be 6
+        ^^^^
+"plus" already means something in EasyScript.
+Try a different name, like "my_plus".
+
+Line 7: "times" can't be used as a name.
+    add 1 to times
+             ^^^^^
+"times" already means something in EasyScript.
+Try a different name, like "my_times".
+
+Line 8: "no" can't be used as a name.
+    ask "?" and call the answer no
+                                ^^
+"no" already means something in EasyScript.
+Try a different name, like "my_no".
+
+Line 9: "isn't" can't be used as a name.
+    read file "f" and call it isn't
+                              ^^^^^
+"isn't" already means something in EasyScript.
+Try a different name, like "my_isn't".

@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -115,9 +116,11 @@ size_t edit_distance(Arena *arena, const char *a, const char *b) {
     size_t len_b = strlen(b);
     if (len_b >= SIZE_MAX / sizeof(size_t) - 1) overflow();
 
-    // Two rows of the dynamic-programming table: prev is row i-1, cur is row i.
-    size_t *prev = arena_alloc(arena, (len_b + 1) * sizeof(size_t));
-    size_t *cur = arena_alloc(arena, (len_b + 1) * sizeof(size_t));
+    // Three rows of the dynamic-programming table: rows i-2, i-1 and i.
+    size_t row_bytes = (len_b + 1) * sizeof(size_t);
+    size_t *before = arena_alloc(arena, row_bytes);
+    size_t *prev = arena_alloc(arena, row_bytes);
+    size_t *cur = arena_alloc(arena, row_bytes);
     for (size_t j = 0; j <= len_b; j++) {
         prev[j] = j;
     }
@@ -127,10 +130,13 @@ size_t edit_distance(Arena *arena, const char *a, const char *b) {
         for (size_t j = 1; j <= len_b; j++) {
             size_t cost = a[i - 1] == b[j - 1] ? 0 : 1;
             cur[j] = min3(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+            bool swapped = i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1];
+            if (swapped && before[j - 2] + 1 < cur[j]) cur[j] = before[j - 2] + 1;
         }
-        size_t *tmp = prev;
+        size_t *recycled = before;
+        before = prev;
         prev = cur;
-        cur = tmp;
+        cur = recycled;
     }
     return prev[len_b];
 }

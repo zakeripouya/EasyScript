@@ -1,0 +1,44 @@
+Line 1: Something is missing after "be".
+    let x be
+          ^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 2: Something is missing after "to".
+    set x to
+          ^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 3: Something is missing after "say".
+    say
+    ^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 4: Something is missing after "add".
+    add to x
+    ^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 5: Something is missing after "by".
+    increase x by
+               ^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 6: Something is missing after "write".
+    write to file "f"
+    ^^^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 7: I expected a value here, but found "and".
+    read file and call it x
+              ^^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 8: I expected a value here, but found "and".
+    ask and call the answer x
+        ^^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 9: Something is missing after "append".
+    append to file "f"
+    ^^^^^^
+Add a value there, like a number, some text in quotes, or a name.

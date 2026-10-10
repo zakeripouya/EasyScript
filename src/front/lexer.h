@@ -42,6 +42,10 @@ typedef struct {
     Span span;      // the source bytes this token came from
     size_t line;    // 1-based
     size_t column;  // 1-based, counted in characters (a tab is one)
+    // The filler word ("the", "a", "an") dropped just before this token on
+    // the same line, if any (length 0 if none). Lets the parser explain
+    // `let a be 5`. INDENT and DEDENT never carry one.
+    Span filler;
 } Token;
 
 typedef struct {
@@ -58,14 +62,16 @@ typedef struct {
 // whose indentation changed (a tab counts as 4 spaces). At EOF the last line
 // gets its NEWLINE and every open block gets a DEDENT.
 //
-// Words are lowercased and "the", "a", "an" are dropped. No word is treated
+// Words are lowercased and "the", "a", "an" are dropped (the next token
+// records where, in Token.filler). No word is treated
 // as a keyword here; the parser decides what words mean.
 TokenList lex(Arena *arena, Diag *diag, const char *source, size_t source_len);
 
 const char *token_kind_name(TokenKind kind);
 
-// One token per line: kind, line:column, then the text (strings quoted and
-// escaped). Used by `easyscript tokens`.
-void tokens_dump(const TokenList *tokens, StrBuf *out);
+// One token per line: kind, line:column, the text (strings quoted and
+// escaped), and [after "the"] when a filler word was dropped before it.
+// Used by `easyscript tokens`.
+void tokens_dump(const TokenList *tokens, const char *source, StrBuf *out);
 
 #endif

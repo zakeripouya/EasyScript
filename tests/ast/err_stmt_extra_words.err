@@ -1,0 +1,39 @@
+Line 1: I expected the sentence to end after "total".
+    add 5 to total plus 1
+                   ^^^^
+End the sentence with a period, or start a new line.
+
+Line 2: I expected the sentence to end after "total".
+    subtract 1 from total now
+                          ^^^
+End the sentence with a period, or start a new line.
+
+Line 3: I expected the sentence to end after "name".
+    ask "?" and call the answer name please
+                                     ^^^^^^
+End the sentence with a period, or start a new line.
+
+Line 4: I expected the sentence to end after "notes".
+    read file "f" and call it notes 2
+                                    ^
+End the sentence with a period, or start a new line.
+
+Line 5: I expected the sentence to end after "program".
+    stop the program now
+                     ^^^
+End the sentence with a period, or start a new line.
+
+Line 6: I don't understand "2" here.
+    say 1 2
+          ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 7: I don't understand "6" here.
+    let x be 5 6
+               ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: I don't understand "and call" here.
+    say x and call y
+          ^^^^^^^^
+"and call" only follows the question in "ask" or the file in "read file".

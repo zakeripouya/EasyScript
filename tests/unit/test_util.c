@@ -125,6 +125,9 @@ static void test_edit_distance(TestContext *t) {
     CHECK_SIZE(t, edit_distance(t->arena, "kitten", "sitting"), 3);
     CHECK_SIZE(t, edit_distance(t->arena, "flaw", "lawn"), 2);
     CHECK_SIZE(t, edit_distance(t->arena, "A", "a"), 1);          // case-sensitive
+    CHECK_SIZE(t, edit_distance(t->arena, "sya", "say"), 1);      // swapped neighbours
+    CHECK_SIZE(t, edit_distance(t->arena, "plsu", "plus"), 1);
+    CHECK_SIZE(t, edit_distance(t->arena, "ca", "abc"), 3);       // OSA, not full Damerau
 }
 
 static void test_edit_distance_symmetric(TestContext *t) {

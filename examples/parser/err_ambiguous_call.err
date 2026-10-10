@@ -1,4 +1,4 @@
 Line 2: "double using 21 plus 1" could mean two things.
-    double using 21 plus 1
-    ^^^^^^^^^^^^^^^^^^^^^^
+    say double using 21 plus 1
+        ^^^^^^^^^^^^^^^^^^^^^^
 Use parentheses to say which: "(double using 21) plus 1" or "double using (21 plus 1)".

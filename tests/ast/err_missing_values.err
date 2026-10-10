@@ -1,34 +1,34 @@
 Line 1: Something is missing after "plus".
-    1 plus
-      ^^^^
+    say 1 plus
+          ^^^^
 Add a value there, like a number, some text in quotes, or a name.
 
 Line 2: Something is missing after "is".
-    x is
-      ^^
+    say x is
+          ^^
 Add a value there, like a number, some text in quotes, or a name.
 
 Line 3: Something is missing after "not".
-    not
-    ^^^
+    say not
+        ^^^
 Add a value there, like a number, some text in quotes, or a name.
 
 Line 4: Something is missing after "times".
-    3 times
-      ^^^^^
-Add a value there, like a number, some text in quotes, or a name.
-
-Line 5: Something is missing after "length of".
-    length of
-    ^^^^^^^^^
-Add a value there, like a number, some text in quotes, or a name.
-
-Line 6: Something is missing after "using".
-    greet using
+    say 3 times
           ^^^^^
 Add a value there, like a number, some text in quotes, or a name.
 
+Line 5: Something is missing after "length of".
+    say length of
+        ^^^^^^^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 6: Something is missing after "using".
+    say greet using
+              ^^^^^
+Add a value there, like a number, some text in quotes, or a name.
+
 Line 7: Something is missing after "as".
-    x as
-      ^^
+    say x as
+          ^^
 Did you mean "as a number" or "as text"?

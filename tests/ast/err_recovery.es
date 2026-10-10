@@ -1,5 +1,5 @@
 note: one error per sentence; parsing continues with the next sentence
-1 plus plus 2
-fine plus 1
-x is greater 1. y is less 2.
-also_fine
+say 1 plus plus 2
+say fine plus 1
+say x is greater 1. say y is less 2.
+say also_fine

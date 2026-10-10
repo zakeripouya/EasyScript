@@ -84,6 +84,23 @@ static void test_utf8_columns(TestContext *t) {
     CHECK_SIZE(t, lexed.tokens.items[2].column, 10);  // "to", after a 4-character string
 }
 
+static void test_filler_is_recorded(TestContext *t) {
+    const char *source = "let A total be 5\nadd 1 to an\nthe\nx";
+    Lexed lexed = lex_string(t, source);
+    const Token *total = &lexed.tokens.items[1];
+    CHECK_STR(t, total->text, "total");
+    CHECK_STR(t, span_text(t, source, total->filler), "A");
+    CHECK_SIZE(t, lexed.tokens.items[0].filler.length, 0);
+    // "add 1 to an" + NEWLINE: the newline carries the dropped "an"
+    const Token *newline = &lexed.tokens.items[8];
+    CHECK(t, newline->kind == TOK_NEWLINE);
+    CHECK_STR(t, span_text(t, source, newline->filler), "an");
+    // a line holding only "the" doesn't pass it on to the next line
+    const Token *x = &lexed.tokens.items[9];
+    CHECK_STR(t, x->text, "x");
+    CHECK_SIZE(t, x->filler.length, 0);
+}
+
 void lexer_tests(TestRunner *runner) {
     unit_run(runner, "lexer/spans", test_spans_cover_source_text);
     unit_run(runner, "lexer/lowercase", test_word_text_is_lowercased);
@@ -93,4 +110,5 @@ void lexer_tests(TestRunner *runner) {
     unit_run(runner, "lexer/indent-balance", test_indents_and_dedents_balance);
     unit_run(runner, "lexer/errors-collected", test_errors_are_collected);
     unit_run(runner, "lexer/utf8-columns", test_utf8_columns);
+    unit_run(runner, "lexer/filler-recorded", test_filler_is_recorded);
 }

@@ -53,9 +53,9 @@ void sb_append_quoted(StrBuf *sb, const char *s, size_t n);
 // had to grow. Used by vec_push; not meant to be called directly.
 void *vec_grow_(Arena *arena, void *items, size_t *cap, size_t need, size_t elem_size);
 
-// Levenshtein distance between two strings: the number of single-byte
-// insertions, deletions, and substitutions to turn one into the other.
-// Case-sensitive.
+// Edit distance between two strings: the number of single-byte insertions,
+// deletions, substitutions, and swaps of two neighbouring bytes needed to turn
+// one into the other (optimal string alignment). Case-sensitive.
 size_t edit_distance(Arena *arena, const char *a, const char *b);
 
 #endif

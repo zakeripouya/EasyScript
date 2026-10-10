@@ -1,0 +1,99 @@
+Line 1: I expected "be" here, but found "5".
+    let x 5
+          ^
+Write it like "let total be 0".
+
+Line 2: I expected "be" here, but found "=".
+    let x = 5
+          ^
+Write it like "let total be 0".
+
+Line 3: Something is missing after "let".
+    let be 5
+    ^^^
+Add a name there, like "total".
+
+Line 4: I expected "to" here, but found "5".
+    set x 5
+          ^
+Write it like "set total to 10".
+
+Line 5: I expected "to" here, but found "is".
+    change x is 5
+             ^^
+Write it like "change total to 10".
+
+Line 6: I expected "to" here, but found "total".
+    add 5 total
+          ^^^^^
+Write it like "add 5 to total".
+
+Line 7: I expected "from" here, but found "x".
+    subtract 1 x
+               ^
+Write it like "subtract 5 from total".
+
+Line 8: I expected "by" here, but found "1".
+    increase x 1
+               ^
+Write it like "increase total by 5".
+
+Line 9: I expected "by" here, but found "into".
+    divide x into 2
+             ^^^^
+Write it like "divide total by 2".
+
+Line 10: Something is missing after the text "Name?".
+    ask "Name?"
+        ^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 11: I expected "and call the answer" here, but found "and call it".
+    ask "Name?" and call it name
+                ^^^^^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 12: Something is missing after "and call the answer".
+    ask "Name?" and call the answer
+                ^^^^^^^^^^^^^^^^^^^
+Add a name there, like "total".
+
+Line 13: Something is missing after "to".
+    write "x" to "notes.txt"
+              ^^
+Did you mean "to file"? Write it like "write "hello" to file "notes.txt"".
+
+Line 14: I expected "to file" here, but found "file".
+    append "x" file "notes.txt"
+               ^^^^
+Write it like "append "hello" to file "notes.txt"".
+
+Line 15: Something is missing after the text "x".
+    append "x"
+           ^^^
+Write it like "append "hello" to file "notes.txt"".
+
+Line 16: I expected "file" here, but found the text "notes.txt".
+    read "notes.txt" and call it notes
+         ^^^^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 17: I expected "and call it" here, but found "and call the answer".
+    read file "notes.txt" and call the answer notes
+                          ^^^^^^^^^^^^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 18: Something is missing after the text "notes.txt".
+    read file "notes.txt"
+              ^^^^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 19: Something is missing after "stop".
+    stop
+    ^^^^
+Write it like "stop the program".
+
+Line 20: I expected "the program" here, but found "now".
+    stop now
+         ^^^
+Write it like "stop the program".

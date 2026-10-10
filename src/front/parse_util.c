@@ -59,6 +59,14 @@ bool parser_is_operator_word(const char *word) {
     return false;
 }
 
+bool parser_is_value_word(const char *word) {
+    static const char *const words[] = {"yes", "no", "true", "false", "nothing", "it"};
+    for (size_t i = 0; i < sizeof(words) / sizeof(words[0]); i++) {
+        if (strcmp(word, words[i]) == 0) return true;
+    }
+    return false;
+}
+
 bool parser_starts_operand(const Token *token) {
     switch (token->kind) {
     case TOK_NUMBER:
@@ -97,6 +105,11 @@ static size_t leading_words(const Parser *p, const char *words, size_t *total) {
         if (*words == ' ') words++;
     }
     return matched;
+}
+
+size_t parser_leading_words(const Parser *p, const char *words) {
+    size_t total;
+    return leading_words(p, words, &total);
 }
 
 size_t parser_match_words(const Parser *p, const char *words) {
@@ -179,6 +192,12 @@ const char *parser_text(const Parser *p, Span span) {
     return text;
 }
 
+const char *parser_quoted(const Parser *p, Span span) {
+    const char *text = parser_text(p, span);
+    if (text[0] == '"') return arena_sprintf(p->arena, "the text %s", text);
+    return arena_sprintf(p->arena, "\"%s\"", text);
+}
+
 const char *parser_describe(const Parser *p, const Token *token) {
     switch (token->kind) {
     case TOK_EOF: return "the end of the file";
@@ -196,24 +215,36 @@ const char *parser_describe(const Parser *p, const Token *token) {
     }
 }
 
-// Operator words close to `word` by edit distance, as "a" or "a" or "b".
-static const char *closest_operator_words(const Parser *p, const char *word) {
+const char *parser_closest_words(const Parser *p, const char *word, const char *const *candidates, size_t n) {
     size_t limit = strlen(word) <= 3 ? 1 : 2;
-    size_t n = sizeof(operator_words) / sizeof(operator_words[0]);
     size_t best = limit + 1;
     for (size_t i = 0; i < n; i++) {
-        size_t d = edit_distance(p->arena, word, operator_words[i]);
+        size_t d = edit_distance(p->arena, word, candidates[i]);
         if (d < best) best = d;
     }
     if (best > limit) return NULL;
     StrBuf sb;
     sb_init(&sb, p->arena);
     for (size_t i = 0; i < n; i++) {
-        if (edit_distance(p->arena, word, operator_words[i]) != best) continue;
+        if (edit_distance(p->arena, word, candidates[i]) != best) continue;
         if (sb.len > 0) sb_append(&sb, " or ");
-        sb_appendf(&sb, "\"%s\"", operator_words[i]);
+        sb_appendf(&sb, "\"%s\"", candidates[i]);
     }
     return sb.data;
+}
+
+bool parser_reject_bare_decimal(Parser *p) {
+    const Token *period = parser_peek(p, 0);
+    const Token *number = parser_peek(p, 1);
+    if (period->kind != TOK_PERIOD || number->kind != TOK_NUMBER ||
+        number->span.offset != period->span.offset + 1) {
+        return false;
+    }
+    Span span = parser_consume(p, 2);
+    if (parser_error(p, span, "A number needs a digit before its decimal point.")) {
+        diag_note(p->diag, "Write 0.%s instead of .%s.", number->text, number->text);
+    }
+    return true;
 }
 
 void parser_report_leftover(Parser *p) {
@@ -227,7 +258,7 @@ void parser_report_leftover(Parser *p) {
     if (parser_at_word(p, 0, "and") && parser_at_word(p, 1, "call")) {
         Span span = {token->span.offset, parser_peek(p, 1)->span.offset + parser_peek(p, 1)->span.length - token->span.offset};
         if (parser_error(p, span, "I don't understand \"and call\" here.")) {
-            diag_note(p->diag, "Each line holds one expression, like \"1 plus 2\".");
+            diag_note(p->diag, "\"and call\" only follows the question in \"ask\" or the file in \"read file\".");
         }
         return;
     }
@@ -239,7 +270,8 @@ void parser_report_leftover(Parser *p) {
         return;
     }
     if (!parser_error(p, token->span, "I don't understand %s here.", parser_describe(p, token))) return;
-    const char *closest = token->kind == TOK_WORD ? closest_operator_words(p, token->text) : NULL;
+    size_t n = sizeof(operator_words) / sizeof(operator_words[0]);
+    const char *closest = token->kind == TOK_WORD ? parser_closest_words(p, token->text, operator_words, n) : NULL;
     if (closest) {
         diag_note(p->diag, "Did you mean %s?", closest);
     } else {

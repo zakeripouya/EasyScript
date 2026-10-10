@@ -27,20 +27,22 @@ The goal is to write small, real programs in the new sentence syntax and compile
 
 - [x] Syntax tree (`src/common/ast.h`) and `easyscript ast`
 - [x] Expression parser: arithmetic, comparisons in words and symbols, `and`/`or`/`not`, joining text, conversions, `length of`, `contents of file`, calls, with "Did you mean" and ambiguity errors
-- [ ] Statement parser (deterministic; ambiguity errors with suggestions)
+- [x] Statement parser for simple statements: variables, output, `ask`, files, `stop the program`, `please`
+- [ ] Blocks: `if`/`otherwise`, loops, and function definitions
 - [ ] Checker: names, scopes, "did you mean"
 - [ ] C code generator from the new AST
 - [ ] Remove the legacy prototype pipeline
 
 **Language features**
 
-- [ ] Variables: `set`, `add`, `subtract`, `multiply`, `divide`, `increase`, `decrease`
+- [ ] Variables: `let`/`set`/`change`, `add`, `subtract`, `multiply`, `divide`, `increase`, `decrease` (parsing done)
 - [ ] Values: whole numbers, decimals, text, `yes`/`no`, `nothing`; arithmetic and joining text (parsing done; checking and running to do)
-- [ ] Output and input: `say` (`print`, `show`), `ask`
+- [ ] Output and input: `say` (`print`, `show`, `display`, `write`), `ask … and call the answer` (parsing done)
 - [ ] Decisions: `if`, `otherwise if`, `otherwise`; comparisons in words and symbols; `and`, `or`, `not`
 - [ ] Loops: `repeat N times`, `repeat while`, `repeat until`, `for each ... from ... to`, `stop`, `skip`
 - [ ] Functions: `to NAME using ...`, calls, `give back`
-- [ ] Files: `write`, `append`, `read`, `file ... exists`
+- [ ] Files: `write … to file`, `append … to file`, `read file … and call it` (parsing done), `file ... exists`
+- [ ] `stop the program` (parsing done)
 
 The proposed wording for each feature is in the [vocabulary](vocabulary.md).
 
@@ -53,14 +55,14 @@ Each of these will be added to `examples/` with its expected output in the same 
 | `hello.es` | `say` |
 | `variables.es` | `set`, arithmetic sentences |
 | `text.es` | joining text with `and`/`followed by`, escapes in output |
-| `ask_name.es` | `ask` (with test input) |
+| `ask_name.es` | `ask … and call the answer` (with test input) |
 | `decisions.es` | `if` / `otherwise if` / `otherwise` |
 | `conditions.es` | comparisons in words and symbols, `and`/`or`/`not` |
 | `repeat.es` | `repeat N times` |
 | `countdown.es` | `repeat while` (the README taste) |
 | `for_each.es` | `for each ... from ... to`, `stop`, `skip` |
 | `functions.es` | `to ... using`, calls, `give back` |
-| `files.es` | `write`, `append`, `read`, `file ... exists` |
+| `files.es` | `write … to file`, `append … to file`, `read file … and call it`, `file ... exists` |
 | `err_unknown_name.es` | "did you mean" for misspelled names |
 | `err_ambiguous.es` | an ambiguous sentence and its suggestions |
 

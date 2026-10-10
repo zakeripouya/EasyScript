@@ -1,2 +1,2 @@
 note: Parser example: a comparison with a word missing.
-score is greater 10
+say score is greater 10

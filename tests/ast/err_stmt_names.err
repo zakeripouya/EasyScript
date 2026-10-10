@@ -1,0 +1,24 @@
+Line 1: I expected a name here, but found "5".
+    let 5 be 1
+        ^
+A name is a single word, like "total" or "player_2".
+
+Line 2: I expected a name here, but found the text "x".
+    let "x" be 1
+        ^^^
+A name is a single word, like "total" or "player_2".
+
+Line 3: I expected a name here, but found "5".
+    add 1 to 5
+             ^
+A name is a single word, like "total" or "player_2".
+
+Line 4: Something is missing after "to".
+    add 1 to
+          ^^
+Add a name there, like "total".
+
+Line 5: I expected a name here, but found the text "x".
+    increase "x" by 1
+             ^^^
+A name is a single word, like "total" or "player_2".

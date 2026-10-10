@@ -33,6 +33,11 @@ const char *ast_unary_op_name(UnaryOp op) {
     return op == UNARY_NEGATE ? "negate" : "not";
 }
 
+const char *ast_change_op_name(ChangeOp op) {
+    static const char *const names[] = {"add", "subtract", "multiply", "divide"};
+    return names[op];
+}
+
 static void dump_expr(const Expr *expr, size_t depth, StrBuf *out);
 
 static void dump_line(const SourcePos *pos, size_t depth, StrBuf *out, const char *label) {
@@ -88,12 +93,40 @@ static void dump_expr(const Expr *expr, size_t depth, StrBuf *out) {
     }
 }
 
-static void dump_stmt(const Stmt *stmt, size_t depth, StrBuf *out) {
+// The first line of a statement, e.g. "let total" or "read file, call it notes".
+static const char *stmt_label(const Stmt *stmt, StrBuf *scratch) {
     switch (stmt->kind) {
-    case STMT_EXPR:
-        dump_line(&stmt->pos, depth, out, "expression");
-        dump_expr(stmt->as.expr, depth + 1, out);
+    case STMT_LET: sb_appendf(scratch, "let %s", stmt->as.assign.name.text); break;
+    case STMT_SET: sb_appendf(scratch, "set %s", stmt->as.assign.name.text); break;
+    case STMT_CHANGE:
+        sb_appendf(scratch, "%s %s", ast_change_op_name(stmt->as.change.op), stmt->as.change.target.text);
         break;
+    case STMT_SAY: return "say";
+    case STMT_ASK: sb_appendf(scratch, "ask, call the answer %s", stmt->as.ask.answer.text); break;
+    case STMT_WRITE_FILE: return "write to file";
+    case STMT_APPEND_FILE: return "append to file";
+    case STMT_READ_FILE: sb_appendf(scratch, "read file, call it %s", stmt->as.read_file.name.text); break;
+    case STMT_STOP: return "stop the program";
+    }
+    return scratch->data;
+}
+
+static void dump_stmt(const Stmt *stmt, size_t depth, StrBuf *out) {
+    StrBuf label;
+    sb_init(&label, out->arena);
+    dump_line(&stmt->pos, depth, out, stmt_label(stmt, &label));
+    switch (stmt->kind) {
+    case STMT_LET:
+    case STMT_SET: dump_expr(stmt->as.assign.value, depth + 1, out); break;
+    case STMT_CHANGE: dump_expr(stmt->as.change.amount, depth + 1, out); break;
+    case STMT_SAY: dump_expr(stmt->as.value, depth + 1, out); break;
+    case STMT_ASK: dump_expr(stmt->as.ask.prompt, depth + 1, out); break;
+    case STMT_WRITE_FILE:
+    case STMT_APPEND_FILE:
+        dump_children(stmt->as.file_write.text, stmt->as.file_write.path, depth, out);
+        break;
+    case STMT_READ_FILE: dump_expr(stmt->as.read_file.path, depth + 1, out); break;
+    case STMT_STOP: break;
     }
 }
 

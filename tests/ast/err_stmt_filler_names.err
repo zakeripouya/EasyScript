@@ -1,0 +1,65 @@
+Line 1: "a" can't be used as a name.
+    let a be 5
+        ^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 2: "an" can't be used as a name.
+    let an equal 1
+        ^^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 3: "The" can't be used as a name.
+    let The be 2
+        ^^^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 4: "a" can't be used as a name.
+    set a to 3
+        ^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 5: "the" can't be used as a name.
+    change the to 3
+           ^^^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 6: "a" can't be used as a name.
+    add 1 to a
+             ^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 7: "the" can't be used as a name.
+    subtract 1 from the
+                    ^^^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 8: "A" can't be used as a name.
+    increase A by 2
+             ^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 9: "an" can't be used as a name.
+    multiply an by 2
+             ^^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 10: "a" can't be used as a name.
+    ask "Name?" and call the answer a
+                                    ^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 11: "the" can't be used as a name.
+    read file "notes.txt" and call it the
+                                      ^^^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
