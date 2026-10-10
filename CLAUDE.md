@@ -26,8 +26,12 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 ## Testing
 
 - **Every feature needs tests in `tests/`.** That includes parser error cases: ambiguous input must produce the expected error and suggestions.
-- **Never commit while any test is failing.** Run the full suite before every commit.
-- Note: `tests/` and a test runner don't exist yet. The first feature work should add them, plus a `make test` target.
+- **Never commit while any test is failing.** Run `make test` before every commit.
+- `tests/run/NAME.es` plus `NAME.out`: the program is compiled and run with `easyscript run`. Stdout must match `NAME.out` byte for byte, and the exit status must be 0.
+- `tests/errors/NAME.es` plus `NAME.err`: compiled with `easyscript emit`. It must exit non-zero, and stderr must match `NAME.err` exactly.
+- CLI behavior (modes, usage errors, no files left in the cwd, temp-dir cleanup) is checked at the bottom of `tests/run.sh`. Add a check there when changing the CLI.
+- `tests/run.sh` runs each test in an empty scratch directory and prints PASS/FAIL per test plus a summary. It exits 1 if anything fails.
+- Expected files record current behavior, including known quirks (for example, the blank line after `FILE READ` in `run/file_io.out`). When fixing a quirk, update the expected file in the same commit.
 
 ## Keeping this file current
 
@@ -37,20 +41,24 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 
 The code is an early prototype of the old syntax. It doesn't follow the rules above yet:
 
-- `main.c`: reads a file, then lexes, parses, and generates code. It writes `output.c` to the current directory and runs `gcc output.c -o output_program` (no `-O2`). With no arguments it starts a REPL that appends each line to `persistent_code.code` and shells out to `./easyscript`.
-- `src/lexer.{c,h}`: case-sensitive uppercase keywords, `#` token, and `malloc(256)` buffers for identifiers, numbers, and strings (overflow risk).
+- `main.c`: the CLI. `run FILE` / `build FILE -o OUT` / `emit FILE`, `help`, and the REPL with no arguments. Unknown commands and bad arguments print usage and exit 2. Each invocation creates one `mkdtemp` directory under `$TMPDIR` (or `/tmp`) holding `program.c`, `program`, and the REPL's `session.es`, and an `atexit` handler removes it, including on compile errors. Nothing is written to the cwd except `build`'s `-o` output. `cc -O2` is invoked with `fork`/`execvp` (no shell). `run` returns the program's exit status (128+signal if it was killed). The REPL appends each line to the session file and reruns all of it through `argv[0] run`. Uses `getline`, so there's no line-length limit.
+- `src/arena.{c,h}`: arena allocator (`arena_new`, `arena_alloc` returns zeroed, aligned memory, `arena_strdup`, `arena_sprintf`, `arena_free`). It grows in 64 KiB blocks and gives oversized requests their own block. So far only `main.c` uses it. The lexer, parser and codegen still use `malloc`/`strdup` and need migrating.
+- `src/lexer.{c,h}`: case-sensitive uppercase keywords, `#` token, and `malloc(256)` buffers for identifiers, numbers, and strings (overflow risk). Error positions are byte offsets, not line:column.
 - `src/parser.{c,h}`: recursive descent over a linked list of statements (`AST.right`). `AST_IF`, `AST_FOR_LOOP`, `AST_FUNCTION`, and `AST_CALL` are declared but not implemented. Errors call `exit(1)`.
-- `src/codegen.{c,h}`: global fixed `var_map[100]`, and variables are renamed to `name_N`.
-- `Makefile`: `CC = gcc`, `-Wall -Wextra`. It has no `-O2`, `-std=c11`, or `test` target. It builds with zero warnings, so keep it that way.
+- `src/codegen.{c,h}`: global fixed `var_map[100]`, and variables are renamed to `name_N`. Redeclaring a variable makes later reads resolve to the *first* declaration (lookup returns the first match). Generated string variables are `char[256]`.
+- `Makefile`: `CC = gcc` for building the compiler, `-Wall -Wextra`, no `-std=c11`. Targets are `all`, `test`, and `clean`. It builds with zero warnings, so keep it that way. `main.c` defines `_XOPEN_SOURCE 700` and `_DARWIN_C_SOURCE` for `mkdtemp`, `getline`, `fork`, and so on.
+- `tests/`: 4 run tests and 5 error tests, all written in the old syntax because that's all the compiler accepts today, plus CLI checks in `run.sh`. Rewrite them when the syntax changes.
 - `old/`: old-syntax `.code` examples, kept for reference only. `attempt1.code` and `script.code` compile and run. `combined_code.code` fails on `PRINT # 3` (printing a literal number isn't supported), `attempt1_src.code` fails because `FILE WRITE myfile HelloWorld` treats `HelloWorld` as an undefined variable, and `logan.code` uses an unsupported `FOR … END FOR` form.
-- `.gitignore` covers build outputs (`*.o`, `easyscript`), files that running a program generates (`output.c`, `output_program`, `myfile*`), and the REPL's `persistent_code.code`. Never commit these.
-- No `tests/` directory yet.
+- `.gitignore` covers build outputs (`*.o`, `easyscript`) and `myfile*` (created when the examples are run from the repo root). Never commit these.
 
 ## Build
 
 ```sh
-make                          # builds ./easyscript (no warnings expected)
-./easyscript old/script.code  # compile + run a file; writes output.c/output_program in the cwd
-./easyscript                  # REPL (old syntax; type EXIT to quit)
+make                                  # builds ./easyscript (no warnings expected)
+make test                             # builds, then runs tests/run.sh
+./easyscript run old/script.code      # compile + run (generated C/binary go to a temp dir)
+./easyscript build FILE.es -o OUT     # compile to an executable at OUT
+./easyscript emit FILE.es             # print generated C to stdout
+./easyscript                          # REPL (old syntax; type EXIT to quit)
 make clean
 ```

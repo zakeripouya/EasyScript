@@ -34,9 +34,15 @@ EasyScript is a pseudo-code-like programming language that compiles to C. It fea
 
 ## Usage
 
-### Compile and Run a `.code` File
+```bash
+./easyscript run script.es            # compile and run
+./easyscript build script.es -o app   # compile to an executable
+./easyscript emit script.es           # print the generated C
+./easyscript                          # interactive shell
+make test                             # run the test suite
+```
 
-Create a script file `script.code`:
+Example `script.es` (old syntax, being replaced):
 
 ```plaintext
 MAKE A VARIABLE x ASSIGN 10

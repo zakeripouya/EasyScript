@@ -1,0 +1,1 @@
+FILE CLOSE myfile
