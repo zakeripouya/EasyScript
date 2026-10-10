@@ -467,7 +467,7 @@ Try it: `./easyscript run examples/programs/factorial.es` and `examples/programs
 
 ## 8. Files
 
-**Status: Available, except `file X exists` (coming soon).**
+**Status: Available, except `file X exists` (coming in Phase 2).**
 
 ```
 write "first line" to file "notes.txt".

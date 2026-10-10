@@ -1,10 +1,18 @@
 # Changelog
 
-All notable changes to EasyScript are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). EasyScript has no numbered releases yet.
+All notable changes to EasyScript are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.0] - 2026-10-10
+
+**Phase 1 (core language) is complete.** EasyScript programs written in plain English sentences compile to C and run: variables and constants, numbers, text and yes/no values, arithmetic and comparisons in words or symbols, `if`/`otherwise`, loops, functions with recursion, output, input, and files, with friendly compile-time and runtime errors. Every error message is tested, every accepted phrase is documented, `make test-debug` finds no sanitizer errors or leaks, and `make bench` compares EasyScript with C, Go, and Python. Four planned items moved to Phase 2: reclaiming memory while programs run, type checking, runtime errors that show the source line, and `file ... exists`.
+
 ### Added
+
+- **Leak checking everywhere:** `make test-debug` now also runs `tests/leaks.sh` on macOS (every test input, generated program, and shell session under the system `leaks` tool), where AddressSanitizer can't find leaks; Linux uses LeakSanitizer.
 
 - **Larger examples** that use everything together: `fizzbuzz.es`, `guessing_game.es`, `notes.es`, `hanoi.es`, and `receipt.es` (all run by `make test`). A word counter is planned for Phase 2, once there are text tools to split text.
 - **A better interactive shell:** earlier output isn't printed again, earlier `ask` questions aren't asked again (their answers are replayed), a line ending in `:` starts a block (if, loop, function) that ends at a blank line, and entries with errors are shown and dropped. `exit`, `quit`, or `stop the program` leaves. Tested by `tests/shell/`.

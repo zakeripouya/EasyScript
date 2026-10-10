@@ -54,10 +54,13 @@ $(DEBUG_DIR)/%.o: %.c
 test: all
 	sh tests/run.sh
 
-# Full suite against the sanitizer build. Leak checking stays on wherever
-# AddressSanitizer supports it (it's on by default on Linux).
-test-debug: debug
+# Full suite against the sanitizer build, then a leak check. On Linux,
+# LeakSanitizer (on by default) checks every process in the suite; macOS's
+# AddressSanitizer can't, so there tests/leaks.sh runs every test input
+# under the system `leaks` tool instead.
+test-debug: debug all
 	ES=$(CURDIR)/$(DEBUG_DIR)/easyscript UNIT=$(CURDIR)/$(DEBUG_DIR)/unit_tests sh tests/run.sh
+	@if [ "$$(uname)" = Darwin ]; then sh tests/leaks.sh; fi
 
 # Rewrites every golden file from the current output and shows git diff --stat.
 # Only use it after confirming the new output is intended.

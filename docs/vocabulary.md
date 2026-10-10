@@ -179,7 +179,7 @@ The words that start statements are only special at the start of a sentence, so 
 | `write X to file F` | Replace a file's contents with `X` and a new line | `write "hello" to file "notes.txt"` | Available |
 | `append X to file F` | Add `X` and a new line to the end of a file | `append "more" to file "notes.txt"` | Available |
 | `read file F and call it NAME` | Read a whole file into a variable (without its final new line) | `read file "notes.txt" and call it notes` | Available |
-| `file X exists` | A condition: does the file exist? | `if file "notes.txt" exists:` | Coming soon (Phase 1) |
+| `file X exists` | A condition: does the file exist? | `if file "notes.txt" exists:` | Coming soon (Phase 2) |
 
 Reading a file inside an expression also works: `contents of file X` ([Built-in values](#built-in-values)).
 

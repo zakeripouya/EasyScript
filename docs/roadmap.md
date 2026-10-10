@@ -4,8 +4,8 @@ EasyScript grows in five phases. Each phase ends with working, tested, documente
 
 | Phase | Focus | Status |
 |---|---|---|
-| [1](#phase-1-core-language) | Core language | **In progress** |
-| [2](#phase-2-data-and-structure) | Records, lists, maps, modules, static types | Coming soon |
+| [1](#phase-1-core-language) | Core language | **Complete** (v0.1.0, 2026-10-10) |
+| [2](#phase-2-data-and-structure) | Records, lists, maps, modules, static types | **Next** |
 | [3](#phase-3-self-hosting) | Self-hosting | Coming soon |
 | [4](#phase-4-real-world-programs) | Standard library, C interop, concurrency, servers | Coming soon |
 | [5](#phase-5-systems-mode) | Systems mode and an operating system | Coming soon |
@@ -17,6 +17,8 @@ Alongside the phases:
 | [EasyScript Notebook](#easyscript-notebook) | After Phase 1; grows with Phase 4 | Planned |
 
 ## Phase 1: Core language
+
+**Complete as of v0.1.0 (2026-10-10).** Four items that were planned for Phase 1 moved to [Phase 2](#phase-2-data-and-structure) instead of holding up the release: reclaiming memory while programs run, type checking, runtime errors that show the source line, and `file ... exists`. They're marked "moved to Phase 2" below.
 
 The goal is to write small, real programs in the new sentence syntax and compile them to fast native executables, with friendly errors.
 
@@ -40,9 +42,9 @@ The goal is to write small, real programs in the new sentence syntax and compile
 - [x] Blocks for `if` / `otherwise` (indentation, lining up, scoping)
 - [x] Blocks for loops
 - [x] Functions: definitions, `give back`, calls as sentences and values, recursion, use before definition
-- [ ] Runtime memory reclaimed during loops (today text made while a program runs is freed only at exit)
-- [ ] Checker: types (block scopes are done)
-- [ ] Runtime errors that show the source line
+- Runtime memory reclaimed during loops (moved to Phase 2; today text made while a program runs is freed only at exit)
+- Checker: types (moved to Phase 2's static types; block scopes are done)
+- Runtime errors that show the source line (moved to Phase 2)
 
 **Language features**
 
@@ -55,7 +57,7 @@ The goal is to write small, real programs in the new sentence syntax and compile
 - [x] Loops: `count from ... to ...` (up or down, `by`/`in steps of`, `as`), `count down`, `go from`, `for each`, `do this N times`/`repeat N times`, `while`/`as long as`/`repeat while`, `keep doing this until`/`repeat until`, `forever`; `stop the loop` and `skip this one`; `it`
 - [x] Constants: `keep NAME as X`, worked out by the compiler, visible everywhere, never changed
 - [x] Functions: `to NAME [with] A and B:`, `give back`/`return`, `greet "Paris".` / `call greet with ...`, `area of 3 and 4`; each function sees only its own names
-- [ ] `file ... exists`
+- `file ... exists` (moved to Phase 2)
 
 The proposed wording for each planned feature is in the [vocabulary](vocabulary.md).
 
@@ -74,6 +76,7 @@ Planned. Each will be added with its expected output in the same commit as its f
 ## Phase 2: Data and structure
 
 - **Text tools:** splitting text into words and lines, and looking at its characters (needed for the planned `word_counter.es` example)
+- **From Phase 1:** reclaiming memory while programs run (so long loops that build text don't grow), type checking (as part of static types), runtime errors that show the line of the program like compile errors do, and `file ... exists`
 - **Records:** named groups of fields ("a point has an x and a y")
 - **Lists:** ordered collections, with `for each item in list`
 - **Maps:** look up values by key

@@ -58,7 +58,7 @@ Hello, Ada!
 
 ## Status
 
-EasyScript is in **Phase 1 (core language)**. Programs written in the sentence syntax compile to C and run. Here's exactly what exists today.
+**Phase 1 (core language) is complete: version 0.1.0.** Programs written in the sentence syntax compile to C and run. Here's exactly what exists today.
 
 **Works today:**
 
@@ -79,7 +79,7 @@ EasyScript is in **Phase 1 (core language)**. Programs written in the sentence s
 
 See the runnable [example programs](examples/programs/).
 
-**Coming soon** (Phase 1): `file ... exists`, reclaiming memory while loops run, and type checking. After that, Phase 2: records, lists, maps, and modules. Follow along in the [roadmap](docs/roadmap.md).
+**Next, Phase 2:** static types, records, lists, maps, modules, and text tools, plus four items moved from Phase 1: reclaiming memory while programs run, runtime errors that show the source line, and `file ... exists` (type checking comes with static types). Follow along in the [roadmap](docs/roadmap.md).
 
 ## Performance
 
@@ -87,19 +87,19 @@ Time (and peak memory) for each benchmark, measured with `make bench`:
 
 | Program | EasyScript | C | Go | Python |
 |---|---|---|---|---|
-| Recursive fib(38) | 0.52 s | 0.07 s | 0.08 s | 2.79 s |
-| Count to 100 million | 0.07 s | 0.02 s | 0.02 s | 3.96 s |
-| Nested loops (100 million rounds) | 0.87 s | 0.03 s | 0.03 s | 5.05 s |
-| Build a 50,000-character text | 0.04 s, 280 MB | (none) | 0.01 s, 12 MB | 0.01 s, 12 MB |
+| Recursive fib(38) | 0.52 s | 0.07 s | 0.08 s | 2.78 s |
+| Count to 100 million | 0.06 s | 0.02 s | 0.02 s | 4.12 s |
+| Nested loops (100 million rounds) | 0.87 s | 0.03 s | 0.03 s | 5.09 s |
+| Build a 50,000-character text | 0.03 s, 280 MB | (none) | 0.01 s, 14 MB | 0.01 s, 12 MB |
 
-Apple M4, macOS 15.3.1, EasyScript 0.1.0-dev, 2026-10-10. Phase 1 uses tagged values (every operation checks what kind of value it has); static types arrive in Phase 2. The memory used when building text is a known issue. Details and history: [docs/performance.md](docs/performance.md).
+Apple M4, macOS 15.3.1, EasyScript 0.1.0, 2026-10-10. Phase 1 uses tagged values (every operation checks what kind of value it has); static types arrive in Phase 2. The memory used when building text is a known issue. Details and history: [docs/performance.md](docs/performance.md).
 
 ## Roadmap
 
 | Phase | Focus | Status |
 |---|---|---|
-| 1 | **Core language:** variables, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | In progress (variables, constants, expressions, decisions, loops, functions, output, input, and files run) |
-| 2 | **Data and structure:** records, lists, maps, modules, static types | Coming soon |
+| 1 | **Core language:** variables, constants, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | **Complete** (v0.1.0) |
+| 2 | **Data and structure:** records, lists, maps, modules, static types, text tools | **Next** |
 | 3 | **Self-hosting:** the EasyScript compiler, written in EasyScript | Coming soon |
 | 4 | **Real-world programs:** standard library, C interop, concurrency, backend servers | Coming soon |
 | 5 | **Systems mode:** low-level control, no runtime, and an operating system | Coming soon |
