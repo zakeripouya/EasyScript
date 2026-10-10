@@ -45,7 +45,7 @@ static bool lookup_constant(void *context, const Expr *expr, ConstValue *out) {
         diag_error(c->diag, expr->pos.span, "A constant can't call a function, because functions only run while the "
                                             "program runs.");
         diag_note(c->diag, "%s", keep_note);
-    } else if (checker_find_made(c, name)) {
+    } else if (checker_find_later(c, name)) {
         diag_error(c->diag, expr->pos.span, "\"%s\" is a variable, so its value isn't known before the program runs.",
                    name);
         diag_note(c->diag, "%s", keep_note);

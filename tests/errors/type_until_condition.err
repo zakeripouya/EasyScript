@@ -1,0 +1,4 @@
+Line 1: A loop needs yes or no to decide whether to keep going, but this is text.
+    keep doing this until "done":
+                          ^^^^^^
+Compare it with something, like "while count is less than 10".

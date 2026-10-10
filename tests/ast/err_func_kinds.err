@@ -1,0 +1,19 @@
+Line 1: I don't know the kind of value "banana".
+    to f with x (banana):
+                 ^^^^^^
+The kinds are "a number", "text", and "yes or no".
+
+Line 3: I expected ")" after the kind of value, but found ":".
+    to g with y (a number:
+                         ^
+Write the kind in parentheses after the input's name, like "width (a number)".
+
+Line 5: Something is missing after "giving back".
+    to h with z, giving back:
+                 ^^^^^^^^^^^
+Say which kind of value: "a number", "text", or "yes or no".
+
+Line 7: I don't know the kind of value "nothing".
+    to k with w (nothing):
+                 ^^^^^^^
+The kinds are "a number", "text", and "yes or no".

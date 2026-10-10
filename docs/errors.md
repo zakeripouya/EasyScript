@@ -266,9 +266,61 @@ A constant is fixed before the program starts, so it can only use numbers, text,
 
 The checker also explains `skip this one` outside a loop, `it` outside a counting loop, using a loop's number after the loop ("it only exists inside that loop"), `give back` outside a function, a function defined inside an `if`, a loop, or another function, two functions with the same name, two inputs with the same name, a variable named like a function, and calling a variable. For constants it also explains calls, `it`, file contents and `nothing` in a constant's value, a constant that uses a later constant or itself, constants inside blocks, duplicate constants, names that clash with a constant, and mistakes in the value itself (like dividing by zero), with the same wording as the runtime errors. The full, tested set is in [`tests/errors/`](../tests/errors/).
 
+### Kinds of values
+
+The checker knows the kind of every value (number, text, or yes/no) before the program runs, so mixing them up is a compile error with the line and carets. These used to be runtime errors, and they keep the same wording.
+
+**Mixing up kinds of values**: [`type_subtract_text.es`](../tests/errors/type_subtract_text.es)
+
+```
+Line 3: I can't subtract text from a number.
+    say total minus "x"
+        ^^^^^^^^^^^^^^^
+```
+
+**Giving a function the wrong kind of value**: [`type_func_argument.es`](../tests/errors/type_func_argument.es)
+
+```
+Line 4: "halve" needs a number for "x", but this is text.
+    say halve of "four"
+                 ^^^^^^
+"x" is a number because of line 2. An input has one kind of value everywhere; to make it clear, write it in the definition, like "to halve with x (a number):".
+```
+
+**A kind nothing decides**: [`type_undecided_result.es`](../tests/errors/type_undecided_result.es)
+
+```
+Line 1: I can't tell what kind of value "forever_down" gives back.
+    to forever_down n:
+       ^^^^^^^^^^^^
+Say which kind in the definition, like "to forever_down with n, giving back a number:".
+```
+
+| Problem | Message (summary) |
+|---|---|
+| Arithmetic with text or yes/no | "I can't add text to a number." With text, the hint suggests `and` or `followed by` |
+| An `if` condition that isn't yes or no (`if count:`) | "An "if" needs yes or no to decide, but this is a number." with a hint to compare it |
+| A `while`/`until` condition that isn't yes or no | "A loop needs yes or no to decide whether to keep going, but this is a number." |
+| A count, step, or number of times that isn't a number | "A count has to start at a number, but this is text." |
+| `and` between two numbers, or between yes/no and text | explains, and suggests `plus` or `as text` |
+| `or` / `not` without yes/no values | says which side wasn't yes or no |
+| Comparing different kinds, or ordering yes/no values | "I can't compare a number with text." with a hint to use `as a number` |
+| `as a number` on a yes/no value | "I can't turn a yes/no value into a number." |
+| `length of` something that isn't text | "I can only find the length of text, but this is a number." |
+| A file name that isn't text | "The name of a file has to be text, but this is a number." |
+| Storing another kind in a variable | ""total" is a number (made on line 1), but this is text." |
+| A function given different kinds, or the wrong kind for a written-down kind | ""halve" needs a number for "x", but this is text." with where the kind came from |
+| A function that gives back two kinds, or a value and nothing | ""describe" gives back text (since line 2), but this is a number." |
+| Using a function that gives back nothing as a value | ""greet" doesn't give back a value, so it can't be used here." |
+| `nothing` used as a value | ""nothing" can't be used as a value." |
+| A kind nothing decides | "I can't tell what kind of value "x" is." with the annotation to write |
+| A mistake in a written-down kind (`(banana)`) | "I don't know the kind of value "banana"." |
+
+The full, tested set is the `type_*.err` files in [`tests/errors/`](../tests/errors/).
+
 ### While the program runs
 
-Runtime errors are one line, `Line N:` and what went wrong, sometimes followed by a hint. Anything the program printed before the error stays printed.
+Runtime errors are one line, `Line N:` and what went wrong, sometimes followed by a hint. Anything the program printed before the error stays printed. Only mistakes that kinds can't catch are left for this.
 
 **Dividing by zero**: [`err_divide_by_zero.es`](../examples/programs/err_divide_by_zero.es)
 
@@ -276,29 +328,15 @@ Runtime errors are one line, `Line N:` and what went wrong, sometimes followed b
 Line 3: You divided by zero.
 ```
 
-**Mixing up kinds of values**: [`err_subtract_text.es`](../tests/run/err_subtract_text.es)
-
-```
-Line 3: I can't subtract text from a number.
-```
-
 | Problem | Message (summary) |
 |---|---|
-| Arithmetic with text, yes/no, or nothing | "I can't add text to a number." With text, the hint suggests `and` or `followed by` |
 | Dividing or `mod` by zero | "You divided by zero." |
-| An `if` condition that isn't yes or no (`if count:`) | "An "if" needs yes or no to decide, but this is a number." with a hint to compare it |
 | A function that keeps calling itself | "Functions are calling each other too deeply (more than 10000 calls inside each other)." with a hint to check that it stops |
-| A `while`/`until` condition that isn't yes or no | "A loop needs yes or no to decide whether to keep going, but this is a number." |
-| A count that doesn't start or end at a number | "A count has to start at a number, but this is text." |
 | A count step that's zero or negative | "The step of a count has to be more than zero, but it's -1." with a hint that counting picks its own direction |
 | `repeat N times` with N that isn't a whole number of zero or more | "The number of times has to be a whole number, but it's 2.5." (or "can't be negative") |
-| `and` between two numbers, or between yes/no and text | explains, and suggests `plus` or `as text` |
-| `or` / `not` without yes/no values | says which side wasn't yes or no |
-| Ordering text against a number (`1 is less than "2"`) | "I can't compare a number with text." with a hint to use `as a number` |
 | `as a number` on text that isn't a number | "I can't turn "12abc" into a number." |
-| `length of` something that isn't text | "I can only find the length of text, but this is a number." |
 | A file that can't be read or written | "I couldn't read the file "nope.txt": it doesn't exist." |
-| A file name that isn't text | "The name of a file has to be text, but this is a number." |
+| A function that gives back a value but reaches its end without `give back` | "The function "sign" ended without giving anything back." with a hint |
 
 Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).
 

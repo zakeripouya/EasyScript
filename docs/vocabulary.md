@@ -30,12 +30,14 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | `\n` `\t` `\"` `\\` | Escapes inside text: new line, tab, quote, backslash | `"Line one\nLine two"` | Available |
 | `yes`, `true` | The yes value | `done is yes` | Available |
 | `no`, `false` | The no value | `ready is false` | Available |
-| `nothing` | No value at all | `answer is nothing` | Available |
+| `nothing` | What a function gives back when it gives back no value. It can't be used as a value | `return` (gives back nothing) | Available |
 | `it` | The number of the loop you're in (see [Loops](#it-and-names-in-loops)) | `say it` | Available |
 | names | Start with a letter, then letters, digits, `_`, or an apostrophe between letters. A name is one word | `total`, `player_2`, `guest's` | Available |
 | `( X )` | Grouping: work this out first | `(price plus tax) times 2` | Available |
 
-**How values print:** whole numbers print without decimals (`7`, not `7.0`), other numbers with up to 15 significant digits (`0.1 plus 0.2` prints `0.3`), yes/no as `yes`/`no`, and nothing as `nothing`.
+**How values print:** whole numbers print without decimals (`7`, not `7.0`), other numbers with up to 15 significant digits (`0.1 plus 0.2` prints `0.3`), and yes/no as `yes`/`no`.
+
+**Kinds:** every value is a number, text, or yes/no, worked out before the program runs (see [Kinds of values](#kinds-of-values)).
 
 **Words that can't be names:** the operator words `and`, `or`, `not`, `is`, `isn't`, `equals`, `reaches`, `plus`, `minus`, `times`, `multiplied`, `divided`, `mod`, `followed`, `as`, and `using`. The value words `yes`, `no`, `true`, `false`, `nothing`, and `it` can't be names either. Every other word can be, including `count`, `length`, `contents`, and `file`.
 
@@ -263,7 +265,9 @@ All function sentences are **Available**.
 | `to NAME INPUT:` | Define a function with one input | `to greet someone:` |
 | `to NAME with INPUT and INPUT:` | Define a function with inputs (`of` and `using` work like `with`; commas work like `and`) | `to area with width and height:` |
 | `give back X` / `return X` | End the function and hand X back to whoever called it | `give back width times height` |
-| `return` | End the function early, handing back nothing | `return` |
+| `return` | End the function early, handing back nothing (`give back nothing` is the same) | `return` |
+| `INPUT (KIND)` | Say what kind of value an input is (optional) | `to area with width (a number) and height (a number):` |
+| `, giving back KIND` | Say what kind of value the function gives back (optional; the comma is optional) | `to roll, giving back a number:` |
 | `NAME X and Y` | Call a function as a sentence | `greet "Paris".` |
 | `NAME with X and Y` | Same | `greet with "Paris".` |
 | `call NAME [with X and Y]` | Same | `call greet with "Paris".` |
@@ -272,11 +276,23 @@ Rules:
 
 - **Top level only:** a function is defined at the start of a line, outside every `if`, loop, and other function, with its sentences indented below. It can be used anywhere in the file, even before its definition, and it can call itself (recursion) or other functions.
 - **Its own names:** a function sees only its inputs and the names it makes, not the program's other variables (pass those in as inputs). Names made inside it follow the same block rules as `if`s and loops.
-- **Giving back:** a function that ends without `give back` gives back nothing. `give back` outside a function is an error.
+- **Giving back:** a function with no `give back X` gives back nothing, and can only be called as a sentence of its own. One that gives back a value always gives back the same kind, and stops with an error if it reaches its end without `give back`. `give back` outside a function is an error.
+- **Kinds:** an input's kind comes from how the function uses it and what it's given; what it gives back comes from its `give back`s. When nothing decides a kind, write it (see below).
 - **Names:** a function's name is one word that isn't a sentence word (like `say` or `count`). Functions and variables share names, so `area` can't be both. Each input needs its own name.
 - **Checks before running:** calling a function that doesn't exist suggests the closest one; giving it the wrong number of inputs says how many it needs and where it's defined.
 - **Deep recursion** stops with "Functions are calling each other too deeply (more than 10000 calls inside each other)." instead of crashing.
 
+## Kinds of values
+
+Every value has a kind, worked out by the compiler before the program runs (**Available**). Kind mistakes are compile errors with the line and a caret. See the [language guide](language-guide.md#9-types).
+
+| Kind | Written in a definition as | Comes from |
+|---|---|---|
+| number | `(a number)`, `giving back a number` | number values, arithmetic, `length of`, `as a number`, `it`, counting loops |
+| text | `(text)`, `giving back text` | text values, `followed by`, `and` with text, `as text`, `ask`, reading a file |
+| yes/no | `(yes or no)` or `(yes/no)`, `giving back yes or no` | `yes`/`no`, comparisons, `and`/`or`/`not` between yes/no values |
+| nothing | `giving back nothing` | a function with no `give back X` (only as what a function gives back) |
+
 ## Later phases
 
-Records, lists, maps, modules, and static types (Phase 2), and everything after, will be added here as their designs settle. See the [roadmap](roadmap.md).
+Records, lists, maps, and modules (Phase 2), and everything after, will be added here as their designs settle. See the [roadmap](roadmap.md).

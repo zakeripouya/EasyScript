@@ -1,0 +1,4 @@
+Line 1: "nothing" can't be used as a value.
+    let empty be nothing
+                 ^^^^^^^
+Use 0, empty text (""), or no instead. Only a function can give back nothing, with "return" on its own.

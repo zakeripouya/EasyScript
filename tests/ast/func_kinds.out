@@ -1,0 +1,20 @@
+define area (width: a number, height: a number) giving back a number [1:1]
+  do
+    give back [2:5]
+      multiply [2:15]
+        name width [2:15]
+        name height [2:27]
+define greet (who: text) giving back nothing [3:1]
+  do
+    say [4:5]
+      name who [4:9]
+define roll () giving back a number [5:1]
+  do
+    give back [6:5]
+      number 4 [6:15]
+define both (x: a yes/no value, y: a yes/no value) [7:1]
+  do
+    give back [8:5]
+      and [8:15]
+        name x [8:15]
+        name y [8:21]

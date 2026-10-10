@@ -1,0 +1,9 @@
+Line 3: "greet" doesn't give back a value, so it can't be used here.
+    let result be greet
+                  ^^^^^
+It's defined on line 1. To use what it works out, end it with "give back ...".
+
+Line 4: "greet" doesn't give back a value, so it can't be used here.
+    say "x" followed by greet
+                        ^^^^^
+It's defined on line 1. To use what it works out, end it with "give back ...".

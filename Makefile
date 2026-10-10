@@ -4,11 +4,11 @@ RELEASE_FLAGS = -O2
 DEBUG_FLAGS = -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all
 
 COMMON_SRC = src/common/arena.c src/common/util.c src/common/diag.c src/common/ast.c
-FRONT_SRC = src/front/lexer.c src/front/parse_util.c src/front/parse_expr.c src/front/parse_stmt.c src/front/parse_if.c src/front/parse_loop.c src/front/parse_func.c src/front/consteval.c src/front/check.c src/front/check_const.c
+FRONT_SRC = src/front/lexer.c src/front/parse_util.c src/front/parse_expr.c src/front/parse_stmt.c src/front/parse_if.c src/front/parse_loop.c src/front/parse_func.c src/front/consteval.c src/front/check.c src/front/check_expr.c src/front/check_types.c src/front/check_const.c
 BACK_SRC = src/back/codegen_c.c src/back/codegen_expr.c
 # The runtime (its files in order), embedded into the compiler as a byte
 # array by tools/embed.c.
-RUNTIME = runtime/es_value.h runtime/es_runtime.h
+RUNTIME = runtime/es_memory.h runtime/es_runtime.h
 GEN_RUNTIME = build/gen/es_runtime_embed.c
 EMBED = build/tools/embed
 COMPILER_SRC = src/main.c src/shell.c $(FRONT_SRC) $(BACK_SRC) $(COMMON_SRC) $(GEN_RUNTIME)

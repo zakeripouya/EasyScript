@@ -1,0 +1,4 @@
+Line 3: An "if" needs yes or no to decide, but this is a number.
+    if count:
+       ^^^^^
+Compare it with something, like "if x is 5".

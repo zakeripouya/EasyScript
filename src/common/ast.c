@@ -21,6 +21,16 @@ SourcePos ast_pos_join(SourcePos first, SourcePos last) {
     return pos;
 }
 
+const char *ast_type_name(Type type) {
+    switch (type) {
+    case TYPE_NUMBER: return "a number";
+    case TYPE_TEXT: return "text";
+    case TYPE_YESNO: return "a yes/no value";
+    case TYPE_NOTHING: return "nothing";
+    default: return "an unknown kind of value";
+    }
+}
+
 const char *ast_binary_op_name(BinaryOp op) {
     static const char *const names[] = {
         "or", "and", "equal", "not equal", "less", "less or equal", "greater",
@@ -128,8 +138,13 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch) {
         sb_appendf(scratch, "define %s (", stmt->as.function.name.text);
         for (size_t i = 0; i < stmt->as.function.params.len; i++) {
             sb_appendf(scratch, "%s%s", i ? ", " : "", stmt->as.function.params.items[i].text);
+            Type declared = stmt->as.function.declared.items[i];
+            if (declared != TYPE_UNKNOWN) sb_appendf(scratch, ": %s", ast_type_name(declared));
         }
         sb_append_char(scratch, ')');
+        if (stmt->as.function.declared_result != TYPE_UNKNOWN) {
+            sb_appendf(scratch, " giving back %s", ast_type_name(stmt->as.function.declared_result));
+        }
         break;
     case STMT_RETURN: return "give back";
     case STMT_CALL: return "call";

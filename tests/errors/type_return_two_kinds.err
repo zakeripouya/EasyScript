@@ -1,0 +1,4 @@
+Line 3: "describe" gives back text (since line 2), but this is a number.
+        give back n
+                  ^
+A function gives back the same kind of value every time.

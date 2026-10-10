@@ -26,6 +26,10 @@ void diag_note(Diag *diag, const char *fmt, ...) PRINTF_LIKE(2, 3);
 
 size_t diag_count(const Diag *diag);
 
+// Puts the errors reported from index `first` on into source order (by where
+// their spans start), keeping the order of errors at the same place.
+void diag_sort(Diag *diag, size_t first);
+
 // 1-based line number containing `offset`.
 size_t diag_line(const Diag *diag, size_t offset);
 

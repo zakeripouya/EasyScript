@@ -17,21 +17,21 @@ The C versions keep their totals `volatile` so the compiler can't remove the loo
 
 ## Latest results
 
-Machine: Apple M4, 24 GB, macOS 15.3.1. Apple clang 17.0.0, Go 1.27.1, Python 3.14.7. EasyScript 0.1.0 plus reference counting (Phase 2, step 13), 2026-10-10.
+Machine: Apple M4, 24 GB, macOS 15.3.1. Apple clang 17.0.0, Go 1.27.1, Python 3.14.7. EasyScript 0.1.0 plus reference counting and static types (Phase 2, step 14), 2026-10-10.
 
 | Program | EasyScript | C | Go | Python |
 |---|---|---|---|---|
-| fib | 0.24 s, 1.2 MB | 0.07 s, 1.2 MB | 0.08 s, 3.8 MB | 2.87 s, 11.5 MB |
-| count | 0.07 s, 1.2 MB | 0.02 s, 1.2 MB | 0.02 s, 3.8 MB | 4.05 s, 11.6 MB |
-| nested | 0.86 s, 1.2 MB | 0.03 s, 1.2 MB | 0.03 s, 3.8 MB | 4.93 s, 11.4 MB |
-| text | 0.00 s, 1.8 MB | (none) | 0.01 s, 10.4 MB | 0.01 s, 11.7 MB |
+| fib | 0.23 s, 1.2 MB | 0.06 s, 1.2 MB | 0.08 s, 3.8 MB | 2.74 s, 11.4 MB |
+| count | 0.05 s, 1.2 MB | 0.02 s, 1.2 MB | 0.02 s, 3.9 MB | 3.93 s, 11.6 MB |
+| nested | 0.10 s, 1.2 MB | 0.03 s, 1.2 MB | 0.03 s, 3.8 MB | 4.90 s, 11.5 MB |
+| text | 0.00 s, 1.6 MB | (none) | 0.01 s, 11.9 MB | 0.01 s, 11.8 MB |
 
 ## Reading the results
 
-- **Against Python,** EasyScript is 10 to 60 times faster on loops and function calls, because it's compiled rather than interpreted.
-- **Against C and Go,** it's 3 to 30 times slower. Every value is still *tagged*: each `plus`, comparison, or `mod` checks what kind of value it has before doing the work, so it can give a friendly error. `nested` shows this most, with several of those checks per round. **Static types arrive later in Phase 2**: when the compiler knows a value is always a number, it can generate plain C arithmetic, which is where the gap to C should mostly close.
-- **Memory stays flat.** Text is freed as soon as nothing uses it ([how](memory.md)), so building a 50,000-character text by adding to it 10,000 times takes 1.8 MB at its peak, less than Go or Python (it was 280 MB before reference counting, when every in-between version was kept until the program ended).
-- **Why fib got faster with reference counting:** values shrank from 48 to 16 bytes, so they're passed to functions in registers instead of through memory (0.52 s to 0.24 s). Variables of the main program are C locals, so even though a release might call `free()`, the C compiler still keeps numbers in registers in loops like `count`.
+- **Against Python,** EasyScript is 10 to 80 times faster, because it's compiled rather than interpreted.
+- **Against C and Go,** loops are now 2.5 to 3.5 times slower, down from up to 30 times. With static types (step 14) the compiler knows every value's kind, so a number is a plain C `double` and `plus` is a C `+`; nothing checks kinds while the program runs. `nested` dropped from 0.85 s to 0.10 s: most of that came from `mod` using the integer remainder for whole numbers (the same answer as `fmod`, much faster), and from counting loops that work out their last round once instead of checking every round.
+- **What's left** is the language's own rules. Numbers are doubles, not integers; equal and ordering comparisons allow for tiny rounding errors (`0.1 plus 0.2 is 0.3`); counting works out each number from the start so it never drifts; and every function call checks for runaway recursion so it can stop with a friendly error. `fib` shows the last two most: with both, the C compiler can't turn the recursion into a loop as it does for the C version (removing both made it 0.11 s, the speed of the same program in C with doubles).
+- **Memory stays flat.** Text is freed as soon as nothing uses it ([how](memory.md)), so building a 50,000-character text by adding to it 10,000 times takes 1.6 MB at its peak, less than Go or Python (it was 280 MB before reference counting).
 
 ## History
 
@@ -42,3 +42,4 @@ One row per milestone, with EasyScript's numbers on that milestone's machine. **
 | 2026-10-10 | 0.1.0-dev (after `580a056`) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.52 s, 1.3 MB | 0.07 s, 1.2 MB | 0.87 s, 1.3 MB | 0.04 s, 280.2 MB |
 | 2026-10-10 | 0.1.0 (Phase 1 complete) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.52 s, 1.2 MB | 0.06 s, 1.2 MB | 0.87 s, 1.3 MB | 0.03 s, 280.2 MB |
 | 2026-10-10 | 0.1.0 + reference counting (Phase 2, step 13) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.2 MB | 0.07 s, 1.2 MB | 0.86 s, 1.2 MB | 0.00 s, 1.8 MB |
+| 2026-10-10 | 0.1.0 + static types (Phase 2, step 14) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.23 s, 1.2 MB | 0.05 s, 1.2 MB | 0.10 s, 1.2 MB | 0.00 s, 1.6 MB |

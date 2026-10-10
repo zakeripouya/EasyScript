@@ -18,6 +18,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [6. Loops](#6-loops) | Available |
 | [7. Functions](#7-functions) | Available |
 | [8. Files](#8-files) | Available, except `file X exists` |
+| [9. Types](#9-types) | Available |
 
 ---
 
@@ -149,8 +150,9 @@ EasyScript also understands a few symbols: `+ - * / %` for arithmetic, `( )` for
 | Numbers | `42`, `19.99` |
 | Text | `"Hello, world!"` |
 | Yes and no | `yes`, `no` (or `true`, `false`) |
-| Nothing | `nothing` |
 | Names | `total`, `player_2`, `guest's` |
+
+Every value has one of these kinds: a number, text, or yes/no. The compiler works out the kind of every value before the program runs ([chapter 9](#9-types)). `nothing` is only what a function gives back when it doesn't give back a value; it can't be used as a value itself.
 
 ### Arithmetic
 
@@ -165,7 +167,16 @@ minutes mod 60
 -temperature
 ```
 
-`plus`/`+`, `minus`/`-`, `times`/`multiplied by`/`*`, `divided by`/`/`, and `mod`/`%` (the remainder). They work on numbers; `say 7 divided by 2` prints `3.5`, and whole numbers print without decimals. Using text in arithmetic, or dividing by zero, stops the program with a message that says which line went wrong:
+`plus`/`+`, `minus`/`-`, `times`/`multiplied by`/`*`, `divided by`/`/`, and `mod`/`%` (the remainder). They work on numbers; `say 7 divided by 2` prints `3.5`, and whole numbers print without decimals. Using text in arithmetic is caught before the program runs:
+
+```
+Line 1: I can't add text to a number.
+    say 1 plus "2"
+        ^^^^^^^^^^
+To join text, use "and" or "followed by".
+```
+
+Dividing by zero can only be seen while the program runs, so it stops the program with a message that says which line went wrong:
 
 ```
 Line 3: You divided by zero.
@@ -199,7 +210,7 @@ not done and ready
 
 ### Working with text
 
-`and` also joins text, and so does `followed by`; numbers are turned into text for you. Joining happens after the maths, so `"Sum: " followed by 2 plus 3` gives `Sum: 5`. (Between two yes/no values `and` means "both"; the program decides which while it runs.) A value can be turned into text with `as text`, and text into a number with `as a number`:
+`and` also joins text, and so does `followed by`; numbers are turned into text for you. Joining happens after the maths, so `"Sum: " followed by 2 plus 3` gives `Sum: 5`. (Between two yes/no values `and` means "both"; the compiler decides which before the program runs, from the kinds of the two sides. `and` between yes/no and text is an error.) A value can be turned into text with `as text`, and text into a number with `as a number`:
 
 ```
 "Hello, " and name
@@ -283,7 +294,14 @@ Line 4: I don't know anything called "totl".
 Did you mean "total"? You made it on line 1.
 ```
 
-A variable can hold any kind of value, and can change kind: `set total to "done"` is fine.
+A variable keeps the kind of value it was made with. Storing a different kind in it is an error, caught before the program runs:
+
+```
+Line 2: "total" is a number (made on line 1), but this is text.
+    set total to "zero"
+                 ^^^^^^
+A variable keeps the kind of value it was made with. To keep text, make a new variable for it.
+```
 
 ### Values that never change
 
@@ -363,7 +381,7 @@ if temperature is 24, say "Exactly 24.".
 if temperature is at least 20 then say "Maybe go for a walk.".
 ```
 
-The conditions are the comparisons from [chapter 2](#2-values-and-expressions), and they must be yes or no. `if temperature:` on its own is a runtime error, because a number isn't yes or no.
+The conditions are the comparisons from [chapter 2](#2-values-and-expressions), and they must be yes or no. `if temperature:` on its own is an error, caught before the program runs, because a number isn't yes or no.
 
 A name made inside a block only exists inside it. If you need it afterwards, make it before the `if` and change it inside with `set`.
 
@@ -465,6 +483,8 @@ to price_with_tax of amount:
 say price_with_tax of 50.
 ``` Giving it the wrong number of inputs is an error that says how many it needs and where it's defined.
 
+You don't write down what kind of value each input is: the compiler works it out from how the function uses it and what it's given, and tells you before the program runs if something doesn't fit. When it can't tell, you can say, like `to area with width (a number) and height (a number), giving back a number:`. See [chapter 9](#9-types).
+
 Try it: `./easyscript run examples/programs/factorial.es` and `examples/programs/fibonacci.es`
 
 ---
@@ -490,3 +510,76 @@ if file "settings.txt" exists:
 ```
 
 Try it: `./easyscript run examples/programs/files.es`
+
+---
+
+## 9. Types
+
+**Status: Available.**
+
+Every value has a **kind** (its type): a number, text, or yes/no. The compiler works out the kind of every value before the program runs, so mistakes like adding text to a number are reported with the line and a caret, the same way as a misspelled name, instead of stopping the program halfway. The program then runs faster too, because it never has to check kinds while it runs.
+
+Most programs never mention kinds. They come from:
+
+- **Values:** `42` is a number, `"hi"` is text, `yes` is yes/no. `ask` and reading a file give text, and `length of` gives a number.
+- **Variables:** a variable takes its kind from its `let` and keeps it. `ask ... and call the answer X` and `read file ... and call it X` make text.
+- **Constants:** a constant's kind is the kind of its value.
+- **Operators:** arithmetic needs numbers and gives a number; comparisons give yes/no; `followed by` and `as text` give text. `and` is logical between yes/no values and joins when there's text, decided before the program runs.
+- **Functions:** an input's kind comes from how the function uses it (`x divided by 2` makes `x` a number) and from what it's given when it's called. What a function gives back comes from its `give back`s. A function with no `give back` gives back nothing, so it can only be called as a sentence of its own.
+
+```
+to halve x:
+    give back x divided by 2
+say halve of 4
+say halve of "four"
+```
+
+```
+Line 4: "halve" needs a number for "x", but this is text.
+    say halve of "four"
+                 ^^^^^^
+"x" is a number because of line 2. An input has one kind of value everywhere; to make it clear, write it in the definition, like "to halve with x (a number):".
+```
+
+An input has one kind everywhere, so calling the same function with a number in one place and text in another is an error. Turn the value into text first with `as text` if that's what you meant.
+
+### Saying the kind
+
+When nothing in the program decides a kind, for example a function whose input is only printed and that's never called, the compiler asks you to say which:
+
+```
+Line 1: I can't tell what kind of value "x" is.
+    to frame with x:
+                  ^
+Nothing in the program decides it. Say which kind in the definition, like "to frame with x (a number):".
+```
+
+Write the kind in parentheses after an input, and what the function gives back with `giving back` before the colon:
+
+```
+to area with width (a number) and height (a number), giving back a number:
+    give back width times height.
+to greet who (text), giving back nothing:
+    say "Hello, " and who.
+to both with first (yes or no) and second (yes or no):
+    give back first and second.
+```
+
+The kinds are `a number`, `text`, and `yes or no` (or `yes/no`); `giving back nothing` says the function gives back no value. Kinds are optional, and you can write some and leave out others; whatever you write is checked like everything else.
+
+**Why this wording?** It had to read like English and not look like the `as a number` / `as text` conversions, which change a value. Other choices that were considered:
+
+| Considered | Why not |
+|---|---|
+| `to area with width as a number:` | Reads like the conversion `width as a number`, which means something different |
+| `to area with number width:` | Puts the kind before the name, which reads awkwardly with "with" |
+| `to area with width: number` | The colon already opens the function's block |
+| `to area with width which is a number:` | Long, and "is" already compares values |
+| `to area ... gives back a number:` / `returns a number` | "to area ... gives back" doesn't read as a sentence; `giving back` matches `give back` |
+
+### What's still checked while the program runs
+
+Kinds can't tell you everything. These are still found while the program runs, with the line they happened on: dividing by zero, counting with a step that isn't more than zero, a number of times that isn't a whole number, text that isn't a number in `as a number`, files that can't be read or written, a function that gives back a value but reaches its end without `give back`, and functions calling each other too deeply.
+
+Try it: `./easyscript run examples/programs/kinds.es`
+

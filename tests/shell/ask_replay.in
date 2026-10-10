@@ -1,7 +1,7 @@
 ask "First? " and call the answer first
 one
 say "got " followed by first
-ask "Q? " and call the answer q. say q plus 1
+ask "Q? " and call the answer q. say q as a number
 x
 ask "Again? " and call the answer again
 y

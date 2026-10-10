@@ -1,0 +1,3 @@
+Line 1: The name of a file has to be text, but this is a number.
+    write "x" to file 5
+                      ^

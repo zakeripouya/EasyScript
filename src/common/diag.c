@@ -59,6 +59,19 @@ size_t diag_count(const Diag *diag) {
     return diag->errors.len;
 }
 
+void diag_sort(Diag *diag, size_t first) {
+    DiagError *errors = diag->errors.items;
+    for (size_t i = first + 1; i < diag->errors.len; i++) {  // insertion sort: stable, and lists are short
+        DiagError error = errors[i];
+        size_t j = i;
+        while (j > first && errors[j - 1].span.offset > error.span.offset) {
+            errors[j] = errors[j - 1];
+            j--;
+        }
+        errors[j] = error;
+    }
+}
+
 // Index into line_starts of the line containing `offset`.
 static size_t line_index(const Diag *diag, size_t offset) {
     if (offset > diag->source_len) offset = diag->source_len;

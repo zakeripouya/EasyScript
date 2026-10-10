@@ -13,8 +13,6 @@ divide total by 4
 say total
 set total to 1
 say total
-change total to "now text"
-say total
 let count equal 3
 say count
 let the price be 2.5

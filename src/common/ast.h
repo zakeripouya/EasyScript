@@ -16,6 +16,21 @@ typedef struct {
     size_t column;
 } SourcePos;
 
+// --- Types -----------------------------------------------------------------
+
+// The kind of a value, worked out by the checker before the program runs.
+typedef enum {
+    TYPE_UNKNOWN,  // not decided (yet)
+    TYPE_NUMBER,
+    TYPE_TEXT,
+    TYPE_YESNO,
+    TYPE_NOTHING,  // only what a function gives back when it gives back no value
+    TYPE_ERROR,    // stands in after a type error, so one mistake gives one message
+} Type;
+
+// "a number", "text", "a yes/no value", "nothing".
+const char *ast_type_name(Type type);
+
 // --- Expressions -----------------------------------------------------------
 
 typedef enum {
@@ -41,7 +56,7 @@ typedef enum {
 
 typedef enum {
     BINARY_OR,
-    BINARY_AND,  // logical for two yes/no values, joins text otherwise; the checker decides
+    BINARY_AND,  // logical for two yes/no values, joins text otherwise; the checker decides (its type)
     BINARY_EQUAL,
     BINARY_NOT_EQUAL,
     BINARY_LESS,
@@ -66,6 +81,7 @@ typedef struct Expr Expr;
 struct Expr {
     ExprKind kind;
     SourcePos pos;
+    Type type;  // filled in by the checker
     union {
         struct {
             const char *text;  // as written, e.g. "19.99"
@@ -206,6 +222,10 @@ struct Stmt {
         struct {
             Name name;
             Vec(Name) params;
+            Vec(Type) declared;    // per input: the kind written in "(a number)", or TYPE_UNKNOWN
+            Type declared_result;  // "giving back a number", or TYPE_UNKNOWN
+            Vec(Type) param_types; // filled in by the checker
+            Type result;           // filled in by the checker (TYPE_NOTHING: gives back no value)
             Block body;
         } function;
         Expr *returned;  // STMT_RETURN; NULL for a bare "return"

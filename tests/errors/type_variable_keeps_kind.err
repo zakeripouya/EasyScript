@@ -1,0 +1,14 @@
+Line 2: "total" is a number (made on line 1), but this is text.
+    set total to "zero"
+                 ^^^^^^
+A variable keeps the kind of value it was made with. To keep text, make a new variable for it.
+
+Line 4: "reply" is a number (made on line 3), but this is text.
+    ask "Your answer? " and call the answer reply
+                                            ^^^^^
+A variable keeps the kind of value it was made with. To keep text, make a new variable for it.
+
+Line 6: "done" is a yes/no value (made on line 5), but this is text.
+    read file "notes.txt" and call it done
+                                      ^^^^
+A variable keeps the kind of value it was made with. To keep text, make a new variable for it.

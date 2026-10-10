@@ -1,0 +1,4 @@
+Line 2: I can't use "and" between a yes/no value and text.
+        give back first and second
+                  ^^^^^^^^^^^^^^^^
+To join them, turn the yes/no value into text first with "as text".

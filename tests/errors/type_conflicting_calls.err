@@ -1,0 +1,4 @@
+Line 4: "frame" needs a number for "x", but this is text.
+    frame "one"
+          ^^^^^
+"x" is a number because of line 3. An input has one kind of value everywhere; to make it clear, write it in the definition, like "to frame with x (a number):".

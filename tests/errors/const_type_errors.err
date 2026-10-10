@@ -45,3 +45,7 @@ Line 10: I can't find the remainder of text divided by a number.
 Line 11: "or" needs yes or no on both sides, but the right side is a number.
     keep k11 as no or 5
                 ^^^^^^^
+
+Line 12: I can't divide text by a number.
+    keep k12 as "a" divided by 2
+                ^^^^^^^^^^^^^^^^

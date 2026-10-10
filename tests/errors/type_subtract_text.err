@@ -1,0 +1,3 @@
+Line 3: I can't subtract text from a number.
+    say total minus "x"
+        ^^^^^^^^^^^^^^^

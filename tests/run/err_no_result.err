@@ -1,0 +1,2 @@
+Line 1: The function "sign" ended without giving anything back.
+Make sure every way through it ends with "give back ...".

@@ -1,0 +1,3 @@
+Line 1: I can't compare a yes/no value with a yes/no value.
+    say yes is less than no
+        ^^^^^^^^^^^^^^^^^^^

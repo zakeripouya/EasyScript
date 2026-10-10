@@ -9,3 +9,4 @@ keep k8 as -"a"
 keep k9 as 1 plus "2"
 keep k10 as "a" mod 2
 keep k11 as no or 5
+keep k12 as "a" divided by 2

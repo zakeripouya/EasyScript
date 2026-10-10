@@ -1,0 +1,4 @@
+Line 2: A loop needs yes or no to decide whether to keep going, but this is a number.
+    while k:
+          ^
+Compare it with something, like "while count is less than 10".

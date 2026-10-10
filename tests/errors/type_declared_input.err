@@ -1,0 +1,4 @@
+Line 3: "double" needs a number for "n", but this is text.
+    say double of "two"
+                  ^^^^^
+It's defined on line 1: "to double with n (a number), giving back a number".

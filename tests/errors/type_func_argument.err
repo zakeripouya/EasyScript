@@ -1,0 +1,4 @@
+Line 4: "halve" needs a number for "x", but this is text.
+    say halve of "four"
+                 ^^^^^^
+"x" is a number because of line 2. An input has one kind of value everywhere; to make it clear, write it in the definition, like "to halve with x (a number):".

@@ -1,0 +1,4 @@
+Line 4: "first_even" gives back a value, so it can't give back nothing here.
+        return
+        ^^^^^^
+Give back a value here too, like "give back 0".

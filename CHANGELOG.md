@@ -6,6 +6,14 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Static types with inference** (Phase 2, step 14). The compiler works out whether every value is a number, text, or yes/no, so most programs need no annotations. See the new [Types chapter](docs/language-guide.md#9-types).
+  - Variables take their kind from their `let` and keep it ("\"total\" is a number (made on line 1), but this is text."). `ask` and reading a file give text; `length of` gives a number; constants take the kind of their value.
+  - Function inputs and results are inferred from how they're used and called; calling a function with different kinds, giving back two kinds, or using a function that gives back nothing as a value are friendly compile errors. When nothing decides a kind, the error suggests writing it.
+  - Optional kinds in definitions: `to area with width (a number) and height (a number), giving back a number:` (`(text)`, `(yes or no)`, `giving back nothing`). The wording and the alternatives considered are in the guide.
+  - Kind mistakes that used to stop the program (text in arithmetic, a condition that isn't yes or no, `and` between yes/no and text, comparing a number with text, ...) are now compile errors with the same wording plus the source line and carets. `and` is resolved before the program runs: logical for yes/no, joining for text.
+  - A function that gives back a value but reaches its end without `give back` stops with "The function \"sign\" ended without giving anything back."
+  - `examples/programs/kinds.es`; tests for inference, every new error, annotations, and conflicting calls; the constant/runtime cross-check test grew from 11 to 23 pairs.
+
 - **Memory management with reference counting** (Phase 2, step 13). Text made while a program runs (joins, numbers turned into text, `ask` answers, file contents) is freed as soon as nothing uses it, so loops run in flat memory: the text benchmark went from 280 MB to 1.8 MB, and a million-round loop that makes text stays under 2 MB. Programs don't change; there's nothing to write. See [docs/memory.md](docs/memory.md).
   - Every heap object has a common header (kind and reference count), ready for lists and records. Text literals and constants are static objects marked immortal.
   - One ownership convention throughout: expressions produce owned values, operations and functions consume their arguments, reading a variable retains, storing releases the old value. Blocks release their names when they end, including through `stop the loop`, `skip this one`, `give back`, and `stop the program`.
@@ -14,6 +22,10 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - **Sanitized programs in `make test-debug`:** `ES_SANITIZE=1` makes the compiler build programs with AddressSanitizer and UBSan, so a use after free or double free is caught. On macOS the leak sweep now also covers the memory tests.
 
 ### Changed
+
+- **Generated code uses plain C types:** numbers are `double`, yes/no is `bool`, text is `EsText *`, and a function that gives back nothing is `void`. The tagged value is gone from generated code entirely; only text is reference counted, so no retain or release is generated for numbers or yes/no. Nested loops went from 0.85 s to 0.10 s and counting from 0.07 s to 0.05 s; `mod` uses the integer remainder for whole numbers, and counting loops work out their last round once.
+- `nothing` can no longer be used as a value (it's only what a function that gives back no value gives back), and comparing values of different kinds is an error instead of always "no". `give back nothing` is the same as `return`.
+- The runtime's first file is now `runtime/es_memory.h` (it was `es_value.h`). Compile errors are listed in source order.
 
 - **Faster function calls:** a value is now 16 bytes instead of 48, so it's passed in registers. Recursive fib(38) went from 0.52 s to 0.24 s.
 - The runtime is split into `runtime/es_value.h` (values and memory) and `runtime/es_runtime.h` (operations); `tools/embed.c` joins them. The variables of the main program are now C locals of `main()`.

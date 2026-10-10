@@ -1,3 +1,9 @@
+// The checker: names (made before use, made once, in scope), functions and
+// constants, and the kind of every value (with check_expr.c and
+// check_types.c). Constants are worked out first, then every function body,
+// then the main program, so a call's mistakes are reported at the call;
+// errors are sorted into source order at the end.
+
 #include <string.h>
 #include "front/check_internal.h"
 
@@ -14,6 +20,10 @@ const Symbol *checker_find_made(const Checker *c, const char *name) {
     return find(c->made.items + c->floor, c->made.len - c->floor, name);
 }
 
+const Symbol *checker_find_later(const Checker *c, const char *name) {
+    return c->later.len ? find(c->later.items, c->later.len, name) : NULL;
+}
+
 const Function *checker_find_function(const Checker *c, const char *name) {
     for (size_t i = 0; i < c->functions.len; i++) {
         if (strcmp(c->functions.items[i].name, name) == 0) return &c->functions.items[i];
@@ -26,10 +36,6 @@ const Constant *checker_find_constant(const Checker *c, const char *name) {
         if (strcmp(c->constants.items[i].name, name) == 0) return &c->constants.items[i];
     }
     return NULL;
-}
-
-static size_t param_count(const Function *f) {
-    return f->definition->as.function.params.len;
 }
 
 // A variable can't share a name with a function or a constant. Reports and
@@ -50,9 +56,9 @@ bool checker_clashes(Checker *c, const Name *name) {
     return true;
 }
 
-static void make(Checker *c, const Name *name) {
+static void make(Checker *c, const Name *name, TypeVar var) {
     if (checker_find_made(c, name->text) || checker_clashes(c, name)) return;
-    Symbol symbol = {name->text, name->pos.line, NULL, false};
+    Symbol symbol = {name->text, name->pos.line, NULL, false, var};
     vec_push(c->arena, &c->made, symbol);
 }
 
@@ -99,7 +105,7 @@ void checker_report_unknown(Checker *c, const char *name, SourcePos pos) {
     const Symbol *near = closest(c, name, &count);
     const Symbol *later = find(c->later.items, c->later.len, name);
     const Symbol *ended = find(c->ended.items, c->ended.len, name);
-    const Symbol *outside = c->function ? find(c->made.items, c->floor, name) : NULL;
+    const Symbol *outside = c->function ? find(c->later.items, c->later.len, name) : NULL;
     const Constant *near_constant = checker_closest_constant(c, name);
     if (outside) {
         diag_note(c->diag, "A function only sees its own inputs and the names it makes. To use \"%s\" here, "
@@ -124,143 +130,92 @@ void checker_report_unknown(Checker *c, const char *name, SourcePos pos) {
     }
 }
 
-static void check_target(Checker *c, const Name *name) {
+// The variable a statement changes, or NULL (reported) if there isn't one.
+static const Symbol *check_target(Checker *c, const Name *name) {
     const Constant *k = checker_find_constant(c, name->text);
     if (k) {
         diag_error(c->diag, name->pos.span, "\"%s\" is a constant, so it can't change.", name->text);
         diag_note(c->diag, "It's kept on line %zu. If it needs to change, make it with \"let %s be ...\" instead of "
                            "\"keep\".", k->definition->pos.line, name->text);
-        return;
+        return NULL;
     }
-    if (!checker_find_made(c, name->text)) checker_report_unknown(c, name->text, name->pos);
+    const Symbol *symbol = checker_find_made(c, name->text);
+    if (!symbol) checker_report_unknown(c, name->text, name->pos);
+    return symbol;
 }
 
-// "it" is the number of the innermost loop that has one (count and times loops).
-static void check_it(Checker *c, const Expr *expr) {
-    for (size_t i = c->loops.len; i > 0; i--) {
-        if (c->loops.items[i - 1].has_it) return;
-    }
-    diag_error(c->diag, expr->pos.span, "\"it\" doesn't refer to anything here.");
-    if (c->loops.len > 0) {
-        diag_note(c->diag, "\"it\" means the number of a counting loop or a \"repeat ... times\" loop, "
-                           "but this loop doesn't count. Use a variable instead.");
+// A variable keeps the kind it was made with.
+static void store(Checker *c, const Symbol *symbol, TypeVar value, Span span) {
+    if (types_unify(c, symbol->var, value)) return;
+    diag_error(c->diag, span, "\"%s\" is %s (made on line %zu), but this is %s.", symbol->name,
+               ast_type_name(types_of(c, symbol->var)), symbol->line, ast_type_name(types_of(c, value)));
+    diag_note(c->diag, "A variable keeps the kind of value it was made with. To keep %s, make a new variable for it.",
+              ast_type_name(types_of(c, value)));
+}
+
+static void check_set(Checker *c, const Stmt *stmt) {
+    TypeVar value = checker_check_expr(c, stmt->as.assign.value);
+    const Symbol *symbol = check_target(c, &stmt->as.assign.name);
+    if (symbol) store(c, symbol, value, stmt->as.assign.value->pos.span);
+}
+
+// add/subtract/increase/decrease/multiply/divide: the runtime's arithmetic
+// rules, with the variable on the left (add E to X is X plus E).
+static void check_change(Checker *c, const Stmt *stmt) {
+    static const BinaryOp ops[] = {BINARY_ADD, BINARY_SUBTRACT, BINARY_MULTIPLY, BINARY_DIVIDE};
+    TypeVar amount = checker_check_expr(c, stmt->as.change.amount);
+    const Symbol *symbol = check_target(c, &stmt->as.change.target);
+    if (symbol) checker_arithmetic(c, ops[stmt->as.change.op], symbol->var, amount, stmt->pos.span, stmt->pos.line);
+}
+
+// "ask ... and call the answer X" and "read file ... and call it X" make X as
+// text, or store text in it.
+static void make_text(Checker *c, const Name *name) {
+    TypeVar text = types_new(c, TYPE_TEXT, name->pos.line);
+    const Symbol *existing = checker_find_made(c, name->text);
+    if (existing) {
+        store(c, existing, text, name->pos.span);
     } else {
-        diag_note(c->diag, "\"it\" only means something inside a loop, where it's the loop's number.");
-    }
-}
-
-
-// "to area with width and height"
-static const char *function_header(const Checker *c, const Function *f) {
-    StrBuf sb;
-    sb_init(&sb, c->arena);
-    sb_appendf(&sb, "to %s", f->name);
-    const Stmt *def = f->definition;
-    for (size_t i = 0; i < def->as.function.params.len; i++) {
-        sb_append(&sb, i == 0 ? " with " : " and ");
-        sb_append(&sb, def->as.function.params.items[i].text);
-    }
-    return sb.data;
-}
-
-static void report_unknown_function(Checker *c, const char *name, SourcePos pos) {
-    if (checker_find_constant(c, name)) {
-        diag_error(c->diag, pos.span, "\"%s\" is a constant, not a function.", name);
-        diag_note(c->diag, "A constant is a fixed value: use it by its name alone, like \"say %s\".", name);
-        return;
-    }
-    if (checker_find_made(c, name)) {
-        diag_error(c->diag, pos.span, "\"%s\" is a variable, not a function.", name);
-        diag_note(c->diag, "Only functions made with \"to %s ...:\" can be called.", name);
-        return;
-    }
-    diag_error(c->diag, pos.span, "I don't know a function called \"%s\".", name);
-    size_t limit = strlen(name) <= 3 ? 1 : 2;
-    const Function *best = NULL;
-    size_t best_distance = limit + 1;
-    for (size_t i = 0; i < c->functions.len; i++) {
-        size_t d = edit_distance(c->arena, name, c->functions.items[i].name);
-        if (d < best_distance) {
-            best_distance = d;
-            best = &c->functions.items[i];
-        }
-    }
-    if (best) {
-        diag_note(c->diag, "Did you mean \"%s\"? It's defined on line %zu.", best->name, best->definition->pos.line);
-    } else {
-        diag_note(c->diag, "Define it first, like \"to %s someone:\" with its sentences indented below.", name);
-    }
-}
-
-static void report_argument_count(Checker *c, const Function *f, size_t given, SourcePos pos) {
-    size_t wanted = param_count(f);
-    if (wanted == 0) {
-        diag_error(c->diag, pos.span, "\"%s\" doesn't take any values, but this gives it %zu.", f->name, given);
-    } else {
-        diag_error(c->diag, pos.span, "\"%s\" needs %zu value%s, but this gives it %zu.", f->name, wanted,
-                   wanted == 1 ? "" : "s", given);
-    }
-    diag_note(c->diag, "It's defined on line %zu: \"%s\".", f->definition->pos.line, function_header(c, f));
-}
-
-static void check_call(Checker *c, const Expr *expr) {
-    for (size_t i = 0; i < expr->as.call.args.len; i++) {
-        checker_check_expr(c, expr->as.call.args.items[i]);
-    }
-    const Function *f = checker_find_function(c, expr->as.call.name);
-    if (!f) {
-        report_unknown_function(c, expr->as.call.name, expr->pos);
-    } else if (param_count(f) != expr->as.call.args.len) {
-        report_argument_count(c, f, expr->as.call.args.len, expr->pos);
-    }
-}
-
-// A bare name: a variable, or a function that takes no values.
-static void check_name_expr(Checker *c, const Expr *expr) {
-    if (checker_find_made(c, expr->as.name) || checker_find_constant(c, expr->as.name)) return;
-    const Function *f = checker_find_function(c, expr->as.name);
-    if (!f) {
-        checker_report_unknown(c, expr->as.name, expr->pos);
-    } else if (param_count(f) > 0) {
-        report_argument_count(c, f, 0, expr->pos);
-    }
-}
-
-void checker_check_expr(Checker *c, const Expr *expr) {
-    switch (expr->kind) {
-    case EXPR_NAME: check_name_expr(c, expr); break;
-    case EXPR_CALL: check_call(c, expr); break;
-    case EXPR_IT: check_it(c, expr); break;
-    case EXPR_LENGTH:
-    case EXPR_FILE_CONTENTS: checker_check_expr(c, expr->as.operand); break;
-    case EXPR_UNARY: checker_check_expr(c, expr->as.unary.operand); break;
-    case EXPR_BINARY:
-        checker_check_expr(c, expr->as.binary.left);
-        checker_check_expr(c, expr->as.binary.right);
-        break;
-    case EXPR_CONVERT: checker_check_expr(c, expr->as.convert.operand); break;
-    default: break;
+        make(c, name, text);
     }
 }
 
 static void check_let(Checker *c, const Stmt *stmt) {
     const Name *name = &stmt->as.assign.name;
-    checker_check_expr(c, stmt->as.assign.value);
+    TypeVar value = checker_check_expr(c, stmt->as.assign.value);
     const Symbol *existing = checker_find_made(c, name->text);
     if (existing) {
         diag_error(c->diag, name->pos.span, "You already made \"%s\" on line %zu.", name->text, existing->line);
         diag_note(c->diag, "To change it, write \"set %s to ...\".", name->text);
         return;
     }
-    make(c, name);
+    make(c, name, value);
 }
 
+// A function gives back one kind of value, or nothing, everywhere.
 static void check_return(Checker *c, const Stmt *stmt) {
-    if (stmt->as.returned) checker_check_expr(c, stmt->as.returned);
-    if (c->function) return;
-    diag_error(c->diag, stmt->pos.span, "\"give back\" only works inside a function.");
-    diag_note(c->diag, "It ends a function and hands a value back to whoever called it. "
-                       "To end the whole program, write \"stop the program\".");
+    TypeVar value = stmt->as.returned ? checker_check_expr(c, stmt->as.returned) : 0;
+    const Function *f = c->function;
+    if (!f) {
+        diag_error(c->diag, stmt->pos.span, "\"give back\" only works inside a function.");
+        diag_note(c->diag, "It ends a function and hands a value back to whoever called it. "
+                           "To end the whole program, write \"stop the program\".");
+        return;
+    }
+    Type result = types_of(c, f->result);
+    if (!stmt->as.returned) {
+        if (result == TYPE_NOTHING || result == TYPE_ERROR) return;
+        diag_error(c->diag, stmt->pos.span, "\"%s\" gives back a value, so it can't give back nothing here.", f->name);
+        diag_note(c->diag, "Give back a value here too, like \"give back 0\".");
+    } else if (result == TYPE_NOTHING) {
+        diag_error(c->diag, stmt->as.returned->pos.span, "\"%s\" gives back nothing, so it can't give back a value.",
+                   f->name);
+        diag_note(c->diag, "It's defined on line %zu: \"%s\".", f->definition->pos.line, checker_function_header(c, f));
+    } else if (!types_unify(c, f->result, value)) {
+        diag_error(c->diag, stmt->as.returned->pos.span, "\"%s\" gives back %s (since line %zu), but this is %s.",
+                   f->name, ast_type_name(result), types_line(c, f->result), ast_type_name(types_of(c, value)));
+        diag_note(c->diag, "A function gives back the same kind of value every time.");
+    }
 }
 
 static void check_stmt(Checker *c, const Stmt *stmt);
@@ -271,7 +226,7 @@ static void check_stmt(Checker *c, const Stmt *stmt);
 // and remembered as "ended" in `where` on `line`.
 static void end_scope(Checker *c, size_t outer, size_t line, const char *where) {
     for (size_t i = outer; where && i < c->made.len; i++) {
-        Symbol ended = {c->made.items[i].name, line, where, c->made.items[i].loop_number};
+        Symbol ended = {c->made.items[i].name, line, where, c->made.items[i].loop_number, 0};
         vec_push(c->arena, &c->ended, ended);
     }
     c->made.len = outer;
@@ -291,14 +246,15 @@ static void check_block(Checker *c, const Block *block, size_t line, const char 
     end_scope(c, outer, line, where);
 }
 
-static void check_params(Checker *c, const Stmt *stmt) {
+static void check_params(Checker *c, const Function *f) {
+    const Stmt *stmt = f->definition;
     for (size_t i = 0; i < stmt->as.function.params.len; i++) {
         const Name *param = &stmt->as.function.params.items[i];
         if (checker_find_made(c, param->text)) {
             diag_error(c->diag, param->pos.span, "This function already has an input called \"%s\".", param->text);
             diag_note(c->diag, "Give each input its own name.");
         } else {
-            make(c, param);
+            make(c, param, f->params.items[i]);
         }
     }
 }
@@ -314,12 +270,14 @@ static void check_function(Checker *c, const Stmt *stmt) {
                   stmt->as.function.name.text);
         return;
     }
+    const Function *f = checker_find_function(c, stmt->as.function.name.text);
+    if (!f || f->definition != stmt) return;  // a duplicate, already reported
     size_t saved_floor = c->floor;
     size_t saved_loops = c->loops.len;
     c->floor = c->made.len;
     c->loops.len = 0;
-    c->function = stmt;
-    check_params(c, stmt);
+    c->function = f;
+    check_params(c, f);
     check_statements(c, &stmt->as.function.body);
     end_scope(c, c->floor, stmt->pos.line, NULL);
     c->function = NULL;
@@ -330,7 +288,10 @@ static void check_function(Checker *c, const Stmt *stmt) {
 static void check_if(Checker *c, const Stmt *stmt) {
     for (size_t i = 0; i < stmt->as.if_stmt.branches.len; i++) {
         const IfBranch *branch = &stmt->as.if_stmt.branches.items[i];
-        if (branch->condition) checker_check_expr(c, branch->condition);
+        if (branch->condition) {
+            checker_require(c, checker_check_expr(c, branch->condition), TYPE_YESNO, branch->condition,
+                            "An \"if\" needs yes or no to decide", "Compare it with something, like \"if x is 5\".");
+        }
         check_block(c, &branch->body, stmt->pos.line, "the \"if\"");
     }
 }
@@ -340,7 +301,7 @@ static void check_loop_variable(Checker *c, const Stmt *stmt) {
     const Symbol *existing = checker_find_made(c, var->text);
     if (!existing && checker_clashes(c, var)) return;
     if (!existing) {
-        Symbol symbol = {var->text, var->pos.line, NULL, true};
+        Symbol symbol = {var->text, var->pos.line, NULL, true, types_new(c, TYPE_NUMBER, var->pos.line)};
         vec_push(c->arena, &c->made, symbol);
         return;
     }
@@ -355,12 +316,18 @@ static void check_loop_variable(Checker *c, const Stmt *stmt) {
 
 // The loop's own values are checked outside it; its number and anything
 // made in its body exist only inside.
+static void check_loop_value(Checker *c, const Expr *value, Type type, const char *message, const char *hint) {
+    if (value) checker_require(c, checker_check_expr(c, value), type, value, message, hint);
+}
+
 static void check_loop(Checker *c, const Stmt *stmt) {
-    const Expr *values[] = {stmt->as.loop.from, stmt->as.loop.to, stmt->as.loop.step, stmt->as.loop.times,
-                            stmt->as.loop.condition};
-    for (size_t i = 0; i < sizeof(values) / sizeof(values[0]); i++) {
-        if (values[i]) checker_check_expr(c, values[i]);
-    }
+    check_loop_value(c, stmt->as.loop.from, TYPE_NUMBER, "A count has to start at a number", NULL);
+    check_loop_value(c, stmt->as.loop.to, TYPE_NUMBER, "A count has to end at a number", NULL);
+    check_loop_value(c, stmt->as.loop.step, TYPE_NUMBER, "The step of a count has to be a number", NULL);
+    check_loop_value(c, stmt->as.loop.times, TYPE_NUMBER, "The number of times has to be a number", NULL);
+    check_loop_value(c, stmt->as.loop.condition, TYPE_YESNO,
+                     "A loop needs yes or no to decide whether to keep going",
+                     "Compare it with something, like \"while count is less than 10\".");
     size_t outer = c->made.len;
     if (stmt->as.loop.kind == LOOP_COUNT) check_loop_variable(c, stmt);
     Loop loop = {stmt->as.loop.kind == LOOP_COUNT || stmt->as.loop.kind == LOOP_TIMES};
@@ -386,27 +353,23 @@ static void check_loop_control(Checker *c, const Stmt *stmt) {
 static void check_stmt(Checker *c, const Stmt *stmt) {
     switch (stmt->kind) {
     case STMT_LET: check_let(c, stmt); break;
-    case STMT_SET:
-        checker_check_expr(c, stmt->as.assign.value);
-        check_target(c, &stmt->as.assign.name);
-        break;
-    case STMT_CHANGE:
-        checker_check_expr(c, stmt->as.change.amount);
-        check_target(c, &stmt->as.change.target);
-        break;
+    case STMT_SET: check_set(c, stmt); break;
+    case STMT_CHANGE: check_change(c, stmt); break;
     case STMT_SAY: checker_check_expr(c, stmt->as.value); break;
     case STMT_ASK:
         checker_check_expr(c, stmt->as.ask.prompt);
-        make(c, &stmt->as.ask.answer);
+        make_text(c, &stmt->as.ask.answer);
         break;
     case STMT_WRITE_FILE:
     case STMT_APPEND_FILE:
         checker_check_expr(c, stmt->as.file_write.text);
-        checker_check_expr(c, stmt->as.file_write.path);
+        checker_require(c, checker_check_expr(c, stmt->as.file_write.path), TYPE_TEXT, stmt->as.file_write.path,
+                        "The name of a file has to be text", NULL);
         break;
     case STMT_READ_FILE:
-        checker_check_expr(c, stmt->as.read_file.path);
-        make(c, &stmt->as.read_file.name);
+        checker_require(c, checker_check_expr(c, stmt->as.read_file.path), TYPE_TEXT, stmt->as.read_file.path,
+                        "The name of a file has to be text", NULL);
+        make_text(c, &stmt->as.read_file.name);
         break;
     case STMT_STOP: break;
     case STMT_IF: check_if(c, stmt); break;
@@ -415,7 +378,7 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
     case STMT_CONTINUE: check_loop_control(c, stmt); break;
     case STMT_FUNCTION: check_function(c, stmt); break;
     case STMT_RETURN: check_return(c, stmt); break;
-    case STMT_CALL: checker_check_expr(c, stmt->as.call); break;
+    case STMT_CALL: checker_check_call(c, stmt->as.call, false); break;
     case STMT_CONSTANT: checker_check_constant(c, stmt); break;
     }
 }
@@ -440,16 +403,43 @@ static void collect_names(Checker *c, const Block *program) {
                            : stmt->kind == STMT_READ_FILE ? &stmt->as.read_file.name
                                                           : NULL;
         if (name && !find(c->later.items, c->later.len, name->text)) {
-            Symbol symbol = {name->text, name->pos.line, NULL, false};
+            Symbol symbol = {name->text, name->pos.line, NULL, false, 0};
             vec_push(c->arena, &c->later, symbol);
         }
     }
 }
 
+// Whether a function's body gives back a value anywhere ("give back E").
+static bool gives_value(const Block *block) {
+    for (size_t i = 0; i < block->len; i++) {
+        const Stmt *stmt = block->items[i];
+        if (stmt->kind == STMT_RETURN && stmt->as.returned) return true;
+        if (stmt->kind == STMT_LOOP && gives_value(&stmt->as.loop.body)) return true;
+        for (size_t b = 0; stmt->kind == STMT_IF && b < stmt->as.if_stmt.branches.len; b++) {
+            if (gives_value(&stmt->as.if_stmt.branches.items[b].body)) return true;
+        }
+    }
+    return false;
+}
+
+// A function's kinds: written in its definition, or left for inference. One
+// that never gives back a value gives back nothing.
+static void function_types(Checker *c, Function *f) {
+    const Stmt *def = f->definition;
+    size_t line = def->pos.line;
+    for (size_t i = 0; i < def->as.function.params.len; i++) {
+        Type declared = def->as.function.declared.items[i];
+        vec_push(c->arena, &f->params, types_new(c, declared, declared ? line : 0));
+    }
+    Type result = def->as.function.declared_result;
+    if (result == TYPE_UNKNOWN && !gives_value(&def->as.function.body)) result = TYPE_NOTHING;
+    f->result = types_new(c, result, result ? line : 0);
+}
+
 // Every top-level function, so calls can come before definitions.
 static void collect_functions(Checker *c, const Block *program) {
     for (size_t i = 0; i < program->len; i++) {
-        const Stmt *stmt = program->items[i];
+        Stmt *stmt = program->items[i];
         if (stmt->kind != STMT_FUNCTION) continue;
         const Name *name = &stmt->as.function.name;
         const Function *existing = checker_find_function(c, name->text);
@@ -459,7 +449,8 @@ static void collect_functions(Checker *c, const Block *program) {
             diag_note(c->diag, "Each function needs its own name.");
             continue;
         }
-        Function f = {name->text, stmt};
+        Function f = {name->text, stmt, {0}, 0};
+        function_types(c, &f);
         vec_push(c->arena, &c->functions, f);
     }
 }
@@ -468,8 +459,17 @@ void check_program(Arena *arena, Diag *diag, const Block *program) {
     Checker c = {0};
     c.arena = arena;
     c.diag = diag;
+    size_t first_error = diag_count(diag);
     collect_functions(&c, program);
     checker_collect_constants(&c, program);
     collect_names(&c, program);
-    check_statements(&c, program);
+    for (size_t pass = 0; pass < 3; pass++) {  // constants, then functions, then the rest
+        for (size_t i = 0; i < program->len; i++) {
+            const Stmt *stmt = program->items[i];
+            int kind_pass = stmt->kind == STMT_CONSTANT ? 0 : stmt->kind == STMT_FUNCTION ? 1 : 2;
+            if (kind_pass == (int)pass) check_stmt(&c, stmt);
+        }
+    }
+    types_finish(&c, first_error);
+    diag_sort(diag, first_error);
 }

@@ -1,0 +1,4 @@
+Line 3: "greet" gives back nothing, so it can't give back a value.
+        give back 1
+                  ^
+It's defined on line 1: "to greet with who (text), giving back nothing".

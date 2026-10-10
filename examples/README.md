@@ -25,6 +25,7 @@ Small programs, one per feature. **Every example is checked by `make test`** aga
 | [notes.es](programs/notes.es) | Writing, appending, and reading back a file, and its length |
 | [hanoi.es](programs/hanoi.es) | The Towers of Hanoi: a recursive function with four inputs |
 | [receipt.es](programs/receipt.es) | Constants, a function, a loop, and running totals |
+| [kinds.es](programs/kinds.es) | Kinds of values worked out by the compiler, and an input and result with their kinds written down (see [Types](../docs/language-guide.md#9-types)) |
 | [million_lines.es](programs/million_lines.es) | A million lines of text made one at a time, in flat memory (see [memory](../docs/memory.md)) |
 | [ask_name.es](programs/ask_name.es) | `ask … and call the answer …` (input from `ask_name.in`) |
 | [files.es](programs/files.es) | `write`, `append`, and `read file` |

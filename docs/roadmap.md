@@ -5,7 +5,7 @@ EasyScript grows in five phases. Each phase ends with working, tested, documente
 | Phase | Focus | Status |
 |---|---|---|
 | [1](#phase-1-core-language) | Core language | **Complete** (v0.1.0, 2026-10-10) |
-| [2](#phase-2-data-and-structure) | Records, lists, maps, modules, static types | **In progress** |
+| [2](#phase-2-data-and-structure) | Memory, static types, records, lists, maps, modules | **In progress** (memory and static types done) |
 | [3](#phase-3-self-hosting) | Self-hosting | Coming soon |
 | [4](#phase-4-real-world-programs) | Standard library, C interop, concurrency, servers | Coming soon |
 | [5](#phase-5-systems-mode) | Systems mode and an operating system | Coming soon |
@@ -37,13 +37,13 @@ The goal is to write small, real programs in the new sentence syntax and compile
 - [x] Expression parser: arithmetic, comparisons in words and symbols, `and`/`or`/`not`, joining text, conversions, `length of`, `contents of file`, calls, with "Did you mean" and ambiguity errors
 - [x] Statement parser for simple statements: variables, output, `ask`, files, `stop the program`, `please`
 - [x] Checker for names: made before use, made once, "did you mean", "you make it later"
-- [x] C code generator and runtime (tagged values, friendly runtime errors), embedded in the compiler
+- [x] C code generator and runtime (tagged values in Phase 1, typed since Phase 2; friendly runtime errors), embedded in the compiler
 - [x] Legacy prototype pipeline removed
 - [x] Blocks for `if` / `otherwise` (indentation, lining up, scoping)
 - [x] Blocks for loops
 - [x] Functions: definitions, `give back`, calls as sentences and values, recursion, use before definition
 - [x] Runtime memory reclaimed during loops (moved to Phase 2, and done there: [reference counting](memory.md))
-- Checker: types (moved to Phase 2's static types; block scopes are done)
+- [x] Checker: types (moved to Phase 2, and done there: [static types](language-guide.md#9-types); block scopes are done)
 - Runtime errors that show the source line (moved to Phase 2)
 
 **Language features**
@@ -78,12 +78,12 @@ Planned. Each will be added with its expected output in the same commit as its f
 - [x] **Memory management:** reference counting. Text made while a program runs is freed as soon as nothing uses it, so loops run in flat memory (the text benchmark went from 280 MB to under 2 MB). Users never write anything about memory. See [memory.md](memory.md).
   - **Needed once records arrive:** reference counting can't free objects that refer to each other in a cycle. Text can't form cycles, but records (and lists of records) can, so they'll need **weak references or a cycle collector**.
 - **Text tools:** splitting text into words and lines, and looking at its characters (needed for the planned `word_counter.es` example)
-- **From Phase 1:** type checking (as part of static types), runtime errors that show the line of the program like compile errors do, and `file ... exists`
+- [x] **Static types:** the compiler works out whether every value is a number, text, or yes/no, inferring function inputs and results from how they're used and called, with optional kinds in definitions (`to area with width (a number), giving back a number:`). Kind mistakes are compile errors with the runtime's old wording plus carets; generated code uses plain C `double`/`bool` and only text is reference counted. See [Types](language-guide.md#9-types).
+- **From Phase 1:** runtime errors that show the line of the program like compile errors do, and `file ... exists`
 - **Records:** named groups of fields ("a point has an x and a y")
 - **Lists:** ordered collections, with `for each item in list`
 - **Maps:** look up values by key
 - **Modules:** split programs across files and reuse code
-- **Static types:** every value has a type the compiler checks before the program runs, inferred where possible, with English error messages when types don't match
 
 ## Phase 3: Self-hosting
 
