@@ -6,6 +6,12 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Loops:** `count from A to B` (counts down by itself when A is bigger; `by S` / `in steps of S`; `and call each number N` / `as N`, otherwise the number is called `number`), `count down from`, `go from A to B in steps of S`, `for each N from A to B`, `do this N times` / `repeat N times`, `while` / `as long as` / `repeat while`, `keep doing this until` / `repeat until`, and `forever`.
+  - `stop the loop` (`stop`, `break`) and `skip this one` (`skip`, `continue`, `move on`); both are errors outside a loop.
+  - `it` is the innermost counting loop's number (or the round of a `times` loop); `it` outside one is an error.
+  - A loop's number and names made in its body exist only inside the loop; a loop's number can't reuse an existing name.
+  - Friendly runtime errors for counts that aren't numbers, steps that aren't more than zero, bad `times` counts, and loop conditions that aren't yes or no.
+  - `examples/programs/loops.es`, and `logan.es`: the 2024 prototype's loop example ported to the new syntax.
 - **Decisions:** `if CONDITION:` with an indented block, any number of `otherwise if CONDITION:`, and a final `otherwise:` (`else` works too). One-line forms: `if x is 5, say "hi".` and `if x is 5 then say "hi".`
   - An `otherwise` must line up with its `if`; a misplaced one, one with no `if` above it, one after a one-line `if`, or a second plain `otherwise` gets a friendly error saying what's wrong.
   - Conditions must be yes or no; anything else is a runtime error: "Line 3: An "if" needs yes or no to decide, but this is a number."
@@ -85,9 +91,10 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Known issues
 
-- Decisions, loops, and functions are coming soon, so programs run straight through from top to bottom.
-- Text built while a program runs is freed only when it exits. That's fine without loops, but loops will need better memory management.
-- The interactive shell reruns the whole session for every line, so earlier output (and questions from `ask`) repeat.
+- Text made while a program runs is freed only when it exits, so a long loop that builds text grows (about 20 bytes per round in a simple case).
+- `stop` on its own now means "stop the loop"; to end the program, write `stop the program`.
+- Functions are coming soon.
+- The interactive shell reads one line at a time, so blocks (`if ...:`, loops) can't be typed there; one-line `if`s work. It also reruns the whole session for every line, so earlier output (and questions from `ask`) repeat.
 
 ## 2024-07-06: First prototype
 

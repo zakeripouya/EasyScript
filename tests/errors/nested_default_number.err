@@ -1,0 +1,4 @@
+Line 2: This loop calls each number "number", but you already made "number" on line 1.
+        count from 1 to 3:
+        ^^^^^
+Give this loop's number its own name, like "count from 1 to 10 as n".

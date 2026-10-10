@@ -88,12 +88,12 @@ Line 18: Something is missing after the text "notes.txt".
               ^^^^^^^^^^^
 Write it like "read file "notes.txt" and call it notes".
 
-Line 19: Something is missing after "stop".
-    stop
+Line 19: Something is missing after "move".
+    move
     ^^^^
-Write it like "stop the program".
+Write it like "move on".
 
-Line 20: I expected "the program" here, but found "now".
-    stop now
-         ^^^
-Write it like "stop the program".
+Line 20: I expected "on" here, but found "along".
+    move along
+         ^^^^^
+Write it like "move on".

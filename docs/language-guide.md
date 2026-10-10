@@ -15,7 +15,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [3. Variables](#3-variables) | Available |
 | [4. Output and input](#4-output-and-input) | Available |
 | [5. Decisions](#5-decisions) | Available |
-| [6. Loops](#6-loops) | Coming soon |
+| [6. Loops](#6-loops) | Available |
 | [7. Functions](#7-functions) | Coming soon |
 | [8. Files](#8-files) | Available, except `file X exists` |
 
@@ -358,22 +358,49 @@ If a sentence could be read two ways, EasyScript doesn't guess. It stops and sho
 
 ## 6. Loops
 
-**Status: Coming soon (Phase 1).** These examples are the planned syntax and don't compile yet.
+**Status: Available.**
+
+A loop repeats the indented sentences below it. To count:
+
+```
+count from 1 to 3:
+    say number.
+```
+
+says 1, 2 and 3. The number is called `number`, or `it`; give it your own name with `as` (or `and call each number`), and count in bigger steps with `by` or `in steps of`:
+
+```
+count from 0 to 100 by 25 as percent:
+    say percent followed by "%".
+```
+
+If the start is bigger than the end, the count goes down by itself: `count from 3 to 1` says 3, 2, 1. `for each i from 1 to 10:` and `go from 0 to 1 in steps of 0.25:` are other ways to say the same thing.
+
+To repeat something a number of times, or while something is true:
 
 ```
 repeat 3 times:
     say "hip hip hooray!".
 
-set count to 3.
-repeat while count is greater than 0:
-    say count.
-    subtract 1 from count.
-
-for each n from 1 to 10:
-    say n * n.
+let total be 1.
+while total is less than 100:
+    multiply total by 2.
+say total.
 ```
 
-`stop.` leaves a loop early, and `skip.` jumps to the next round.
+There's also `as long as` (the same as `while`), `keep doing this until` (the opposite), and `forever`. Inside a loop, `stop the loop` leaves it straight away, and `skip this one` jumps to the next round:
+
+```
+forever:
+    ask "Guess? " and call the answer guess.
+    if guess is "42", stop the loop.
+    say "Try again.".
+say "You got it!".
+```
+
+Names made inside a loop, and the loop's number, only exist inside the loop. Nested counting loops each need their own name for the number, like `count from 1 to 3 as row:` and `count from 1 to 3 as column:`.
+
+Try it: `./easyscript run examples/programs/loops.es`
 
 ---
 

@@ -1,0 +1,4 @@
+Line 3: I don't know anything called "total".
+    say total
+        ^^^^^
+You made "total" inside the loop on line 1, so it only exists inside that block. To use it afterwards, make it before the loop.

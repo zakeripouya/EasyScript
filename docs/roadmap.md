@@ -38,7 +38,9 @@ The goal is to write small, real programs in the new sentence syntax and compile
 - [x] C code generator and runtime (tagged values, friendly runtime errors), embedded in the compiler
 - [x] Legacy prototype pipeline removed
 - [x] Blocks for `if` / `otherwise` (indentation, lining up, scoping)
-- [ ] Blocks for loops and function definitions
+- [x] Blocks for loops
+- [ ] Blocks for function definitions
+- [ ] Runtime memory reclaimed during loops (today text made while a program runs is freed only at exit)
 - [ ] Checker: types (block scopes are done)
 - [ ] Runtime errors that show the source line
 
@@ -50,7 +52,7 @@ The goal is to write small, real programs in the new sentence syntax and compile
 - [x] Files: `write … to file`, `append … to file`, `read file … and call it`, `contents of file`
 - [x] `stop the program`, `please`
 - [x] Decisions: `if`, `otherwise if`, `otherwise` / `else`, one-line `if ..., S` and `if ... then S`; block scoping for names
-- [ ] Loops: `repeat N times`, `repeat while`, `repeat until`, `for each ... from ... to`, `stop`, `skip`
+- [x] Loops: `count from ... to ...` (up or down, `by`/`in steps of`, `as`), `count down`, `go from`, `for each`, `do this N times`/`repeat N times`, `while`/`as long as`/`repeat while`, `keep doing this until`/`repeat until`, `forever`; `stop the loop` and `skip this one`; `it`
 - [ ] Functions: `to NAME using ...`, calls, `give back`
 - [ ] `file ... exists`
 
@@ -58,15 +60,12 @@ The proposed wording for each planned feature is in the [vocabulary](vocabulary.
 
 ### Examples
 
-Done (in [`examples/programs/`](../examples/programs/), checked by `make test`): `hello.es`, `first_program.es`, `variables.es`, `text.es`, `logic.es`, `ask_name.es` (with test input), `files.es`, `decisions.es`, `err_divide_by_zero.es`. The checker's "did you mean" error is tested in `tests/errors/misspelled_variable.es`.
+Done (in [`examples/programs/`](../examples/programs/), checked by `make test`): `hello.es`, `first_program.es`, `variables.es`, `text.es`, `logic.es`, `ask_name.es` (with test input), `files.es`, `decisions.es`, `loops.es`, `logan.es` (the 2024 prototype's loop example, ported), `err_divide_by_zero.es`. The checker's "did you mean" error is tested in `tests/errors/misspelled_variable.es`.
 
 Planned. Each will be added with its expected output in the same commit as its feature:
 
 | Example | Feature |
 |---|---|
-| `repeat.es` | `repeat N times` |
-| `countdown.es` | `repeat while` (the README taste) |
-| `for_each.es` | `for each ... from ... to`, `stop`, `skip` |
 | `functions.es` | `to ... using`, calls, `give back` |
 | `file_exists.es` | `file ... exists` |
 | `err_ambiguous.es` | an ambiguous block sentence and its suggestions |

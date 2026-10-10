@@ -1,0 +1,2 @@
+while no:
+    say it

@@ -1,0 +1,2 @@
+Line 1: The step of a count has to be more than zero, but it's -1.
+Counting goes up or down by itself; the step only says how far to go each time.

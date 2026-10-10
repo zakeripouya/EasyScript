@@ -1,0 +1,24 @@
+repeat times [1:1]
+  times
+    number 3 [1:9]
+  do
+    say [2:5]
+      it [2:9]
+repeat times [3:1]
+  times
+    number 3 [3:8]
+  do
+    say [4:5]
+      it [4:9]
+repeat times [5:1]
+  times
+    name n [5:8]
+  do
+    say [6:5]
+      it [6:9]
+repeat times [7:1]
+  times
+    number 2 [7:9]
+  do
+    say [8:5]
+      text "capitals" [8:9]

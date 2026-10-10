@@ -14,6 +14,8 @@ Small programs, one per feature. **Every example is checked by `make test`** aga
 | [text.es](programs/text.es) | Joining text with `and` and `followed by`, `length of`, `as a number` |
 | [logic.es](programs/logic.es) | Comparisons, `and`, `or`, `not` |
 | [decisions.es](programs/decisions.es) | `if`, `otherwise if`, `otherwise`, and the one-line forms |
+| [loops.es](programs/loops.es) | Counting up and down, `repeat ... times`, `while`, `skip this one`, `stop the loop`, `it` |
+| [logan.es](programs/logan.es) | The 2024 prototype's loop example (`old/logan.code`), ported to today's syntax |
 | [ask_name.es](programs/ask_name.es) | `ask … and call the answer …` (input from `ask_name.in`) |
 | [files.es](programs/files.es) | `write`, `append`, and `read file` |
 | [err_divide_by_zero.es](programs/err_divide_by_zero.es) | A runtime error: "Line 3: You divided by zero." |

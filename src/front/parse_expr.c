@@ -245,6 +245,7 @@ static Expr *parse_join(Parser *p) {
 static Expr *parse_postfix(Parser *p) {
     Expr *expr = parse_primary(p);
     for (;;) {
+        if (p->as_ends_value && parser_at_word(p, 0, "as")) return expr;
         size_t len;
         const Phrase *conversion = parser_match_phrase(p, conversions, COUNT(conversions), &len);
         if (!conversion) return expr;
@@ -306,7 +307,10 @@ static Expr *parse_text(Parser *p) {
 
 static Expr *parse_group(Parser *p) {
     const Token *open = parser_advance(p);
+    bool as_ends_value = p->as_ends_value;  // inside parentheses, "as" converts again
+    p->as_ends_value = false;
     Expr *inner = parse_expression(p);
+    p->as_ends_value = as_ends_value;
     if (!parser_at(p, 0, TOK_RPAREN)) {
         if (parser_error(p, open->span, "This \"(\" is never closed.")) {
             diag_note(p->diag, "Add a \")\" where the group ends, on the same line.");

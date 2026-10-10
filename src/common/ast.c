@@ -93,6 +93,19 @@ static void dump_expr(const Expr *expr, size_t depth, StrBuf *out) {
     }
 }
 
+static const char *loop_label(const Stmt *stmt, StrBuf *scratch) {
+    switch (stmt->as.loop.kind) {
+    case LOOP_COUNT:
+        sb_appendf(scratch, "count%s, call each number %s", stmt->as.loop.down ? " down" : "", stmt->as.loop.var.text);
+        return scratch->data;
+    case LOOP_TIMES: return "repeat times";
+    case LOOP_WHILE: return "repeat while";
+    case LOOP_UNTIL: return "repeat until";
+    case LOOP_FOREVER: return "repeat forever";
+    }
+    return "loop";
+}
+
 // The first line of a statement, e.g. "let total" or "read file, call it notes".
 static const char *stmt_label(const Stmt *stmt, StrBuf *scratch) {
     switch (stmt->kind) {
@@ -108,6 +121,9 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch) {
     case STMT_READ_FILE: sb_appendf(scratch, "read file, call it %s", stmt->as.read_file.name.text); break;
     case STMT_STOP: return "stop the program";
     case STMT_IF: return stmt->as.if_stmt.one_line ? "if (one line)" : "if";
+    case STMT_LOOP: return loop_label(stmt, scratch);
+    case STMT_BREAK: return "stop the loop";
+    case STMT_CONTINUE: return "skip this one";
     }
     return scratch->data;
 }
@@ -138,6 +154,25 @@ static void dump_if(const Stmt *stmt, size_t depth, StrBuf *out) {
     }
 }
 
+static void dump_section(const char *label, const Expr *expr, size_t depth, StrBuf *out) {
+    if (!expr) return;
+    dump_label(depth, out, label);
+    dump_expr(expr, depth + 1, out);
+}
+
+// Sections "from", "to", "by", "times", "condition", then "do" with the body.
+static void dump_loop(const Stmt *stmt, size_t depth, StrBuf *out) {
+    dump_section("from", stmt->as.loop.from, depth + 1, out);
+    dump_section("to", stmt->as.loop.to, depth + 1, out);
+    dump_section("by", stmt->as.loop.step, depth + 1, out);
+    dump_section("times", stmt->as.loop.times, depth + 1, out);
+    dump_section("condition", stmt->as.loop.condition, depth + 1, out);
+    dump_label(depth + 1, out, "do");
+    for (size_t i = 0; i < stmt->as.loop.body.len; i++) {
+        dump_stmt(stmt->as.loop.body.items[i], depth + 2, out);
+    }
+}
+
 static void dump_stmt(const Stmt *stmt, size_t depth, StrBuf *out) {
     StrBuf label;
     sb_init(&label, out->arena);
@@ -155,6 +190,9 @@ static void dump_stmt(const Stmt *stmt, size_t depth, StrBuf *out) {
     case STMT_READ_FILE: dump_expr(stmt->as.read_file.path, depth + 1, out); break;
     case STMT_STOP: break;
     case STMT_IF: dump_if(stmt, depth, out); break;
+    case STMT_LOOP: dump_loop(stmt, depth, out); break;
+    case STMT_BREAK:
+    case STMT_CONTINUE: break;
     }
 }
 

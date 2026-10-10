@@ -1,0 +1,10 @@
+repeat forever [1:1]
+  do
+    stop the loop [2:5]
+    stop the loop [3:5]
+    stop the loop [4:5]
+    skip this one [5:5]
+    skip this one [6:5]
+    skip this one [7:5]
+    skip this one [8:5]
+    stop the program [9:5]

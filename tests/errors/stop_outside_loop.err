@@ -1,0 +1,4 @@
+Line 2: "stop the loop" only works inside a loop.
+    stop the loop
+    ^^^^^^^^^^^^^
+It leaves the loop it's in. To end the whole program, write "stop the program".

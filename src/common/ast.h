@@ -114,7 +114,18 @@ typedef enum {
     STMT_READ_FILE,    // read file F and call it X
     STMT_STOP,         // stop the program
     STMT_IF,           // if ... / otherwise if ... / otherwise
+    STMT_LOOP,         // count / repeat / while / until / forever
+    STMT_BREAK,        // stop the loop
+    STMT_CONTINUE,     // skip this one
 } StmtKind;
+
+typedef enum {
+    LOOP_COUNT,    // count [down] from A to B [by S] [as N]; go from; for each N from
+    LOOP_TIMES,    // do this N times / repeat N times ("it" is the round, from 1)
+    LOOP_WHILE,    // while C / as long as C / repeat while C
+    LOOP_UNTIL,    // keep doing this until C / repeat until C (checked before each round)
+    LOOP_FOREVER,  // forever
+} LoopKind;
 
 typedef enum {
     CHANGE_ADD,       // add E to X, increase X by E
@@ -173,6 +184,16 @@ struct Stmt {
             Vec(IfBranch) branches;  // the "if" first, then each "otherwise"
             bool one_line;           // "if C, S." or "if C then S."
         } if_stmt;
+        struct {
+            LoopKind kind;
+            Expr *from, *to, *step;  // LOOP_COUNT (step NULL: 1)
+            bool down;               // "count down": never counts up
+            Name var;                // LOOP_COUNT: "number" unless named
+            bool var_named;          // the program chose the name (otherwise it's "number")
+            Expr *times;             // LOOP_TIMES
+            Expr *condition;         // LOOP_WHILE, LOOP_UNTIL
+            Block body;
+        } loop;
     } as;
 };
 

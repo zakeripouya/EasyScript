@@ -23,16 +23,14 @@ static bool at_if_start_of_otherwise(const Parser *p) {
     return parser_at_otherwise(p) && parser_at_word(p, 1, "if");
 }
 
-// --- Branches ----------------------------------------------------------------
+// --- Blocks ------------------------------------------------------------------
 
 static Span header_span(const SourcePos *start, Span end) {
     Span span = {start->span.offset, end.offset + end.length - start->span.offset};
     return span;
 }
 
-// ":" NEWLINE INDENT statements DEDENT, after a condition or "otherwise".
-// `if_pos` is the if this branch belongs to, for misplaced "otherwise"s inside.
-static bool parse_branch_block(Parser *p, IfBranch *branch, const SourcePos *if_pos, const char *what) {
+bool parser_parse_block(Parser *p, Block *body, SourcePos *header, const SourcePos *if_pos, const char *what) {
     if (!parser_at(p, 0, TOK_COLON)) {
         const Token *token = parser_peek(p, 0);
         if (parser_error(p, token->span, "I expected a colon after %s, but found %s.", what, parser_describe(p, token))) {
@@ -43,18 +41,18 @@ static bool parse_branch_block(Parser *p, IfBranch *branch, const SourcePos *if_
         return false;
     }
     Span colon = parser_advance(p)->span;
-    branch->pos.span = header_span(&branch->pos, colon);
+    header->span = header_span(header, colon);
     if (!parser_at(p, 0, TOK_NEWLINE) && !parser_at(p, 0, TOK_EOF)) {
         if (parser_error(p, parser_peek(p, 0)->span, "After the colon, start a new line.")) {
-            diag_note(p->diag, "Put the sentences that belong to it on the next lines, indented. "
-                               "For one sentence you can also write \"if x is 5, say \"five\"\".");
+            diag_note(p->diag, "Put the sentences that belong to it on the next lines, indented.%s",
+                      if_pos ? " For one sentence you can also write \"if x is 5, say \"five\"\"." : "");
         }
         parser_skip_line_and_block(p);
         return false;
     }
     if (parser_at(p, 0, TOK_NEWLINE)) parser_advance(p);
     if (!parser_at(p, 0, TOK_INDENT)) {
-        if (parser_error(p, branch->pos.span, "Nothing is indented under %s.", what)) {
+        if (parser_error(p, header->span, "Nothing is indented under %s.", what)) {
             diag_note(p->diag, "Put the sentences that belong to it on the next lines, indented "
                                "(4 spaces is usual).");
         }
@@ -62,9 +60,9 @@ static bool parse_branch_block(Parser *p, IfBranch *branch, const SourcePos *if_
         return false;
     }
     parser_advance(p);
-    vec_push(p->arena, &p->open_ifs, *if_pos);
-    parse_statements(p, &branch->body, true);
-    p->open_ifs.len--;
+    if (if_pos) vec_push(p->arena, &p->open_ifs, *if_pos);
+    parse_statements(p, body, true);
+    if (if_pos) p->open_ifs.len--;
     return true;
 }
 
@@ -114,7 +112,8 @@ static bool parse_otherwise_chain(Parser *p, Stmt *stmt) {
             final_line = keyword->line;
         }
         const SourcePos *if_pos = &stmt->pos;
-        if (parse_branch_block(p, &branch, if_pos, has_condition ? "this \"otherwise if\"" : "this \"otherwise\"")) {
+        if (parser_parse_block(p, &branch.body, &branch.pos, if_pos,
+                               has_condition ? "this \"otherwise if\"" : "this \"otherwise\"")) {
             vec_push(p->arena, &stmt->as.if_stmt.branches, branch);
         } else {
             ok = false;
@@ -180,7 +179,7 @@ Stmt *parse_if(Parser *p, const Token *verb) {
         parser_skip_line_and_block(p);
         ok = false;
     } else {
-        ok = parse_branch_block(p, &first, &stmt->pos, "this \"if\"");
+        ok = parser_parse_block(p, &first.body, &first.pos, &stmt->pos, "this \"if\"");
     }
     if (ok) vec_push(p->arena, &stmt->as.if_stmt.branches, first);
     ok = parse_otherwise_chain(p, stmt) && ok;

@@ -1,0 +1,4 @@
+Line 2: You already made "n" on line 1.
+    for each n from 1 to 3:
+             ^
+Give this loop's number its own name, like "count from 1 to 10 as n".

@@ -1,0 +1,4 @@
+Line 3: I don't know anything called "n".
+    say n
+        ^
+"n" is the number of the loop on line 1, so it only exists inside that loop. To keep it, make a variable before the loop and set it inside.

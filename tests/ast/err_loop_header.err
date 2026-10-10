@@ -1,0 +1,101 @@
+Line 1: I expected "from" here, but found "to".
+    count to 10:
+          ^^
+Write it like "count from 1 to 10:".
+
+Line 3: I expected "to" here, but found "10".
+    count from 1 10:
+                 ^^
+Write it like "count from 1 to 10:".
+
+Line 5: A sentence that starts with "count" is a counting loop, like "count from 1 to 10:".
+    count is 5
+    ^^^^^
+To make a variable called "count", write "let count be ...".
+
+Line 6: I expected a colon after this loop, but found the end of the line.
+    count from 1 to 10
+                      ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 8: Something is missing after "as".
+    count from 1 to 10 as:
+                       ^^
+Add a name there, like "total".
+
+Line 10: "a" can't be used as a name.
+    count from 1 to 10 as a:
+                          ^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 12: "yes" can't be used as a name.
+    count from 1 to 10 as yes:
+                          ^^^
+"yes" already means something in EasyScript.
+Try a different name, like "my_yes".
+
+Line 14: Something is missing after "by".
+    count from 1 to 10 by:
+                       ^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 16: I expected "each" here, but found "i".
+    for i from 1 to 3:
+        ^
+Write it like "for each n from 1 to 10:".
+
+Line 18: Something is missing after "each".
+    for each from 1 to 3:
+        ^^^^
+Add a name there, like "total".
+
+Line 20: I expected "from" here, but found "to".
+    for each i to 3:
+               ^^
+Write it like "for each n from 1 to 10:".
+
+Line 22: I expected "times" here, but found ":".
+    repeat 3:
+            ^
+Write it like "repeat 3 times:".
+
+Line 24: I expected "this" here, but found "3".
+    do 3 times:
+       ^
+Write it like "do this 3 times:".
+
+Line 26: Something is missing after "while".
+    while:
+    ^^^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 28: I expected "as long as" here, but found "long x".
+    as long x is 1:
+       ^^^^^^
+Write it like "as long as x is less than 10:".
+
+Line 30: I expected "keep doing this until" here, but found "doing this while".
+    keep doing this while x is 1:
+         ^^^^^^^^^^^^^^^^
+Write it like "keep doing this until done:".
+
+Line 32: I expected "from" here, but found "to".
+    go to 10:
+       ^^
+Write it like "go from 0 to 100 in steps of 10:".
+
+Line 34: After the colon, start a new line.
+    forever: say 1
+             ^^^
+Put the sentences that belong to it on the next lines, indented.
+
+Line 35: Nothing is indented under this loop.
+    forever:
+    ^^^^^^^^
+Put the sentences that belong to it on the next lines, indented (4 spaces is usual).
+
+Line 37: I expected a colon after this loop, but found ",".
+    count from 1 to 3, say it
+                     ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.

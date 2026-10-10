@@ -1,0 +1,39 @@
+repeat while [1:1]
+  condition
+    less [1:7]
+      name x [1:7]
+      number 10 [1:22]
+  do
+    add x [2:5]
+      number 1 [2:9]
+repeat while [3:1]
+  condition
+    greater [3:12]
+      name x [3:12]
+      number 0 [3:30]
+  do
+    subtract x [4:5]
+      number 1 [4:14]
+repeat while [5:1]
+  condition
+    less [5:14]
+      name x [5:14]
+      number 5 [5:29]
+  do
+    add x [6:5]
+      number 1 [6:9]
+repeat until [7:1]
+  condition
+    name done [7:23]
+  do
+    set done [8:5]
+      yes [8:17]
+repeat until [9:1]
+  condition
+    name done [9:14]
+  do
+    set done [10:5]
+      yes [10:17]
+repeat forever [11:1]
+  do
+    stop the loop [12:5]

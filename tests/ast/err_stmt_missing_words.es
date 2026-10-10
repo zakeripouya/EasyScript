@@ -16,5 +16,5 @@ append "x"
 read "notes.txt" and call it notes
 read file "notes.txt" and call the answer notes
 read file "notes.txt"
-stop
-stop now
+move
+move along

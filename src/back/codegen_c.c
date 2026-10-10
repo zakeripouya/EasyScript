@@ -17,12 +17,20 @@
 extern const unsigned char es_runtime_source[];
 extern const size_t es_runtime_source_len;
 
+// A loop being generated, for "it".
+typedef struct {
+    const Stmt *stmt;
+    size_t id;  // es_cN / es_iN / es_nN
+} LoopCode;
+
 typedef struct {
     Arena *arena;
     StrBuf body;               // statements of main()
     Vec(const char *) globals; // variable names, in the order they're first made
     size_t temps;              // es_t1 ... es_tN, declared at the top of main()
-    size_t depth;              // how many if blocks the current statement is inside
+    size_t depth;              // how many blocks the current statement is inside
+    Vec(LoopCode) loops;       // loops the current statement is inside, innermost last
+    size_t loop_ids;
 } Codegen;
 
 // Starts a line of main()'s body at the current nesting depth.
@@ -151,6 +159,24 @@ static void emit_call1(Codegen *g, const char *fn, size_t line, const Expr *oper
     sb_append_char(out, ')');
 }
 
+// "it": the number of the innermost count or times loop (the checker made
+// sure there is one).
+static void emit_it(Codegen *g, StrBuf *out) {
+    for (size_t i = g->loops.len; i > 0; i--) {
+        const LoopCode *loop = &g->loops.items[i - 1];
+        if (loop->stmt->as.loop.kind == LOOP_COUNT) {
+            append_c_name(out, loop->stmt->as.loop.var.text);
+            return;
+        }
+        if (loop->stmt->as.loop.kind == LOOP_TIMES) {
+            sb_appendf(out, "es_num((double)es_i%zu)", loop->id);
+            return;
+        }
+    }
+    assert(!"\"it\" outside a counting loop reached codegen");
+    sb_append(out, "es_nothing()");
+}
+
 static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     size_t line = expr->pos.line;
     switch (expr->kind) {
@@ -176,8 +202,8 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
             emit_call1(g, "es_to_text", 0, expr->as.convert.operand, out);
         }
         break;
+    case EXPR_IT: emit_it(g, out); break;
     case EXPR_ERROR:
-    case EXPR_IT:
     case EXPR_CALL:
         // The checker rejects these before codegen runs.
         assert(!"unchecked expression reached codegen");
@@ -260,6 +286,78 @@ static void emit_if(Codegen *g, const Stmt *stmt) {
     sb_append_char(&g->body, '\n');
 }
 
+// es_tN = EXPR; (so a loop's values are worked out once, left to right)
+static size_t emit_temp(Codegen *g, const Expr *expr) {
+    size_t t = new_temp(g);
+    indent(g);
+    sb_appendf(&g->body, "es_t%zu = ", t);
+    emit_expr(g, expr, &g->body);
+    sb_append(&g->body, ";\n");
+    return t;
+}
+
+// The line that opens the C loop, for each kind of loop.
+static void emit_loop_head(Codegen *g, const Stmt *stmt, size_t id) {
+    size_t line = stmt->pos.line;
+    switch (stmt->as.loop.kind) {
+    case LOOP_COUNT: {
+        size_t from = emit_temp(g, stmt->as.loop.from);
+        size_t to = emit_temp(g, stmt->as.loop.to);
+        size_t step = stmt->as.loop.step ? emit_temp(g, stmt->as.loop.step) : 0;
+        indent(g);
+        sb_appendf(&g->body, "EsCount es_c%zu = es_count_start(%zu, es_t%zu, es_t%zu, ", id, line, from, to);
+        if (step) {
+            sb_appendf(&g->body, "es_t%zu, 1, %d);\n", step, stmt->as.loop.down);
+        } else {
+            sb_appendf(&g->body, "es_nothing(), 0, %d);\n", stmt->as.loop.down);
+        }
+        indent(g);
+        sb_appendf(&g->body, "for (long long es_i%zu = 0; es_count_next(&es_c%zu, es_i%zu, &", id, id, id);
+        append_c_name(&g->body, stmt->as.loop.var.text);
+        sb_appendf(&g->body, "); es_i%zu++) {\n", id);
+        break;
+    }
+    case LOOP_TIMES:
+        indent(g);
+        sb_appendf(&g->body, "long long es_n%zu = es_times(%zu, ", id, line);
+        emit_expr(g, stmt->as.loop.times, &g->body);
+        sb_append(&g->body, ");\n");
+        indent(g);
+        sb_appendf(&g->body, "for (long long es_i%zu = 1; es_i%zu <= es_n%zu; es_i%zu++) {\n", id, id, id, id);
+        break;
+    case LOOP_WHILE:
+    case LOOP_UNTIL:
+        indent(g);
+        sb_appendf(&g->body, "while (%ses_loop_condition(%zu, ", stmt->as.loop.kind == LOOP_UNTIL ? "!" : "", line);
+        emit_expr(g, stmt->as.loop.condition, &g->body);
+        sb_append(&g->body, ")) {\n");
+        break;
+    case LOOP_FOREVER:
+        indent(g);
+        sb_append(&g->body, "for (;;) {\n");
+        break;
+    }
+}
+
+// { <setup> for/while (...) { body } }
+static void emit_loop(Codegen *g, const Stmt *stmt) {
+    size_t id = ++g->loop_ids;
+    if (stmt->as.loop.kind == LOOP_COUNT) declare_global(g, stmt->as.loop.var.text);
+    indent(g);
+    sb_append(&g->body, "{\n");
+    g->depth++;
+    emit_loop_head(g, stmt, id);
+    LoopCode loop = {stmt, id};
+    vec_push(g->arena, &g->loops, loop);
+    emit_block(g, &stmt->as.loop.body);
+    g->loops.len--;
+    indent(g);
+    sb_append(&g->body, "}\n");
+    g->depth--;
+    indent(g);
+    sb_append(&g->body, "}\n");
+}
+
 static void emit_stmt(Codegen *g, const Stmt *stmt) {
     indent(g);
     sb_appendf(&g->body, "/* line %zu */\n", stmt->pos.line);
@@ -295,6 +393,15 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
         sb_append(&g->body, "es_stop();\n");
         break;
     case STMT_IF: emit_if(g, stmt); break;
+    case STMT_LOOP: emit_loop(g, stmt); break;
+    case STMT_BREAK:
+        indent(g);
+        sb_append(&g->body, "break;\n");
+        break;
+    case STMT_CONTINUE:
+        indent(g);
+        sb_append(&g->body, "continue;\n");
+        break;
     }
 }
 

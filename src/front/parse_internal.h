@@ -20,6 +20,7 @@ typedef struct {
     bool ended_with_block;  // the statement just parsed ended with an indented block
     bool ends_with_name;    // ... or ended with a name or keyword ("add 5 to total")
     Vec(SourcePos) open_ifs; // ifs whose blocks are being parsed, innermost last
+    bool as_ends_value;     // in a count loop's header, "as" names the loop variable
 } Parser;
 
 // A word or symbol sequence with a meaning, e.g. "is greater than".
@@ -106,10 +107,32 @@ void parse_statements(Parser *p, Block *block, bool in_block);
 // discards it, so a broken header doesn't cause errors about its block.
 void parser_skip_line_and_block(Parser *p);
 
+// Shared statement helpers (parse_stmt.c), used by parse_if.c and parse_loop.c.
+Stmt *parser_new_stmt(Parser *p, StmtKind kind, const Token *verb);
+// A variable name. `next` (NULL-terminated, or NULL) lists the words that
+// follow the name in this sentence, to explain "let a be 5".
+bool parser_parse_name(Parser *p, Name *name, const char *const *next);
+// One of `words` (NULL-terminated), or an error showing `example`.
+bool parser_expect_word(Parser *p, const char *const *words, const char *example);
+// The phrase `words` (without filler), or an error naming `display`.
+bool parser_expect_phrase(Parser *p, const char *words, const char *display, const char *example);
+// "is", "=", "equals", or "be": the sentence looks like it sets a variable.
+bool parser_looks_like_assignment(const Token *next);
+
+// ":" NEWLINE INDENT statements DEDENT. Extends header->span to the colon.
+// `if_pos` (or NULL) is the if the block belongs to, for "otherwise" errors;
+// `what` names the header in messages ("this \"if\"").
+bool parser_parse_block(Parser *p, Block *body, SourcePos *header, const SourcePos *if_pos, const char *what);
+
 // parse_if.c
 bool parser_at_otherwise(const Parser *p);  // "otherwise" or "else"
 Stmt *parse_if(Parser *p, const Token *verb);
 // An "otherwise" that doesn't belong to an if just above it.
 void parse_orphan_otherwise(Parser *p, const Stmt *previous);
+
+// parse_loop.c: a loop starting with `verb` (count, go, for, do, repeat,
+// while, as, keep, forever), and stop/break/skip/continue/move on.
+Stmt *parse_loop(Parser *p, const Token *verb);
+Stmt *parse_loop_control(Parser *p, const Token *verb);
 
 #endif

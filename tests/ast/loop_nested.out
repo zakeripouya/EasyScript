@@ -1,0 +1,30 @@
+count, call each number row [1:1]
+  from
+    number 1 [1:12]
+  to
+    number 3 [1:17]
+  do
+    count, call each number column [2:5]
+      from
+        number 1 [2:16]
+      to
+        number 3 [2:21]
+      do
+        if (one line) [3:9]
+          branch if [3:9]
+            condition
+              equal [3:12]
+                name column [3:12]
+                name row [3:22]
+            then
+              skip this one [3:27]
+        say [4:9]
+          multiply [4:13]
+            name row [4:13]
+            name column [4:23]
+    repeat while [5:5]
+      condition
+        no [5:11]
+      do
+        say [6:9]
+          it [6:13]

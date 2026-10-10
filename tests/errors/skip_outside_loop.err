@@ -1,0 +1,4 @@
+Line 2: "skip this one" only works inside a loop.
+        skip this one
+        ^^^^^^^^^^^^^
+It jumps to the next round of the loop it's in.

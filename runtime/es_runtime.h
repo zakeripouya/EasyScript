@@ -278,6 +278,78 @@ static bool es_if(int line, EsValue v) {
     return v.yes;
 }
 
+/* --- Loops ----------------------------------------------------------------- */
+
+/* "count from A to B by S": counts toward B, up or down, by S each round.
+ * "count down" never counts up (it runs zero times if A is below B). */
+typedef struct {
+    double from, to, step;
+    int direction; /* 1 or -1 */
+    bool empty;
+} EsCount;
+
+static bool es_close(double a, double b);
+
+static EsCount es_count_start(int line, EsValue from, EsValue to, EsValue step, bool has_step, bool down) {
+    EsCount c = {0, 0, 1, 1, false};
+    if (from.kind != ES_NUMBER) es_fail(line, NULL, "A count has to start at a number, but this is %s.", es_kind_name(from));
+    if (to.kind != ES_NUMBER) es_fail(line, NULL, "A count has to end at a number, but this is %s.", es_kind_name(to));
+    if (has_step) {
+        if (step.kind != ES_NUMBER) {
+            es_fail(line, NULL, "The step of a count has to be a number, but this is %s.", es_kind_name(step));
+        }
+        if (!(step.number > 0)) {
+            es_fail(line, "Counting goes up or down by itself; the step only says how far to go each time.",
+                    "The step of a count has to be more than zero, but it's %s.", es_number_text(step.number).text);
+        }
+        c.step = step.number;
+    }
+    c.from = from.number;
+    c.to = to.number;
+    if (down) {
+        c.direction = -1;
+        c.empty = c.from < c.to && !es_close(c.from, c.to);
+    } else {
+        c.direction = c.from <= c.to || es_close(c.from, c.to) ? 1 : -1;
+    }
+    return c;
+}
+
+/* Sets *var to round i's number, or returns false when the count is past its end.
+ * Numbers are worked out from the start each time (no drifting), and a number
+ * that's equal to the end (see es_close) lands exactly on it. */
+static bool es_count_next(const EsCount *c, long long i, EsValue *var) {
+    if (c->empty) return false;
+    double v = c->from + c->direction * (double)i * c->step;
+    if (es_close(v, c->to)) {
+        v = c->to;
+    } else if (c->direction > 0 ? v > c->to : v < c->to) {
+        return false;
+    }
+    *var = es_num(v);
+    return true;
+}
+
+/* "do this N times": N must be a whole number, zero or more. */
+static long long es_times(int line, EsValue n) {
+    if (n.kind != ES_NUMBER) es_fail(line, NULL, "The number of times has to be a number, but this is %s.", es_kind_name(n));
+    if (n.number < 0) es_fail(line, NULL, "The number of times can't be negative, but it's %s.", es_number_text(n.number).text);
+    if (n.number != floor(n.number)) {
+        es_fail(line, NULL, "The number of times has to be a whole number, but it's %s.", es_number_text(n.number).text);
+    }
+    if (n.number > 9e18) es_fail(line, NULL, "That's too many times to repeat.");
+    return (long long)n.number;
+}
+
+/* The condition of a while or until loop must be yes or no. */
+static bool es_loop_condition(int line, EsValue v) {
+    if (v.kind != ES_YESNO) {
+        es_fail(line, "Compare it with something, like \"while count is less than 10\".",
+                "A loop needs yes or no to decide whether to keep going, but this is %s.", es_kind_name(v));
+    }
+    return v.yes;
+}
+
 /* --- Comparisons ---------------------------------------------------------- */
 
 /* Numbers within a relative 1e-12 of each other count as equal, so

@@ -1,0 +1,4 @@
+Line 2: "it" doesn't refer to anything here.
+        say it
+            ^^
+"it" means the number of a counting loop or a "repeat ... times" loop, but this loop doesn't count. Use a variable instead.

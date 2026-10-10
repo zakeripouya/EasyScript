@@ -1,4 +1,4 @@
 Line 1: "it" doesn't refer to anything here.
     say it
         ^^
-Use the name of a variable instead.
+"it" only means something inside a loop, where it's the loop's number.

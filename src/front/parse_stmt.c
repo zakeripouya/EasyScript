@@ -8,6 +8,7 @@
 //   write E to file F                   append E to file F
 //   read file F and call it X           stop the program
 //   if C: / if C, S / if C then S        (parse_if.c)
+//   loops, stop the loop, skip this one   (parse_loop.c)
 
 #include <string.h>
 #include "front/parse.h"
@@ -29,7 +30,7 @@ struct StmtForm {
 
 // --- Helpers -----------------------------------------------------------------
 
-static Stmt *new_stmt(Parser *p, StmtKind kind, const Token *verb) {
+Stmt *parser_new_stmt(Parser *p, StmtKind kind, const Token *verb) {
     Stmt *stmt = ast_new_stmt(p->arena, kind, parser_token_pos(verb));
     stmt->verb = verb->span;
     return stmt;
@@ -71,7 +72,7 @@ static void report_name_missing_after_prev(Parser *p) {
 // Parses a variable name. `next` lists the words that follow the name in this
 // statement ("be" after "let X"), or is NULL when the name ends it. A filler
 // word dropped right before `next` ("let a be 5") was meant as the name.
-static bool parse_name(Parser *p, Name *name, const char *const *next) {
+bool parser_parse_name(Parser *p, Name *name, const char *const *next) {
     const Token *token = parser_peek(p, 0);
     bool is_next_word = word_in(token, next);
     if (is_name_word(token) && !is_next_word) {
@@ -84,7 +85,7 @@ static bool parse_name(Parser *p, Name *name, const char *const *next) {
         report_filler_name(p, token->filler);
     } else if (token->kind == TOK_WORD && !is_next_word) {
         report_reserved_name(p, token);
-    } else if (is_next_word || parser_at_sentence_end(p)) {
+    } else if (is_next_word || parser_at_sentence_end(p) || parser_at(p, 0, TOK_COLON)) {
         report_name_missing_after_prev(p);
     } else if (parser_error(p, token->span, "I expected a name here, but found %s.", parser_describe(p, token))) {
         diag_note(p->diag, "A name is a single word, like \"total\" or \"player_2\".");
@@ -102,7 +103,7 @@ static void report_expected(Parser *p, const char *display, const char *example)
 }
 
 // Consumes one of `words` (NULL-terminated) or reports that `words[0]` was expected.
-static bool expect_word(Parser *p, const char *const *words, const char *example) {
+bool parser_expect_word(Parser *p, const char *const *words, const char *example) {
     if (word_in(parser_peek(p, 0), words)) {
         parser_advance(p);
         return true;
@@ -113,7 +114,7 @@ static bool expect_word(Parser *p, const char *const *words, const char *example
 
 // Consumes the phrase `words` (as the lexer produces it, without filler) or
 // reports that `display` was expected, quoting whatever was there instead.
-static bool expect_phrase(Parser *p, const char *words, const char *display, const char *example) {
+bool parser_expect_phrase(Parser *p, const char *words, const char *display, const char *example) {
     size_t n = parser_match_words(p, words);
     if (n > 0) {
         parser_consume(p, n);
@@ -147,16 +148,16 @@ static bool reject_missing_value(Parser *p, const char *words) {
 
 static Stmt *parse_let(Parser *p, const Token *verb, const StmtForm *form) {
     static const char *const after[] = {"be", "equal", NULL};
-    Stmt *stmt = new_stmt(p, STMT_LET, verb);
-    if (!parse_name(p, &stmt->as.assign.name, after) || !expect_word(p, after, form->example)) return NULL;
+    Stmt *stmt = parser_new_stmt(p, STMT_LET, verb);
+    if (!parser_parse_name(p, &stmt->as.assign.name, after) || !parser_expect_word(p, after, form->example)) return NULL;
     stmt->as.assign.value = parse_expression(p);
     return stmt;
 }
 
 static Stmt *parse_set(Parser *p, const Token *verb, const StmtForm *form) {
     static const char *const after[] = {"to", NULL};
-    Stmt *stmt = new_stmt(p, STMT_SET, verb);
-    if (!parse_name(p, &stmt->as.assign.name, after) || !expect_word(p, after, form->example)) return NULL;
+    Stmt *stmt = parser_new_stmt(p, STMT_SET, verb);
+    if (!parser_parse_name(p, &stmt->as.assign.name, after) || !parser_expect_word(p, after, form->example)) return NULL;
     stmt->as.assign.value = parse_expression(p);
     return stmt;
 }
@@ -164,21 +165,21 @@ static Stmt *parse_set(Parser *p, const Token *verb, const StmtForm *form) {
 // add E to X, subtract E from X
 static Stmt *parse_amount_first(Parser *p, const Token *verb, const StmtForm *form) {
     const char *const connector[] = {form->connector, NULL};
-    Stmt *stmt = new_stmt(p, STMT_CHANGE, verb);
+    Stmt *stmt = parser_new_stmt(p, STMT_CHANGE, verb);
     stmt->as.change.op = (ChangeOp)form->op;
     if (reject_missing_value(p, form->connector)) return NULL;
     stmt->as.change.amount = parse_expression(p);
-    if (p->sentence_failed || !expect_word(p, connector, form->example)) return NULL;
-    if (!parse_name(p, &stmt->as.change.target, NULL)) return NULL;
+    if (p->sentence_failed || !parser_expect_word(p, connector, form->example)) return NULL;
+    if (!parser_parse_name(p, &stmt->as.change.target, NULL)) return NULL;
     return stmt;
 }
 
 // increase/decrease/multiply/divide X by E
 static Stmt *parse_target_first(Parser *p, const Token *verb, const StmtForm *form) {
     const char *const connector[] = {form->connector, NULL};
-    Stmt *stmt = new_stmt(p, STMT_CHANGE, verb);
+    Stmt *stmt = parser_new_stmt(p, STMT_CHANGE, verb);
     stmt->as.change.op = (ChangeOp)form->op;
-    if (!parse_name(p, &stmt->as.change.target, connector) || !expect_word(p, connector, form->example)) {
+    if (!parser_parse_name(p, &stmt->as.change.target, connector) || !parser_expect_word(p, connector, form->example)) {
         return NULL;
     }
     stmt->as.change.amount = parse_expression(p);
@@ -187,7 +188,7 @@ static Stmt *parse_target_first(Parser *p, const Token *verb, const StmtForm *fo
 
 static Stmt *parse_say(Parser *p, const Token *verb, const StmtForm *form) {
     (void)form;
-    Stmt *stmt = new_stmt(p, STMT_SAY, verb);
+    Stmt *stmt = parser_new_stmt(p, STMT_SAY, verb);
     stmt->as.value = parse_expression(p);
     return stmt;
 }
@@ -199,7 +200,7 @@ static Stmt *parse_write(Parser *p, const Token *verb, const StmtForm *form) {
     if (p->sentence_failed) return NULL;
     if (parser_match_words(p, "to file")) {
         parser_consume(p, 2);
-        Stmt *stmt = new_stmt(p, STMT_WRITE_FILE, verb);
+        Stmt *stmt = parser_new_stmt(p, STMT_WRITE_FILE, verb);
         stmt->as.file_write.text = value;
         stmt->as.file_write.path = parse_expression(p);
         return stmt;
@@ -211,35 +212,35 @@ static Stmt *parse_write(Parser *p, const Token *verb, const StmtForm *form) {
         }
         return NULL;
     }
-    Stmt *stmt = new_stmt(p, STMT_SAY, verb);
+    Stmt *stmt = parser_new_stmt(p, STMT_SAY, verb);
     stmt->as.value = value;
     return stmt;
 }
 
 static Stmt *parse_ask(Parser *p, const Token *verb, const StmtForm *form) {
-    Stmt *stmt = new_stmt(p, STMT_ASK, verb);
+    Stmt *stmt = parser_new_stmt(p, STMT_ASK, verb);
     stmt->as.ask.prompt = parse_expression(p);
-    if (p->sentence_failed || !expect_phrase(p, "and call answer", "and call the answer", form->example)) return NULL;
-    if (!parse_name(p, &stmt->as.ask.answer, NULL)) return NULL;
+    if (p->sentence_failed || !parser_expect_phrase(p, "and call answer", "and call the answer", form->example)) return NULL;
+    if (!parser_parse_name(p, &stmt->as.ask.answer, NULL)) return NULL;
     return stmt;
 }
 
 static Stmt *parse_append(Parser *p, const Token *verb, const StmtForm *form) {
-    Stmt *stmt = new_stmt(p, STMT_APPEND_FILE, verb);
+    Stmt *stmt = parser_new_stmt(p, STMT_APPEND_FILE, verb);
     if (reject_missing_value(p, "to file")) return NULL;
     stmt->as.file_write.text = parse_expression(p);
-    if (p->sentence_failed || !expect_phrase(p, "to file", "to file", form->example)) return NULL;
+    if (p->sentence_failed || !parser_expect_phrase(p, "to file", "to file", form->example)) return NULL;
     stmt->as.file_write.path = parse_expression(p);
     return stmt;
 }
 
 static Stmt *parse_read(Parser *p, const Token *verb, const StmtForm *form) {
     static const char *const file[] = {"file", NULL};
-    Stmt *stmt = new_stmt(p, STMT_READ_FILE, verb);
-    if (!expect_word(p, file, form->example)) return NULL;
+    Stmt *stmt = parser_new_stmt(p, STMT_READ_FILE, verb);
+    if (!parser_expect_word(p, file, form->example)) return NULL;
     stmt->as.read_file.path = parse_expression(p);
-    if (p->sentence_failed || !expect_phrase(p, "and call it", "and call it", form->example)) return NULL;
-    if (!parse_name(p, &stmt->as.read_file.name, NULL)) return NULL;
+    if (p->sentence_failed || !parser_expect_phrase(p, "and call it", "and call it", form->example)) return NULL;
+    if (!parser_parse_name(p, &stmt->as.read_file.name, NULL)) return NULL;
     return stmt;
 }
 
@@ -248,9 +249,14 @@ static Stmt *parse_if_form(Parser *p, const Token *verb, const StmtForm *form) {
     return parse_if(p, verb);
 }
 
-static Stmt *parse_stop(Parser *p, const Token *verb, const StmtForm *form) {
-    if (!expect_phrase(p, "program", "the program", form->example)) return NULL;
-    return new_stmt(p, STMT_STOP, verb);
+static Stmt *parse_loop_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parse_loop(p, verb);
+}
+
+static Stmt *parse_control_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parse_loop_control(p, verb);
 }
 
 static const StmtForm forms[] = {
@@ -271,8 +277,21 @@ static const StmtForm forms[] = {
     {"ask", parse_ask, true, 0, NULL, "ask \"What's your name?\" and call the answer name"},
     {"append", parse_append, false, 0, NULL, "append \"hello\" to file \"notes.txt\""},
     {"read", parse_read, true, 0, NULL, "read file \"notes.txt\" and call it notes"},
-    {"stop", parse_stop, true, 0, NULL, "stop the program"},
+    {"stop", parse_control_form, true, 0, NULL, "stop the loop"},
+    {"break", parse_control_form, true, 0, NULL, "stop the loop"},
+    {"skip", parse_control_form, true, 0, NULL, "skip this one"},
+    {"continue", parse_control_form, true, 0, NULL, "skip this one"},
+    {"move", parse_control_form, true, 0, NULL, "move on"},
     {"if", parse_if_form, false, 0, NULL, "if total is 5, say \"five\""},
+    {"count", parse_loop_form, false, 0, NULL, "count from 1 to 10:"},
+    {"go", parse_loop_form, false, 0, NULL, "go from 0 to 100 in steps of 10:"},
+    {"for", parse_loop_form, false, 0, NULL, "for each n from 1 to 10:"},
+    {"do", parse_loop_form, false, 0, NULL, "do this 3 times:"},
+    {"repeat", parse_loop_form, false, 0, NULL, "repeat 3 times:"},
+    {"while", parse_loop_form, false, 0, NULL, "while x is less than 10:"},
+    {"as", parse_loop_form, false, 0, NULL, "as long as x is less than 10:"},
+    {"keep", parse_loop_form, false, 0, NULL, "keep doing this until done:"},
+    {"forever", parse_loop_form, false, 0, NULL, "forever:"},
 };
 
 // --- Sentences ---------------------------------------------------------------
@@ -285,7 +304,7 @@ static const StmtForm *find_form(const Token *token) {
     return NULL;
 }
 
-static bool looks_like_assignment(const Token *next) {
+bool parser_looks_like_assignment(const Token *next) {
     return next->kind == TOK_EQUAL ||
            (next->kind == TOK_WORD &&
             (strcmp(next->text, "is") == 0 || strcmp(next->text, "equals") == 0 || strcmp(next->text, "be") == 0));
@@ -307,7 +326,7 @@ static void report_unknown_start(Parser *p) {
     const char *closest = parser_closest_words(p, token->text, words, COUNT(words));
     if (closest) {
         diag_note(p->diag, "Did you mean %s?", closest);
-    } else if (looks_like_assignment(parser_peek(p, 1))) {
+    } else if (parser_looks_like_assignment(parser_peek(p, 1))) {
         diag_note(p->diag, "To make a variable, write \"let %s be ...\". To change one, write \"set %s to ...\".",
                   token->text, token->text);
     } else {

@@ -5,7 +5,7 @@ Every word, symbol, and sentence pattern in EasyScript, grouped by category, wit
 **Status labels:**
 
 - **Available:** works today: it compiles and runs.
-- **Parses only:** the parser understands it (see `easyscript ast`), but using it in a program is an error because its meaning isn't implemented yet.
+- **Parses only:** the parser understands it (see `easyscript ast`), but using it in a program is an error because its meaning isn't implemented yet (only calling functions, today).
 - **Coming soon:** planned for the phase shown. Sentence patterns marked this way are **proposals**: the wording may change before they ship, and they don't compile today.
 
 In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressions, and `CONDITION` is anything that is yes or no. Keywords are case-insensitive. The filler words `the`, `a`, and `an` may appear anywhere and are ignored, so they're left out of the patterns below.
@@ -32,7 +32,7 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | `yes`, `true` | The yes value | `done is yes` | Available |
 | `no`, `false` | The no value | `ready is false` | Available |
 | `nothing` | No value at all | `answer is nothing` | Available |
-| `it` | Reserved for referring to an earlier result | `it plus 1` | Parses only |
+| `it` | The number of the loop you're in (see [Loops](#it-and-names-in-loops)) | `say it` | Available |
 | names | Start with a letter, then letters, digits, `_`, or an apostrophe between letters. A name is one word | `total`, `player_2`, `guest's` | Available |
 | `( X )` | Grouping: work this out first | `(price plus tax) times 2` | Available |
 
@@ -196,15 +196,47 @@ Rules:
 
 ## Loops
 
-| Pattern | Meaning | Example | Status |
-|---|---|---|---|
-| `repeat X times:` | Run the block a fixed number of times | `repeat 3 times:` | Coming soon (Phase 1) |
-| `repeat while CONDITION:` | Run the block as long as the condition stays yes | `repeat while count is greater than 0:` | Coming soon (Phase 1) |
-| `while CONDITION:` | Synonym of `repeat while` | `while lives is more than 0:` | Coming soon (Phase 1) |
-| `repeat until CONDITION:` | Run the block until the condition becomes yes | `repeat until done:` | Coming soon (Phase 1) |
-| `for each NAME from X to Y:` | Count from the first number to the second, inclusive | `for each n from 1 to 10:` | Coming soon (Phase 1) |
-| `stop.` | Leave the innermost loop (`stop the program` ends the whole program) | `stop.` | Coming soon (Phase 1) |
-| `skip.` | Go straight to the next round of the innermost loop | `skip.` | Coming soon (Phase 1) |
+All loops are **Available**. Every loop ends its first line with a colon and puts the sentences to repeat on the indented lines below, like an `if`.
+
+### Counting
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `count from A to B:` | Count from A to B, one at a time. Counts **down** by itself when A is bigger than B | `count from 1 to 10:` |
+| `... by S` / `... in steps of S` | Count S at a time. S must be more than zero; the direction still comes from A and B | `count from 0 to 100 by 10:` |
+| `... and call each number N` / `... as N` | Name the number (it's called `number` otherwise) | `count from 1 to 3 as row:` |
+| `count down from A to B:` | Count down only; runs zero times if A is smaller than B | `count down from 10 to 1:` |
+| `go from A to B in steps of S:` | Same as `count from` (the step is optional) | `go from 0 to 1 in steps of 0.25:` |
+| `for each N from A to B:` | Same as `count from ... as N` (also takes `by` / `in steps of`) | `for each i from 0 to limit:` |
+
+- A, B, and S are worked out once, before the first round, and must be numbers.
+- The count includes B when it lands on it: `count from 1 to 10 by 4` gives 1, 5, 9. Each number is worked out from the start (no drifting), and a number equal to B lands exactly on it, so `count from 0 to 1 by 0.1` ends at exactly 1.
+- In the first line of a count, `as` names the number. To turn a bound into a number, use parentheses: `count from 1 to (limit as a number):`.
+
+### Repeating
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `do this N times:` / `repeat N times:` | Repeat N times. N must be a whole number, zero or more | `repeat 3 times:` |
+| `while C:` / `as long as C:` / `repeat while C:` | Repeat while C is yes; checked before each round | `while total is less than 100:` |
+| `keep doing this until C:` / `repeat until C:` | Repeat until C is yes; checked before each round, so it may run zero times | `repeat until done:` |
+| `forever:` | Repeat until `stop the loop` (or `stop the program`) | `forever:` |
+
+Conditions must be yes or no, like an `if`'s.
+
+### Leaving a loop early
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `stop the loop` / `stop` / `break` | Leave the innermost loop now | `if number is 5, stop the loop.` |
+| `skip this one` / `skip` / `continue` / `move on` | Go straight to the next round of the innermost loop | `if number is 3, skip this one.` |
+
+Using either outside a loop is an error. `stop the program` still ends the whole program.
+
+### `it` and names in loops
+
+- **`it`** is the number of the innermost counting or `repeat ... times` loop: the count, or the round (1, 2, 3, ...) of a `times` loop. Inside a `while`, `until`, or `forever` loop it refers to the nearest counting loop around it. Anywhere else, `it` is an error.
+- **A loop's number, and names made in its body, exist only inside the loop.** Each round starts fresh. A loop's number can't reuse a name that already exists (including an outer loop's `number`), so nested counts need names: `count from 1 to 3 as row:`.
 
 ## Functions
 
