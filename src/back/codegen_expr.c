@@ -194,7 +194,8 @@ bool cg_has_effects(const Codegen *g, const Expr *expr) {
     case EXPR_ITEM:
     case EXPR_LIST_OP:
     case EXPR_EVERY:
-    case EXPR_ONLY: return true;
+    case EXPR_ONLY:
+    case EXPR_SLICE: return true;
     case EXPR_LIST:
         for (size_t i = 0; i < expr->as.items.len; i++) {
             if (cg_has_effects(g, expr->as.items.items[i])) return true;
@@ -415,7 +416,8 @@ void cg_emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     case EXPR_ITEM:
     case EXPR_LIST_OP:
     case EXPR_EVERY:
-    case EXPR_ONLY: cg_emit_list_expr(g, expr, out); break;
+    case EXPR_ONLY:
+    case EXPR_SLICE: cg_emit_list_expr(g, expr, out); break;
     case EXPR_NOTHING:
     case EXPR_ERROR:
         // The checker rejects these before codegen runs.

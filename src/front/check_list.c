@@ -110,6 +110,19 @@ TypeVar checker_check_list_expr(Checker *c, const Expr *expr) {
         TypeVar body = check_for_each_item(c, &expr->as.every.var, item, expr->as.every.body);
         return types_new_list(c, body, expr->pos.line);
     }
+    case EXPR_SLICE: {
+        const Expr *from = expr->as.slice.from;
+        if (expr->as.slice.kind == SLICE_RANGE) {
+            require_position(c, from);
+            require_position(c, expr->as.slice.to);
+        } else if (from) {
+            checker_require(c, checker_check_expr(c, from), TYPE_NUMBER, from, "The number of items has to be a number",
+                            NULL);
+        }
+        TypeVar list = checker_check_expr(c, expr->as.slice.list);
+        checker_require_list(c, list, expr->as.slice.list, "I can only take items from a list");
+        return list;
+    }
     case EXPR_ONLY: {
         const Expr *list = expr->as.only.list;
         TypeVar var = checker_check_expr(c, list);

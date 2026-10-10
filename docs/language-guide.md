@@ -84,7 +84,7 @@ set price to 19.99.
 set count to 3.
 ```
 
-A number and a word need a space between them: `3times` is an error, `3 times` is fine.
+A number and a word need a space between them: `3times` is an error, `3 times` is fine. The one exception is an ordinal like `3rd` or `21st`, used in `every 3rd item of scores` ([Lists](#10-lists)); its ending has to match the number, so `2th` is an error that suggests `2nd`.
 
 Try it: [`examples/lexer/numbers.es`](../examples/lexer/numbers.es)
 
@@ -616,6 +616,23 @@ say the last item of scores.
 Line 3: There's no item 4 in the list: it has 3 items.
 ```
 
+### Parts of a list
+
+These give back a **new list** with some of the items; changing it never changes the original (lists inside it are copied too):
+
+```
+let scores be a list of 10, 20, 30, 40, 50 and 60.
+say items 2 to 4 of scores.             # 20, 30 and 40
+say items 5 to the end of scores.       # 50 and 60
+say the first 3 items in scores.        # 10, 20 and 30
+say the last 2 items in scores.         # 50 and 60
+say scores without the first item.      # 20, 30, 40, 50 and 60
+say scores without the last item.       # 10, 20, 30, 40 and 50
+say every second item of scores.        # 20, 40 and 60
+```
+
+Ranges include both ends, counted from 1, and both positions must be in the list: `items 2 to 9` of a six-item list stops the program with "There's no item 9 in the list: it has 6 items.". `the first N items` and `the last N items` give back the whole list when it's shorter than N. `every second item` means items 2, 4, 6 and so on; any ordinal works: `every third item`, `every tenth item`, `every 12th item`.
+
 ### Asking about a list
 
 - `the length of scores` or `the number of items in scores`: how many items it has
@@ -725,7 +742,7 @@ to average of marks (a list of numbers), giving back a number:
 
 ### What's checked while the program runs
 
-Asking for an item that isn't there (or item 0, or item 1.5), inserting past the end, and asking for the first, last, biggest or smallest item of an empty list stop the program with the line and what went wrong. Everything else about lists, including every kind mistake, is checked before the program runs.
+Asking for an item that isn't there (or item 0, or item 1.5), a range whose positions aren't in the list or go backwards, a negative or fractional number of items, inserting past the end, and asking for the first, last, biggest or smallest item of an empty list (or taking it away with `without`) stop the program with the line and what went wrong. Everything else about lists, including every kind mistake, is checked before the program runs.
 
 Try it: `./easyscript run examples/programs/grade_statistics.es` and `./easyscript run examples/programs/top_scores.es`
 

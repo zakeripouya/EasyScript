@@ -1,0 +1,24 @@
+Line 2: I can only take items from a list, but this is a number.
+    say items 1 to 2 of 5
+                        ^
+
+Line 3: The number of items has to be a number, but this is text.
+    say the first "two" items in scores
+                  ^^^^^
+
+Line 4: The position of an item has to be a number, but this is text.
+    say items "a" to 2 of scores
+              ^^^
+
+Line 5: I can only take items from a list, but this is text.
+    say every second item of "text"
+                             ^^^^^^
+
+Line 6: I can only take items from a list, but this is a number.
+    say 5 without the last item
+        ^
+
+Line 8: "words" is a list of numbers (made on line 7), but this is a list of text.
+    set words to a list of "x"
+                   ^^^^^^^^^^^
+A variable keeps the kind of value it was made with. To keep a list of text, make a new variable for it.

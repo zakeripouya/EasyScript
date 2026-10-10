@@ -198,11 +198,43 @@ static void report_letters_after_number(Lexer *lx, size_t start) {
               letters_len, lx->src + number_end);
 }
 
+// The suffix a whole number takes as an ordinal: 1st, 2nd, 3rd, 4th, 11th, 21st.
+static const char *ordinal_suffix(const char *digits, size_t n) {
+    int last = digits[n - 1] - '0';
+    int tens = n >= 2 ? digits[n - 2] - '0' : 0;
+    if (tens == 1) return "th";
+    return last == 1 ? "st" : last == 2 ? "nd" : last == 3 ? "rd" : "th";
+}
+
+static bool is_any_suffix(const char *s) {
+    return (s[0] == 's' && s[1] == 't') || (s[0] == 'n' && s[1] == 'd') || (s[0] == 'r' && s[1] == 'd') ||
+           (s[0] == 't' && s[1] == 'h');
+}
+
+// A whole number directly followed by two letters that make an ordinal:
+// "7th". The suffix has to be the right one ("2th" is an error).
+static bool lex_ordinal(Lexer *lx, size_t start) {
+    size_t end = lx->pos;
+    char suffix[2] = {to_lower(peek_at(lx, end)), to_lower(peek_at(lx, end + 1))};
+    if (!is_any_suffix(suffix) || is_word_char(peek_at(lx, end + 2))) return false;
+    const char *right = ordinal_suffix(lx->src + start, end - start);
+    lx->pos = end + 2;
+    if (suffix[0] != right[0] || suffix[1] != right[1]) {
+        diag_error(lx->diag, span_between(start, lx->pos), "\"%.*s\" isn't how that ordinal is written.",
+                   (int)(lx->pos - start), lx->src + start);
+        diag_note(lx->diag, "Write \"%.*s%s\".", (int)(end - start), lx->src + start, right);
+    }
+    emit_source_text(lx, TOK_ORDINAL, start, lx->pos);
+    return true;
+}
+
 // Integers and decimals. A period counts as a decimal point only when a digit
-// follows, so "5." is the number 5 and then the end of a sentence.
+// follows, so "5." is the number 5 and then the end of a sentence. A whole
+// number with an ordinal suffix is an ordinal ("3rd").
 static void lex_number(Lexer *lx) {
     size_t start = lx->pos;
     while (is_digit(peek_at(lx, lx->pos))) lx->pos++;
+    if (is_alpha(peek_at(lx, lx->pos)) && lex_ordinal(lx, start)) return;
     if (peek_at(lx, lx->pos) == '.' && is_digit(peek_at(lx, lx->pos + 1))) {
         lx->pos++;
         while (is_digit(peek_at(lx, lx->pos))) lx->pos++;
@@ -464,7 +496,7 @@ TokenList lex(Arena *arena, Diag *diag, const char *source, size_t source_len) {
 
 const char *token_kind_name(TokenKind kind) {
     static const char *const names[] = {
-        "EOF", "NEWLINE", "INDENT", "DEDENT", "WORD", "NUMBER", "STRING",
+        "EOF", "NEWLINE", "INDENT", "DEDENT", "WORD", "NUMBER", "STRING", "ORDINAL",
         "PERIOD", "COMMA", "COLON", "LPAREN", "RPAREN", "PLUS", "MINUS",
         "STAR", "SLASH", "PERCENT", "EQUAL", "LESS", "GREATER",
         "LESS_EQUAL", "GREATER_EQUAL", "NOT_EQUAL", "EQUAL_EQUAL",

@@ -63,6 +63,7 @@ The lexer also explains:
 | Text with no closing quote | "This text is missing its closing quote." |
 | Unknown escape such as `\q` | "I don't know the escape "\q"." and lists the valid escapes |
 | A lone `!` | "I don't understand "!"." and suggests `!=` |
+| An ordinal with the wrong ending (`2th`) | ""2th" isn't how that ordinal is written." and suggests `2nd` |
 | An apostrophe outside a word | explains that apostrophes go inside words and text goes in quotes |
 | Curly quotes pasted from a word processor | "That's a curly quote. Use straight double quotes (") around text." |
 | Letters outside a to z in a name, like `café` | suggests putting other text in double quotes |
@@ -368,6 +369,10 @@ Write it like "a list of (a list of 1 and 2) and (a list of 3 and 4)".
 | `only L that` without a comparison | "I expected a comparison like "are at least" here, but found "70"." |
 | `sort ... by their length, biggest first` | "With "by their length", say "longest first" or "shortest first"." |
 | `sort names, longest first` | ""longest first" sorts by length, so it needs "by their length"." |
+| A slice of something that isn't a list | "I can only take items from a list, but this is a number." |
+| A count of items that isn't a number | "The number of items has to be a number, but this is text." |
+| `every 0th item` | "There's no item at position 0." |
+| `items 2 to of scores` | "Something is missing after "to"." |
 
 The full, tested set is the `list_*.err` files in [`tests/errors/`](../tests/errors/) and [`err_list_forms.err`](../tests/ast/err_list_forms.err).
 
@@ -401,6 +406,8 @@ Positions start at 1: the first item is item 1.
 | A position that isn't a whole number | "The position of an item has to be a whole number, but it's 1.5." |
 | The first, last, biggest or smallest item of an empty list | "There's no first item: the list is empty." |
 | Inserting past the end | "I can't insert at position 6: the position has to be from 1 to 5 (the list has 4 items)." |
+| A range that goes backwards | "I can't take items 3 to 2: the first position is after the last one." |
+| A number of items that's negative or not whole | "The number of items can't be negative, but it's -1." / "... has to be a whole number, but it's 1.5." |
 
 Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).
 

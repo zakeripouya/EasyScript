@@ -6,6 +6,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **List slices:** `items 2 to 4 of scores`, `items 3 to the end of scores`, `the first 3 items in scores`, `the last 2 items in scores`, `scores without the first item` / `without the last item`, and `every second item of scores` (items 2, 4, 6, ...; any ordinal: `third` ... `tenth`, or `3rd`, `12th`, `21st`). Ranges are 1-based and include both ends; the first and last N give back the whole list when it's shorter; positions that aren't in the list are runtime errors naming the position and the length. Slices are new lists, with the lists inside them copied. Ordinals (`2nd`, `3rd`, `21st`) are a new token; a wrong ending (`2th`) is an error that suggests the right one. `grade_statistics.es` uses slices.
+
 - **Lists** (Phase 2, step 15). A list holds values of one kind, in order. See the new [Lists chapter](docs/language-guide.md#10-lists).
   - Making them: `let scores be a list of 72, 95 and 88.`, `let names be an empty list of text.`, lists of lists (`a list of (a list of 1 and 2) and (a list of 3)`), `a copy of scores` (a separate list, copying the lists inside it too).
   - Items, from position 1: `item 2 of scores`, `the first item in scores`, `the last item of scores`. A position that isn't there stops the program with the position and the length: "There's no item 4 in the list: it has 3 items."

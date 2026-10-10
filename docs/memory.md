@@ -57,6 +57,7 @@ One rule keeps the generated code simple: **every text is owned by exactly one p
 | `give back`, or the end of a function | Release all of the function's text and list inputs and variables. |
 | A function called as a sentence gives back text or a list | It's released straight away. |
 | `for each N in L` | The loop holds the list it goes through in a hidden variable of the loop's scope (`es_list_snapshot` gives a copy only if something else holds the list), so leaving the loop in any way releases it. Its item variable holds a reference to the current item. |
+| Slices (`items 2 to 4 of L`, `the first 3 items in L`, ...) | A new list (`es_list_pick`): text items are retained (text never changes), lists inside are copied, and the list it came from is released. |
 | `every` and `only` | Each becomes a C function that takes the list (owned) and the variables it reads (borrowed: the caller holds them while it runs), and gives back a new list. |
 | The end of the program | Releases every text and list variable of `main()`. `stop the program` in the main program jumps there (`goto es_end`). Inside a function, it releases that function's text and lists and exits. |
 

@@ -91,6 +91,12 @@ static const Phrase empty_tests[] = {
     {"aren't empty", "aren't empty", LIST_NOT_EMPTY, false},
 };
 
+// "L without the first item" (the lexer drops "the")
+static const Phrase without_phrases[] = {
+    {"without first item", "without the first item", SLICE_WITHOUT_FIRST, false},
+    {"without last item", "without the last item", SLICE_WITHOUT_LAST, false},
+};
+
 static const Phrase list_postfix[] = {
     {"added together", "added together", LIST_SUM, false},
     {"reversed", "reversed", LIST_REVERSED, false},
@@ -355,6 +361,15 @@ static Expr *parse_postfix(Parser *p) {
     for (;;) {
         if (p->as_ends_value && parser_at_word(p, 0, "as")) return expr;
         size_t len;
+        const Phrase *without = parser_match_phrase(p, without_phrases, COUNT(without_phrases), &len);
+        if (without) {
+            Span op_span = parser_consume(p, len);
+            Expr *slice = ast_new_expr(p->arena, EXPR_SLICE, ast_pos_join(expr->pos, (SourcePos){op_span, 0, 0}));
+            slice->as.slice.kind = (SliceKind)without->value;
+            slice->as.slice.list = expr;
+            expr = slice;
+            continue;
+        }
         const Phrase *list_op = parser_match_phrase(p, list_postfix, COUNT(list_postfix), &len);
         if (list_op) {
             expr = new_list_op(p, (ListOp)list_op->value, parser_consume(p, len), expr);

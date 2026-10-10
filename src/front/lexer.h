@@ -14,6 +14,7 @@ typedef enum {
     TOK_WORD,
     TOK_NUMBER,
     TOK_STRING,
+    TOK_ORDINAL,        // 2nd, 3rd, 21st, 7th (text as written; only "every 3rd item of L" uses it)
     TOK_PERIOD,         // .
     TOK_COMMA,          // ,
     TOK_COLON,          // :

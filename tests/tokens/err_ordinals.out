@@ -1,0 +1,11 @@
+WORD          1:1     say
+ORDINAL       1:5     2th
+ORDINAL       1:9     1nd
+ORDINAL       1:13    13rd
+ORDINAL       1:18    22th
+NEWLINE       1:22
+WORD          2:1     say
+NUMBER        2:5     4.5
+WORD          2:8     th
+NEWLINE       2:10
+EOF           3:1

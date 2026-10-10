@@ -1,0 +1,24 @@
+Line 1: "2th" isn't how that ordinal is written.
+    say 2th 1nd 13rd 22th
+        ^^^
+Write "2nd".
+
+Line 1: "1nd" isn't how that ordinal is written.
+    say 2th 1nd 13rd 22th
+            ^^^
+Write "1st".
+
+Line 1: "13rd" isn't how that ordinal is written.
+    say 2th 1nd 13rd 22th
+                ^^^^
+Write "13th".
+
+Line 1: "22th" isn't how that ordinal is written.
+    say 2th 1nd 13rd 22th
+                     ^^^^
+Write "22nd".
+
+Line 2: A number can't have letters stuck to it: "4.5th".
+    say 4.5th
+        ^^^^^
+Put a space between them, like "4.5 th".

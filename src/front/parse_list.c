@@ -6,6 +6,9 @@
 //   item 2 of scores / item 2 in scores  the first item in scores, the last item of scores
 //   the number of items in scores        a copy of scores
 //   the biggest of scores                the smallest of scores
+//   items 2 to 4 of scores               items 3 to the end of scores
+//   the first 3 items in scores          the last 2 items in scores
+//   every second item of scores          every 3rd item of scores
 //
 //   add 5 to the end of scores           insert 7 at position 1 of scores
 //   remove item 2 from scores            set item 2 of scores to 100
@@ -15,6 +18,7 @@
 // empty", "added together", "reversed") are in parse_expr.c, and
 // "for each score in scores:" is in parse_loop.c.
 
+#include <stdlib.h>
 #include <string.h>
 #include "front/parse_internal.h"
 
@@ -184,6 +188,117 @@ static Expr *parse_item(Parser *p) {
     return item;
 }
 
+// --- Slices ----------------------------------------------------------------------
+
+// How many tokens a position at `at` takes (a number, a word, or a group in
+// parentheses), or 0 if none starts there.
+static size_t position_length(const Parser *p, size_t at) {
+    const Token *token = parser_peek(p, at);
+    if (token->kind == TOK_NUMBER || token->kind == TOK_STRING || is_position_word(token)) return 1;
+    if (token->kind != TOK_LPAREN) return 0;
+    size_t depth = 0;
+    for (size_t i = at;; i++) {
+        TokenKind kind = parser_peek(p, i)->kind;
+        if (kind == TOK_NEWLINE || kind == TOK_EOF) return 0;
+        if (kind == TOK_LPAREN) depth++;
+        if (kind == TOK_RPAREN && --depth == 0) return i - at + 1;
+    }
+}
+
+// "items P to": a range starts here (arithmetic after P is reported).
+static bool at_range(const Parser *p) {
+    size_t n = parser_at_word(p, 0, "items") ? position_length(p, 1) : 0;
+    return n > 0 && (parser_at_word(p, 1 + n, "to") || at_arithmetic(p, 1 + n));
+}
+
+// "first N items" / "last N items" (a name followed by a value is never
+// anything else, so arithmetic after N means a count that needs parentheses)
+static bool at_first_last(const Parser *p) {
+    if (!parser_at_word(p, 0, "first") && !parser_at_word(p, 0, "last")) return false;
+    size_t n = position_length(p, 1);
+    return n > 0 && (parser_at_word(p, 1 + n, "items") || at_arithmetic(p, 1 + n));  // arithmetic is reported
+}
+
+static Expr *new_slice(Parser *p, SliceKind kind) {
+    Expr *slice = ast_new_expr(p->arena, EXPR_SLICE, parser_token_pos(parser_peek(p, 0)));
+    slice->as.slice.kind = kind;
+    return slice;
+}
+
+// "of L" / "in L" at the end of a slice.
+static Expr *finish_slice(Parser *p, Expr *slice, const char *example) {
+    if (p->sentence_failed || !parser_expect_word(p, of_in, example)) return parser_error_expr(p);
+    slice->as.slice.list = parse_primary(p);
+    slice->pos = ast_pos_join(slice->pos, slice->as.slice.list->pos);
+    return slice;
+}
+
+// items P to Q of L / items P to the end of L
+static Expr *parse_range(Parser *p) {
+    static const char *const to[] = {"to", NULL};
+    static const char *const example = "items 2 to 4 of scores";
+    Expr *slice = new_slice(p, SLICE_RANGE);
+    parser_advance(p);  // items
+    slice->as.slice.from = parse_position(p);
+    if (p->sentence_failed || !parser_expect_word(p, to, example)) return parser_error_expr(p);
+    if (word_among(parser_peek(p, 0), of_in)) {
+        if (parser_error(p, p->prev_span, "Something is missing after \"to\".")) {
+            diag_note(p->diag, "Say where the items end, like \"%s\" or \"items 2 to the end of scores\".", example);
+        }
+        return parser_error_expr(p);
+    }
+    if (parser_match_words(p, "end of") || parser_match_words(p, "end in")) {
+        parser_advance(p);  // end ("the end"): the slice goes to the last item
+    } else {
+        slice->as.slice.to = parse_position(p);
+    }
+    return finish_slice(p, slice, example);
+}
+
+// the first N items in L / the last N items of L
+static Expr *parse_first_last(Parser *p) {
+    static const char *const items[] = {"items", NULL};
+    bool first = parser_at_word(p, 0, "first");
+    Expr *slice = new_slice(p, first ? SLICE_FIRST : SLICE_LAST);
+    parser_advance(p);
+    slice->as.slice.from = parse_position(p);
+    if (p->sentence_failed || !parser_expect_word(p, items, "the first 3 items in scores")) return parser_error_expr(p);
+    return finish_slice(p, slice, first ? "the first 3 items in scores" : "the last 2 items in scores");
+}
+
+// "second" ... "tenth" as numbers (2 to 10), or 0 for any other word.
+static size_t ordinal_word(const Token *token) {
+    static const char *const words[] = {"second", "third", "fourth", "fifth", "sixth", "seventh", "eighth",
+                                        "ninth", "tenth", NULL};
+    for (size_t i = 0; token->kind == TOK_WORD && words[i]; i++) {
+        if (strcmp(token->text, words[i]) == 0) return i + 2;
+    }
+    return 0;
+}
+
+// "every second item", "every 3rd item" (then "of"/"in", or an error)
+static bool at_every_nth(const Parser *p) {
+    const Token *ordinal = parser_peek(p, 1);
+    return parser_at_word(p, 0, "every") && (ordinal->kind == TOK_ORDINAL || ordinal_word(ordinal) > 0) &&
+           parser_at_word(p, 2, "item");
+}
+
+// every second item of L: the items at positions 2, 4, 6, ...
+static Expr *parse_every_nth(Parser *p) {
+    Expr *slice = new_slice(p, SLICE_EVERY);
+    parser_advance(p);  // every
+    const Token *ordinal = parser_advance(p);
+    slice->as.slice.step = ordinal->kind == TOK_ORDINAL ? strtoull(ordinal->text, NULL, 10) : ordinal_word(ordinal);
+    if (slice->as.slice.step == 0) {
+        if (parser_error(p, ordinal->span, "There's no item at position 0.")) {
+            diag_note(p->diag, "Positions start at 1: \"every 2nd item\" means items 2, 4, 6 and so on.");
+        }
+        return parser_error_expr(p);
+    }
+    parser_advance(p);  // item
+    return finish_slice(p, slice, "every second item of scores");
+}
+
 // "item" followed by "of" or "in": which item is missing.
 static Expr *report_missing_position(Parser *p) {
     Span span = parser_advance(p)->span;
@@ -257,6 +372,9 @@ static Expr *parse_prefix(Parser *p, size_t words, ExprKind kind, ListOp op) {
 Expr *parser_parse_list_word(Parser *p) {
     if (parser_match_words(p, "list of")) return parse_list_literal(p);
     if (parser_match_words(p, "empty list of")) return parse_empty_list(p);
+    if (at_range(p)) return parse_range(p);
+    if (at_first_last(p)) return parse_first_last(p);
+    if (at_every_nth(p)) return parse_every_nth(p);
     if (parser_at_item(p, of_in)) return parse_item(p);
     if (parser_at_word(p, 0, "item") && word_among(parser_peek(p, 1), of_in)) return report_missing_position(p);
     if (parser_match_words(p, "number of items in")) return parse_prefix(p, 4, EXPR_LENGTH, LIST_SUM);

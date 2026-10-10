@@ -25,6 +25,7 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | Form | Meaning | Example | Status |
 |---|---|---|---|
 | whole numbers | Integers | `42`, `007` | Available |
+| ordinals | A whole number with `st`, `nd`, `rd` or `th`, only in `every 3rd item of L`. The ending has to be the right one (`2th` is an error) | `2nd`, `3rd`, `21st`, `7th` | Available |
 | decimals | Digits, a point, digits | `19.99` (but `3.` is the number 3 and then a period, and `.5` is an error: write `0.5`) | Available |
 | `"..."` | Text. It must end on the line it starts on | `"Hello, world!"` | Available |
 | `\n` `\t` `\"` `\\` | Escapes inside text: new line, tab, quote, backslash | `"Line one\nLine two"` | Available |
@@ -305,7 +306,22 @@ All list words are **Available**. A list holds values of one kind, in order; pos
 | `the first item in L` / `the first item of L` | The first item | `the first item in names` |
 | `the last item in L` / `the last item of L` | The last item | `the last item of scores` |
 
-A position that isn't in the list (0, past the end, or not whole) stops the program with an error that says the length. `item`, `first`, and `last` are only special in these forms, so they can still be names (`add item to total`).
+A position that isn't in the list (0, past the end, or not whole) stops the program with an error that says the length.
+
+### Parts of lists
+
+Each of these gives back a **new list** (changing it doesn't change the original; lists inside are copied too).
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `items A to B of L` / `items A to B in L` | Items A to B, both included. Both must be positions in the list, and A can't be after B | `items 2 to 4 of scores` |
+| `items A to the end of L` / `... to the end in L` | Item A and everything after it | `items 3 to the end of scores` |
+| `the first N items in L` / `the first N items of L` | The first N items (all of them if there are fewer) | `the first 3 items in scores` |
+| `the last N items in L` / `the last N items of L` | The last N items (all of them if there are fewer) | `the last 2 items of scores` |
+| `L without the first item` / `L without the last item` | All but the first or last item (an empty list is an error) | `scores without the first item` |
+| `every second item of L` / `every ... item in L` | The items at positions 2, 4, 6, ...: `second`, `third`, `fourth`, `fifth`, `sixth`, `seventh`, `eighth`, `ninth`, `tenth`, or any number written as an ordinal (`3rd`, `12th`, `21st`) | `every third item of scores` |
+
+`A`, `B`, and `N` are numbers, names, or something in parentheses, like positions. `without` binds tightly, like `reversed`. `items` is only special in these forms, so it can still be a name. `item`, `first`, and `last` are only special in these forms, so they can still be names (`add item to total`).
 
 ### Asking about lists
 

@@ -24,6 +24,8 @@ let ordered be a copy of scores
 sort ordered
 let middle be the length of ordered divided by 2
 say "Median: " followed by (item middle of ordered plus item (middle plus 1) of ordered) divided by 2
+say "Top three: " followed by (the last 3 items in ordered) reversed
+say "Middle half: " followed by items 3 to 6 of ordered
 
 let passing be only the scores that are at least 60
 say "Passed: " followed by the length of passing followed by " of " followed by the length of scores

@@ -1,0 +1,17 @@
+WORD          1:1     say
+WORD          1:5     every
+ORDINAL       1:11    2nd
+WORD          1:15    item
+WORD          1:20    of
+WORD          1:23    x
+NEWLINE       1:24
+WORD          2:1     say
+ORDINAL       2:5     3rd
+ORDINAL       2:9     11th
+ORDINAL       2:14    12th
+ORDINAL       2:19    13th
+ORDINAL       2:24    21st
+ORDINAL       2:29    102nd
+ORDINAL       2:35    1ST
+NEWLINE       2:38
+EOF           3:1

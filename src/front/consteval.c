@@ -308,7 +308,8 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
     case EXPR_ITEM:
     case EXPR_LIST_OP:
     case EXPR_EVERY:
-    case EXPR_ONLY: return reject_list(ev, span);
+    case EXPR_ONLY:
+    case EXPR_SLICE: return reject_list(ev, span);
     case EXPR_FILE_CONTENTS:
         return fail(ev, span, fixed_note, "A constant can't read a file, because files are read while the program runs.");
     case EXPR_ERROR: return false;

@@ -1,0 +1,29 @@
+Line 1: There's no item at position 0.
+    say every 0th item of scores
+              ^^^
+Positions start at 1: "every 2nd item" means items 2, 4, 6 and so on.
+
+Line 2: Something is missing after "to".
+    say items 2 to of scores
+                ^^
+Say where the items end, like "items 2 to 4 of scores" or "items 2 to the end of scores".
+
+Line 3: I expected "of" here, but found "scores".
+    say the first 3 items scores
+                          ^^^^^^
+Write it like "the first 3 items in scores".
+
+Line 4: A position worked out with arithmetic needs parentheses.
+    say items n plus 1 to 3 of scores
+                ^^^^
+Write it like "item (n plus 1) of scores".
+
+Line 5: Something is missing after "without the first".
+    say scores without the first
+               ^^^^^^^^^^^^^^^^^
+Did you mean "without the first item"?
+
+Line 6: I expected "of" here, but found "scores".
+    say every second item scores
+                          ^^^^^^
+Write it like "every second item of scores".

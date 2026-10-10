@@ -310,7 +310,8 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_ITEM:
     case EXPR_LIST_OP:
     case EXPR_EVERY:
-    case EXPR_ONLY: return checker_check_list_expr(c, expr);
+    case EXPR_ONLY:
+    case EXPR_SLICE: return checker_check_list_expr(c, expr);
     case EXPR_ERROR: return error_var(c);
     }
     return error_var(c);

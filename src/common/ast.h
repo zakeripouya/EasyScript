@@ -67,6 +67,7 @@ typedef enum {
     EXPR_LIST_OP,        // L added together, the biggest of L, L reversed, L is empty, a copy of L, ...
     EXPR_EVERY,          // every NAME in L <rest of the expression, worked out for each item>
     EXPR_ONLY,           // only L that are <comparison>
+    EXPR_SLICE,          // items 2 to 4 of L, the first 3 items in L, L without the last item, ...
 } ExprKind;
 
 typedef enum {
@@ -114,6 +115,16 @@ typedef enum {
     LIST_IS_EMPTY,   // L is empty (lists and text)
     LIST_NOT_EMPTY,  // L is not empty / isn't empty
 } ListOp;
+
+// Which part of a list a slice takes. Every slice is a new list.
+typedef enum {
+    SLICE_RANGE,          // items FROM to TO of L (TO NULL: "to the end")
+    SLICE_FIRST,          // the first COUNT items in L
+    SLICE_LAST,           // the last COUNT items in L
+    SLICE_WITHOUT_FIRST,  // L without the first item
+    SLICE_WITHOUT_LAST,   // L without the last item
+    SLICE_EVERY,          // every STEP-th item of L ("every second item")
+} SliceKind;
 
 typedef struct Expr Expr;
 
@@ -180,6 +191,13 @@ struct Expr {
             Expr *list;
             Expr *condition;  // a comparison whose left side is EXPR_IT (the item)
         } only;
+        struct {
+            SliceKind kind;
+            Expr *list;
+            Expr *from;   // SLICE_RANGE: the first position; SLICE_FIRST/SLICE_LAST: how many
+            Expr *to;     // SLICE_RANGE: the last position, or NULL for the end
+            size_t step;  // SLICE_EVERY: 2 for "every second item"
+        } slice;
     } as;
 };
 

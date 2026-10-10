@@ -79,6 +79,28 @@ static void emit_list_op(Codegen *g, const Expr *expr, StrBuf *out) {
     }
 }
 
+// Slices, their parts worked out in the order they're written:
+// es_slice_range(line, L, FROM, TO, to_end), es_slice_end(line, L, COUNT,
+// last), es_slice_without(line, L, last), es_slice_every(L, STEP).
+static void emit_slice(Codegen *g, const Expr *expr, StrBuf *out) {
+    SliceKind kind = expr->as.slice.kind;
+    Expr *parts[] = {expr->as.slice.from, expr->as.slice.to, expr->as.slice.list};
+    const char *v[3] = {"0", "0", NULL};
+    bool opened = cg_ordered(g, parts, 3, v, out);
+    size_t line = expr->pos.line;
+    switch (kind) {
+    case SLICE_RANGE:
+        sb_appendf(out, "es_slice_range(%zu, %s, %s, %s, %d)", line, v[2], v[0], v[1], expr->as.slice.to == NULL);
+        break;
+    case SLICE_FIRST:
+    case SLICE_LAST: sb_appendf(out, "es_slice_end(%zu, %s, %s, %d)", line, v[2], v[0], kind == SLICE_LAST); break;
+    case SLICE_WITHOUT_FIRST:
+    case SLICE_WITHOUT_LAST: sb_appendf(out, "es_slice_without(%zu, %s, %d)", line, v[2], kind == SLICE_WITHOUT_LAST); break;
+    case SLICE_EVERY: sb_appendf(out, "es_slice_every(%s, %zu)", v[2], expr->as.slice.step); break;
+    }
+    if (opened) sb_append_char(out, ')');
+}
+
 void cg_emit_contains(Codegen *g, const Expr *expr, StrBuf *out) {
     Expr *parts[] = {expr->as.binary.left, expr->as.binary.right};
     const char *values[2];
@@ -148,6 +170,11 @@ static void collect(Codegen *g, const Expr *expr, Names *bound, Codegen *helper)
         collect_all(g, parts, 2, bound, helper);
         return;
     }
+    case EXPR_SLICE: {
+        Expr *parts[] = {expr->as.slice.from, expr->as.slice.to, expr->as.slice.list};
+        collect_all(g, parts, 3, bound, helper);
+        return;
+    }
     default: return;
     }
 }
@@ -174,6 +201,9 @@ static bool calls_function(const Codegen *g, const Expr *expr) {
     case EXPR_LIST_OP: return calls_function(g, expr->as.list_op.operand);
     case EXPR_EVERY: return calls_function(g, expr->as.every.list) || calls_function(g, expr->as.every.body);
     case EXPR_ONLY: return calls_function(g, expr->as.only.list) || calls_function(g, expr->as.only.condition);
+    case EXPR_SLICE:
+        return (expr->as.slice.from && calls_function(g, expr->as.slice.from)) ||
+               (expr->as.slice.to && calls_function(g, expr->as.slice.to)) || calls_function(g, expr->as.slice.list);
     default: return false;
     }
 }
@@ -273,6 +303,7 @@ void cg_emit_list_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     case EXPR_LIST_OP: emit_list_op(g, expr, out); break;
     case EXPR_EVERY:
     case EXPR_ONLY: emit_helper_call(g, expr, out); break;
+    case EXPR_SLICE: emit_slice(g, expr, out); break;
     default: assert(!"not a list expression"); break;
     }
 }

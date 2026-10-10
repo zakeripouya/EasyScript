@@ -112,6 +112,14 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch) {
     case EXPR_LIST_OP: return ast_list_op_name(expr->as.list_op.op);
     case EXPR_EVERY: sb_appendf(scratch, "every %s in", expr->as.every.var.text); break;
     case EXPR_ONLY: return "only";
+    case EXPR_SLICE: {
+        static const char *const names[] = {"items", "first items", "last items", "without the first item",
+                                            "without the last item", "every"};
+        sb_append(scratch, names[expr->as.slice.kind]);
+        if (expr->as.slice.kind == SLICE_RANGE && !expr->as.slice.to) sb_append(scratch, " to the end");
+        if (expr->as.slice.kind == SLICE_EVERY) sb_appendf(scratch, " item at a multiple of %zu", expr->as.slice.step);
+        break;
+    }
     }
     return scratch->data;
 }
@@ -138,6 +146,10 @@ static void dump_expr(const Expr *expr, size_t depth, StrBuf *out) {
     case EXPR_LIST_OP: dump_children(expr->as.list_op.operand, NULL, depth, out); break;
     case EXPR_EVERY: dump_children(expr->as.every.list, expr->as.every.body, depth, out); break;
     case EXPR_ONLY: dump_children(expr->as.only.list, expr->as.only.condition, depth, out); break;
+    case EXPR_SLICE:  // in the order they're written, except postfix "without": the list first
+        dump_children(expr->as.slice.from, expr->as.slice.to, depth, out);
+        dump_expr(expr->as.slice.list, depth + 1, out);
+        break;
     default: break;
     }
 }

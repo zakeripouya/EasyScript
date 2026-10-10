@@ -92,6 +92,28 @@ static EsList *es_list_copy(EsList *l) {
     return copy;
 }
 
+/* --- Slices ------------------------------------------------------------------
+ *
+ * Every slice is a new list. Text in it is shared (text never changes); lists
+ * in it are copied, so changing a slice never changes the list it came from. */
+
+/* `count` items of l, starting at index `start`, `step` apart. Only looks. */
+static EsList *es_list_pick(const EsList *l, size_t start, size_t count, size_t step) {
+    EsList *out = es_list_new(l->items, count);
+    size_t size = es_item_size(l->items);
+    for (size_t k = 0; k < count; k++) {
+        size_t i = start + k * step;
+        if (l->items == ES_ITEMS_LIST) {
+            out->at.l[k] = es_list_copy_of(l->at.l[i]);
+        } else {
+            memcpy((char *)out->at.any + k * size, (const char *)l->at.any + i * size, size);
+            if (l->items == ES_ITEMS_TEXT) es_retain(out->at.t[k]);
+        }
+    }
+    out->len = count;
+    return out;
+}
+
 /* --- Positions ---------------------------------------------------------------- */
 
 enum { ES_AT, ES_FIRST, ES_LAST }; /* item N, the first item, the last item */
@@ -124,6 +146,44 @@ static size_t es_insert_index(int line, const EsList *l, double pos) {
                 es_shown(pos), l->len + 1, l->len, l->len == 1 ? "" : "s");
     }
     return (size_t)pos - 1;
+}
+
+/* "items FROM to TO of L" (to_end: "to the end"). Both positions must be in
+ * the list, and FROM can't be after TO. */
+static EsList *es_slice_range(int line, EsList *l, double from, double to, bool to_end) {
+    size_t a = es_index(line, l, ES_AT, from);
+    size_t b = to_end ? l->len - 1 : es_index(line, l, ES_AT, to);
+    if (a > b) {
+        es_fail(line, NULL, "I can't take items %zu to %zu: the first position is after the last one.", a + 1, b + 1);
+    }
+    EsList *slice = es_list_pick(l, a, b - a + 1, 1);
+    es_list_release(l);
+    return slice;
+}
+
+/* "the first N items" / "the last N items": all of them when there are fewer. */
+static EsList *es_slice_end(int line, EsList *l, double n, bool last) {
+    if (n < 0) es_fail(line, NULL, "The number of items can't be negative, but it's %s.", es_shown(n));
+    if (n != floor(n)) es_fail(line, NULL, "The number of items has to be a whole number, but it's %s.", es_shown(n));
+    size_t count = n >= (double)l->len ? l->len : (size_t)n;
+    EsList *slice = es_list_pick(l, last ? l->len - count : 0, count, 1);
+    es_list_release(l);
+    return slice;
+}
+
+/* "L without the first item" / "L without the last item" */
+static EsList *es_slice_without(int line, EsList *l, bool last) {
+    es_index(line, l, last ? ES_LAST : ES_FIRST, 0); /* there has to be one */
+    EsList *slice = es_list_pick(l, last ? 0 : 1, l->len - 1, 1);
+    es_list_release(l);
+    return slice;
+}
+
+/* "every second item of L": the items at positions step, 2 * step, ... */
+static EsList *es_slice_every(EsList *l, size_t step) {
+    EsList *slice = es_list_pick(l, step - 1, l->len / step, step);
+    es_list_release(l);
+    return slice;
 }
 
 /* --- Items -------------------------------------------------------------------- */
