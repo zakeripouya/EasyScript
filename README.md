@@ -77,13 +77,13 @@ Hello, Ada!
 | Types | Every value is a number, text, yes/no, or a list of one kind, worked out by the compiler (no annotations needed); kind mistakes are caught before the program runs; optional kinds in definitions: `to area with width (a number) and height (a number), giving back a number:`, `(a list of numbers)` |
 | Other | `stop the program`; any sentence can start with `please` |
 | Memory | Nothing to manage: text and lists are freed as soon as nothing uses them, so loops that make them run in flat memory ([how](docs/memory.md)) |
-| Friendly errors | Compile errors show the line, the source, carets, and a suggestion ("Did you mean "total"? You made it on line 1."). Kind mistakes are compile errors too ("I can't add text to a number."). Runtime errors say what happened and where: "Line 8: You divided by zero." |
+| Friendly errors | Compile errors show the line, the source, carets, and a suggestion ("Did you mean "total"? You made it on line 1."). Kind mistakes are compile errors too ("I can't add text to a number."). Runtime errors show the line with carets too, and the chain of function calls that led there, with the values they were given ("while working out "average" (count was 0)", "called from line 8: ...") |
 | Tools | `run`, `build`, `emit`, `tokens`, `ast`, and an interactive shell. Generated programs are self-contained C. |
 | Tests | Unit, lexer, parser, program, runtime-error, memory, example, and CLI tests with `make test` (every program also runs with a memory check), plus a sanitizer build with `make test-debug`; GitHub Actions runs both on Linux (GCC) and macOS (Clang) on every push |
 
 See the runnable [example programs](examples/programs/).
 
-**Phase 2 has started.** Done so far: **memory management** (text and lists are freed as soon as nothing uses them, so long loops run in flat memory; [how it works](docs/memory.md)), **static types** (the compiler works out whether every value is a number, text, yes/no, or a list, catches kind mistakes before the program runs, and generates plain C numbers; [Types](docs/language-guide.md#9-types)), and **lists** (shared by reference, with items by position from 1, `for each`, `every`/`only`, sorting, and friendly errors; [Lists](docs/language-guide.md#10-lists)). **Coming next:** records, maps, modules, and text tools, plus items moved from Phase 1: runtime errors that show the source line, and `file ... exists`. Follow along in the [roadmap](docs/roadmap.md).
+**Phase 2 has started.** Done so far: **memory management** (text and lists are freed as soon as nothing uses them, so long loops run in flat memory; [how it works](docs/memory.md)), **static types** (the compiler works out whether every value is a number, text, yes/no, or a list, catches kind mistakes before the program runs, and generates plain C numbers; [Types](docs/language-guide.md#9-types)), and **lists** (shared by reference, with items by position from 1, `for each`, `every`/`only`, sorting, and friendly errors; [Lists](docs/language-guide.md#10-lists)). Runtime errors now show the source line and the chain of calls. **Coming next:** records, maps, modules, and text tools, plus `file ... exists` (moved from Phase 1). Follow along in the [roadmap](docs/roadmap.md).
 
 ## Performance
 
@@ -91,13 +91,13 @@ Time (and peak memory) for each benchmark, measured with `make bench`:
 
 | Program | EasyScript | C | Go | Python |
 |---|---|---|---|---|
-| Recursive fib(38) | 0.23 s | 0.07 s | 0.08 s | 2.81 s |
-| Count to 100 million | 0.05 s | 0.02 s | 0.02 s | 4.05 s |
-| Nested loops (100 million rounds) | 0.11 s | 0.05 s | 0.03 s | 5.08 s |
-| Build a 50,000-character text | 0.00 s, 1.6 MB | (none) | 0.01 s, 11 MB | 0.01 s, 12 MB |
+| Recursive fib(38) | 0.24 s | 0.07 s | 0.08 s | 2.88 s |
+| Count to 100 million | 0.05 s | 0.02 s | 0.02 s | 4.11 s |
+| Nested loops (100 million rounds) | 0.11 s | 0.03 s | 0.03 s | 4.94 s |
+| Build a 50,000-character text | 0.00 s, 1.6 MB | (none) | 0.01 s, 13 MB | 0.01 s, 12 MB |
 | Sort a million numbers | 0.06 s | 0.08 s (`qsort`) | 0.08 s | 0.31 s |
 
-Apple M4, macOS 15.3.1, EasyScript 0.1.0 plus reference counting, static types and lists, 2026-10-10. The compiler knows every value's kind, so numbers are plain C doubles and loops run close to C. Sorting beats C's `qsort` because the comparison is inlined instead of called through a function pointer. Recursion is slower than C because every call checks for runaway recursion (so it can stop with a friendly error), and numbers compare with a small tolerance. Details and history: [docs/performance.md](docs/performance.md).
+Apple M4, macOS 15.3.1, EasyScript 0.1.0 plus reference counting, static types, lists and stack traces, 2026-10-10. The compiler knows every value's kind, so numbers are plain C doubles and loops run close to C. Sorting beats C's `qsort` because the comparison is inlined instead of called through a function pointer. Recursion is slower than C because every call checks for runaway recursion and records itself for runtime errors' call chain (so it can stop with a friendly error that says how it got there), and numbers compare with a small tolerance. Details and history: [docs/performance.md](docs/performance.md).
 
 ## Roadmap
 

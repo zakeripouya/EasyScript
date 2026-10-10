@@ -1,1 +1,3 @@
 Line 3: There's no first item: the list is empty.
+    say the first item in names
+            ^^^^^^^^^^^^^^^^^^^

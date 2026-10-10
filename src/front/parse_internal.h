@@ -191,6 +191,8 @@ void parser_take_name(Parser *p, size_t words, Name *name);
 // A kind of value: "number" (after the dropped "a"), "text", "yes or no" (or
 // "yes/no"), "list of" what it holds, and, when nothing_ok, "nothing".
 bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type);
+// "every second item", "every 3rd item", "every other item": a slice.
+bool parser_at_every_nth(const Parser *p);
 // "item P", "first item" or "last item", followed by one of `after`.
 bool parser_at_item(const Parser *p, const char *const *after);
 // A list form starting with a word ("list of", "empty list of", "item",

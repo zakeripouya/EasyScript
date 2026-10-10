@@ -16,8 +16,9 @@
  * functions that take EsText * or EsList * consume it (release it, or hand it
  * back in their result); reading a variable retains; storing into one
  * (es_set, es_list_set) takes the new value and releases the old one.
- * Runtime errors print "Line N: <plain English>" to stderr and exit 1 without
- * cleaning up.
+ * Runtime errors print "Line N: <plain English>", the line of the program
+ * with carets under the part that failed, and the chain of function calls
+ * that led there, to stderr, and exit 1 without cleaning up.
  */
 #ifndef ES_MEMORY_H
 #define ES_MEMORY_H
@@ -255,7 +256,69 @@ static void es_close_answers(void) {
     if (es_answers) fclose(es_answers);
 }
 
-static void es_init(void) {
+/* --- Where things happen --------------------------------------------------
+ *
+ * A runtime call that can fail is given a site: the index of its place in
+ * the program in es_sites, a table the compiler writes next to the program's
+ * source lines (es_source). Errors use them to show the line and carets the
+ * way compile errors do. */
+typedef struct {
+    int line;    /* from 1 */
+    int column;  /* from 1, in characters (a tab counts as one) */
+    int length;  /* in bytes */
+} EsSite;
+
+/* The call stack. Every EasyScript function call pushes a frame holding the
+ * function (its name and its inputs' names and kinds: 'n' number, 'b'
+ * yes/no, 't' text, 'l' list), the values it was given, and the site of the
+ * call. Errors print the chain. The frames are an array as deep as the
+ * recursion limit, so pushing is a few stores and popping is the depth
+ * counter going down. A function with one input (the usual case) keeps its
+ * value in the frame; with more, the values are copied onto es_inputs, a
+ * growing array, and the frame records where they start. */
+typedef union {
+    double n;
+    bool b;
+    EsText *t; /* retained by the function for as long as the frame lives */
+    void *list;
+} EsArg;
+
+typedef struct {
+    const char *name;
+    int inputs;
+    const char *const *input_names;
+    const char *kinds;
+} EsFunction;
+
+typedef struct {
+    const EsFunction *fn;
+    int call; /* site of the call, in the caller */
+    union {
+        EsArg one;    /* a function with one input: its value */
+        size_t many;  /* with more: where their values start in es_inputs */
+    } in;
+} EsFrame;
+
+static EsArg *es_inputs; /* the values of the calls in progress with several inputs */
+static size_t es_inputs_len, es_inputs_cap;
+
+static EsArg es_frame_input(const EsFrame *frame, int i) {
+    return frame->fn->inputs == 1 ? frame->in.one : es_inputs[frame->in.many + (size_t)i];
+}
+
+#define ES_MAX_DEPTH 10000
+static EsFrame es_stack[ES_MAX_DEPTH]; /* es_stack[0] is the outermost call */
+static int es_depth;                   /* calls in progress */
+
+/* Set by es_init to the program's es_sites and es_source. */
+static const EsSite *es_site_table;
+static const char *const *es_source_table;
+static int es_source_lines;
+
+static void es_init(const EsSite *sites, const char *const *source, int source_lines) {
+    es_site_table = sites;
+    es_source_table = source;
+    es_source_lines = source_lines;
     const char *skip = getenv("ES_SKIP_OUTPUT");
     if (skip) es_skip_output = (size_t)strtoull(skip, NULL, 10);
     const char *answers = getenv("ES_ANSWERS");
@@ -300,16 +363,132 @@ static void es_out(const char *s, size_t n) {
 
 /* --- Errors ------------------------------------------------------------- */
 
-/* Prints "Line N: message", then the hint on its own line if there is one. */
-static _Noreturn void es_fail(int line, const char *hint, const char *fmt, ...) {
+static bool es_continuation_byte(char c) {
+    return ((unsigned char)c & 0xC0) == 0x80;
+}
+
+/* The site's source line, indented, and carets under it: the same layout as
+ * compile errors (tabs copied into the padding, one caret per character,
+ * clamped to the line, at least one). */
+static void es_show_source(const EsSite *site) {
+    if (site->line < 1 || site->line > es_source_lines) return;
+    const char *text = es_source_table[site->line - 1];
+    size_t end = strlen(text);
+    fprintf(stderr, "    %s\n    ", text);
+    size_t offset = 0;
+    for (int column = 1; column < site->column && offset < end; column++) {  /* one character at a time */
+        fputc(text[offset] == '\t' ? '\t' : ' ', stderr);
+        offset++;
+        while (offset < end && es_continuation_byte(text[offset])) offset++;
+    }
+    size_t length = (size_t)site->length < end - offset ? (size_t)site->length : end - offset;
+    size_t carets = 0;
+    for (size_t i = 0; i < length; i++) carets += !es_continuation_byte(text[offset + i]);
+    if (carets == 0) carets = 1;
+    while (carets--) fputc('^', stderr);
+    fputc('\n', stderr);
+}
+
+/* 4998 as "4,998". */
+static void es_print_count(long n) {
+    if (n >= 1000) {
+        es_print_count(n / 1000);
+        fprintf(stderr, ",%03ld", n % 1000);
+    } else {
+        fprintf(stderr, "%ld", n);
+    }
+}
+
+/* "(count was 0, name was "Ada")": the inputs that are numbers, yes/no or
+ * text (long text cut short); nothing if there are none of those. */
+static EsText *es_number_text(double x);
+static void es_print_inputs(const EsFrame *frame) {
+    bool open = false;
+    for (int i = 0; i < frame->fn->inputs; i++) {
+        char kind = frame->fn->kinds[i];
+        if (kind == 'l') continue;
+        fprintf(stderr, "%s%s was ", open ? ", " : " (", frame->fn->input_names[i]);
+        open = true;
+        if (kind == 'n') {
+            EsText *t = es_number_text(es_frame_input(frame, i).n);
+            fputs(t->chars, stderr);
+            es_release(t);
+        } else if (kind == 'b') {
+            fputs(es_frame_input(frame, i).b ? "yes" : "no", stderr);
+        } else {
+            const EsText *t = es_frame_input(frame, i).t;
+            size_t shown = 0, chars = 0;
+            while (shown < t->len && chars < 30) {
+                shown++;
+                if (shown == t->len || !es_continuation_byte(t->chars[shown])) chars++;
+            }
+            fprintf(stderr, "\"%.*s%s\"", (int)shown, t->chars, shown < t->len ? "..." : "");
+        }
+    }
+    if (open) fputc(')', stderr);
+}
+
+/* Whether calls i and i - 1 look the same in the chain: called from the
+ * same place in the same function. */
+static bool es_same_call(int i) {
+    return i >= 2 && es_stack[i].call == es_stack[i - 1].call && es_stack[i - 1].fn == es_stack[i - 2].fn;
+}
+
+/* The chain of calls, innermost first:
+ *   while working out "average" (count was 0)
+ *   called from "report" on line 5
+ *   ...it called itself 4,998 more times...
+ *   called from line 8: say report */
+static void es_show_calls(void) {
+    if (es_depth == 0) return;
+    fprintf(stderr, "while working out \"%s\"", es_stack[es_depth - 1].fn->name);
+    es_print_inputs(&es_stack[es_depth - 1]);
+    fputc('\n', stderr);
+    for (int i = es_depth - 1; i >= 0; i--) {
+        int line = es_site_table[es_stack[i].call].line;
+        if (i == 0) {
+            fprintf(stderr, "called from line %d", line);
+            if (line >= 1 && line <= es_source_lines) {
+                const char *text = es_source_table[line - 1];
+                while (*text == ' ' || *text == '\t') text++;
+                fprintf(stderr, ": %s", text);
+            }
+            fputc('\n', stderr);
+            break;
+        }
+        fprintf(stderr, "called from \"%s\" on line %d", es_stack[i - 1].fn->name, line);
+        es_print_inputs(&es_stack[i - 1]);
+        fputc('\n', stderr);
+        long repeats = 0;
+        while (es_same_call(i)) {
+            i--;
+            repeats++;
+        }
+        if (repeats == 1) { /* two the same: show both */
+            fprintf(stderr, "called from \"%s\" on line %d", es_stack[i - 1].fn->name, line);
+            es_print_inputs(&es_stack[i - 1]);
+            fputc('\n', stderr);
+        } else if (repeats > 1) {
+            fputs("...it called itself ", stderr);
+            es_print_count(repeats);
+            fputs(" more times...\n", stderr);
+        }
+    }
+}
+
+/* Prints "Line N: message", the line with carets, the hint on its own line
+ * if there is one, and the chain of calls. */
+static _Noreturn void es_fail(int site, const char *hint, const char *fmt, ...) {
     va_list args;
     fflush(stdout);
-    fprintf(stderr, "Line %d: ", line);
+    fprintf(stderr, "Line %d: ", es_site_table[site].line);
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
     va_end(args);
     fputc('\n', stderr);
+    es_show_source(&es_site_table[site]);
     if (hint) fprintf(stderr, "%s\n", hint);
+    es_show_calls();
     exit(1);
 }
 

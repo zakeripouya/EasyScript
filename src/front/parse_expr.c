@@ -177,7 +177,7 @@ static Expr *parse_left_assoc(Parser *p, const Phrase *ops, size_t n, ParseFn op
 
 // "every NAME in", where NAME may be several words ("every guest name in").
 bool parser_at_every(const Parser *p) {
-    if (!parser_at_word(p, 0, "every") || !parser_is_name_word(parser_peek(p, 1))) return false;
+    if (!parser_at_word(p, 0, "every") || !parser_is_name_word(parser_peek(p, 1)) || parser_at_every_nth(p)) return false;
     for (size_t i = 2; parser_peek(p, i)->kind == TOK_WORD; i++) {
         if (parser_at_word(p, i, "in")) return true;
         if (!parser_is_name_word(parser_peek(p, i))) return false;

@@ -54,3 +54,9 @@ let one be a list of 7
 say one without the first item is empty
 say every second item of one is empty
 say items 1 to 1 of one
+
+note: "every other item" starts at the first item; "every second item" at the second
+say every other item of scores
+say every other item in names
+say length of (every other item of empty_list)
+say every other item of one

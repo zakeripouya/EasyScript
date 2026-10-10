@@ -38,6 +38,13 @@ typedef struct {
     size_t count;
 } TextPool;
 
+// The places runtime calls that can fail come from (es_sites[N]: line,
+// column, length), for runtime errors to show the line and carets.
+typedef struct {
+    StrBuf code;
+    size_t count;
+} SitePool;
+
 // The C functions that "every" and "only" become (es_every1, es_only2, ...).
 typedef struct {
     StrBuf code;
@@ -48,6 +55,7 @@ typedef struct {
     Arena *arena;
     TextPool *texts;
     HelperPool *helpers;
+    SitePool *sites;
     StrBuf body;                 // statements of main() or of the function
     Vec(VarCode) vars;           // variables made there, hoisted to its top
     Vec(Type) temps;             // es_t1 ... es_tN (index + 1), declared at its top
@@ -86,6 +94,8 @@ const char *cg_operand(Codegen *g, const Expr *expr, bool as_text);
 // is appended to out; then it returns true and the caller adds a ")".
 bool cg_ordered(Codegen *g, Expr *const *exprs, size_t n, const char **values, StrBuf *out);
 bool cg_is_constant(const Codegen *g, const char *name);
+// The site of a node, for a runtime call that can fail: its index in es_sites.
+size_t cg_site(Codegen *g, SourcePos pos);
 // A C name: prefix plus the name with "_" doubled, "'" as "_q", and spaces as "_".
 void cg_append_prefixed(StrBuf *out, const char *prefix, const char *name);
 void cg_append_var(StrBuf *out, const char *name, Type type);  // es_vn_total, es_vt_name, ...

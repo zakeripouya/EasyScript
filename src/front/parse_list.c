@@ -9,6 +9,7 @@
 //   items 2 to 4 of scores               items 3 to the end of scores
 //   the first 3 items in scores          the last 2 items in scores
 //   every second item of scores          every 3rd item of scores
+//   every other item of scores           (items 1, 3, 5; "every second item" is 2, 4, 6)
 //
 //   add 5 to the end of scores           insert 7 at position 1 of scores
 //   remove item 2 from scores            set item 2 of scores to 100
@@ -287,19 +288,24 @@ static size_t ordinal_word(const Token *token) {
     return 0;
 }
 
-// "every second item", "every 3rd item" (then "of"/"in", or an error)
-static bool at_every_nth(const Parser *p) {
+// "every second item", "every 3rd item", "every other item" (then "of"/"in",
+// or an error). It's never "every NAME in" with a name like "other item".
+bool parser_at_every_nth(const Parser *p) {
     const Token *ordinal = parser_peek(p, 1);
-    return parser_at_word(p, 0, "every") && (ordinal->kind == TOK_ORDINAL || ordinal_word(ordinal) > 0) &&
+    return parser_at_word(p, 0, "every") &&
+           (ordinal->kind == TOK_ORDINAL || ordinal_word(ordinal) > 0 || parser_at_word(p, 1, "other")) &&
            parser_at_word(p, 2, "item");
 }
 
 // every second item of L: the items at positions 2, 4, 6, ...
+// every other item of L: the items at positions 1, 3, 5, ...
 static Expr *parse_every_nth(Parser *p) {
     Expr *slice = new_slice(p, SLICE_EVERY);
     parser_advance(p);  // every
     const Token *ordinal = parser_advance(p);
-    slice->as.slice.step = ordinal->kind == TOK_ORDINAL ? strtoull(ordinal->text, NULL, 10) : ordinal_word(ordinal);
+    bool other = ordinal->kind == TOK_WORD && strcmp(ordinal->text, "other") == 0;
+    slice->as.slice.step = other ? 2 : ordinal->kind == TOK_ORDINAL ? strtoull(ordinal->text, NULL, 10) : ordinal_word(ordinal);
+    slice->as.slice.start = other ? 1 : slice->as.slice.step;
     if (slice->as.slice.step == 0) {
         if (parser_error(p, ordinal->span, "There's no item at position 0.")) {
             diag_note(p->diag, "Positions start at 1: \"every 2nd item\" means items 2, 4, 6 and so on.");
@@ -385,7 +391,7 @@ Expr *parser_parse_list_word(Parser *p) {
     if (parser_match_words(p, "empty list of")) return parse_empty_list(p);
     if (at_range(p)) return parse_range(p);
     if (at_first_last(p)) return parse_first_last(p);
-    if (at_every_nth(p)) return parse_every_nth(p);
+    if (parser_at_every_nth(p)) return parse_every_nth(p);
     if (parser_at_item(p, of_in)) return parse_item(p);
     if (parser_at_word(p, 0, "item") && word_among(parser_peek(p, 1), of_in)) return report_missing_position(p);
     if (parser_match_words(p, "number of items in")) return parse_prefix(p, 4, EXPR_LENGTH, LIST_SUM);

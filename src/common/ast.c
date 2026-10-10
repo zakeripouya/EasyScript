@@ -117,7 +117,10 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch) {
                                             "without the last item", "every"};
         sb_append(scratch, names[expr->as.slice.kind]);
         if (expr->as.slice.kind == SLICE_RANGE && !expr->as.slice.to) sb_append(scratch, " to the end");
-        if (expr->as.slice.kind == SLICE_EVERY) sb_appendf(scratch, " item at a multiple of %zu", expr->as.slice.step);
+        if (expr->as.slice.kind == SLICE_EVERY && expr->as.slice.start == 1) sb_append(scratch, " other item");
+        if (expr->as.slice.kind == SLICE_EVERY && expr->as.slice.start != 1) {
+            sb_appendf(scratch, " item at a multiple of %zu", expr->as.slice.step);
+        }
         break;
     }
     }

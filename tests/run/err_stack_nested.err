@@ -1,0 +1,7 @@
+Line 4: You divided by zero.
+        give back marks added together divided by count
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+while working out "average" (label was "x", loud was no)
+called from "report" on line 6 (title was "Quarterly figures for the whol...", region was "North")
+called from "start" on line 8
+called from line 10: start

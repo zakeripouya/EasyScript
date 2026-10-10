@@ -1,2 +1,6 @@
 Line 1: The function "sign" ended without giving anything back.
+    to sign with n, giving back a number:
+       ^^^^
 Make sure every way through it ends with "give back ...".
+while working out "sign" (n was -1)
+called from line 4: say sign of -1

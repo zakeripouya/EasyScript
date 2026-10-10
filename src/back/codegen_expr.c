@@ -183,6 +183,13 @@ static void emit_number(const Expr *expr, StrBuf *out) {
 
 // --- Order and effects ---------------------------------------------------------
 
+// {line, column, length}: a new entry in es_sites.
+size_t cg_site(Codegen *g, SourcePos pos) {
+    size_t id = ++g->sites->count;
+    sb_appendf(&g->sites->code, "    {%zu, %zu, %zu},\n", pos.line, pos.column, pos.span.length);
+    return id;
+}
+
 size_t cg_new_temp(Codegen *g, Type type) {
     vec_push(g->arena, &g->temps, type);
     return g->temps.len;
@@ -307,7 +314,8 @@ static void emit_binary(Codegen *g, const Expr *expr, StrBuf *out) {
     case BINARY_DIVIDE:
     case BINARY_MODULO:
         operands(g, left, right, false, out, &l, &r, &close);
-        sb_appendf(out, "%s(%zu, %s, %s)%s", op == BINARY_DIVIDE ? "es_div" : "es_mod", expr->pos.line, l, r, close);
+        sb_appendf(out, "%s(%zu, %s, %s)%s", op == BINARY_DIVIDE ? "es_div" : "es_mod", cg_site(g, expr->pos), l, r,
+                   close);
         return;
     case BINARY_ADD:
     case BINARY_SUBTRACT:
@@ -342,8 +350,9 @@ static void emit_it(Codegen *g, StrBuf *out) {
     assert(!"\"it\" outside a counting loop reached codegen");
 }
 
-// es_f_area(line, A, B). When two or more arguments have effects, they go
-// into temporaries first, left to right: (t1 = A, t2 = B, es_f_area(line, t1, t2)).
+// es_f_area(SITE, A, B), SITE being where the call is (for the call stack).
+// When two or more arguments have effects, they go into temporaries first,
+// left to right: (t1 = A, t2 = B, es_f_area(SITE, t1, t2)).
 // The function owns its text arguments and releases them when it ends.
 bool cg_ordered(Codegen *g, Expr *const *exprs, size_t n, const char **values, StrBuf *out) {
     size_t effects = 0;
@@ -360,11 +369,11 @@ bool cg_ordered(Codegen *g, Expr *const *exprs, size_t n, const char **values, S
     return effects >= 2;
 }
 
-static void emit_call(Codegen *g, const char *name, Expr *const *args, size_t n, size_t line, StrBuf *out) {
+static void emit_call(Codegen *g, const char *name, Expr *const *args, size_t n, SourcePos pos, StrBuf *out) {
     const char **values = arena_alloc(g->arena, (n + 1) * sizeof(char *));
     bool opened = cg_ordered(g, args, n, values, out);
     cg_append_prefixed(out, "es_f_", name);
-    sb_appendf(out, "(%zu", line);
+    sb_appendf(out, "(%zu", cg_site(g, pos));
     for (size_t i = 0; i < n; i++) sb_appendf(out, ", %s", values[i]);
     sb_append(out, opened ? "))" : ")");
 }
@@ -374,7 +383,7 @@ static void emit_name(Codegen *g, const Expr *expr, StrBuf *out) {
     if (cg_is_constant(g, name)) {
         cg_append_prefixed(out, "es_k_", name);  // text constants are immortal: no retain
     } else if (cg_find_function(g, name)) {
-        emit_call(g, name, NULL, 0, expr->pos.line, out);  // a function that takes no values
+        emit_call(g, name, NULL, 0, expr->pos, out);  // a function that takes no values
     } else {
         cg_emit_var(out, name, expr->type);
     }
@@ -385,7 +394,7 @@ static void emit_convert(Codegen *g, const Expr *expr, StrBuf *out) {
     if (expr->as.convert.target == CONVERT_TO_TEXT) {
         cg_emit_text(g, operand_expr, out);
     } else if (operand_expr->type == TYPE_TEXT) {
-        sb_appendf(out, "es_text_number(%zu, %s)", expr->pos.line, cg_operand(g, operand_expr, false));
+        sb_appendf(out, "es_text_number(%zu, %s)", cg_site(g, expr->pos), cg_operand(g, operand_expr, false));
     } else {
         cg_emit_expr(g, operand_expr, out);
     }
@@ -398,14 +407,14 @@ void cg_emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     case EXPR_BOOLEAN: sb_append(out, expr->as.boolean ? "true" : "false"); break;
     case EXPR_NAME: emit_name(g, expr, out); break;
     case EXPR_CALL:
-        emit_call(g, expr->as.call.name, expr->as.call.args.items, expr->as.call.args.len, expr->pos.line, out);
+        emit_call(g, expr->as.call.name, expr->as.call.args.items, expr->as.call.args.len, expr->pos, out);
         break;
     case EXPR_LENGTH:
         sb_appendf(out, "%s(%s)", type_is_list(expr->as.operand->type) ? "es_list_length" : "es_length",
                    cg_operand(g, expr->as.operand, false));
         break;
     case EXPR_FILE_CONTENTS:
-        sb_appendf(out, "es_read_file(%zu, %s)", expr->pos.line, cg_operand(g, expr->as.operand, false));
+        sb_appendf(out, "es_read_file(%zu, %s)", cg_site(g, expr->as.operand->pos), cg_operand(g, expr->as.operand, false));
         break;
     case EXPR_UNARY:
         sb_appendf(out, "(%s%s)", expr->as.unary.op == UNARY_NEGATE ? "-" : "!",

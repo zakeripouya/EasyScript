@@ -1,1 +1,3 @@
 Line 4: I can't insert at position 6: the position has to be from 1 to 5 (the list has 4 items).
+    insert 5 at position 6 of scores
+                         ^

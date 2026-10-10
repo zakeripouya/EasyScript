@@ -49,13 +49,13 @@ static void emit_literal(Codegen *g, const Expr *expr, StrBuf *out) {
     sb_append(out, opened ? "}))" : "})");
 }
 
-// es_get_n(line, LIST, ES_AT, POSITION): the position is written first, so
+// es_get_n(SITE, LIST, ES_AT, POSITION): the position is written first, so
 // it's worked out first.
 static void emit_item(Codegen *g, const Expr *expr, StrBuf *out) {
     Expr *parts[] = {expr->as.item.position, expr->as.item.list};
     const char *values[2] = {"0", NULL};
     bool opened = cg_ordered(g, parts, 2, values, out);
-    sb_appendf(out, "es_get_%s(%zu, %s, %s, %s)%s", cg_item_suffix(expr->as.item.list->type), expr->pos.line,
+    sb_appendf(out, "es_get_%s(%zu, %s, %s, %s)%s", cg_item_suffix(expr->as.item.list->type), cg_site(g, expr->pos),
                values[1], where_code(expr->as.item.where), values[0], opened ? ")" : "");
 }
 
@@ -66,7 +66,7 @@ static void emit_list_op(Codegen *g, const Expr *expr, StrBuf *out) {
     case LIST_SUM: sb_appendf(out, "es_list_sum(%s)", code); break;
     case LIST_BIGGEST:
     case LIST_SMALLEST:
-        sb_appendf(out, "es_extreme_%s(%zu, %s, %d)", cg_item_suffix(operand->type), expr->pos.line, code,
+        sb_appendf(out, "es_extreme_%s(%zu, %s, %d)", cg_item_suffix(operand->type), cg_site(g, expr->pos), code,
                    expr->as.list_op.op == LIST_BIGGEST);
         break;
     case LIST_REVERSED: sb_appendf(out, "es_list_reversed(%s)", code); break;
@@ -80,23 +80,25 @@ static void emit_list_op(Codegen *g, const Expr *expr, StrBuf *out) {
 }
 
 // Slices, their parts worked out in the order they're written:
-// es_slice_range(line, L, FROM, TO, to_end), es_slice_end(line, L, COUNT,
-// last), es_slice_without(line, L, last), es_slice_every(L, STEP).
+// es_slice_range(SITE, L, FROM, TO, to_end), es_slice_end(SITE, L, COUNT,
+// last), es_slice_without(SITE, L, last), es_slice_every(L, STEP, FIRST).
 static void emit_slice(Codegen *g, const Expr *expr, StrBuf *out) {
     SliceKind kind = expr->as.slice.kind;
     Expr *parts[] = {expr->as.slice.from, expr->as.slice.to, expr->as.slice.list};
     const char *v[3] = {"0", "0", NULL};
     bool opened = cg_ordered(g, parts, 3, v, out);
-    size_t line = expr->pos.line;
+    size_t site = kind == SLICE_EVERY ? 0 : cg_site(g, expr->pos);  // SLICE_EVERY can't fail
     switch (kind) {
     case SLICE_RANGE:
-        sb_appendf(out, "es_slice_range(%zu, %s, %s, %s, %d)", line, v[2], v[0], v[1], expr->as.slice.to == NULL);
+        sb_appendf(out, "es_slice_range(%zu, %s, %s, %s, %d)", site, v[2], v[0], v[1], expr->as.slice.to == NULL);
         break;
     case SLICE_FIRST:
-    case SLICE_LAST: sb_appendf(out, "es_slice_end(%zu, %s, %s, %d)", line, v[2], v[0], kind == SLICE_LAST); break;
+    case SLICE_LAST: sb_appendf(out, "es_slice_end(%zu, %s, %s, %d)", site, v[2], v[0], kind == SLICE_LAST); break;
     case SLICE_WITHOUT_FIRST:
-    case SLICE_WITHOUT_LAST: sb_appendf(out, "es_slice_without(%zu, %s, %d)", line, v[2], kind == SLICE_WITHOUT_LAST); break;
-    case SLICE_EVERY: sb_appendf(out, "es_slice_every(%s, %zu)", v[2], expr->as.slice.step); break;
+    case SLICE_WITHOUT_LAST: sb_appendf(out, "es_slice_without(%zu, %s, %d)", site, v[2], kind == SLICE_WITHOUT_LAST); break;
+    case SLICE_EVERY:
+        sb_appendf(out, "es_slice_every(%s, %zu, %zu)", v[2], expr->as.slice.step, expr->as.slice.start);
+        break;
     }
     if (opened) sb_append_char(out, ')');
 }
@@ -274,6 +276,7 @@ static void emit_helper_call(Codegen *g, const Expr *expr, StrBuf *out) {
     helper.arena = g->arena;
     helper.texts = g->texts;
     helper.helpers = g->helpers;
+    helper.sites = g->sites;
     helper.functions = g->functions;
     helper.constants = g->constants;
     Names bound = {0};
@@ -347,7 +350,10 @@ const char *cg_list_stmt(Codegen *g, const Stmt *stmt) {
     sb_init(&out, g->arena);
     Type list = stmt->as.list.list->type;
     const char *suffix = cg_item_suffix(list);
-    size_t line = stmt->pos.line;
+    // The site: the position when there is one (errors are about it), else the sentence.
+    size_t site = stmt->as.list.op == LIST_SORT || stmt->as.list.op == LIST_ADD_END
+                      ? 0
+                      : cg_site(g, stmt->as.list.position ? stmt->as.list.position->pos : stmt->pos);
     const char *where = where_code(stmt->as.list.where);
     const char *v[3] = {"0", "0", "0"};
     bool opened = false;
@@ -361,19 +367,19 @@ const char *cg_list_stmt(Codegen *g, const Stmt *stmt) {
     case LIST_INSERT: {  // insert V at position P of L
         Expr *parts[] = {stmt->as.list.value, stmt->as.list.position, stmt->as.list.list};
         opened = cg_ordered(g, parts, 3, v, &out);
-        sb_appendf(&out, "es_insert_%s(%zu, %s, %s, %s)", suffix, line, v[2], v[1], v[0]);
+        sb_appendf(&out, "es_insert_%s(%zu, %s, %s, %s)", suffix, site, v[2], v[1], v[0]);
         break;
     }
     case LIST_REMOVE: {  // remove item P from L
         Expr *parts[] = {stmt->as.list.position, stmt->as.list.list};
         opened = cg_ordered(g, parts, 2, v, &out);
-        sb_appendf(&out, "es_remove(%zu, %s, %s, %s)", line, v[1], where, v[0]);
+        sb_appendf(&out, "es_remove(%zu, %s, %s, %s)", site, v[1], where, v[0]);
         break;
     }
     case LIST_SET_ITEM: {  // set item P of L to V
         Expr *parts[] = {stmt->as.list.position, stmt->as.list.list, stmt->as.list.value};
         opened = cg_ordered(g, parts, 3, v, &out);
-        sb_appendf(&out, "es_put_%s(%zu, %s, %s, %s, %s)", suffix, line, v[1], where, v[0], v[2]);
+        sb_appendf(&out, "es_put_%s(%zu, %s, %s, %s, %s)", suffix, site, v[1], where, v[0], v[2]);
         break;
     }
     case LIST_SORT: {

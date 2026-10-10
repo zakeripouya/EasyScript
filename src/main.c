@@ -17,6 +17,7 @@
 #include "front/parse.h"
 #include "front/check.h"
 #include "back/codegen_c.h"
+#include "back/source_table.h"
 #include "shell.h"
 
 static Arena *arena;
@@ -126,9 +127,12 @@ static void generate_c(const char *source_path) {
         exit(1);
     }
 
+    StrBuf lines;  // the source lines, for runtime errors to show
+    sb_init(&lines, arena);
+    source_table_c(arena, source, length, &lines);
     StrBuf code;
     sb_init(&code, arena);
-    codegen_c(arena, program, &code);
+    codegen_c(arena, program, lines.data, &code);
     FILE *output_file = fopen(temp_c_path, "w");
     if (!output_file) {
         fprintf(stderr, "I couldn't write the C file: %s.\n", strerror(errno));

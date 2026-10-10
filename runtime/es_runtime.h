@@ -98,15 +98,15 @@ static bool es_text_is_empty(EsText *t) {
 
 /* --- Numbers ---------------------------------------------------------------- */
 
-static inline double es_div(int line, double a, double b) {
-    if (b == 0) es_fail(line, NULL, "You divided by zero.");
+static inline double es_div(int site, double a, double b) {
+    if (b == 0) es_fail(site, NULL, "You divided by zero.");
     return a / b;
 }
 
 /* Whole numbers (the usual case) use the integer remainder, which gives the
  * same answer as fmod, much faster. */
-static inline double es_mod(int line, double a, double b) {
-    if (b == 0) es_fail(line, NULL, "You divided by zero.");
+static inline double es_mod(int site, double a, double b) {
+    if (b == 0) es_fail(site, NULL, "You divided by zero.");
     if (fabs(a) < 9e15 && fabs(b) < 9e15 && a == (double)(long long)a && b == (double)(long long)b) {
         return (double)((long long)a % (long long)b);
     }
@@ -138,10 +138,10 @@ static bool es_parse_number(const char *s, size_t len, double *out) {
 }
 
 /* "as a number" on text (consuming it). */
-static double es_text_number(int line, EsText *t) {
+static double es_text_number(int site, EsText *t) {
     double x;
     if (!es_parse_number(t->chars, t->len, &x)) {
-        es_fail(line, NULL, "I can't turn \"%.*s\" into a number.", (int)(t->len > 60 ? 60 : t->len), t->chars);
+        es_fail(site, NULL, "I can't turn \"%.*s\" into a number.", (int)(t->len > 60 ? 60 : t->len), t->chars);
     }
     es_release(t);
     return x;
@@ -180,25 +180,63 @@ static bool es_text_same(EsText *a, EsText *b) {
 
 /* --- Functions ------------------------------------------------------------- */
 
-/* Every function call goes one level deeper; endless recursion stops with a
- * friendly error instead of crashing. */
-#define ES_MAX_DEPTH 10000
-static int es_depth;
-
-static inline void es_enter(int line) {
-    if (++es_depth > ES_MAX_DEPTH) {
-        es_fail(line, "Check that the function stops calling itself at some point.",
+/* Every function call pushes its frame (see EsFrame); endless recursion
+ * stops with a friendly error instead of crashing. The check comes before
+ * the push, so the error is about the call, made while working out the
+ * caller. */
+static inline EsFrame *es_push(const EsFunction *fn, int call) {
+    if (es_depth == ES_MAX_DEPTH) {
+        es_fail(call, "Check that the function stops calling itself at some point.",
                 "Functions are calling each other too deeply (more than %d calls inside each other).", ES_MAX_DEPTH);
     }
+    EsFrame *frame = &es_stack[es_depth++];
+    frame->fn = fn;
+    frame->call = call;
+    return frame;
+}
+
+/* A function with no inputs, one, or more. */
+static inline void es_enter(const EsFunction *fn, int call) {
+    es_push(fn, call);
+}
+
+static inline void es_enter_one(const EsFunction *fn, int call, EsArg input) {
+    es_push(fn, call)->in.one = input;
+}
+
+static void es_enter_many(const EsFunction *fn, int call, const EsArg *inputs) {
+    size_t n = (size_t)fn->inputs;
+    if (es_inputs_len + n > es_inputs_cap) {
+        size_t cap = es_inputs_cap ? es_inputs_cap * 2 : 64;
+        while (cap < es_inputs_len + n) cap *= 2;
+        EsArg *grown = realloc(es_inputs, cap * sizeof *grown);
+        if (!grown) es_out_of_memory();
+        es_inputs = grown;
+        es_inputs_cap = cap;
+    }
+    es_push(fn, call)->in.many = es_inputs_len;
+    memcpy(es_inputs + es_inputs_len, inputs, n * sizeof *inputs);
+    es_inputs_len += n;
 }
 
 static inline void es_leave(void) {
     es_depth--;
 }
 
+/* Leaving a function with several inputs: their values come off es_inputs too. */
+static inline void es_leave_many(int inputs) {
+    es_inputs_len -= (size_t)inputs;
+    es_depth--;
+}
+
+/* Input i of the function being worked out (to release text it was given). */
+static inline EsArg es_input(int i) {
+    return es_frame_input(&es_stack[es_depth - 1], i);
+}
+
 /* A function that gives back a value reached its end without "give back". */
-static _Noreturn void es_no_result(int line, const char *name) {
-    es_fail(line, "Make sure every way through it ends with \"give back ...\".",
+static _Noreturn void es_no_result(int site, const char *name) {
+    es_fail(site, "Make sure every way through it ends with \"give back ...\".",
             "The function \"%s\" ended without giving anything back.", name);
 }
 
@@ -229,11 +267,11 @@ static bool es_count_in(const EsCount *c, long long i, double to) {
     return es_close(v, to) || (c->direction > 0 ? v <= to : v >= to);
 }
 
-static EsCount es_count_start(int line, double from, double to, double step, bool has_step, bool down) {
+static EsCount es_count_start(int site, double from, double to, double step, bool has_step, bool down) {
     EsCount c = {from, to, 1, 1, -1, LLONG_MAX};
     if (has_step) {
         if (!(step > 0)) {
-            es_fail(line, "Counting goes up or down by itself; the step only says how far to go each time.",
+            es_fail(site, "Counting goes up or down by itself; the step only says how far to go each time.",
                     "The step of a count has to be more than zero, but it's %s.", es_shown(step));
         }
         c.step = step;
@@ -269,25 +307,25 @@ static inline double es_count_value(const EsCount *c, long long i) {
 }
 
 /* "do this N times": N must be a whole number, zero or more. */
-static long long es_times(int line, double n) {
-    if (n < 0) es_fail(line, NULL, "The number of times can't be negative, but it's %s.", es_shown(n));
+static long long es_times(int site, double n) {
+    if (n < 0) es_fail(site, NULL, "The number of times can't be negative, but it's %s.", es_shown(n));
     if (n != floor(n)) {
-        es_fail(line, NULL, "The number of times has to be a whole number, but it's %s.", es_shown(n));
+        es_fail(site, NULL, "The number of times has to be a whole number, but it's %s.", es_shown(n));
     }
-    if (n > 9e18) es_fail(line, NULL, "That's too many times to repeat.");
+    if (n > 9e18) es_fail(site, NULL, "That's too many times to repeat.");
     return (long long)n;
 }
 
 /* --- Files and input ------------------------------------------------------ */
 
 /* The whole file as new text, without its final new line. Consumes path. */
-static EsText *es_read_file(int line, EsText *path) {
+static EsText *es_read_file(int site, EsText *path) {
     FILE *f = fopen(path->chars, "rb");
-    if (!f) es_fail(line, NULL, "I couldn't read the file \"%s\": %s.", path->chars, es_reason(errno));
-    if (fseek(f, 0, SEEK_END) != 0) es_fail(line, NULL, "I couldn't read the file \"%s\": %s.", path->chars, es_reason(errno));
+    if (!f) es_fail(site, NULL, "I couldn't read the file \"%s\": %s.", path->chars, es_reason(errno));
+    if (fseek(f, 0, SEEK_END) != 0) es_fail(site, NULL, "I couldn't read the file \"%s\": %s.", path->chars, es_reason(errno));
     long size = ftell(f);
     if (size < 0 || fseek(f, 0, SEEK_SET) != 0) {
-        es_fail(line, NULL, "I couldn't read the file \"%s\": %s.", path->chars, es_reason(errno));
+        es_fail(site, NULL, "I couldn't read the file \"%s\": %s.", path->chars, es_reason(errno));
     }
     char *p = malloc((size_t)size + 1);
     if (!p) es_out_of_memory();
@@ -302,15 +340,15 @@ static EsText *es_read_file(int line, EsText *path) {
 }
 
 /* Writes the text and a new line, replacing or adding to the file. Consumes both. */
-static void es_write_file(int line, EsText *text, EsText *path, bool append) {
+static void es_write_file(int site, EsText *text, EsText *path, bool append) {
     FILE *f = fopen(path->chars, append ? "ab" : "wb");
     if (!f) {
-        es_fail(line, NULL, "I couldn't write to the file \"%s\": %s.", path->chars,
+        es_fail(site, NULL, "I couldn't write to the file \"%s\": %s.", path->chars,
                 errno == ENOENT ? "the folder it should go in doesn't exist" : es_reason(errno));
     }
     fwrite(text->chars, 1, text->len, f);
     fputc('\n', f);
-    if (fclose(f) != 0) es_fail(line, NULL, "I couldn't write to the file \"%s\": %s.", path->chars, es_reason(errno));
+    if (fclose(f) != 0) es_fail(site, NULL, "I couldn't write to the file \"%s\": %s.", path->chars, es_reason(errno));
     es_release(text);
     es_release(path);
 }

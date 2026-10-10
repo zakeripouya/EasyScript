@@ -1,1 +1,3 @@
 Line 3: I can't turn "x" into a number.
+    ask "Q? " and call the answer q. say q as a number
+                                         ^^^^^^^^^^^^^

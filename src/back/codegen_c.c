@@ -1,8 +1,12 @@
 // C code generation. The checker has decided the kind of every value, so the
 // program uses plain C types: a number is a double, yes/no a bool, text an
 // EsText * and a list an EsList * (runtime/es_memory.h). There is no tagged
-// value. Runtime calls that can fail get the source line, so their errors can
-// say where. Lists are in codegen_list.c.
+// value. Runtime calls that can fail get a site (cg_site: where they are),
+// so their errors can show the line and carets. Lists are in codegen_list.c.
+//
+// Every function pushes a frame onto the runtime's call stack (EsFrame: the
+// function, the values it was given, where it was called), so a runtime error
+// can say which calls led to it.
 //
 // Memory (docs/memory.md), for text and lists: every text or list expression
 // produces an owned value, and runtime calls and EasyScript functions consume
@@ -60,13 +64,18 @@ static void pop_scope(Codegen *g) {
     g->scopes.len--;
 }
 
-// Leaving a function (its text and list inputs and every such variable it
-// makes) or the program (every text and list variable of main()).
+// Leaving a function (its text and list inputs, every such variable it
+// makes, and the text its frame holds) or the program (every text and list
+// variable of main()).
 static void emit_drop_all(Codegen *g) {
     if (g->function) {
         for (size_t i = 0; i < g->function->as.function.params.len; i++) {
             Type type = g->function->as.function.param_types.items[i];
             if (type_counted(type)) emit_drop(g, g->function->as.function.params.items[i].text, type);
+            if (type == TYPE_TEXT) {  // the frame's reference to the value it was given
+                indent(g);
+                sb_appendf(&g->body, "es_release(es_input(%zu).t);\n", i);
+            }
         }
     }
     for (size_t i = 0; i < g->vars.len; i++) {
@@ -126,7 +135,7 @@ static void emit_change(Codegen *g, const Stmt *stmt) {
     case CHANGE_ADD: value = arena_sprintf(g->arena, "%s + %s", var.data, amount); break;
     case CHANGE_SUBTRACT: value = arena_sprintf(g->arena, "%s - %s", var.data, amount); break;
     case CHANGE_MULTIPLY: value = arena_sprintf(g->arena, "%s * %s", var.data, amount); break;
-    default: value = arena_sprintf(g->arena, "es_div(%zu, %s, %s)", stmt->pos.line, var.data, amount); break;
+    default: value = arena_sprintf(g->arena, "es_div(%zu, %s, %s)", cg_site(g, stmt->pos), var.data, amount); break;
     }
     emit_store(g, name, TYPE_NUMBER, value);
 }
@@ -143,7 +152,7 @@ static void emit_file_write(Codegen *g, const Stmt *stmt) {
         text = arena_sprintf(g->arena, "es_t%zu", t);
     }
     indent(g);
-    sb_appendf(&g->body, "es_write_file(%zu, %s, %s, %d);\n", stmt->pos.line, text,
+    sb_appendf(&g->body, "es_write_file(%zu, %s, %s, %d);\n", cg_site(g, stmt->as.file_write.path->pos), text,
                expr_code(g, stmt->as.file_write.path), stmt->kind == STMT_APPEND_FILE);
 }
 
@@ -187,14 +196,14 @@ static size_t emit_temp(Codegen *g, const Expr *expr) {
 
 // The line that opens the C loop, for each kind of loop.
 static void emit_loop_head(Codegen *g, const Stmt *stmt, size_t id) {
-    size_t line = stmt->pos.line;
     switch (stmt->as.loop.kind) {
     case LOOP_COUNT: {
         size_t from = emit_temp(g, stmt->as.loop.from);
         size_t to = emit_temp(g, stmt->as.loop.to);
         size_t step = stmt->as.loop.step ? emit_temp(g, stmt->as.loop.step) : 0;
         indent(g);
-        sb_appendf(&g->body, "EsCount es_c%zu = es_count_start(%zu, es_t%zu, es_t%zu, ", id, line, from, to);
+        size_t site = cg_site(g, stmt->as.loop.step ? stmt->as.loop.step->pos : stmt->pos);  // only the step can fail
+        sb_appendf(&g->body, "EsCount es_c%zu = es_count_start(%zu, es_t%zu, es_t%zu, ", id, site, from, to);
         if (step) {
             sb_appendf(&g->body, "es_t%zu, 1, %d);\n", step, stmt->as.loop.down);
         } else {
@@ -210,7 +219,8 @@ static void emit_loop_head(Codegen *g, const Stmt *stmt, size_t id) {
     }
     case LOOP_TIMES:
         indent(g);
-        sb_appendf(&g->body, "long long es_n%zu = es_times(%zu, %s);\n", id, line, expr_code(g, stmt->as.loop.times));
+        sb_appendf(&g->body, "long long es_n%zu = es_times(%zu, %s);\n", id, cg_site(g, stmt->as.loop.times->pos),
+                   expr_code(g, stmt->as.loop.times));
         indent(g);
         sb_appendf(&g->body, "for (long long es_i%zu = 1; es_i%zu <= es_n%zu; es_i%zu++) {\n", id, id, id, id);
         break;
@@ -257,6 +267,13 @@ static void emit_loop(Codegen *g, const Stmt *stmt) {
 
 // give back E / return: the value is worked out before the function's text
 // is released.
+// Popping the function's frame: "es_leave();", or "es_leave_many(N);" for a
+// function with several inputs (their values come off the runtime's array too).
+static const char *leave_code(const Codegen *g) {
+    size_t n = g->function->as.function.params.len;
+    return n > 1 ? arena_sprintf(g->arena, "es_leave_many(%zu);\n", n) : "es_leave();\n";
+}
+
 static void emit_return(Codegen *g, const Stmt *stmt) {
     size_t t = 0;
     if (stmt->as.returned) {
@@ -267,11 +284,11 @@ static void emit_return(Codegen *g, const Stmt *stmt) {
     emit_drop_all(g);
     indent(g);
     if (t) {
-        sb_appendf(&g->body, "es_leave();\n");
+        sb_append(&g->body, leave_code(g));
         indent(g);
         sb_appendf(&g->body, "return es_t%zu;\n", t);
     } else {
-        sb_append(&g->body, "es_leave();\n");
+        sb_append(&g->body, leave_code(g));
         indent(g);
         sb_append(&g->body, "return;\n");
     }
@@ -335,7 +352,7 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
     case STMT_READ_FILE:
         cg_declare_name(g, stmt->as.read_file.name.text, TYPE_TEXT);
         emit_store(g, stmt->as.read_file.name.text, TYPE_TEXT,
-                   arena_sprintf(g->arena, "es_read_file(%zu, %s)", stmt->pos.line,
+                   arena_sprintf(g->arena, "es_read_file(%zu, %s)", cg_site(g, stmt->as.read_file.path->pos),
                                  expr_code(g, stmt->as.read_file.path)));
         break;
     case STMT_STOP: emit_stop(g); break;
@@ -392,11 +409,12 @@ static void emit_constant(Codegen *g, const Stmt *stmt, StrBuf *out) {
     }
 }
 
-// static double es_f_area(int es_line, double es_vn_width, double es_vn_height)
+// static double es_f_area(int es_call, double es_vn_width, double es_vn_height)
+// (es_call is the site of the call, for the call stack)
 static void append_signature(StrBuf *out, const Stmt *fn) {
     sb_appendf(out, "static %s ", cg_ctype(fn->as.function.result));
     cg_append_prefixed(out, "es_f_", fn->as.function.name.text);
-    sb_append(out, "(int es_line");
+    sb_append(out, "(int es_call");
     for (size_t i = 0; i < fn->as.function.params.len; i++) {
         Type type = fn->as.function.param_types.items[i];
         sb_appendf(out, ", %s", cg_ctype(type));
@@ -428,6 +446,72 @@ void cg_emit_declarations(const Codegen *g, StrBuf *out) {
     }
 }
 
+// The function's description for the call stack:
+//   static const char *const es_in_area[] = {"width", "height"};
+//   static const EsFunction es_fn_area = {"area", 2, es_in_area, "nn"};
+static void emit_function_info(const Stmt *fn, StrBuf *out) {
+    size_t n = fn->as.function.params.len;
+    if (n > 0) {
+        cg_append_prefixed(out, "static const char *const es_in_", fn->as.function.name.text);
+        sb_append(out, "[] = {");
+        for (size_t i = 0; i < n; i++) {
+            const char *display = fn->as.function.params.items[i].display;
+            if (i > 0) sb_append(out, ", ");
+            cg_append_c_string(out, display, strlen(display));
+        }
+        sb_append(out, "};\n");
+    }
+    cg_append_prefixed(out, "static const EsFunction es_fn_", fn->as.function.name.text);
+    sb_append(out, " = {");
+    cg_append_c_string(out, fn->as.function.name.display, strlen(fn->as.function.name.display));
+    sb_appendf(out, ", %zu, ", n);
+    if (n > 0) {
+        cg_append_prefixed(out, "es_in_", fn->as.function.name.text);
+    } else {
+        sb_append(out, "NULL");
+    }
+    sb_append(out, ", \"");
+    for (size_t i = 0; i < n; i++) {
+        Type type = fn->as.function.param_types.items[i];
+        sb_append_char(out, type_is_list(type) ? 'l' : type == TYPE_TEXT ? 't' : type == TYPE_YESNO ? 'b' : 'n');
+    }
+    sb_append(out, "\"};\n");
+}
+
+// One input's value for its frame: "{.n = es_vn_width}", "{.t = es_retain(es_vt_label)}".
+static void append_input(const Stmt *fn, size_t i, StrBuf *out) {
+    Type type = fn->as.function.param_types.items[i];
+    sb_append(out, type_is_list(type) ? "{.list = " : type == TYPE_TEXT ? "{.t = es_retain(" : type == TYPE_YESNO ? "{.b = " : "{.n = ");
+    cg_append_var(out, fn->as.function.params.items[i].text, type);
+    sb_append(out, type == TYPE_TEXT ? ")}" : "}");
+}
+
+// The function's frame, pushed onto the call stack with the values it was given:
+//   es_enter_one(&es_fn_halve, es_call, (EsArg){.n = es_vn_x});
+//   es_enter_many(&es_fn_area, es_call, (EsArg[]){{.n = es_vn_width}, {.t = es_retain(es_vt_label)}});
+static void emit_frame(const Stmt *fn, StrBuf *out) {
+    size_t n = fn->as.function.params.len;
+    if (n == 0) {
+        cg_append_prefixed(out, "    es_enter(&es_fn_", fn->as.function.name.text);
+        sb_append(out, ", es_call);\n");
+        return;
+    }
+    if (n == 1) {
+        cg_append_prefixed(out, "    es_enter_one(&es_fn_", fn->as.function.name.text);
+        sb_append(out, ", es_call, (EsArg)");
+        append_input(fn, 0, out);
+        sb_append(out, ");\n");
+        return;
+    }
+    cg_append_prefixed(out, "    es_enter_many(&es_fn_", fn->as.function.name.text);
+    sb_append(out, ", es_call, (EsArg[]){");
+    for (size_t i = 0; i < n; i++) {
+        sb_append(out, i > 0 ? ", " : "");
+        append_input(fn, i, out);
+    }
+    sb_append(out, "});\n");
+}
+
 // The C function for one EasyScript function. Falling off the end releases
 // its text; one that gives back a value stops with an error instead, because
 // it has nothing to give back.
@@ -436,6 +520,7 @@ static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     f.arena = g->arena;
     f.texts = g->texts;
     f.helpers = g->helpers;
+    f.sites = g->sites;
     f.functions = g->functions;
     f.constants = g->constants;
     f.function = fn;
@@ -447,6 +532,7 @@ static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     }
     g->loop_ids = f.loop_ids;
 
+    emit_function_info(fn, out);
     append_signature(out, fn);
     sb_append(out, " {\n");
     cg_emit_declarations(&f, out);
@@ -455,14 +541,14 @@ static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
         cg_append_var(out, fn->as.function.params.items[i].text, fn->as.function.param_types.items[i]);
         sb_append(out, ";\n");
     }
-    sb_append(out, "    es_enter(es_line);\n");
+    emit_frame(fn, out);
     sb_append_n(out, f.body.data, f.body.len);
     f.body.len = 0;
     if (fn->as.function.result == TYPE_NOTHING) {
         emit_drop_all(&f);
-        sb_append(&f.body, "    es_leave();\n");
+        sb_appendf(&f.body, "    %s", leave_code(&f));
     } else {
-        sb_appendf(&f.body, "    es_no_result(%zu, ", fn->pos.line);
+        sb_appendf(&f.body, "    es_no_result(%zu, ", cg_site(&f, fn->as.function.name.pos));
         cg_append_c_string(&f.body, fn->as.function.name.display, strlen(fn->as.function.name.display));
         sb_append(&f.body, ");\n");
     }
@@ -470,15 +556,18 @@ static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     sb_append(out, "}\n\n");
 }
 
-void codegen_c(Arena *arena, const Block *program, StrBuf *out) {
+void codegen_c(Arena *arena, const Block *program, const char *source_table, StrBuf *out) {
     TextPool texts = {0};
     sb_init(&texts.code, arena);
     HelperPool helpers = {0};
     sb_init(&helpers.code, arena);
+    SitePool sites = {0};
+    sb_init(&sites.code, arena);
     Codegen g = {0};
     g.arena = arena;
     g.texts = &texts;
     g.helpers = &helpers;
+    g.sites = &sites;
     sb_init(&g.body, arena);
     push_scope(&g);
     for (size_t i = 0; i < program->len; i++) {
@@ -495,6 +584,8 @@ void codegen_c(Arena *arena, const Block *program, StrBuf *out) {
     }
 
     sb_append_n(out, (const char *)es_runtime_source, es_runtime_source_len);
+    sb_append(out, "\n/* --- The program's lines, for runtime errors --- */\n\n");
+    sb_append(out, source_table);
     sb_append(out, "\n/* --- Generated by EasyScript --- */\n\n");
     StrBuf constants;
     sb_init(&constants, arena);
@@ -509,6 +600,9 @@ void codegen_c(Arena *arena, const Block *program, StrBuf *out) {
         sb_append(out, ";\n");
     }
     sb_append_char(out, '\n');
+    sb_append(out, "static const EsSite es_sites[] = {\n    {0, 0, 0},\n");  // where runtime calls come from
+    sb_append_n(out, sites.code.data, sites.code.len);
+    sb_append(out, "};\n\n");
     sb_append_n(out, helpers.code.data, helpers.code.len);  // "every" and "only", before the functions that use them
     sb_append_n(out, functions.data, functions.len);
     sb_append(out, "int main(void) {\n");
@@ -518,7 +612,7 @@ void codegen_c(Arena *arena, const Block *program, StrBuf *out) {
         cg_append_prefixed(out, "es_k_", g.constants.items[i]->as.constant.name.text);
         sb_append(out, ";\n");
     }
-    sb_append(out, "    es_init();\n");
+    sb_append(out, "    es_init(es_sites, es_source, es_source_line_count);\n");
     sb_append_n(out, g.body.data, g.body.len);
     if (g.stops) sb_append(out, "es_end:\n");
     g.depth = 0;

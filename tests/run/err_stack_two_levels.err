@@ -1,0 +1,12 @@
+Line 3: You divided by zero.
+        if n is 0, give back 10 divided by n
+                             ^^^^^^^^^^^^^^^
+while working out "is_even" (n was 0)
+called from "is_odd" on line 6 (n was 1)
+called from "is_even" on line 4 (n was 2)
+called from "is_odd" on line 6 (n was 3)
+called from "is_even" on line 4 (n was 4)
+called from "twice" on line 8 (n was 2)
+called from "twice" on line 9 (n was 1)
+called from "twice" on line 9 (n was 0)
+called from line 10: say twice with 0

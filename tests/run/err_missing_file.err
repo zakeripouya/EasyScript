@@ -1,1 +1,3 @@
 Line 1: I couldn't read the file "nope.txt": it doesn't exist.
+    read file "nope.txt" and call it notes
+              ^^^^^^^^^^

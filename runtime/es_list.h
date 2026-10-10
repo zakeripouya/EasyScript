@@ -118,31 +118,31 @@ static EsList *es_list_pick(const EsList *l, size_t start, size_t count, size_t 
 
 enum { ES_AT, ES_FIRST, ES_LAST }; /* item N, the first item, the last item */
 
-static _Noreturn void es_bad_position(int line, double pos) {
-    es_fail(line, NULL, "The position of an item has to be a whole number, but it's %s.", es_shown(pos));
+static _Noreturn void es_bad_position(int site, double pos) {
+    es_fail(site, NULL, "The position of an item has to be a whole number, but it's %s.", es_shown(pos));
 }
 
 /* The index (from 0) of item `pos`, the first item, or the last item. */
-static size_t es_index(int line, const EsList *l, int where, double pos) {
+static size_t es_index(int site, const EsList *l, int where, double pos) {
     if (where != ES_AT) {
-        if (l->len == 0) es_fail(line, NULL, "There's no %s item: the list is empty.", where == ES_FIRST ? "first" : "last");
+        if (l->len == 0) es_fail(site, NULL, "There's no %s item: the list is empty.", where == ES_FIRST ? "first" : "last");
         return where == ES_FIRST ? 0 : l->len - 1;
     }
-    if (pos != floor(pos)) es_bad_position(line, pos);
+    if (pos != floor(pos)) es_bad_position(site, pos);
     if (!(pos >= 1 && pos <= (double)l->len)) {
         const char *hint = pos < 1 ? "Positions start at 1: the first item is item 1." : NULL;
-        if (l->len == 0) es_fail(line, hint, "There's no item %s in the list: it's empty.", es_shown(pos));
-        es_fail(line, hint, "There's no item %s in the list: it has %zu item%s.", es_shown(pos), l->len,
+        if (l->len == 0) es_fail(site, hint, "There's no item %s in the list: it's empty.", es_shown(pos));
+        es_fail(site, hint, "There's no item %s in the list: it has %zu item%s.", es_shown(pos), l->len,
                 l->len == 1 ? "" : "s");
     }
     return (size_t)pos - 1;
 }
 
 /* Where "insert ... at position N" puts the item: 1 to one past the end. */
-static size_t es_insert_index(int line, const EsList *l, double pos) {
-    if (pos != floor(pos)) es_bad_position(line, pos);
+static size_t es_insert_index(int site, const EsList *l, double pos) {
+    if (pos != floor(pos)) es_bad_position(site, pos);
     if (!(pos >= 1 && pos <= (double)l->len + 1)) {
-        es_fail(line, NULL, "I can't insert at position %s: the position has to be from 1 to %zu (the list has %zu item%s).",
+        es_fail(site, NULL, "I can't insert at position %s: the position has to be from 1 to %zu (the list has %zu item%s).",
                 es_shown(pos), l->len + 1, l->len, l->len == 1 ? "" : "s");
     }
     return (size_t)pos - 1;
@@ -150,11 +150,11 @@ static size_t es_insert_index(int line, const EsList *l, double pos) {
 
 /* "items FROM to TO of L" (to_end: "to the end"). Both positions must be in
  * the list, and FROM can't be after TO. */
-static EsList *es_slice_range(int line, EsList *l, double from, double to, bool to_end) {
-    size_t a = es_index(line, l, ES_AT, from);
-    size_t b = to_end ? l->len - 1 : es_index(line, l, ES_AT, to);
+static EsList *es_slice_range(int site, EsList *l, double from, double to, bool to_end) {
+    size_t a = es_index(site, l, ES_AT, from);
+    size_t b = to_end ? l->len - 1 : es_index(site, l, ES_AT, to);
     if (a > b) {
-        es_fail(line, NULL, "I can't take items %zu to %zu: the first position is after the last one.", a + 1, b + 1);
+        es_fail(site, NULL, "I can't take items %zu to %zu: the first position is after the last one.", a + 1, b + 1);
     }
     EsList *slice = es_list_pick(l, a, b - a + 1, 1);
     es_list_release(l);
@@ -162,9 +162,9 @@ static EsList *es_slice_range(int line, EsList *l, double from, double to, bool 
 }
 
 /* "the first N items" / "the last N items": all of them when there are fewer. */
-static EsList *es_slice_end(int line, EsList *l, double n, bool last) {
-    if (n < 0) es_fail(line, NULL, "The number of items can't be negative, but it's %s.", es_shown(n));
-    if (n != floor(n)) es_fail(line, NULL, "The number of items has to be a whole number, but it's %s.", es_shown(n));
+static EsList *es_slice_end(int site, EsList *l, double n, bool last) {
+    if (n < 0) es_fail(site, NULL, "The number of items can't be negative, but it's %s.", es_shown(n));
+    if (n != floor(n)) es_fail(site, NULL, "The number of items has to be a whole number, but it's %s.", es_shown(n));
     size_t count = n >= (double)l->len ? l->len : (size_t)n;
     EsList *slice = es_list_pick(l, last ? l->len - count : 0, count, 1);
     es_list_release(l);
@@ -172,16 +172,18 @@ static EsList *es_slice_end(int line, EsList *l, double n, bool last) {
 }
 
 /* "L without the first item" / "L without the last item" */
-static EsList *es_slice_without(int line, EsList *l, bool last) {
-    es_index(line, l, last ? ES_LAST : ES_FIRST, 0); /* there has to be one */
+static EsList *es_slice_without(int site, EsList *l, bool last) {
+    es_index(site, l, last ? ES_LAST : ES_FIRST, 0); /* there has to be one */
     EsList *slice = es_list_pick(l, last ? 0 : 1, l->len - 1, 1);
     es_list_release(l);
     return slice;
 }
 
-/* "every second item of L": the items at positions step, 2 * step, ... */
-static EsList *es_slice_every(EsList *l, size_t step) {
-    EsList *slice = es_list_pick(l, step - 1, l->len / step, step);
+/* "every second item of L": the items at positions step, 2 * step, ...;
+ * "every other item of L": 1, 3, 5, ... (start is the first position). */
+static EsList *es_slice_every(EsList *l, size_t step, size_t start) {
+    size_t count = l->len >= start ? (l->len - start) / step + 1 : 0;
+    EsList *slice = es_list_pick(l, start - 1, count, step);
     es_list_release(l);
     return slice;
 }
@@ -195,13 +197,13 @@ static EsList *es_slice_every(EsList *l, size_t step) {
  * push: adds to the end of a list being built. add: "add V to the end of L".
  * insert: "insert V at position N of L". */
 #define ES_ITEM_OPS(S, T, FIELD, RETAIN, RELEASE)                                  \
-    static T es_get_##S(int line, EsList *l, int where, double pos) {               \
-        T v = RETAIN(l->at.FIELD[es_index(line, l, where, pos)]);                    \
+    static T es_get_##S(int site, EsList *l, int where, double pos) {               \
+        T v = RETAIN(l->at.FIELD[es_index(site, l, where, pos)]);                    \
         es_list_release(l);                                                          \
         return v;                                                                    \
     }                                                                                \
-    static void es_put_##S(int line, EsList *l, int where, double pos, T v) {        \
-        T *slot = &l->at.FIELD[es_index(line, l, where, pos)];                       \
+    static void es_put_##S(int site, EsList *l, int where, double pos, T v) {        \
+        T *slot = &l->at.FIELD[es_index(site, l, where, pos)];                       \
         T old = *slot;                                                               \
         *slot = v;                                                                   \
         RELEASE(old);                                                                \
@@ -215,8 +217,8 @@ static EsList *es_slice_every(EsList *l, size_t step) {
         es_push_##S(l, v);                                                           \
         es_list_release(l);                                                          \
     }                                                                                \
-    static void es_insert_##S(int line, EsList *l, double pos, T v) {                \
-        size_t i = es_insert_index(line, l, pos);                                    \
+    static void es_insert_##S(int site, EsList *l, double pos, T v) {                \
+        size_t i = es_insert_index(site, l, pos);                                    \
         es_list_reserve(l, l->len + 1);                                              \
         memmove(&l->at.FIELD[i + 1], &l->at.FIELD[i], (l->len - i) * sizeof(T));    \
         l->at.FIELD[i] = v;                                                          \
@@ -230,8 +232,8 @@ ES_ITEM_OPS(t, EsText *, t, es_retain, es_release)
 ES_ITEM_OPS(l, EsList *, l, es_list_retain, es_list_release)
 
 /* "remove item N from L" (or the first or last item). */
-static void es_remove(int line, EsList *l, int where, double pos) {
-    size_t i = es_index(line, l, where, pos);
+static void es_remove(int site, EsList *l, int where, double pos) {
+    size_t i = es_index(site, l, where, pos);
     size_t size = es_item_size(l->items);
     if (es_items_counted(l->items)) es_object_release(l->at.o[i]);
     char *base = l->at.any;
@@ -329,8 +331,8 @@ static inline bool es_text_less(const EsText *a, const EsText *b) { /* alphabeti
 }
 
 /* "the biggest of L" / "the smallest of L": the first such item. */
-static double es_extreme_n(int line, EsList *l, bool biggest) {
-    if (l->len == 0) es_fail(line, NULL, "There's no %s item: the list is empty.", biggest ? "biggest" : "smallest");
+static double es_extreme_n(int site, EsList *l, bool biggest) {
+    if (l->len == 0) es_fail(site, NULL, "There's no %s item: the list is empty.", biggest ? "biggest" : "smallest");
     double best = l->at.n[0];
     for (size_t i = 1; i < l->len; i++) {
         double v = l->at.n[i];
@@ -340,8 +342,8 @@ static double es_extreme_n(int line, EsList *l, bool biggest) {
     return best;
 }
 
-static EsText *es_extreme_t(int line, EsList *l, bool biggest) {
-    if (l->len == 0) es_fail(line, NULL, "There's no %s item: the list is empty.", biggest ? "biggest" : "smallest");
+static EsText *es_extreme_t(int site, EsList *l, bool biggest) {
+    if (l->len == 0) es_fail(site, NULL, "There's no %s item: the list is empty.", biggest ? "biggest" : "smallest");
     EsText *best = l->at.t[0];
     for (size_t i = 1; i < l->len; i++) {
         EsText *v = l->at.t[i];

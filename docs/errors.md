@@ -389,18 +389,46 @@ The full, tested set is the `list_*.err` files in [`tests/errors/`](../tests/err
 
 ### While the program runs
 
-Runtime errors are one line, `Line N:` and what went wrong, sometimes followed by a hint. Anything the program printed before the error stays printed. Only mistakes that kinds can't catch are left for this.
+Runtime errors look like compile errors: `Line N:` and what went wrong, the line with carets under the part that failed, and sometimes a hint. Anything the program printed before the error stays printed. Only mistakes that kinds can't catch are left for this.
 
 **Dividing by zero**: [`err_divide_by_zero.es`](../examples/programs/err_divide_by_zero.es)
 
 ```
 Line 3: You divided by zero.
+    say 12 divided by people
+        ^^^^^^^^^^^^^^^^^^^^
+```
+
+**Inside functions**, the error also shows the chain of calls that led to it, innermost first: the function being worked out and the values it was given (numbers, yes/no, and text, cut short after 30 characters; lists aren't shown), then each call back to the main program, whose line is shown: [`err_stack_nested.es`](../tests/run/err_stack_nested.es)
+
+```
+Line 4: You divided by zero.
+        give back marks added together divided by count
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+while working out "average" (label was "x", loud was no)
+called from "report" on line 6 (title was "Quarterly figures for the whol...", region was "North")
+called from "start" on line 8
+called from line 10: start
+```
+
+A function calling itself again and again from the same place is shown once, with a count: [`err_stack_recursion.es`](../tests/run/err_stack_recursion.es)
+
+```
+Line 3: You divided by zero.
+        if n is 0, say 1 divided by n
+                       ^^^^^^^^^^^^^^
+while working out "countdown" (n was 0)
+called from "countdown" on line 4 (n was 1)
+...it called itself 4,998 more times...
+called from line 5: countdown with 4999
 ```
 
 **A list item that isn't there**: [`err_list_position_zero.es`](../tests/run/err_list_position_zero.es)
 
 ```
 Line 2: There's no item 0 in the list: it has 1 item.
+    say item 0 of names
+        ^^^^^^^^^^^^^^^
 Positions start at 1: the first item is item 1.
 ```
 
@@ -424,4 +452,4 @@ Parts of an expression are worked out left to right, so when two parts would bot
 
 ## Coming soon
 
-**Source lines in runtime errors.** Runtime errors will show the line of your program and point at the part that failed, like compile errors do.
+Nothing is planned for error messages right now; new features bring their own.

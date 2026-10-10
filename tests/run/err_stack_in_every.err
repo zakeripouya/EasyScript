@@ -1,0 +1,5 @@
+Line 3: You divided by zero.
+        give back every part in parts times total divided by part
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+while working out "shares" (total was 100)
+called from line 4: say shares of 100 and (a list of 1, 2 and 0)

@@ -1,2 +1,4 @@
 Line 2: There's no item 0 in the list: it has 1 item.
+    say item 0 of names
+        ^^^^^^^^^^^^^^^
 Positions start at 1: the first item is item 1.

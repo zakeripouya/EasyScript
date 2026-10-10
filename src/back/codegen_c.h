@@ -8,6 +8,8 @@
 // embedded runtime (runtime/es_runtime.h), one global per top-level
 // variable, and main(). `program` must have passed check_program() with no
 // errors; codegen reports nothing itself.
-void codegen_c(Arena *arena, const Block *program, StrBuf *out);
+// `source_table` (source_table.h) goes into the program as it is, so runtime
+// errors can show the line that failed; codegen doesn't read it.
+void codegen_c(Arena *arena, const Block *program, const char *source_table, StrBuf *out);
 
 #endif

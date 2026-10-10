@@ -7,7 +7,7 @@ DEBUG_FLAGS = -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-s
 
 COMMON_SRC = src/common/arena.c src/common/util.c src/common/diag.c src/common/ast.c
 FRONT_SRC = src/front/lexer.c src/front/parse_util.c src/front/parse_expr.c src/front/parse_value.c src/front/parse_stmt.c src/front/parse_if.c src/front/parse_loop.c src/front/parse_func.c src/front/parse_list.c src/front/parse_names.c src/front/consteval.c src/front/check.c src/front/check_expr.c src/front/check_types.c src/front/check_const.c src/front/check_list.c
-BACK_SRC = src/back/codegen_c.c src/back/codegen_expr.c src/back/codegen_list.c
+BACK_SRC = src/back/codegen_c.c src/back/codegen_expr.c src/back/codegen_list.c src/back/source_table.c
 # The runtime (its files in order), embedded into the compiler as a byte
 # array by tools/embed.c.
 RUNTIME = runtime/es_memory.h runtime/es_runtime.h runtime/es_list.h

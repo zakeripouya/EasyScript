@@ -44,7 +44,7 @@ The goal is to write small, real programs in the new sentence syntax and compile
 - [x] Functions: definitions, `give back`, calls as sentences and values, recursion, use before definition
 - [x] Runtime memory reclaimed during loops (moved to Phase 2, and done there: [reference counting](memory.md))
 - [x] Checker: types (moved to Phase 2, and done there: [static types](language-guide.md#9-types); block scopes are done)
-- Runtime errors that show the source line (moved to Phase 2)
+- [x] Runtime errors that show the source line (moved to Phase 2, and done there, with the chain of calls)
 
 **Language features**
 
@@ -79,7 +79,8 @@ Planned. Each will be added with its expected output in the same commit as its f
   - **Needed once records arrive:** reference counting can't free objects that refer to each other in a cycle. Text and lists can't form cycles (a list never holds a list of its own kind), but records (and lists of records) can, so they'll need **weak references or a cycle collector**.
 - **Text tools:** splitting text into words and lines, and looking at its characters (needed for the planned `word_counter.es` example)
 - [x] **Static types:** the compiler works out whether every value is a number, text, or yes/no, inferring function inputs and results from how they're used and called, with optional kinds in definitions (`to area with width (a number), giving back a number:`). Kind mistakes are compile errors with the runtime's old wording plus carets; generated code uses plain C `double`/`bool` and only text is reference counted. See [Types](language-guide.md#9-types).
-- **From Phase 1:** runtime errors that show the line of the program like compile errors do, and `file ... exists`
+- [x] **From Phase 1: runtime errors with the source line,** shown like compile errors, plus an English stack trace: the function being worked out with the values it was given, and each call back to the main program (repeated calls collapsed).
+- **From Phase 1:** `file ... exists`
 - **Records:** named groups of fields ("a point has an x and a y")
 - [x] **Lists:** ordered collections of one kind, shared by reference (`a copy of` makes a separate one), with 1-based positions, `for each score in scores:`, `every`/`only`, totals, a stable sort, nested lists, and friendly errors for positions that aren't there. Reference counted like text; a list can't hold itself, so there are no cycles. See [Lists](language-guide.md#10-lists).
 - **Maps:** look up values by key

@@ -320,9 +320,10 @@ Each of these gives back a **new list** (changing it doesn't change the original
 | `the first N items in L` / `the first N items of L` | The first N items (all of them if there are fewer) | `the first 3 items in scores` |
 | `the last N items in L` / `the last N items of L` | The last N items (all of them if there are fewer) | `the last 2 items of scores` |
 | `L without the first item` / `L without the last item` | All but the first or last item (an empty list is an error) | `scores without the first item` |
-| `every second item of L` / `every ... item in L` | The items at positions 2, 4, 6, ...: `second`, `third`, `fourth`, `fifth`, `sixth`, `seventh`, `eighth`, `ninth`, `tenth`, or any number written as an ordinal (`3rd`, `12th`, `21st`) | `every third item of scores` |
+| `every other item of L` / `every other item in L` | The items at positions 1, 3, 5, ... (starting with the first) | `every other item of scores` |
+| `every second item of L` / `every ... item in L` | The items at positions 2, 4, 6, ... (starting with the second): `second`, `third`, `fourth`, `fifth`, `sixth`, `seventh`, `eighth`, `ninth`, `tenth`, or any number written as an ordinal (`3rd`, `12th`, `21st`) | `every third item of scores` |
 
-`A`, `B`, and `N` are numbers, names, or something in parentheses, like positions. `without` binds tightly, like `reversed`. `items` is only special in these forms, so it can still be a name. `item`, `first`, and `last` are only special in these forms, so they can still be names (`add item to total`).
+**`every other item` and `every second item` are different:** of `10, 20, 30, 40 and 50`, every other item is `10, 30 and 50` (the first, then every second one after it), and every second item is `20 and 40` (the second, the fourth, ...). `A`, `B`, and `N` are numbers, names, or something in parentheses, like positions. `without` binds tightly, like `reversed`. `items` is only special in these forms, so it can still be a name. `item`, `first`, and `last` are only special in these forms, so they can still be names (`add item to total`).
 
 ### Asking about lists
 

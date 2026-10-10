@@ -1,1 +1,3 @@
 Line 3: The number of items can't be negative, but it's -1.
+    say the first (n minus 1) items in scores
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

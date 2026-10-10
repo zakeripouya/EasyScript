@@ -1,1 +1,3 @@
 Line 1: The number of times can't be negative, but it's -1.
+    repeat -1 times:
+           ^^

@@ -132,7 +132,8 @@ void parser_find_names(Parser *p) {
             add_name(p, i + 1, n, false, false);  // count ... as NAME:
         } else if ((strcmp(word, "each") == 0 && i > 0 && word_at(p, i - 1, "for") &&
                     (word_at(p, after, "in") || word_at(p, after, "from"))) ||
-                   (strcmp(word, "every") == 0 && word_at(p, after, "in"))) {
+                   (strcmp(word, "every") == 0 && word_at(p, after, "in") &&
+                    !(n == 2 && word_at(p, i + 2, "item")))) {  // not "every other item in" (a slice)
             add_name(p, i + 1, n, false, false);
         } else if (strcmp(word, "call") == 0) {  // and call the answer / call it / call each number NAME
             size_t skip = word_at(p, i + 1, "answer") || word_at(p, i + 1, "it")          ? 1

@@ -13,3 +13,4 @@ note: "items", "first", "last" and "every" are still names elsewhere
 add items to total
 say first plus last
 let every be 1
+say every other item of scores

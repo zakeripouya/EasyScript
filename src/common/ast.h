@@ -123,7 +123,7 @@ typedef enum {
     SLICE_LAST,           // the last COUNT items in L
     SLICE_WITHOUT_FIRST,  // L without the first item
     SLICE_WITHOUT_LAST,   // L without the last item
-    SLICE_EVERY,          // every STEP-th item of L ("every second item")
+    SLICE_EVERY,          // every STEP-th item of L ("every second item": 2, 4, 6...; "every other item": 1, 3, 5...)
 } SliceKind;
 
 typedef struct Expr Expr;
@@ -201,7 +201,8 @@ struct Expr {
             Expr *list;
             Expr *from;   // SLICE_RANGE: the first position; SLICE_FIRST/SLICE_LAST: how many
             Expr *to;     // SLICE_RANGE: the last position, or NULL for the end
-            size_t step;  // SLICE_EVERY: 2 for "every second item"
+            size_t step;   // SLICE_EVERY: 2 for "every second item" and "every other item"
+            size_t start;  // SLICE_EVERY: the first position taken (STEP, or 1 for "every other item")
         } slice;
     } as;
 };

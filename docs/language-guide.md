@@ -189,10 +189,12 @@ Line 1: I can't add text to a number.
 To join text, use "and" or "followed by".
 ```
 
-Dividing by zero can only be seen while the program runs, so it stops the program with a message that says which line went wrong:
+Dividing by zero can only be seen while the program runs, so it stops the program with a message that shows which line went wrong, like a compile error:
 
 ```
 Line 3: You divided by zero.
+    say 12 divided by people
+        ^^^^^^^^^^^^^^^^^^^^
 ``` As in maths, multiplying and dividing come first: `price plus tax times 2` means `price plus (tax times 2)`. Use parentheses to change that: `(price plus tax) times 2`.
 
 Try it: `./easyscript ast examples/parser/arithmetic.es`
@@ -514,6 +516,32 @@ say add tax to 50.
 
 You don't write down what kind of value each input is: the compiler works it out from how the function uses it and what it's given, and tells you before the program runs if something doesn't fit. When it can't tell, you can say, like `to area with width (a number) and height (a number), giving back a number:`. See [chapter 9](#9-types).
 
+### When something goes wrong inside a function
+
+A runtime error inside a function also says how the program got there: which function it was working out (with the values it was given), which function called it and from which line, and so on back to the main program:
+
+```
+Line 4: You divided by zero.
+        give back marks added together divided by count
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+while working out "average" (label was "x", loud was no)
+called from "report" on line 6 (title was "Quarterly figures for the whol...", region was "North")
+called from "start" on line 8
+called from line 10: start
+```
+
+Numbers, yes/no values and text are shown (long text is cut short); lists aren't. A function that calls itself many times is shown once, with a count:
+
+```
+Line 3: You divided by zero.
+        if n is 0, say 1 divided by n
+                       ^^^^^^^^^^^^^^
+while working out "countdown" (n was 0)
+called from "countdown" on line 4 (n was 1)
+...it called itself 4,998 more times...
+called from line 5: countdown with 4999
+```
+
 Try it: `./easyscript run examples/programs/factorial.es` and `examples/programs/fibonacci.es`
 
 ---
@@ -656,9 +684,10 @@ say the last 2 items in scores.         # 50 and 60
 say scores without the first item.      # 20, 30, 40, 50 and 60
 say scores without the last item.       # 10, 20, 30, 40 and 50
 say every second item of scores.        # 20, 40 and 60
+say every other item of scores.         # 10, 30 and 50
 ```
 
-Ranges include both ends, counted from 1, and both positions must be in the list: `items 2 to 9` of a six-item list stops the program with "There's no item 9 in the list: it has 6 items.". `the first N items` and `the last N items` give back the whole list when it's shorter than N. `every second item` means items 2, 4, 6 and so on; any ordinal works: `every third item`, `every tenth item`, `every 12th item`.
+`every other item of scores` takes the first item and every second one after it (10, 30 and 50), while `every second item` starts with the second (20, 40 and 60). Ranges include both ends, counted from 1, and both positions must be in the list: `items 2 to 9` of a six-item list stops the program with "There's no item 9 in the list: it has 6 items.". `the first N items` and `the last N items` give back the whole list when it's shorter than N. `every second item` means items 2, 4, 6 and so on; any ordinal works: `every third item`, `every tenth item`, `every 12th item`.
 
 ### Asking about a list
 

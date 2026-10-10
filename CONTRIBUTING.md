@@ -96,7 +96,7 @@ Never bless just to make the suite go green. A blessed regression becomes the ne
 
 ## Code organization
 
-The compiler is C11 and follows a pipeline: **front end** (lexer, parser, checker) → **middle end** (IR, later) → **back end** (C codegen). Stages only talk through shared data structures (tokens, the AST, and the symbol table). The parser never emits C, and codegen never looks at source text. See [docs/architecture.md](docs/architecture.md).
+The compiler is C11 and follows a pipeline: **front end** (lexer, parser, checker) → **middle end** (IR, later) → **back end** (C codegen). Stages only talk through shared data structures (tokens, the AST, and the symbol table). The parser never emits C, and codegen never looks at source text (`src/back/source_table.c` copies the source lines into the program for runtime errors, and codegen only passes that text along). See [docs/architecture.md](docs/architecture.md).
 
 ```
 src/main.c        driver: runs the passes in order

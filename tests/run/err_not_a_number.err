@@ -1,1 +1,3 @@
 Line 1: I can't turn "12abc" into a number.
+    say "12abc" as a number
+        ^^^^^^^^^^^^^^^^^^^
