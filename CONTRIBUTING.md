@@ -11,6 +11,7 @@ make              # build ./easyscript and the unit tests (must produce no warni
 make test         # run the whole suite
 make debug        # build with AddressSanitizer and UBSan into build/debug/
 make test-debug   # run the whole suite against the sanitizer build
+make bench        # time the benchmarks (see docs/performance.md)
 make bless        # rewrite expected output files from the current output (see below)
 make clean
 ```

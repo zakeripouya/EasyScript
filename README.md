@@ -81,6 +81,19 @@ See the runnable [example programs](examples/programs/).
 
 **Coming soon** (Phase 1): `file ... exists`, reclaiming memory while loops run, and type checking. After that, Phase 2: records, lists, maps, and modules. Follow along in the [roadmap](docs/roadmap.md).
 
+## Performance
+
+Time (and peak memory) for each benchmark, measured with `make bench`:
+
+| Program | EasyScript | C | Go | Python |
+|---|---|---|---|---|
+| Recursive fib(38) | 0.52 s | 0.07 s | 0.08 s | 2.79 s |
+| Count to 100 million | 0.07 s | 0.02 s | 0.02 s | 3.96 s |
+| Nested loops (100 million rounds) | 0.87 s | 0.03 s | 0.03 s | 5.05 s |
+| Build a 50,000-character text | 0.04 s, 280 MB | (none) | 0.01 s, 12 MB | 0.01 s, 12 MB |
+
+Apple M4, macOS 15.3.1, EasyScript 0.1.0-dev, 2026-10-10. Phase 1 uses tagged values (every operation checks what kind of value it has); static types arrive in Phase 2. The memory used when building text is a known issue. Details and history: [docs/performance.md](docs/performance.md).
+
 ## Roadmap
 
 | Phase | Focus | Status |
@@ -115,6 +128,7 @@ make              # builds ./easyscript
 make test         # runs the full test suite, including every example
 make debug        # builds a copy with AddressSanitizer and UBSan in build/debug/
 make test-debug   # runs the full suite against the sanitizer build
+make bench        # times the benchmarks against C, Go, and Python
 ```
 
 ### Commands
@@ -153,6 +167,7 @@ The **front end** (lexer, parser, checker) understands EasyScript and reports er
 - [Errors](docs/errors.md): what error messages look like and why
 - [Architecture](docs/architecture.md): how the compiler is built
 - [Roadmap](docs/roadmap.md): the phases in detail
+- [Performance](docs/performance.md): benchmarks against C, Go, and Python, with history
 - [Examples](examples/): small programs, every one checked by `make test`
 - [Changelog](CHANGELOG.md)
 

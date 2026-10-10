@@ -64,9 +64,13 @@ test-debug: debug
 bless: all
 	sh tests/bless.sh
 
+# Builds and times the programs in benchmarks/ (EasyScript, C, Go, Python).
+bench: all
+	sh benchmarks/run.sh
+
 clean:
 	rm -rf build easyscript
 
 -include $(shell find build -name '*.d' 2>/dev/null)
 
-.PHONY: all debug test test-debug bless clean
+.PHONY: all debug test test-debug bless bench clean
