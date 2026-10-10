@@ -56,7 +56,7 @@ What exists today:
 | `src/back/codegen_c.{c,h}` | Done. `codegen_c` writes the program; see [Code generation](#code-generation). |
 | `runtime/es_runtime.h` | Done for Phase 1. A header-only runtime copied to the top of every generated program. |
 | `tools/embed.c` | A build tool that turns `runtime/es_runtime.h` into `build/gen/es_runtime_embed.c` (a byte array) so the compiler carries the runtime inside itself. |
-| `main.c` (repo root) | The driver. It moves to `src/main.c` later. |
+| `src/main.c` | Done. The driver. |
 
 ## Code generation
 

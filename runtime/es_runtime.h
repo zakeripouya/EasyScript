@@ -271,10 +271,17 @@ static EsValue es_not(int line, EsValue a) {
 
 /* --- Comparisons ---------------------------------------------------------- */
 
+/* Numbers within a relative 1e-9 of each other count as equal, so
+ * 0.1 plus 0.2 is 0.3. */
+static bool es_close(double a, double b) {
+    if (a == b) return true;
+    return fabs(a - b) <= 1e-9 * fmax(fabs(a), fabs(b));
+}
+
 static bool es_same(EsValue a, EsValue b) {
     if (a.kind != b.kind) return false;
     switch (a.kind) {
-    case ES_NUMBER: return a.number == b.number;
+    case ES_NUMBER: return es_close(a.number, b.number);
     case ES_TEXT: return a.len == b.len && memcmp(a.text, b.text, a.len) == 0;
     case ES_YESNO: return a.yes == b.yes;
     default: return true;
@@ -289,9 +296,13 @@ static EsValue es_ne(EsValue a, EsValue b) {
     return es_yesno(!es_same(a, b));
 }
 
-/* -1, 0 or 1. Numbers compare by value and text alphabetically (by bytes). */
+/* -1, 0 or 1. Numbers compare by value (numbers that count as equal give 0,
+ * so "is at most" agrees with "is") and text alphabetically (by bytes). */
 static int es_order(int line, EsValue a, EsValue b) {
-    if (a.kind == ES_NUMBER && b.kind == ES_NUMBER) return (a.number > b.number) - (a.number < b.number);
+    if (a.kind == ES_NUMBER && b.kind == ES_NUMBER) {
+        if (es_close(a.number, b.number)) return 0;
+        return a.number < b.number ? -1 : 1;
+    }
     if (a.kind == ES_TEXT && b.kind == ES_TEXT) {
         size_t n = a.len < b.len ? a.len : b.len;
         int c = memcmp(a.text, b.text, n);

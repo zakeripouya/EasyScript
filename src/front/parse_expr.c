@@ -4,7 +4,8 @@
 //   and         A and B           (stops before "and call")
 //   not         not A
 //   comparison  A is B, A is greater than B, A >= B, ...   (no chaining)
-//   additive    A plus B, A minus B, A followed by B, + -
+//   join        A followed by B   (below arithmetic, so math happens first)
+//   additive    A plus B, A minus B, + -
 //   multiply    A times B, A multiplied by B, A divided by B, A mod B, * / %
 //   unary       -A
 //   postfix     A as a number, A as text
@@ -54,6 +55,9 @@ static const Phrase additive_ops[] = {
     {"+", "+", BINARY_ADD, false},
     {"minus", "minus", BINARY_SUBTRACT, false},
     {"-", "-", BINARY_SUBTRACT, false},
+};
+
+static const Phrase join_ops[] = {
     {"followed by", "followed by", BINARY_JOIN, false},
 };
 
@@ -150,7 +154,7 @@ static Expr *parse_not(Parser *p) {
 
 // --- Comparisons ------------------------------------------------------------
 
-static Expr *parse_additive(Parser *p);
+static Expr *parse_join(Parser *p);
 
 static bool is_word_among(const Token *token, const char *const *words, size_t n) {
     if (token->kind != TOK_WORD) return false;
@@ -195,7 +199,7 @@ static bool reject_or_equal_to(Parser *p, BinaryOp op, Span op_span) {
 
 static Expr *report_chained(Parser *p, Expr *comparison, size_t op_len) {
     Span second_op = parser_consume(p, op_len);
-    Expr *last = parse_additive(p);
+    Expr *last = parse_join(p);
     const Expr *middle = comparison->as.binary.right;
     Span whole = ast_pos_join(comparison->pos, last->pos).span;
     if (parser_error(p, whole, "Comparisons can't be chained like this.")) {
@@ -208,7 +212,7 @@ static Expr *report_chained(Parser *p, Expr *comparison, size_t op_len) {
 }
 
 static Expr *parse_comparison(Parser *p) {
-    Expr *left = parse_additive(p);
+    Expr *left = parse_join(p);
     size_t len;
     const Phrase *op = parser_match_phrase(p, comparison_ops, COUNT(comparison_ops), &len);
     if (!op) return left;
@@ -217,7 +221,7 @@ static Expr *parse_comparison(Parser *p) {
     if (reject_negated_comparison(p, kind, op_span) || reject_or_equal_to(p, kind, op_span)) {
         return parser_error_expr(p);
     }
-    Expr *result = new_binary(p, kind, op_span, left, parse_additive(p));
+    Expr *result = new_binary(p, kind, op_span, left, parse_join(p));
     if (parser_match_phrase(p, comparison_ops, COUNT(comparison_ops), &len)) {
         return report_chained(p, result, len);
     }
@@ -232,6 +236,10 @@ static Expr *parse_multiplicative(Parser *p) {
 
 static Expr *parse_additive(Parser *p) {
     return parse_left_assoc(p, additive_ops, COUNT(additive_ops), parse_multiplicative);
+}
+
+static Expr *parse_join(Parser *p) {
+    return parse_left_assoc(p, join_ops, COUNT(join_ops), parse_additive);
 }
 
 static Expr *parse_postfix(Parser *p) {
@@ -325,6 +333,7 @@ static Expr *reject_ambiguous_call(Parser *p, Expr *call) {
     size_t len;
     const Phrase *op = parser_match_phrase(p, additive_ops, COUNT(additive_ops), &len);
     if (!op) op = parser_match_phrase(p, multiplicative_ops, COUNT(multiplicative_ops), &len);
+    if (!op) op = parser_match_phrase(p, join_ops, COUNT(join_ops), &len);
     if (!op) return call;
     Span op_span = parser_consume(p, len);
     Expr *right = parse_unary(p);

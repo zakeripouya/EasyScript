@@ -15,3 +15,8 @@ say p and q and r
 say not not done
 say - -5
 say x is 1 and y is 2 or z is 3
+say "Sum: " followed by 2 plus 3
+say p followed by q is r
+say p plus q followed by r times s
+say "x" and 1 plus 2
+say p followed by q followed by r

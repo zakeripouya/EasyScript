@@ -37,11 +37,12 @@ EasyScript is a programming language with English sentence syntax. The compiler 
   2. `and`, which stops before `and call`
   3. `not`
   4. comparison (no chaining)
-  5. `plus` / `minus` / `followed by` / `+` / `-`
-  6. `times` / `multiplied by` / `divided by` / `mod` / `*` / `/` / `%`
-  7. unary `-`
-  8. postfix `as a number` / `as text`
-  9. primary
+  5. `followed by` (its own level, below arithmetic, so `"Sum: " followed by 2 plus 3` is `"Sum: " followed by (2 plus 3)`)
+  6. `plus` / `minus` / `+` / `-`
+  7. `times` / `multiplied by` / `divided by` / `mod` / `*` / `/` / `%`
+  8. unary `-`
+  9. postfix `as a number` / `as text`
+  10. primary
 
   Binary levels are left-associative.
 - **`and` is a single `BINARY_AND` node.** The checker decides whether it means logical and (both sides yes/no) or text joining. `followed by` is `BINARY_JOIN`.
@@ -106,7 +107,7 @@ EasyScript is a programming language with English sentence syntax. The compiler 
   - text on either side (with text, a number or nothing): join, converting to text
   - anything else (e.g. two numbers): an error, with a "use plus" hint for numbers
 - **`or`** short-circuits on a `yes` on the left. Both sides must be yes/no. **`not`** needs yes/no.
-- **Comparisons:** equal / not equal work on any values (different kinds are never equal, and numbers compare exactly). The ordering comparisons need two numbers or two texts (texts compare bytewise); anything else is an error, with an "as a number" hint for text against a number.
+- **Comparisons:** equal / not equal work on any values (different kinds are never equal). Numbers are equal when `a == b` or `|a - b| <= 1e-9 * max(|a|, |b|)` (`es_close`), so `0.1 plus 0.2 is 0.3` is yes. `es_order` returns 0 for numbers that are `es_close`, so `<=`/`>=` agree with equality and `<`/`>` are false for them. The ordering comparisons need two numbers or two texts (texts compare bytewise); anything else is an error, with an "as a number" hint for text against a number.
 - **Conversions:** `as a number` accepts optional surrounding spaces, an optional `-`, digits, and optionally `.digits`; anything else is an error. `as text` always works. `length of` counts UTF-8 characters and needs text.
 - **Files:** `write`/`append` write the value's text plus `\n`. Reading a file (`read file`, `contents of file`) strips one final `\n` (and a `\r` before it). A file name must be text. I/O errors read like `I couldn't read the file "x": it doesn't exist.`
 - **Input:** `ask` prints its prompt without a newline, reads one line (stripping `\n`/`\r\n`), and gives empty text at end of input.
@@ -204,16 +205,16 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 
 Phase 1 is in progress. Programs in the sentence syntax compile to C and run; blocks (`if`, loops, functions) don't exist yet.
 
-- **Layout:** `main.c` (the driver) is still at the repo root and should move to `src/main.c`. `src/common/` holds arena, util, diag and ast. `src/front/` holds lexer, parse_util, parse_expr, parse_stmt and check. `src/back/` holds codegen_c. `runtime/es_runtime.h` is the runtime, and `tools/embed.c` is a build tool.
-- **Pipeline** (`generate_c` in `main.c`, shared by `run`/`build`/`emit`):
+- **Layout:** `src/main.c` is the driver. `src/common/` holds arena, util, diag and ast. `src/front/` holds lexer, parse_util, parse_expr, parse_stmt and check. `src/back/` holds codegen_c. `runtime/es_runtime.h` is the runtime, and `tools/embed.c` is a build tool.
+- **Pipeline** (`generate_c` in `src/main.c`, shared by `run`/`build`/`emit`):
   1. Lex and parse.
   2. If there were no errors, run `check_program`.
   3. If there are any diagnostics, print them all and exit 1.
   4. Otherwise run `codegen_c` and write `program.c` to the temp dir.
 
   `cc -O2 program.c -o OUT -lm` is run via `fork`/`execvp`, and `run` returns the program's exit status.
-- **Stage boundaries:** these now follow the target design. Codegen trusts the checker and reports nothing; it asserts if it ever sees `EXPR_CALL`, `EXPR_IT` or `EXPR_ERROR`. `main.c` still has file-scope `arena` and `temp_*` pointers for its `atexit` cleanup (the only global state in the compiler).
-- `main.c`: the CLI. `run FILE` / `build FILE -o OUT` / `emit FILE` / `tokens FILE` / `ast FILE`, and `help`. Unknown commands and bad arguments print usage and exit 2.
+- **Stage boundaries:** these now follow the target design. Codegen trusts the checker and reports nothing; it asserts if it ever sees `EXPR_CALL`, `EXPR_IT` or `EXPR_ERROR`. `src/main.c` still has file-scope `arena` and `temp_*` pointers for its `atexit` cleanup (the only global state in the compiler).
+- `src/main.c`: the CLI. `run FILE` / `build FILE -o OUT` / `emit FILE` / `tokens FILE` / `ast FILE`, and `help`. Unknown commands and bad arguments print usage and exit 2.
   - Each invocation creates one `mkdtemp` directory under `$TMPDIR` (or `/tmp`), holding `program.c`, `program` and `session.es`. `atexit` removes it.
   - **The shell** (no arguments) keeps the session in a `StrBuf`. Each line is appended, written to `session.es` and run through `argv[0] run`, and kept only if that exits 0. So earlier output and `ask` prompts repeat on every line. `exit` or `quit` leaves.
 - `src/common/arena.{c,h}`: arena allocator (`arena_new`, `arena_alloc` returns zeroed, aligned memory, `arena_strdup`, `arena_sprintf`/`arena_vsprintf`, `arena_free`). It grows in 64 KiB blocks and gives oversized requests their own block. All compiler memory comes from here.
@@ -242,12 +243,12 @@ Phase 1 is in progress. Programs in the sentence syntax compile to C and run; bl
   - **Source groups:** `COMMON_SRC`, `FRONT_SRC` (also linked into the unit tests), `BACK_SRC`, and `GEN_RUNTIME`, which is `build/gen/es_runtime_embed.c` generated by `build/tools/embed` from `runtime/es_runtime.h`. Never edit generated files.
   - **Builds:** objects go under `build/release/` (`-O2`) or `build/debug/` (ASan/UBSan, `-fno-sanitize-recover=all`), with `-MMD` dependencies.
   - **Targets:** `all`, `test`, `debug`, `test-debug` (leak checking left at the ASan default, which is on for Linux), `bless`, and `clean`.
-  - Zero warnings in both modes. `main.c` defines `_XOPEN_SOURCE 700` and `_DARWIN_C_SOURCE`.
+  - Zero warnings in both modes. `src/main.c` defines `_XOPEN_SOURCE 700` and `_DARWIN_C_SOURCE`.
 - `tests/`:
   - 40 unit tests
   - 31 AST tests (16 valid, 15 `err_*`)
   - 21 token tests (14 valid, 7 `err_*`)
-  - 30 run tests (12 programs covering numbers, text, logic and short-circuiting, every comparison, variables, files, `ask` with and without input, `stop`, sentences and synonyms; plus 18 `err_*` runtime-error tests, including left-to-right error order)
+  - 31 run tests (13 programs covering numbers, number equality with tolerance, text (including `followed by` precedence), logic and short-circuiting, every comparison, variables, files, `ask` with and without input, `stop`, sentences and synonyms; plus 18 `err_*` runtime-error tests, including left-to-right error order)
   - 10 compile-error tests (checker messages and one parse error)
   - 33 examples, 2 README sync checks, and CLI checks
 - **Docs:**
@@ -261,7 +262,7 @@ Phase 1 is in progress. Programs in the sentence syntax compile to C and run; bl
   - `examples/lexer/` (10), including `taste`.
 - No license has been chosen; the user will pick one.
 - `old/`: the 2024 prototype `.code` files. Historical only; they no longer compile.
-- `.gitignore` covers build outputs (`build/`, `easyscript`, stray `*.o`/`*.d`), `myfile*`, and `.idea/` (CLion). `.gitattributes` marks `tests/tokens/**` as `-text`.
+- `.gitignore` covers build outputs (`build/`, `easyscript`, stray `*.o`/`*.d`), `myfile*`, `.idea/` (CLion), and `.vscode/` (no longer tracked). `.gitattributes` marks `tests/tokens/**` as `-text`.
 
 ## Build
 

@@ -56,7 +56,9 @@ Expressions combine values. They're listed here from the **loosest** to the **ti
 
 ### Comparisons
 
-All comparisons are **Available**. Equal and not equal work between any two values (different kinds are never equal). The ordering comparisons need two numbers or two texts (texts compare alphabetically, by character code); comparing text with a number is a runtime error. A sentence can only have one comparison in a row: `1 < x < 10` is an error that suggests `1 < x and x < 10`.
+All comparisons are **Available**. Equal and not equal work between any two values (different kinds are never equal).
+
+**Numbers are equal when they're within a relative 1e-9 of each other** (a billionth of the larger number), so tiny rounding differences don't matter: `0.1 plus 0.2 is 0.3` is `yes`, even though computers store `0.1 plus 0.2` as 0.30000000000000004. This applies to `is`, `is not`, `isn't`, `equals`, `is equal to`, `=`, `==` and `!=`. The other comparisons agree with it: numbers that count as equal are neither less nor greater, so `0.1 plus 0.2 is at most 0.3` is `yes` too. Because the tolerance is relative, it's tiny near zero (`0 is 0.000000000001` is `no`) and grows for big numbers (`1000000000 is 1000000000.5` is `yes`). The ordering comparisons need two numbers or two texts (texts compare alphabetically, by character code); comparing text with a number is a runtime error. A sentence can only have one comparison in a row: `1 < x < 10` is an error that suggests `1 < x and x < 10`.
 
 | Means | Words | Symbols | Example |
 |---|---|---|---|
@@ -69,6 +71,14 @@ All comparisons are **Available**. Equal and not equal work between any two valu
 
 Not available, with the error message suggesting the right one: `is not greater than` (use `is at most`), `is not less than` (use `is at least`), and `is above or equal to` (use `is at least`).
 
+### Joining text with `followed by`
+
+| Pattern | Meaning | Example | Status |
+|---|---|---|---|
+| `X followed by Y` | Turns both sides into text and joins them | `"Total: " followed by total` | Available |
+
+`followed by` binds more loosely than arithmetic, so the maths happens first: `"Sum: " followed by 2 plus 3` gives `Sum: 5`. It binds more tightly than comparisons, so `name followed by "!" is "Ada!"` compares the joined text. (`and` joins text too, and it binds more loosely still: `"Sum: " and 2 plus 3` also gives `Sum: 5`.)
+
 ### Arithmetic
 
 All arithmetic is **Available**.
@@ -77,7 +87,6 @@ All arithmetic is **Available**.
 |---|---|---|---|
 | add | `plus` | `+` | `price plus tax` |
 | subtract | `minus` | `-` | `total minus discount` |
-| join text | `followed by` | | `"Total: " followed by total as text` |
 | multiply | `times`, `multiplied by` | `*` | `width times height` |
 | divide | `divided by` | `/` | `total divided by count` |
 | remainder | `mod` | `%` | `minutes mod 60` |
@@ -85,7 +94,7 @@ All arithmetic is **Available**.
 
 `times` multiplies only when a value follows it, so a sentence like `repeat 3 times:` keeps its own `times`.
 
-Arithmetic needs numbers on both sides; anything else is a runtime error such as "Line 12: I can't subtract text from a number." To join text, use `and` or `followed by` (which turns numbers into text for you). Dividing or taking the remainder by zero is the error "You divided by zero." `followed by` has the same precedence as `plus`, so `"Total: " followed by 2 plus 3` means `("Total: " followed by 2) plus 3`; write `"Total: " followed by (2 plus 3)`.
+Arithmetic needs numbers on both sides; anything else is a runtime error such as "Line 12: I can't subtract text from a number." To join text, use `and` or `followed by` (which turns numbers into text for you). Dividing or taking the remainder by zero is the error "You divided by zero."
 
 ### Conversions
 

@@ -4,6 +4,12 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Changed
+
+- **Number equality has a tolerance:** numbers within a relative 1e-9 of each other count as equal, so `0.1 plus 0.2 is 0.3` is `yes`. `is at most`/`is at least` and the other ordering comparisons agree with it.
+- **`followed by` binds more loosely than `plus` and `minus`,** so the maths happens before joining: `"Sum: " followed by 2 plus 3` gives `Sum: 5`. It still binds more tightly than comparisons.
+- `main.c` moved to `src/main.c`, and `.vscode/` is no longer tracked.
+
 ### Added
 
 - **Programs run.** `run`, `build`, and `emit` now use the new pipeline: lexer → parser → checker → C code generator → `cc -O2`.
@@ -26,7 +32,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - The lexer records where it dropped a filler word (`Token.filler`); `easyscript tokens` shows it as `[after "the"]`.
 - Suggestions now treat two swapped letters as one typo (`sya` suggests `say`).
 - **Expression parser** (`src/front/parse_expr.c`) and **syntax tree** (`src/common/ast.h`). `easyscript ast FILE` prints the tree. For now a file is one expression per line (or several, separated by periods).
-  - Precedence, loosest first: `or`, `and` (logical or text joining, decided later by the checker; stops before `and call`), `not`, comparisons, `plus`/`minus`/`followed by`, `times`/`multiplied by`/`divided by`/`mod`, unary minus, `as a number`/`as text`, then values.
+  - Precedence, loosest first: `or`, `and` (logical or text joining, decided later by the checker; stops before `and call`), `not`, comparisons, `followed by` (since moved below arithmetic), `plus`/`minus`, `times`/`multiplied by`/`divided by`/`mod`, unary minus, `as a number`/`as text`, then values.
   - Comparisons in words and symbols: `is`, `is not`, `isn't`, `equals`, `is equal to`, `is greater/more/bigger than`, `is above/over`, `is less/smaller than`, `is below/under`, `is at least`, `is at most`, the "or equal to" forms, `reaches`, `= == != < > <= >=`. Comparisons don't chain.
   - Values: numbers, text, `yes`/`no`/`true`/`false`, `nothing`, `it`, names, parentheses, `NAME using X, Y` calls, `length of X`, and `contents of file X`.
   - Errors with suggestions: phrases missing their last word ("Did you mean "is greater than"?"), `is not greater than`, chained comparisons, ambiguous call arguments, misspelled operators, unmatched parentheses, `.5`. The parser recovers at the next sentence.
@@ -73,8 +79,6 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 - Decisions, loops, and functions are coming soon, so programs run straight through from top to bottom.
 - Text built while a program runs is freed only when it exits. That's fine without loops, but loops will need better memory management.
-- Decimal numbers compare exactly, so `0.1 plus 0.2 is 0.3` is `no` (even though both print as `0.3`).
-- `followed by` and `plus` have the same precedence, so `"Total: " followed by 2 plus 3` is an error; write `followed by (2 plus 3)`.
 - The interactive shell reruns the whole session for every line, so earlier output (and questions from `ask`) repeat.
 
 ## 2024-07-06: First prototype

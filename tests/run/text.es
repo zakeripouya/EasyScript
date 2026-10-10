@@ -15,3 +15,7 @@ say "two\nlines"
 say yes as text
 say nothing as text followed by "?"
 say "quote: \"hi\" back\\slash"
+say "Sum: " followed by 2 plus 3
+say "Sum: " and 2 plus 3
+say "ab" followed by "c" is "abc"
+say 10 minus 4 followed by " left"

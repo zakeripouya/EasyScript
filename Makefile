@@ -9,7 +9,7 @@ BACK_SRC = src/back/codegen_c.c
 # The runtime, embedded into the compiler as a byte array by tools/embed.c.
 GEN_RUNTIME = build/gen/es_runtime_embed.c
 EMBED = build/tools/embed
-COMPILER_SRC = main.c $(FRONT_SRC) $(BACK_SRC) $(COMMON_SRC) $(GEN_RUNTIME)
+COMPILER_SRC = src/main.c $(FRONT_SRC) $(BACK_SRC) $(COMMON_SRC) $(GEN_RUNTIME)
 UNIT_SRC = $(wildcard tests/unit/*.c) $(FRONT_SRC) $(COMMON_SRC)
 
 RELEASE_DIR = build/release

@@ -185,7 +185,7 @@ lives is below 1
 points reaches 100
 ```
 
-The full list is in the [vocabulary](vocabulary.md#comparisons). A sentence can hold one comparison at a time: instead of `1 < x < 10`, write `1 < x and x < 10`. The compiler tells you this if you forget.
+The full list is in the [vocabulary](vocabulary.md#comparisons). Numbers that differ only by tiny rounding errors count as equal, so `0.1 plus 0.2 is 0.3` is `yes`. A sentence can hold one comparison at a time: instead of `1 < x < 10`, write `1 < x and x < 10`. The compiler tells you this if you forget.
 
 ### Combining yes and no
 
@@ -199,7 +199,7 @@ not done and ready
 
 ### Working with text
 
-`and` also joins text, and so does `followed by`; numbers are turned into text for you. (Between two yes/no values `and` means "both"; the program decides which while it runs.) A value can be turned into text with `as text`, and text into a number with `as a number`:
+`and` also joins text, and so does `followed by`; numbers are turned into text for you. Joining happens after the maths, so `"Sum: " followed by 2 plus 3` gives `Sum: 5`. (Between two yes/no values `and` means "both"; the program decides which while it runs.) A value can be turned into text with `as text`, and text into a number with `as a number`:
 
 ```
 "Hello, " and name
