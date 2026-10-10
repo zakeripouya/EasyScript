@@ -23,7 +23,7 @@ repeat while count is greater than 0:
 say "Liftoff!".
 
 to greet using name:
-    say "Hello, " + name + "!".
+    say "Hello, " and name and "!".
 
 greet using "Ada".
 ```
@@ -39,18 +39,19 @@ EasyScript is at the start of **Phase 1 (core language)**. Here's exactly what e
 | Piece | What you can do |
 |---|---|
 | New lexer | `easyscript tokens file.es` splits any file in the new syntax into words, numbers, text, symbols, and indentation, and reports friendly errors. See the [lexer examples](examples/lexer/). |
+| Expression parser | `easyscript ast file.es` shows how expressions are understood: arithmetic, comparisons in words or symbols (`is at least`, `>=`), `and`/`or`/`not`, joining text, conversions, `length of`, `contents of file`, and function calls. Until statements arrive, a file is one expression per line. See the [parser examples](examples/parser/). |
 | Error reporting | Errors show the line, the source, carets under the problem, and a suggestion. |
-| CLI | `run`, `build`, `emit`, and `tokens` commands. Generated files go in a temporary directory. |
+| CLI | `run`, `build`, `emit`, `tokens`, and `ast` commands. Generated files go in a temporary directory. |
 | Legacy prototype | The original 2024 prototype syntax (`PRINT # "hi"`, `MAKE A VARIABLE x ASSIGN 10`, `FILE OPEN ...`) still compiles and runs end to end. It's being replaced and will be removed once the new parser works. See the [legacy examples](examples/legacy/). |
 | Tests | Unit, lexer, program, example, and CLI tests run with `make test`, plus a sanitizer build with `make test-debug`. |
 
-**Coming soon** (Phase 1): the parser and checker for the new syntax, C code generation from the new syntax, and then the language itself: variables, output, decisions, loops, functions, and files. Follow along in the [roadmap](docs/roadmap.md).
+**Coming soon** (Phase 1): statements (the sentences around expressions), the checker, C code generation from the new syntax, and with them the language itself: variables, output, decisions, loops, functions, and files. Follow along in the [roadmap](docs/roadmap.md).
 
 ## Roadmap
 
 | Phase | Focus | Status |
 |---|---|---|
-| 1 | **Core language:** variables, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | In progress (lexer done) |
+| 1 | **Core language:** variables, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | In progress (lexer and expressions done) |
 | 2 | **Data and structure:** records, lists, maps, modules, static types | Coming soon |
 | 3 | **Self-hosting:** the EasyScript compiler, written in EasyScript | Coming soon |
 | 4 | **Real-world programs:** standard library, C interop, concurrency, backend servers | Coming soon |
@@ -84,6 +85,7 @@ make test-debug   # runs the full suite against the sanitizer build
 
 ```bash
 ./easyscript tokens file.es          # show how the new lexer reads a file
+./easyscript ast file.es             # show the syntax tree (one expression per line, for now)
 ./easyscript run file.es             # compile and run (legacy syntax for now)
 ./easyscript build file.es -o app    # compile to an executable (legacy syntax for now)
 ./easyscript emit file.es            # print the generated C (legacy syntax for now)
@@ -94,6 +96,7 @@ Try it:
 
 ```bash
 ./easyscript tokens examples/lexer/taste.es
+./easyscript ast examples/parser/arithmetic.es
 ./easyscript run examples/legacy/print_text.es
 ```
 
@@ -105,7 +108,7 @@ source.es → lexer → parser → checker → C code generator → cc -O2 → n
                      tree      and names
 ```
 
-The **front end** (lexer, parser, checker) understands EasyScript and reports errors. The **back end** turns the checked program into C. They only talk through shared data structures (tokens, the syntax tree, and the symbol table). Today the new lexer is finished and the rest of the pipeline is still the legacy prototype. See [docs/architecture.md](docs/architecture.md).
+The **front end** (lexer, parser, checker) understands EasyScript and reports errors. The **back end** turns the checked program into C. They only talk through shared data structures (tokens, the syntax tree, and the symbol table). Today the new lexer and the expression parser are finished; programs still run through the legacy prototype pipeline. See [docs/architecture.md](docs/architecture.md).
 
 ## Documentation
 

@@ -37,9 +37,11 @@ Docs must never show syntax as working before it does. Mark planned features "Co
 |---|---|---|
 | `tests/unit/*.c` | C functions `static void test_x(TestContext *t)`, registered in the file's `*_tests` function | `CHECK`, `CHECK_SIZE`, `CHECK_STR` |
 | `tests/tokens/` | `NAME.es` plus `NAME.out`, and `NAME.err` for error cases | `easyscript tokens` |
+| `tests/ast/` | `NAME.es` plus `NAME.out`, and `NAME.err` for error cases | `easyscript ast` |
 | `tests/run/` | `NAME.es` plus `NAME.out` | `easyscript run` (stdout, exit status 0) |
 | `tests/errors/` | `NAME.es` plus `NAME.err` | `easyscript emit` (must fail; exact stderr) |
 | `examples/lexer/` | `NAME.es` plus `NAME.tokens`, and `NAME.err` for error cases | `easyscript tokens` |
+| `examples/parser/` | `NAME.es` plus `NAME.ast`, and `NAME.err` for error cases | `easyscript ast` |
 | `examples/legacy/` | `NAME.es` plus `NAME.out` | `easyscript run` |
 | CLI checks | the end of `tests/run.sh` | |
 

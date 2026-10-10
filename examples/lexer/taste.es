@@ -6,6 +6,6 @@ repeat while count is greater than 0:
 say "Liftoff!".
 
 to greet using name:
-    say "Hello, " + name + "!".
+    say "Hello, " and name and "!".
 
 greet using "Ada".

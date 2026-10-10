@@ -1,0 +1,4 @@
+Line 2: Comparisons can't be chained like this.
+    1 < x < 10
+    ^^^^^^^^^^
+Compare one pair at a time and join them with "and": "1 < x and x < 10".

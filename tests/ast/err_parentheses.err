@@ -1,0 +1,19 @@
+Line 1: This "(" is never closed.
+    (1 plus 2
+    ^
+Add a ")" where the group ends, on the same line.
+
+Line 2: There's a ")" here without a matching "(".
+    1 plus 2)
+            ^
+Remove it, or add a "(" where the group starts.
+
+Line 3: Something is missing after "(".
+    ()
+    ^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 4: This "(" is never closed.
+    ((x)
+    ^
+Add a ")" where the group ends, on the same line.

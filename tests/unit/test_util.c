@@ -56,6 +56,13 @@ static void test_sb_repeat(TestContext *t) {
     CHECK_STR(t, sb.data, "^^^^");
 }
 
+static void test_sb_quoted(TestContext *t) {
+    StrBuf sb;
+    sb_init(&sb, t->arena);
+    sb_append_quoted(&sb, "a\n\t\"\\\x01z", 7);
+    CHECK_STR(t, sb.data, "\"a\\n\\t\\\"\\\\\\x01z\"");
+}
+
 static void test_sb_grows(TestContext *t) {
     StrBuf sb;
     sb_init(&sb, t->arena);
@@ -143,6 +150,7 @@ void util_tests(TestRunner *runner) {
     unit_run(runner, "strbuf/append", test_sb_append);
     unit_run(runner, "strbuf/appendf", test_sb_appendf);
     unit_run(runner, "strbuf/repeat", test_sb_repeat);
+    unit_run(runner, "strbuf/quoted", test_sb_quoted);
     unit_run(runner, "strbuf/grows", test_sb_grows);
     unit_run(runner, "vec/push", test_vec_push);
     unit_run(runner, "vec/structs", test_vec_of_structs);

@@ -12,6 +12,7 @@
 #include "common/diag.h"
 #include "common/util.h"
 #include "front/lexer.h"
+#include "front/parse.h"
 #include "legacy.h"
 
 static Arena *arena;
@@ -49,6 +50,7 @@ static void print_usage(FILE *out) {
     fprintf(out, "  easyscript build FILE -o OUT  Compile FILE to the executable OUT\n");
     fprintf(out, "  easyscript emit FILE          Print the C code generated for FILE\n");
     fprintf(out, "  easyscript tokens FILE        Print the tokens of FILE, one per line\n");
+    fprintf(out, "  easyscript ast FILE           Print the syntax tree of FILE as an outline\n");
     fprintf(out, "  easyscript                    Start the interactive shell\n");
 }
 
@@ -205,6 +207,26 @@ static int cmd_tokens(const char *source_path) {
     return 0;
 }
 
+// Parses FILE with the new front end and prints its syntax tree. Errors are
+// printed after the tree, to stderr.
+static int cmd_ast(const char *source_path) {
+    size_t length;
+    char *source = read_file(source_path, &length);
+    Diag *diag = diag_new(arena, source, length);
+    TokenList tokens = lex(arena, diag, source, length);
+    Block *program = parse_program(arena, diag, source, &tokens);
+
+    StrBuf out;
+    sb_init(&out, arena);
+    ast_dump_block(program, &out);
+    fwrite(out.data, 1, out.len, stdout);
+    if (diag_count(diag) > 0) {
+        diag_print(diag, stderr);
+        return 1;
+    }
+    return 0;
+}
+
 static int cmd_build(const char *source_path, const char *output_path) {
     make_temp_dir();
     generate_c(source_path);
@@ -298,7 +320,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (strcmp(command, "run") == 0 || strcmp(command, "emit") == 0 || strcmp(command, "build") == 0 ||
-        strcmp(command, "tokens") == 0) {
+        strcmp(command, "tokens") == 0 || strcmp(command, "ast") == 0) {
         if (!source_path) {
             return usage_error("No source file given.");
         }
@@ -322,6 +344,9 @@ int main(int argc, char *argv[]) {
     }
     if (strcmp(command, "tokens") == 0) {
         return cmd_tokens(source_path);
+    }
+    if (strcmp(command, "ast") == 0) {
+        return cmd_ast(source_path);
     }
     return cmd_emit(source_path);
 }

@@ -1,0 +1,104 @@
+#include "common/ast.h"
+
+Expr *ast_new_expr(Arena *arena, ExprKind kind, SourcePos pos) {
+    Expr *expr = arena_alloc(arena, sizeof(Expr));
+    expr->kind = kind;
+    expr->pos = pos;
+    return expr;
+}
+
+Stmt *ast_new_stmt(Arena *arena, StmtKind kind, SourcePos pos) {
+    Stmt *stmt = arena_alloc(arena, sizeof(Stmt));
+    stmt->kind = kind;
+    stmt->pos = pos;
+    return stmt;
+}
+
+SourcePos ast_pos_join(SourcePos first, SourcePos last) {
+    SourcePos pos = first;
+    size_t end = last.span.offset + last.span.length;
+    pos.span.length = end > first.span.offset ? end - first.span.offset : 0;
+    return pos;
+}
+
+const char *ast_binary_op_name(BinaryOp op) {
+    static const char *const names[] = {
+        "or", "and", "equal", "not equal", "less", "less or equal", "greater",
+        "greater or equal", "add", "subtract", "join", "multiply", "divide", "modulo",
+    };
+    return names[op];
+}
+
+const char *ast_unary_op_name(UnaryOp op) {
+    return op == UNARY_NEGATE ? "negate" : "not";
+}
+
+static void dump_expr(const Expr *expr, size_t depth, StrBuf *out);
+
+static void dump_line(const SourcePos *pos, size_t depth, StrBuf *out, const char *label) {
+    sb_append_repeat(out, ' ', depth * 2);
+    sb_append(out, label);
+    sb_appendf(out, " [%zu:%zu]\n", pos->line, pos->column);
+}
+
+static void dump_children(const Expr *a, const Expr *b, size_t depth, StrBuf *out) {
+    if (a) dump_expr(a, depth + 1, out);
+    if (b) dump_expr(b, depth + 1, out);
+}
+
+// The label for a leaf or a node whose label carries a value.
+static const char *expr_label(const Expr *expr, StrBuf *scratch) {
+    switch (expr->kind) {
+    case EXPR_ERROR: return "error";
+    case EXPR_NUMBER: sb_appendf(scratch, "number %s", expr->as.number.text); break;
+    case EXPR_TEXT:
+        sb_append(scratch, "text ");
+        sb_append_quoted(scratch, expr->as.text.value, expr->as.text.len);
+        break;
+    case EXPR_BOOLEAN: return expr->as.boolean ? "yes" : "no";
+    case EXPR_NOTHING: return "nothing";
+    case EXPR_IT: return "it";
+    case EXPR_NAME: sb_appendf(scratch, "name %s", expr->as.name); break;
+    case EXPR_CALL: sb_appendf(scratch, "call %s", expr->as.call.name); break;
+    case EXPR_LENGTH: return "length of";
+    case EXPR_FILE_CONTENTS: return "contents of file";
+    case EXPR_UNARY: return ast_unary_op_name(expr->as.unary.op);
+    case EXPR_BINARY: return ast_binary_op_name(expr->as.binary.op);
+    case EXPR_CONVERT: return expr->as.convert.target == CONVERT_TO_NUMBER ? "as number" : "as text";
+    }
+    return scratch->data;
+}
+
+static void dump_expr(const Expr *expr, size_t depth, StrBuf *out) {
+    StrBuf label;
+    sb_init(&label, out->arena);
+    dump_line(&expr->pos, depth, out, expr_label(expr, &label));
+    switch (expr->kind) {
+    case EXPR_CALL:
+        for (size_t i = 0; i < expr->as.call.args.len; i++) {
+            dump_expr(expr->as.call.args.items[i], depth + 1, out);
+        }
+        break;
+    case EXPR_LENGTH:
+    case EXPR_FILE_CONTENTS: dump_children(expr->as.operand, NULL, depth, out); break;
+    case EXPR_UNARY: dump_children(expr->as.unary.operand, NULL, depth, out); break;
+    case EXPR_BINARY: dump_children(expr->as.binary.left, expr->as.binary.right, depth, out); break;
+    case EXPR_CONVERT: dump_children(expr->as.convert.operand, NULL, depth, out); break;
+    default: break;
+    }
+}
+
+static void dump_stmt(const Stmt *stmt, size_t depth, StrBuf *out) {
+    switch (stmt->kind) {
+    case STMT_EXPR:
+        dump_line(&stmt->pos, depth, out, "expression");
+        dump_expr(stmt->as.expr, depth + 1, out);
+        break;
+    }
+}
+
+void ast_dump_block(const Block *block, StrBuf *out) {
+    for (size_t i = 0; i < block->len; i++) {
+        dump_stmt(block->items[i], 0, out);
+    }
+}

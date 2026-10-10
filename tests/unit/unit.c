@@ -52,5 +52,6 @@ int main(void) {
     util_tests(&runner);
     diag_tests(&runner);
     lexer_tests(&runner);
+    parser_tests(&runner);
     return runner.failed == 0 ? 0 : 1;
 }

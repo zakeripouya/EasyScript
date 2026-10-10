@@ -1,0 +1,78 @@
+#ifndef FRONT_PARSE_INTERNAL_H
+#define FRONT_PARSE_INTERNAL_H
+
+// Shared by the parser's source files (parse_util.c, parse_expr.c,
+// parse_stmt.c). Not for use outside src/front/.
+
+#include <stdbool.h>
+#include "common/ast.h"
+#include "front/lexer.h"
+
+typedef struct {
+    Arena *arena;
+    Diag *diag;
+    const char *source;
+    const Token *tokens;
+    size_t count;         // tokens[count - 1] is TOK_EOF
+    size_t pos;
+    Span prev_span;       // the last token or phrase consumed
+    bool sentence_failed; // an error was reported; later ones in this sentence are suppressed
+} Parser;
+
+// A word or symbol sequence with a meaning, e.g. "is greater than".
+typedef struct {
+    const char *words;    // space-separated, as the lexer produces them
+    const char *display;  // how messages show it ("as a number" for "as number")
+    int value;            // e.g. a BinaryOp
+    bool needs_operand;   // only matches when a value can follow it
+} Phrase;
+
+// --- Tokens ----------------------------------------------------------------
+
+const Token *parser_peek(const Parser *p, size_t ahead);
+bool parser_at(const Parser *p, size_t ahead, TokenKind kind);
+bool parser_at_word(const Parser *p, size_t ahead, const char *word);
+const Token *parser_advance(Parser *p);
+// Consumes n tokens and returns their combined span.
+Span parser_consume(Parser *p, size_t n);
+SourcePos parser_token_pos(const Token *token);
+bool parser_at_sentence_end(const Parser *p);
+
+// True if `token` could begin a value.
+bool parser_starts_operand(const Token *token);
+// Words with an operator meaning; they can't be used as names.
+bool parser_is_operator_word(const char *word);
+
+// --- Phrases ---------------------------------------------------------------
+
+// Number of tokens if the next tokens spell `words`, else 0.
+size_t parser_match_words(const Parser *p, const char *words);
+
+// The longest phrase in the table that the next tokens spell, with its token
+// count in *len. If the next tokens are a phrase missing its last word
+// ("is greater 5"), reports a "Did you mean" error and returns NULL.
+const Phrase *parser_match_phrase(Parser *p, const Phrase *table, size_t n, size_t *len);
+
+// --- Errors ----------------------------------------------------------------
+
+// Reports an error unless one was already reported in this sentence.
+// Returns whether it was reported, so the caller knows to add notes.
+bool parser_error(Parser *p, Span span, const char *fmt, ...) PRINTF_LIKE(3, 4);
+
+// An EXPR_ERROR node at the next token.
+Expr *parser_error_expr(Parser *p);
+
+// The source text of a span (arena copy).
+const char *parser_text(const Parser *p, Span span);
+
+// How messages refer to a token: "plus", "the end of the line", ...
+const char *parser_describe(const Parser *p, const Token *token);
+
+// Reports whatever is left in a sentence after a complete expression.
+void parser_report_leftover(Parser *p);
+
+// --- Grammar ---------------------------------------------------------------
+
+Expr *parse_expression(Parser *p);
+
+#endif

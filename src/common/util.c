@@ -91,6 +91,20 @@ void sb_appendf(StrBuf *sb, const char *fmt, ...) {
     va_end(args);
 }
 
+void sb_append_quoted(StrBuf *sb, const char *s, size_t n) {
+    sb_append_char(sb, '"');
+    for (size_t i = 0; i < n; i++) {
+        unsigned char c = (unsigned char)s[i];
+        if (c == '\n') sb_append(sb, "\\n");
+        else if (c == '\t') sb_append(sb, "\\t");
+        else if (c == '"') sb_append(sb, "\\\"");
+        else if (c == '\\') sb_append(sb, "\\\\");
+        else if (c < 0x20 || c == 0x7F) sb_appendf(sb, "\\x%02X", c);
+        else sb_append_char(sb, (char)c);
+    }
+    sb_append_char(sb, '"');
+}
+
 static size_t min3(size_t a, size_t b, size_t c) {
     size_t m = a < b ? a : b;
     return m < c ? m : c;

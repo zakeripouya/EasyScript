@@ -46,7 +46,12 @@ What exists today:
 | `src/common/util.{c,h}` | Done. Growable string builder (`StrBuf`), dynamic arrays (`Vec`), edit distance. |
 | `src/common/diag.{c,h}` | Done. Collects errors with source spans and notes, and prints them in the [standard format](errors.md). |
 | `src/front/lexer.{c,h}` | Done. The new lexer, available through `easyscript tokens`. |
-| `src/front/parse_*.c`, `check.c`, `src/common/ast.h` | Coming soon |
+| `src/common/ast.{h,c}` | Done for expressions. Tagged-union `Expr` and `Stmt` nodes from the arena, each with a `SourcePos` (span, line, column). Blocks are lists of statements. Also includes the outline printer used by `easyscript ast`. |
+| `src/front/parse.h`, `parse_internal.h` | The parser's public API (`parse_program`), and the internal `Parser` context and helpers shared by the parser files. |
+| `src/front/parse_util.c` | Token helpers, phrase matching (multi-word operators, with "Did you mean" for a missing last word), and error helpers. |
+| `src/front/parse_expr.c` | Done. Recursive-descent expression parser. |
+| `src/front/parse_stmt.c` | For now, the program loop for expression-per-line files. Statements come next. |
+| `src/front/check.c` | Coming soon |
 | `src/back/codegen_c.c`, `runtime/` | Coming soon |
 | `main.c` (repo root) | The driver. It moves to `src/main.c` as the new pipeline takes over. |
 | `src/legacy.{c,h}`, `src/lexer.c`, `src/parser.c`, `src/codegen.c` | The 2024 prototype pipeline, which `run`/`build`/`emit` still use. It will be deleted when the new front and back ends replace it. |
@@ -68,6 +73,7 @@ These are the rules every module follows (the full list is in [CONTRIBUTING.md](
 | `easyscript build FILE -o OUT` | Compile and build an executable at `OUT` |
 | `easyscript emit FILE` | Print the generated C |
 | `easyscript tokens FILE` | Print the lexer's tokens (`KIND line:col text`), and any errors to stderr |
+| `easyscript ast FILE` | Print the syntax tree as an indented outline (`node [line:col]`), and any errors to stderr |
 | `easyscript` | Interactive shell (legacy syntax) |
 
 Generated C and binaries go in a fresh temporary directory that's removed on exit. Nothing is written next to your source except `build`'s `-o` output. `cc` is started directly (`fork`/`exec`), never through a shell.
@@ -78,11 +84,12 @@ Generated C and binaries go in a fresh temporary directory that's removed on exi
 
 | Suite | Location | Checks |
 |---|---|---|
-| Unit tests | `tests/unit/*.c` | Arena, string builder, arrays, edit distance, diagnostic formatting, lexer internals |
+| Unit tests | `tests/unit/*.c` | Arena, string builder, arrays, edit distance, diagnostic formatting, lexer and parser internals (spans, recovery) |
 | Lexer tests | `tests/tokens/` | Token output (`.out`) and exact error output (`.err`) |
+| Parser tests | `tests/ast/` | Syntax tree output (`.out`) and exact error output (`.err`) |
 | Program tests | `tests/run/` | Compile and run, compare stdout |
 | Compile-error tests | `tests/errors/` | Exact compiler error output |
-| Examples | `examples/legacy/`, `examples/lexer/` | Every example in the docs, with its expected output |
+| Examples | `examples/legacy/`, `examples/lexer/`, `examples/parser/` | Every example in the docs, with its expected output |
 | CLI checks | end of `tests/run.sh` | Commands, usage errors, temp-file cleanup |
 
 `make test-debug` runs the same suite against a build with AddressSanitizer and UndefinedBehaviorSanitizer.

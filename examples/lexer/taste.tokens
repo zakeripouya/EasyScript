@@ -38,12 +38,12 @@ NEWLINE       8:21
 INDENT        9:1
 WORD          9:5     say
 STRING        9:9     "Hello, "
-PLUS          9:19    +
-WORD          9:21    name
-PLUS          9:26    +
-STRING        9:28    "!"
-PERIOD        9:31    .
-NEWLINE       9:32
+WORD          9:19    and
+WORD          9:23    name
+WORD          9:28    and
+STRING        9:32    "!"
+PERIOD        9:35    .
+NEWLINE       9:36
 DEDENT        11:1
 WORD          11:1    greet
 WORD          11:7    using

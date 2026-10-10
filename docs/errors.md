@@ -66,6 +66,52 @@ The lexer also explains:
 
 The complete, tested set is in [`tests/tokens/`](../tests/tokens/) (the `err_*.err` files).
 
+## Errors from the parser
+
+These come from the expression parser. Run `easyscript ast yourfile.es` to see them.
+
+**A comparison with a word missing**: [`err_missing_than.es`](../examples/parser/err_missing_than.es)
+
+```
+Line 2: Something is missing after "is greater".
+    score is greater 10
+          ^^^^^^^^^^
+Did you mean "is greater than"?
+```
+
+**Chained comparisons**: [`err_chained_comparison.es`](../examples/parser/err_chained_comparison.es)
+
+```
+Line 2: Comparisons can't be chained like this.
+    1 < x < 10
+    ^^^^^^^^^^
+Compare one pair at a time and join them with "and": "1 < x and x < 10".
+```
+
+**Something that could mean two things**: [`err_ambiguous_call.es`](../examples/parser/err_ambiguous_call.es). This is the "no guessing" rule: the compiler shows both readings instead of picking one.
+
+```
+Line 2: "double using 21 plus 1" could mean two things.
+    double using 21 plus 1
+    ^^^^^^^^^^^^^^^^^^^^^^
+Use parentheses to say which: "(double using 21) plus 1" or "double using (21 plus 1)".
+```
+
+The parser also explains:
+
+| Problem | Message (summary) |
+|---|---|
+| Any phrase missing its last word (`is at 5`, `multiplied 3`, `followed "b"`, `as numbr`, `contents of "a.txt"`) | "Something is missing after ..." and lists the complete phrases |
+| `is not greater than`, `isn't less than` | "EasyScript doesn't have ..." and suggests `is at most` / `is at least` |
+| `is above or equal to`, `< or equal to` | "... isn't a comparison" and suggests `is at least` / `<=` |
+| An operator with nothing after it (`1 plus`, `3 times`) | "Something is missing after "plus"." |
+| A word that isn't an operator (`x plsu 3`, `x isnt 4`) | "I don't understand ... here." with the closest operator by spelling |
+| An operator word used as a value (`plus 5`) | "I expected a value here, but found "plus"." |
+| `(` without `)`, or `)` without `(` | points at the unmatched parenthesis |
+| `.5` | suggests writing `0.5` |
+
+After an error the parser skips to the end of that sentence and carries on, so you see one error per sentence and every sentence gets checked. The complete, tested set is in [`tests/ast/`](../tests/ast/) (the `err_*.err` files).
+
 ## Coming soon
 
 **Unknown names, with "did you mean".** The error format is implemented and unit-tested with exactly this message. The checker that will produce it is coming in Phase 1:
@@ -77,7 +123,7 @@ Line 4: I don't know anything called "totl".
 Did you mean "total"? You made it on line 1.
 ```
 
-**Ambiguous sentences.** When a sentence could be read in more than one way, the parser will stop and list the readings, with a way to write each one unambiguously. The wording of these messages will be designed together with the parser.
+**Ambiguous statements.** Statements (coming soon) follow the same rule as expressions: if a sentence could be read in more than one way, the parser stops and lists the readings.
 
 ## Legacy prototype errors
 

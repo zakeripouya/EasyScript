@@ -25,7 +25,9 @@ The goal is to write small, real programs in the new sentence syntax and compile
 
 **Compiler**
 
-- [ ] Parser for the new syntax (deterministic; ambiguity errors with suggestions)
+- [x] Syntax tree (`src/common/ast.h`) and `easyscript ast`
+- [x] Expression parser: arithmetic, comparisons in words and symbols, `and`/`or`/`not`, joining text, conversions, `length of`, `contents of file`, calls, with "Did you mean" and ambiguity errors
+- [ ] Statement parser (deterministic; ambiguity errors with suggestions)
 - [ ] Checker: names, scopes, "did you mean"
 - [ ] C code generator from the new AST
 - [ ] Remove the legacy prototype pipeline
@@ -33,7 +35,7 @@ The goal is to write small, real programs in the new sentence syntax and compile
 **Language features**
 
 - [ ] Variables: `set`, `add`, `subtract`, `multiply`, `divide`, `increase`, `decrease`
-- [ ] Values: whole numbers, decimals, text, `true`/`false`; arithmetic and joining text
+- [ ] Values: whole numbers, decimals, text, `yes`/`no`, `nothing`; arithmetic and joining text (parsing done; checking and running to do)
 - [ ] Output and input: `say` (`print`, `show`), `ask`
 - [ ] Decisions: `if`, `otherwise if`, `otherwise`; comparisons in words and symbols; `and`, `or`, `not`
 - [ ] Loops: `repeat N times`, `repeat while`, `repeat until`, `for each ... from ... to`, `stop`, `skip`
@@ -50,7 +52,7 @@ Each of these will be added to `examples/` with its expected output in the same 
 |---|---|
 | `hello.es` | `say` |
 | `variables.es` | `set`, arithmetic sentences |
-| `text.es` | joining text, escapes in output |
+| `text.es` | joining text with `and`/`followed by`, escapes in output |
 | `ask_name.es` | `ask` (with test input) |
 | `decisions.es` | `if` / `otherwise if` / `otherwise` |
 | `conditions.es` | comparisons in words and symbols, `and`/`or`/`not` |

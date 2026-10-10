@@ -30,6 +30,7 @@ typedef enum {
     TOK_LESS_EQUAL,     // <=
     TOK_GREATER_EQUAL,  // >=
     TOK_NOT_EQUAL,      // !=
+    TOK_EQUAL_EQUAL,    // ==
 } TokenKind;
 
 typedef struct {

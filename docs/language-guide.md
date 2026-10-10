@@ -2,7 +2,7 @@
 
 This guide teaches EasyScript from zero, one chapter at a time. Each chapter is marked with its status:
 
-- **Available:** you can try everything in the chapter today.
+- **Available:** you can try everything in the chapter today. "Available (lexer)" and "Available (parser)" mean the compiler already reads and understands it (try `easyscript tokens` or `easyscript ast`), but it doesn't run yet.
 - **Coming soon:** the chapter describes the *planned* language. Its examples don't compile yet, and the exact wording may change. They're here so you can see where the language is going and give feedback.
 
 The full list of words and patterns is in the [vocabulary](vocabulary.md).
@@ -11,12 +11,13 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 |---|---|
 | [0. Getting set up](#0-getting-set-up) | Available |
 | [1. How EasyScript reads your sentences](#1-how-easyscript-reads-your-sentences) | Available (lexer) |
-| [2. Variables](#2-variables) | Coming soon |
-| [3. Output and input](#3-output-and-input) | Coming soon |
-| [4. Decisions](#4-decisions) | Coming soon |
-| [5. Loops](#5-loops) | Coming soon |
-| [6. Functions](#6-functions) | Coming soon |
-| [7. Files](#7-files) | Coming soon |
+| [2. Values and expressions](#2-values-and-expressions) | Available (parser) |
+| [3. Variables](#3-variables) | Coming soon |
+| [4. Output and input](#4-output-and-input) | Coming soon |
+| [5. Decisions](#5-decisions) | Coming soon |
+| [6. Loops](#6-loops) | Coming soon |
+| [7. Functions](#7-functions) | Coming soon |
+| [8. Files](#8-files) | Coming soon |
 | [Appendix: the legacy prototype](#appendix-the-legacy-prototype) | Available (legacy) |
 
 ---
@@ -126,11 +127,102 @@ Try it: [`examples/lexer/blocks.es`](../examples/lexer/blocks.es) and the error 
 
 ### Symbols
 
-EasyScript also understands a few symbols: `+ - * / %` for arithmetic, `( )` for grouping, `= != < > <= >=` for comparisons, and `,` for lists of things. See [`examples/lexer/comparisons.es`](../examples/lexer/comparisons.es).
+EasyScript also understands a few symbols: `+ - * / %` for arithmetic, `( )` for grouping, `= == != < > <= >=` for comparisons, and `,` for lists of things. See [`examples/lexer/comparisons.es`](../examples/lexer/comparisons.es).
 
 ---
 
-## 2. Variables
+## 2. Values and expressions
+
+**Status: Available (parser).** The parser understands everything in this chapter, and `easyscript ast` shows how it reads each line. Nothing runs yet. Until statements arrive, a file for `easyscript ast` is simply a list of expressions, one per line.
+
+### Values
+
+| Kind | Examples |
+|---|---|
+| Numbers | `42`, `19.99` |
+| Text | `"Hello, world!"` |
+| Yes and no | `yes`, `no` (or `true`, `false`) |
+| Nothing | `nothing` |
+| Names | `total`, `player_2`, `guest's` |
+
+### Arithmetic
+
+You can use words or symbols:
+
+```
+price plus tax
+total minus discount
+width times height
+total divided by count
+minutes mod 60
+-temperature
+```
+
+`plus`/`+`, `minus`/`-`, `times`/`multiplied by`/`*`, `divided by`/`/`, and `mod`/`%` (the remainder). As in maths, multiplying and dividing come first: `price plus tax times 2` means `price plus (tax times 2)`. Use parentheses to change that: `(price plus tax) times 2`.
+
+Try it: `./easyscript ast examples/parser/arithmetic.es`
+
+### Comparisons
+
+A comparison is yes or no. There are several ways to say each one, so you can pick whichever reads best:
+
+```
+age is at least 18
+score is greater than or equal to target
+name isn't ""
+lives is below 1
+points reaches 100
+```
+
+The full list is in the [vocabulary](vocabulary.md#comparisons). A sentence can hold one comparison at a time: instead of `1 < x < 10`, write `1 < x and x < 10`. The compiler tells you this if you forget.
+
+### Combining yes and no
+
+`and`, `or`, and `not` combine comparisons. `not` comes first, then `and`, then `or`:
+
+```
+age is at least 13 and age is under 20
+day is "sat" or day is "sun"
+not done and ready
+```
+
+### Working with text
+
+`and` also joins text, and so does `followed by`. A value can be turned into text with `as text`, and text into a number with `as a number`:
+
+```
+"Hello, " and name
+"Total: " followed by total as text
+"42" as a number plus 1
+length of name
+contents of file "notes.txt"
+```
+
+Try it: `./easyscript ast examples/parser/text.es`
+
+### Calling functions
+
+A function is called by its name, with `using` and its inputs:
+
+```
+greet using "Ada"
+add using 2, 3
+```
+
+Each input is a single value. If arithmetic comes straight after, EasyScript can't tell whether it belongs to the last input or to the result, so it asks:
+
+```
+Line 2: "double using 21 plus 1" could mean two things.
+    double using 21 plus 1
+    ^^^^^^^^^^^^^^^^^^^^^^
+Use parentheses to say which: "(double using 21) plus 1" or "double using (21 plus 1)".
+```
+
+This is the "no guessing" rule in action. See [`examples/parser/`](../examples/parser/) for more.
+
+---
+
+## 3. Variables
 
 **Status: Coming soon (Phase 1).** These examples are the planned syntax and don't compile yet.
 
@@ -163,7 +255,7 @@ Did you mean "total"? You made it on line 1.
 
 ---
 
-## 3. Output and input
+## 4. Output and input
 
 **Status: Coming soon (Phase 1).** These examples are the planned syntax and don't compile yet.
 
@@ -172,19 +264,19 @@ Did you mean "total"? You made it on line 1.
 ```
 say "Hello, world!".
 say total.
-say "Total: " + total.
+say "Total: " followed by total as text.
 ```
 
 `ask` prints a question and stores what the user types:
 
 ```
 ask "What's your name?" into name.
-say "Nice to meet you, " + name + ".".
+say "Nice to meet you, " and name and ".".
 ```
 
 ---
 
-## 4. Decisions
+## 5. Decisions
 
 **Status: Coming soon (Phase 1).** These examples are the planned syntax and don't compile yet.
 
@@ -197,13 +289,13 @@ otherwise:
     say "It's nice.".
 ```
 
-Conditions can use words (`is`, `is not`, `is greater than`, `is less than`, `is at least`, `is at most`) or symbols (`=`, `!=`, `>`, `<`, `>=`, `<=`), and can be combined with `and`, `or`, and `not`.
+The conditions are the comparisons from [chapter 2](#2-values-and-expressions), which already parse today; the `if` sentences around them are coming soon.
 
 If a sentence could be read two ways, EasyScript doesn't guess. It stops and shows you the possible readings so you can say which one you meant.
 
 ---
 
-## 5. Loops
+## 6. Loops
 
 **Status: Coming soon (Phase 1).** These examples are the planned syntax and don't compile yet.
 
@@ -224,7 +316,7 @@ for each n from 1 to 10:
 
 ---
 
-## 6. Functions
+## 7. Functions
 
 **Status: Coming soon (Phase 1).** These examples are the planned syntax and don't compile yet.
 
@@ -232,7 +324,7 @@ A function is a named set of steps. It's defined with `to`, like a recipe ("to m
 
 ```
 to greet using name:
-    say "Hello, " + name + "!".
+    say "Hello, " and name and "!".
 
 greet using "Ada".
 greet using "Alan".
@@ -249,7 +341,7 @@ say double using 21.
 
 ---
 
-## 7. Files
+## 8. Files
 
 **Status: Coming soon (Phase 1).** These examples are the planned syntax and don't compile yet.
 

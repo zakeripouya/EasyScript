@@ -1,0 +1,54 @@
+Line 1: Something is missing after "is greater".
+    x is greater 5
+      ^^^^^^^^^^
+Did you mean "is greater than"?
+
+Line 2: Something is missing after "is more".
+    x is more 5
+      ^^^^^^^
+Did you mean "is more than"?
+
+Line 3: Something is missing after "is at".
+    x is at 5
+      ^^^^^
+Did you mean "is at least" or "is at most"?
+
+Line 4: Something is missing after "is equal".
+    x is equal 5
+      ^^^^^^^^
+Did you mean "is equal to"?
+
+Line 5: Something is missing after "is not equal".
+    x is not equal 5
+      ^^^^^^^^^^^^
+Did you mean "is not equal to"?
+
+Line 6: Something is missing after "is greater than or equal".
+    x is greater than or equal 5
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+Did you mean "is greater than or equal to"?
+
+Line 7: Something is missing after "multiplied".
+    x multiplied 3
+      ^^^^^^^^^^
+Did you mean "multiplied by"?
+
+Line 8: Something is missing after "divided".
+    x divided 3
+      ^^^^^^^
+Did you mean "divided by"?
+
+Line 9: Something is missing after "followed".
+    "a" followed "b"
+        ^^^^^^^^
+Did you mean "followed by"?
+
+Line 10: Something is missing after "as".
+    y as numbr
+      ^^
+Did you mean "as a number" or "as text"?
+
+Line 11: Something is missing after "contents of".
+    contents of "a.txt"
+    ^^^^^^^^^^^
+Did you mean "contents of file"?

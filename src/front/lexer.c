@@ -312,6 +312,7 @@ static TokenKind two_char_symbol(char a, char b) {
     if (b == '=' && a == '<') return TOK_LESS_EQUAL;
     if (b == '=' && a == '>') return TOK_GREATER_EQUAL;
     if (b == '=' && a == '!') return TOK_NOT_EQUAL;
+    if (b == '=' && a == '=') return TOK_EQUAL_EQUAL;
     return TOK_EOF;
 }
 
@@ -457,23 +458,9 @@ const char *token_kind_name(TokenKind kind) {
         "EOF", "NEWLINE", "INDENT", "DEDENT", "WORD", "NUMBER", "STRING",
         "PERIOD", "COMMA", "COLON", "LPAREN", "RPAREN", "PLUS", "MINUS",
         "STAR", "SLASH", "PERCENT", "EQUAL", "LESS", "GREATER",
-        "LESS_EQUAL", "GREATER_EQUAL", "NOT_EQUAL",
+        "LESS_EQUAL", "GREATER_EQUAL", "NOT_EQUAL", "EQUAL_EQUAL",
     };
     return names[kind];
-}
-
-static void append_quoted(StrBuf *out, const char *s, size_t n) {
-    sb_append_char(out, '"');
-    for (size_t i = 0; i < n; i++) {
-        unsigned char c = (unsigned char)s[i];
-        if (c == '\n') sb_append(out, "\\n");
-        else if (c == '\t') sb_append(out, "\\t");
-        else if (c == '"') sb_append(out, "\\\"");
-        else if (c == '\\') sb_append(out, "\\\\");
-        else if (c < 0x20 || c == 0x7F) sb_appendf(out, "\\x%02X", c);
-        else sb_append_char(out, (char)c);
-    }
-    sb_append_char(out, '"');
 }
 
 #define KIND_WIDTH 13      // strlen("GREATER_EQUAL")
@@ -488,7 +475,7 @@ static void dump_token(const Token *token, StrBuf *out) {
     if (token->kind == TOK_STRING || token->text_len > 0) {
         sb_append_repeat(out, ' ', pos_len < POSITION_WIDTH ? (size_t)(POSITION_WIDTH - pos_len) : 1);
         if (token->kind == TOK_STRING) {
-            append_quoted(out, token->text, token->text_len);
+            sb_append_quoted(out, token->text, token->text_len);
         } else {
             sb_append_n(out, token->text, token->text_len);
         }

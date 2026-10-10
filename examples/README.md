@@ -23,6 +23,25 @@ The new sentence syntax can't run yet; only its lexer is finished. These example
 ./easyscript tokens examples/lexer/blocks.es
 ```
 
+## `parser/`: expressions, as understood by the parser
+
+Expressions parse today, but don't run yet. Until statements arrive, each line of these files is one expression. `NAME.ast` holds the expected output of `easyscript ast NAME.es` (the syntax tree), and `err_*` examples also have `NAME.err`.
+
+| Example | Shows |
+|---|---|
+| [arithmetic.es](parser/arithmetic.es) | Words and symbols, precedence, parentheses |
+| [comparisons.es](parser/comparisons.es) | `is at least`, `is greater than or equal to`, `isn't`, `reaches`, `!=` |
+| [logic.es](parser/logic.es) | `and`, `or`, `not` |
+| [text.es](parser/text.es) | Joining text, `as text`, `as a number`, `length of`, `contents of file` |
+| [calls.es](parser/calls.es) | `NAME using X, Y` |
+| [err_missing_than.es](parser/err_missing_than.es) | Error: "Did you mean "is greater than"?" |
+| [err_chained_comparison.es](parser/err_chained_comparison.es) | Error: `1 < x < 10` |
+| [err_ambiguous_call.es](parser/err_ambiguous_call.es) | Error: a sentence that could mean two things |
+
+```bash
+./easyscript ast examples/parser/arithmetic.es
+```
+
 ## `legacy/`: the 2024 prototype syntax
 
 This syntax runs end to end today, but it's being replaced by the new syntax and will be removed once the new parser works. `NAME.out` holds the expected output of `easyscript run NAME.es`. (The prototype has no comments, so the explanations are here instead.)
@@ -39,4 +58,4 @@ This syntax runs end to end today, but it's being replaced by the new syntax and
 
 ## Adding an example
 
-Put it in `lexer/` or `legacy/` (`tests/run.sh` rejects any other folder) with its expected output, run `make test`, and list it in the table above. Examples for features that don't work yet are listed in [docs/roadmap.md](../docs/roadmap.md#planned-examples) instead.
+Put it in `lexer/`, `parser/`, or `legacy/` (`tests/run.sh` rejects any other folder) with its expected output, run `make test`, and list it in the table above. Examples for features that don't work yet are listed in [docs/roadmap.md](../docs/roadmap.md#planned-examples) instead.

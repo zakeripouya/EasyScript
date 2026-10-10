@@ -45,5 +45,6 @@ void unit_check_str(TestContext *t, const char *file, int line, const char *expr
 void util_tests(TestRunner *runner);
 void diag_tests(TestRunner *runner);
 void lexer_tests(TestRunner *runner);
+void parser_tests(TestRunner *runner);
 
 #endif

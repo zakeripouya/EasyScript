@@ -10,7 +10,9 @@
 #                         stderr must match it; otherwise it must succeed with
 #                         empty stderr
 #   examples/legacy/      like tests/run (NAME.out)
+#   tests/ast/NAME.es     like tests/tokens, but with `easyscript ast`
 #   examples/lexer/       like tests/tokens, expected stdout in NAME.tokens
+#   examples/parser/      like tests/ast, expected stdout in NAME.ast
 #   unit tests            tests/unit/*.c, built into the UNIT binary
 #   CLI checks            at the bottom of this file
 #
@@ -131,10 +133,12 @@ check_errors() {
     done
 }
 
-# check_tokens DIR LABEL OUT_EXT: each DIR/NAME.es is lexed; stdout must
-# match NAME.OUT_EXT. With a NAME.err the run must fail with that stderr;
-# without one it must succeed with empty stderr.
-check_tokens() {
+# check_dump COMMAND DIR LABEL OUT_EXT: runs `easyscript COMMAND` on each
+# DIR/NAME.es; stdout must match NAME.OUT_EXT. With a NAME.err the run must
+# fail with exactly that stderr; without one it must succeed with empty stderr.
+check_dump() {
+    cmd=$1
+    shift
     for src in "$1"/*.es; do
         [ -e "$src" ] || continue
         name="$2/$(basename "$src" .es)"
@@ -145,7 +149,7 @@ check_tokens() {
             continue
         fi
         fresh_dir
-        (cd "$WORK/cwd" && "$ES" tokens "$src") >"$WORK/stdout" 2>"$WORK/stderr"
+        (cd "$WORK/cwd" && "$ES" "$cmd" "$src") >"$WORK/stdout" 2>"$WORK/stderr"
         status=$?
         if [ -f "$expected_err" ]; then
             want_status=1
@@ -168,21 +172,23 @@ $(cat "$WORK/stderr")"
 
 check_run "$ROOT/tests/run" run
 check_errors "$ROOT/tests/errors" errors
-check_tokens "$ROOT/tests/tokens" tokens out
+check_dump tokens "$ROOT/tests/tokens" tokens out
+check_dump ast "$ROOT/tests/ast" ast out
 
 # Examples back the docs, so every one of them must be checked.
 check_run "$ROOT/examples/legacy" examples/legacy
-check_tokens "$ROOT/examples/lexer" examples/lexer tokens
+check_dump tokens "$ROOT/examples/lexer" examples/lexer tokens
+check_dump ast "$ROOT/examples/parser" examples/parser ast
 for dir in "$ROOT"/examples/*/; do
     [ -d "$dir" ] || continue
     case $(basename "$dir") in
-        legacy|lexer) ;;
+        legacy|lexer|parser) ;;
         *) not_ok "examples/$(basename "$dir")" "no test runner covers this directory; add it to tests/run.sh" ;;
     esac
 done
 for src in "$ROOT"/examples/*.es; do
     [ -e "$src" ] || continue
-    not_ok "examples/$(basename "$src")" "examples must live in examples/legacy/ or examples/lexer/"
+    not_ok "examples/$(basename "$src")" "examples must live in examples/legacy/, examples/lexer/ or examples/parser/"
 done
 
 # --- CLI checks -------------------------------------------------------------

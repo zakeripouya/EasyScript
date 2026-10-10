@@ -1,0 +1,49 @@
+Line 1: I don't understand "plsu" here.
+    x plsu 3
+      ^^^^
+Did you mean "plus"?
+
+Line 2: I don't understand "isnt" here.
+    x isnt 4
+      ^^^^
+Did you mean "isn't"?
+
+Line 3: I don't understand "y" here.
+    x y
+      ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I expected a value here, but found "plus".
+    plus 5
+    ^^^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 5: I expected a value here, but found "using".
+    using
+    ^^^^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 6: I expected a value here, but found "*".
+    * 3
+    ^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 7: I don't understand "2" here.
+    1 2
+      ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: I don't understand the text "b" here.
+    "a" "b"
+        ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 9: I don't understand ":" here.
+    x : y
+      ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 10: I don't understand "and call" here.
+    x and call y
+      ^^^^^^^^
+Each line holds one expression, like "1 plus 2".

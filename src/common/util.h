@@ -28,6 +28,10 @@ void sb_append_repeat(StrBuf *sb, char c, size_t count);
 void sb_appendf(StrBuf *sb, const char *fmt, ...) PRINTF_LIKE(2, 3);
 void sb_vappendf(StrBuf *sb, const char *fmt, va_list args);
 
+// Appends s in double quotes, escaping \n \t \" \\ and showing other control
+// characters as \xNN.
+void sb_append_quoted(StrBuf *sb, const char *s, size_t n);
+
 // Dynamic arrays allocated from an arena. Declare with Vec(T); a
 // zero-initialized Vec is empty and ready to use.
 //

@@ -3,8 +3,8 @@ CFLAGS = -Wall -Wextra -Isrc
 RELEASE_FLAGS = -O2
 DEBUG_FLAGS = -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all
 
-COMMON_SRC = src/common/arena.c src/common/util.c src/common/diag.c
-FRONT_SRC = src/front/lexer.c
+COMMON_SRC = src/common/arena.c src/common/util.c src/common/diag.c src/common/ast.c
+FRONT_SRC = src/front/lexer.c src/front/parse_util.c src/front/parse_expr.c src/front/parse_stmt.c
 LEGACY_SRC = src/legacy.c src/lexer.c src/parser.c src/codegen.c
 COMPILER_SRC = main.c $(FRONT_SRC) $(LEGACY_SRC) $(COMMON_SRC)
 UNIT_SRC = $(wildcard tests/unit/*.c) $(FRONT_SRC) $(COMMON_SRC)

@@ -1,0 +1,14 @@
+Line 1: "double using 21 plus 1" could mean two things.
+    double using 21 plus 1
+    ^^^^^^^^^^^^^^^^^^^^^^
+Use parentheses to say which: "(double using 21) plus 1" or "double using (21 plus 1)".
+
+Line 2: "add using 1, 2 times 3" could mean two things.
+    add using 1, 2 times 3
+    ^^^^^^^^^^^^^^^^^^^^^^
+Use parentheses to say which: "(add using 1, 2) times 3" or "add using 1, (2 times 3)".
+
+Line 3: "greet using "Hi " followed by name" could mean two things.
+    greet using "Hi " followed by name
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Use parentheses to say which: "(greet using "Hi ") followed by name" or "greet using ("Hi " followed by name)".
