@@ -162,6 +162,17 @@ An "otherwise" has to start in the same column as its "if". The "if" on line 2 s
 
 Other `if` mistakes the parser explains: a missing colon (or comma, or `then`), sentences on the same line after the colon, nothing indented under an `if`, a missing condition, an `otherwise` with no `if` above it or after a one-line `if`, a second plain `otherwise`, and an `if` inside a one-line `if`. See [`tests/ast/err_if_header.es`](../tests/ast/err_if_header.es) and [`err_if_otherwise.es`](../tests/ast/err_if_otherwise.es).
 
+**A name with a word that already means something**: [`err_names.es`](../tests/ast/err_names.es)
+
+```
+Line 1: "plus" can't be part of a name, because it already means something in EasyScript.
+    let price plus tax be 5
+              ^^^^
+Try a name without it, like "price_plus_tax".
+```
+
+Also: a mistyped name of several words ("I don't understand "fees" here." with "Did you mean "late fee"?"), a kind in parentheses straight after a function's name ("A kind in parentheses goes after an input, and inputs come after "with"."), and a sentence starting with the first word of a function's name ("I don't know a sentence that starts with "greet"." with a note that the function is called "greet someone" and how to give it an input).
+
 ### From the checker
 
 The checker makes sure every name you use has been made with `let` (or by `ask` or `read file`) before it's used, and that no name is made twice. It only runs when the program has no parser errors, so one mistake never causes a flood of follow-on errors.
@@ -292,7 +303,7 @@ Line 4: "halve" needs a number for "x", but this is text.
 
 ```
 Line 1: I can't tell what kind of value "forever_down" gives back.
-    to forever_down n:
+    to forever_down with n:
        ^^^^^^^^^^^^
 Say which kind in the definition, like "to forever_down with n, giving back a number:".
 ```

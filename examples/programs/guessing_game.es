@@ -1,10 +1,10 @@
 note: A number guessing game. (make test types the guesses from guessing_game.in.)
 keep secret as 42
-keep most_tries as 10
+keep most tries as 10
 let tries be 0
 let found be no
 say "I'm thinking of a number between 1 and 100."
-repeat until found or tries reaches most_tries:
+repeat until found or tries reaches most tries:
     ask "Your guess? " and call the answer reply
     let guess be reply as a number
     add 1 to tries

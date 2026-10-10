@@ -463,7 +463,7 @@ static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
         sb_append(&f.body, "    es_leave();\n");
     } else {
         sb_appendf(&f.body, "    es_no_result(%zu, ", fn->pos.line);
-        cg_append_c_string(&f.body, fn->as.function.name.text, strlen(fn->as.function.name.text));
+        cg_append_c_string(&f.body, fn->as.function.name.display, strlen(fn->as.function.name.display));
         sb_append(&f.body, ");\n");
     }
     sb_append_n(out, f.body.data, f.body.len);

@@ -86,7 +86,7 @@ const char *cg_operand(Codegen *g, const Expr *expr, bool as_text);
 // is appended to out; then it returns true and the caller adds a ")".
 bool cg_ordered(Codegen *g, Expr *const *exprs, size_t n, const char **values, StrBuf *out);
 bool cg_is_constant(const Codegen *g, const char *name);
-// A C name: prefix plus the name with "_" doubled and "'" as "_q".
+// A C name: prefix plus the name with "_" doubled, "'" as "_q", and spaces as "_".
 void cg_append_prefixed(StrBuf *out, const char *prefix, const char *name);
 void cg_append_var(StrBuf *out, const char *name, Type type);  // es_vn_total, es_vt_name, ...
 void cg_append_c_string(StrBuf *out, const char *s, size_t len);

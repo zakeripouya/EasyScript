@@ -53,7 +53,8 @@ typedef struct {
 } TypedExpr;
 
 typedef struct {
-    const char *name;
+    const char *name;     // as matched (lowercased)
+    const char *display;  // as first written, for messages
     size_t line;        // where it was made
     const char *where;  // in `ended`: "the \"if\"" or "the loop" that held it
     bool loop_number;   // a loop's own number ("count ... as n") or item ("for each x in")
@@ -68,6 +69,7 @@ typedef struct {
 
 typedef struct {
     const char *name;
+    const char *display;   // as written in the definition
     Stmt *definition;      // STMT_FUNCTION: params and line; the checker stores the kinds in it
     Vec(TypeVar) params;   // the kind of each input
     TypeVar result;        // what it gives back (decided as nothing if it never gives back a value)
@@ -75,6 +77,7 @@ typedef struct {
 
 typedef struct {
     const char *name;
+    const char *display;  // as written where it's kept
     Stmt *definition;  // STMT_CONSTANT; the checker stores the worked-out value in it
     size_t index;      // order in the program: a constant may only use earlier ones
     bool ok;           // its value was worked out
@@ -125,7 +128,7 @@ const Symbol *checker_find_later(const Checker *c, const char *name);
 const Function *checker_find_function(const Checker *c, const char *name);
 const Constant *checker_find_constant(const Checker *c, const char *name);
 // "I don't know anything called …" with the most helpful note.
-void checker_report_unknown(Checker *c, const char *name, SourcePos pos);
+void checker_report_unknown(Checker *c, const char *name, const char *display, SourcePos pos);
 // A variable, input, or loop number named like a function or constant: reports and returns true.
 bool checker_clashes(Checker *c, const Name *name);
 // "to area with width and height"

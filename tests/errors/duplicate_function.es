@@ -1,4 +1,4 @@
-to greet someone:
+to greet with someone:
     say someone
-to greet anyone:
+to greet with anyone:
     say anyone

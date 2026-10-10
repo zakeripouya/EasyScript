@@ -6,6 +6,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Names of several words:** `let late fee be 25.`, `keep hourly rate as 150.`, `to add tax to amount:` (the function "add tax" with the input "amount"), `count from 1 to 3 as session number:`, `for each guest name in guests:`, `ask ... and call the answer visitor name`. A pre-scan finds every name the program makes with `let`, `keep`, `to`, `as`, `call`, `for each` and `every`, and values then match the longest known name. Names can't contain words that already mean something in a sentence (`plus`, `is`, `and`, `of`, `with`, `to`, ...), with an error suggesting another name. Functions defined with `to` before their inputs are called with `to` (`add tax to 100`), and a sentence starting with a function's name calls it even if the name starts with a sentence word. Messages show names as first written (`clientName`, `HOURLY_RATE`); generated C writes the spaces as `_`. The examples now use natural names (`tax rate`, `notes file`, `most tries`, `top names`, `add tax to amount`).
+
 - **List slices:** `items 2 to 4 of scores`, `items 3 to the end of scores`, `the first 3 items in scores`, `the last 2 items in scores`, `scores without the first item` / `without the last item`, and `every second item of scores` (items 2, 4, 6, ...; any ordinal: `third` ... `tenth`, or `3rd`, `12th`, `21st`). Ranges are 1-based and include both ends; the first and last N give back the whole list when it's shorter; positions that aren't in the list are runtime errors naming the position and the length. Slices are new lists, with the lists inside them copied. Ordinals (`2nd`, `3rd`, `21st`) are a new token; a wrong ending (`2th`) is an error that suggests the right one. `grade_statistics.es` uses slices.
 
 - **Lists** (Phase 2, step 15). A list holds values of one kind, in order. See the new [Lists chapter](docs/language-guide.md#10-lists).
@@ -36,6 +38,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - **Sanitized programs in `make test-debug`:** `ES_SANITIZE=1` makes the compiler build programs with AddressSanitizer and UBSan, so a use after free or double free is caught. On macOS the leak sweep now also covers the memory tests.
 
 ### Changed
+
+- **A function's name is every word before `with`, `of`, `using` or `to`.** So `to greet someone:` now defines a function called `greet someone` with no inputs; write `to greet with someone:` for an input. Using `someone` in its body, or calling `greet "Paris"`, gives an error that explains this and shows the fix. The tests and docs use `with`.
 
 - The macOS leak sweep leaves out programs that stop with a runtime error (they exit without clean-up by design, so `leaks` could report their variables depending on register allocation). Numbers shown in runtime error messages are kept reachable (`es_shown`).
 - `it` is also the item of a `for each` loop, and `length of` also counts a list's items, so their error notes mention lists. The memory check's messages say "values" and "text and lists" instead of "text". `and` between text and a list joins them, like `followed by`.

@@ -47,14 +47,14 @@ const Constant *checker_find_constant(const Checker *c, const char *name) {
 bool checker_clashes(Checker *c, const Name *name) {
     const Constant *k = checker_find_constant(c, name->text);
     if (k) {
-        diag_error(c->diag, name->pos.span, "\"%s\" is a constant, made on line %zu.", name->text,
+        diag_error(c->diag, name->pos.span, "\"%s\" is a constant, made on line %zu.", name->display,
                    k->definition->pos.line);
         diag_note(c->diag, "Give the variable a different name.");
         return true;
     }
     const Function *f = checker_find_function(c, name->text);
     if (!f) return false;
-    diag_error(c->diag, name->pos.span, "\"%s\" is the name of a function, defined on line %zu.", name->text,
+    diag_error(c->diag, name->pos.span, "\"%s\" is the name of a function, defined on line %zu.", name->display,
                f->definition->pos.line);
     diag_note(c->diag, "Give the variable a different name.");
     return true;
@@ -62,7 +62,7 @@ bool checker_clashes(Checker *c, const Name *name) {
 
 static void make(Checker *c, const Name *name, TypeVar var) {
     if (checker_find_made(c, name->text) || checker_clashes(c, name)) return;
-    Symbol symbol = {name->text, name->pos.line, NULL, false, var, false};
+    Symbol symbol = {name->text, name->display, name->pos.line, NULL, false, var, false};
     vec_push(c->arena, &c->made, symbol);
 }
 
@@ -97,43 +97,51 @@ static void note_choices(Checker *c, const char *name, size_t limit) {
         if (edit_distance(c->arena, name, c->made.items[i].name) != limit) continue;
         n++;
         if (n > 1) sb_append(&choices, n == total ? " or " : ", ");
-        sb_appendf(&choices, "\"%s\"", c->made.items[i].name);
+        sb_appendf(&choices, "\"%s\"", c->made.items[i].display);
     }
     diag_note(c->diag, "Did you mean %s?", choices.data);
 }
 
 
-void checker_report_unknown(Checker *c, const char *name, SourcePos pos) {
-    diag_error(c->diag, pos.span, "I don't know anything called \"%s\".", name);
+void checker_report_unknown(Checker *c, const char *name, const char *display, SourcePos pos) {
+    diag_error(c->diag, pos.span, "I don't know anything called \"%s\".", display);
     size_t count;
     const Symbol *near = closest(c, name, &count);
     const Symbol *later = find(c->later.items, c->later.len, name);
     const Symbol *ended = find(c->ended.items, c->ended.len, name);
     const Symbol *outside = c->function ? find(c->later.items, c->later.len, name) : NULL;
     const Constant *near_constant = checker_closest_constant(c, name);
-    if (outside) {
+    size_t fn_len = c->function ? strlen(c->function->name) : 0, len = strlen(name);
+    bool ends_function_name = fn_len > len && c->function->name[fn_len - len - 1] == ' ' &&
+                              strcmp(c->function->name + fn_len - len, name) == 0;
+    if (ends_function_name) {  // "to greet someone:" is a function called "greet someone"
+        const char *display_fn = c->function->display;
+        size_t keep = strlen(display_fn) - len - 1;
+        diag_note(c->diag, "This function is called \"%s\". To make \"%s\" an input, introduce it with \"with\": "
+                           "\"to %.*s with %s:\".", display_fn, display, (int)keep, display_fn, display);
+    } else if (outside) {
         diag_note(c->diag, "A function only sees its own inputs and the names it makes. To use \"%s\" here, "
-                           "pass it in as an input.", name);
+                           "pass it in as an input.", display);
     } else if (ended && ended->loop_item) {
         diag_note(c->diag, "\"%s\" is each item of the loop on line %zu, so it only exists inside that loop. "
-                           "To keep one, make a variable before the loop and set it inside.", name, ended->line);
+                           "To keep one, make a variable before the loop and set it inside.", ended->display, ended->line);
     } else if (ended && ended->loop_number) {
         diag_note(c->diag, "\"%s\" is the number of the loop on line %zu, so it only exists inside that loop. "
-                           "To keep it, make a variable before the loop and set it inside.", name, ended->line);
+                           "To keep it, make a variable before the loop and set it inside.", ended->display, ended->line);
     } else if (ended) {
         diag_note(c->diag, "You made \"%s\" inside %s on line %zu, so it only exists inside that block. "
-                           "To use it afterwards, make it before %s.", name, ended->where, ended->line, ended->where);
+                           "To use it afterwards, make it before %s.", ended->display, ended->where, ended->line, ended->where);
     } else if (near_constant && !near) {
-        diag_note(c->diag, "Did you mean \"%s\"? It's a constant, kept on line %zu.", near_constant->name,
+        diag_note(c->diag, "Did you mean \"%s\"? It's a constant, kept on line %zu.", near_constant->display,
                   near_constant->definition->pos.line);
     } else if (near && count == 1) {
-        diag_note(c->diag, "Did you mean \"%s\"? You made it on line %zu.", near->name, near->line);
+        diag_note(c->diag, "Did you mean \"%s\"? You made it on line %zu.", near->display, near->line);
     } else if (near) {
         note_choices(c, name, edit_distance(c->arena, name, near->name));
     } else if (later && later->line > pos.line) {
-        diag_note(c->diag, "You make \"%s\" later, on line %zu. Make it before you use it.", name, later->line);
+        diag_note(c->diag, "You make \"%s\" later, on line %zu. Make it before you use it.", later->display, later->line);
     } else {
-        diag_note(c->diag, "Make it first, like \"let %s be 0\".", name);
+        diag_note(c->diag, "Make it first, like \"let %s be 0\".", display);
     }
 }
 
@@ -141,20 +149,20 @@ void checker_report_unknown(Checker *c, const char *name, SourcePos pos) {
 static const Symbol *check_target(Checker *c, const Name *name) {
     const Constant *k = checker_find_constant(c, name->text);
     if (k) {
-        diag_error(c->diag, name->pos.span, "\"%s\" is a constant, so it can't change.", name->text);
+        diag_error(c->diag, name->pos.span, "\"%s\" is a constant, so it can't change.", k->display);
         diag_note(c->diag, "It's kept on line %zu. If it needs to change, make it with \"let %s be ...\" instead of "
-                           "\"keep\".", k->definition->pos.line, name->text);
+                           "\"keep\".", k->definition->pos.line, k->display);
         return NULL;
     }
     const Symbol *symbol = checker_find_made(c, name->text);
-    if (!symbol) checker_report_unknown(c, name->text, name->pos);
+    if (!symbol) checker_report_unknown(c, name->text, name->display, name->pos);
     return symbol;
 }
 
 // A variable keeps the kind it was made with.
 static void store(Checker *c, const Symbol *symbol, TypeVar value, Span span) {
     if (types_unify(c, symbol->var, value)) return;
-    diag_error(c->diag, span, "\"%s\" is %s (made on line %zu), but this is %s.", symbol->name,
+    diag_error(c->diag, span, "\"%s\" is %s (made on line %zu), but this is %s.", symbol->display,
                checker_kind(c, symbol->var), symbol->line, checker_kind(c, value));
     diag_note(c->diag, "A variable keeps the kind of value it was made with. To keep %s, make a new variable for it.",
               checker_kind(c, value));
@@ -197,8 +205,8 @@ static void check_let(Checker *c, const Stmt *stmt) {
     TypeVar value = checker_check_expr(c, stmt->as.assign.value);
     const Symbol *existing = checker_find_made(c, name->text);
     if (existing) {
-        diag_error(c->diag, name->pos.span, "You already made \"%s\" on line %zu.", name->text, existing->line);
-        diag_note(c->diag, "To change it, write \"set %s to ...\".", name->text);
+        diag_error(c->diag, name->pos.span, "You already made \"%s\" on line %zu.", existing->display, existing->line);
+        diag_note(c->diag, "To change it, write \"set %s to ...\".", existing->display);
         return;
     }
     make(c, name, value);
@@ -217,15 +225,15 @@ static void check_return(Checker *c, const Stmt *stmt) {
     Type result = types_of(c, f->result);
     if (!stmt->as.returned) {
         if (result == TYPE_NOTHING || result == TYPE_ERROR) return;
-        diag_error(c->diag, stmt->pos.span, "\"%s\" gives back a value, so it can't give back nothing here.", f->name);
+        diag_error(c->diag, stmt->pos.span, "\"%s\" gives back a value, so it can't give back nothing here.", f->display);
         diag_note(c->diag, "Give back a value here too, like \"give back 0\".");
     } else if (result == TYPE_NOTHING) {
         diag_error(c->diag, stmt->as.returned->pos.span, "\"%s\" gives back nothing, so it can't give back a value.",
-                   f->name);
+                   f->display);
         diag_note(c->diag, "It's defined on line %zu: \"%s\".", f->definition->pos.line, checker_function_header(c, f));
     } else if (!types_unify(c, f->result, value)) {
         diag_error(c->diag, stmt->as.returned->pos.span, "\"%s\" gives back %s (since line %zu), but this is %s.",
-                   f->name, ast_type_name(c->arena, result), types_line(c, f->result), checker_kind(c, value));
+                   f->display, ast_type_name(c->arena, result), types_line(c, f->result), checker_kind(c, value));
         diag_note(c->diag, "A function gives back the same kind of value every time.");
     }
 }
@@ -238,7 +246,7 @@ static void check_stmt(Checker *c, const Stmt *stmt);
 // and remembered as "ended" in `where` on `line`.
 static void end_scope(Checker *c, size_t outer, size_t line, const char *where) {
     for (size_t i = outer; where && i < c->made.len; i++) {
-        Symbol ended = {c->made.items[i].name, line, where, c->made.items[i].loop_number, 0,
+        Symbol ended = {c->made.items[i].name, c->made.items[i].display, line, where, c->made.items[i].loop_number, 0,
                         c->made.items[i].loop_item};
         vec_push(c->arena, &c->ended, ended);
     }
@@ -264,7 +272,7 @@ static void check_params(Checker *c, const Function *f) {
     for (size_t i = 0; i < stmt->as.function.params.len; i++) {
         const Name *param = &stmt->as.function.params.items[i];
         if (checker_find_made(c, param->text)) {
-            diag_error(c->diag, param->pos.span, "This function already has an input called \"%s\".", param->text);
+            diag_error(c->diag, param->pos.span, "This function already has an input called \"%s\".", param->display);
             diag_note(c->diag, "Give each input its own name.");
         } else {
             make(c, param, f->params.items[i]);
@@ -280,7 +288,7 @@ static void check_function(Checker *c, const Stmt *stmt) {
                    "Functions can only be defined at the top level, not inside %s.",
                    c->function ? "another function" : "an \"if\" or a loop");
         diag_note(c->diag, "Move \"to %s ...:\" to the start of a line, outside every block.",
-                  stmt->as.function.name.text);
+                  stmt->as.function.name.display);
         return;
     }
     const Function *f = checker_find_function(c, stmt->as.function.name.text);
@@ -312,12 +320,12 @@ static void check_if(Checker *c, const Stmt *stmt) {
 void checker_make_item_name(Checker *c, const Name *name, TypeVar item) {
     const Symbol *existing = checker_find_made(c, name->text);
     if (existing) {
-        diag_error(c->diag, name->pos.span, "You already made \"%s\" on line %zu.", name->text, existing->line);
-        diag_note(c->diag, "Give the items a name that isn't taken yet, like \"each_%s\".", name->text);
+        diag_error(c->diag, name->pos.span, "You already made \"%s\" on line %zu.", existing->display, existing->line);
+        diag_note(c->diag, "Give the items a name that isn't taken yet, like \"each_%s\".", name->display);
         return;
     }
     if (checker_clashes(c, name)) return;
-    Symbol symbol = {name->text, name->pos.line, NULL, true, item, true};
+    Symbol symbol = {name->text, name->display, name->pos.line, NULL, true, item, true};
     vec_push(c->arena, &c->made, symbol);
 }
 
@@ -328,12 +336,12 @@ static TypeVar check_loop_variable(Checker *c, const Stmt *stmt) {
     const Symbol *existing = checker_find_made(c, var->text);
     if (!existing && checker_clashes(c, var)) return number;
     if (!existing) {
-        Symbol symbol = {var->text, var->pos.line, NULL, true, number, false};
+        Symbol symbol = {var->text, var->display, var->pos.line, NULL, true, number, false};
         vec_push(c->arena, &c->made, symbol);
         return number;
     }
     if (stmt->as.loop.var_named) {
-        diag_error(c->diag, var->pos.span, "You already made \"%s\" on line %zu.", var->text, existing->line);
+        diag_error(c->diag, var->pos.span, "You already made \"%s\" on line %zu.", existing->display, existing->line);
     } else {
         diag_error(c->diag, var->pos.span, "This loop calls each number \"number\", but you already made "
                                            "\"number\" on line %zu.", existing->line);
@@ -443,7 +451,7 @@ static void collect_names(Checker *c, const Block *program) {
                            : stmt->kind == STMT_READ_FILE ? &stmt->as.read_file.name
                                                           : NULL;
         if (name && !find(c->later.items, c->later.len, name->text)) {
-            Symbol symbol = {name->text, name->pos.line, NULL, false, 0, false};
+            Symbol symbol = {name->text, name->display, name->pos.line, NULL, false, 0, false};
             vec_push(c->arena, &c->later, symbol);
         }
     }
@@ -484,12 +492,12 @@ static void collect_functions(Checker *c, const Block *program) {
         const Name *name = &stmt->as.function.name;
         const Function *existing = checker_find_function(c, name->text);
         if (existing) {
-            diag_error(c->diag, name->pos.span, "You already defined \"%s\" on line %zu.", name->text,
+            diag_error(c->diag, name->pos.span, "You already defined \"%s\" on line %zu.", existing->display,
                        existing->definition->pos.line);
             diag_note(c->diag, "Each function needs its own name.");
             continue;
         }
-        Function f = {name->text, stmt, {0}, 0};
+        Function f = {name->text, name->display, stmt, {0}, 0};
         function_types(c, &f);
         vec_push(c->arena, &c->functions, f);
     }

@@ -115,7 +115,8 @@ static bool at_arithmetic(const Parser *p, size_t ahead) {
            word_among(parser_peek(p, ahead), words);
 }
 
-// A word that can be a position on its own: a name, or "it".
+// A word that can be a position on its own: a name, or "it". (A name of
+// several words is a position too; see position_words.)
 static bool is_position_word(const Token *token) {
     if (token->kind != TOK_WORD || parser_is_operator_word(token->text)) return false;
     return strcmp(token->text, "it") == 0 || !parser_is_value_word(token->text);
@@ -129,7 +130,9 @@ bool parser_at_item(const Parser *p, const char *const *after) {
     const Token *next = parser_peek(p, 1);
     if (next->kind == TOK_NUMBER || next->kind == TOK_STRING || next->kind == TOK_LPAREN) return true;
     // "item n of", or "item n plus 1 of" (reported); not "add item to total".
-    return is_position_word(next) && (word_among(parser_peek(p, 2), after) || at_arithmetic(p, 2));
+    const KnownName *known = parser_match_name(p, 1, false);
+    size_t words = known ? known->words : 1;
+    return is_position_word(next) && (word_among(parser_peek(p, 1 + words), after) || at_arithmetic(p, 1 + words));
 }
 
 // A position: a number, a name, or a value in parentheses. A name followed
@@ -137,11 +140,15 @@ bool parser_at_item(const Parser *p, const char *const *after) {
 static Expr *parse_position(Parser *p) {
     const Token *token = parser_peek(p, 0);
     Expr *position;
-    if (is_position_word(token)) {
-        parser_advance(p);
-        bool it = strcmp(token->text, "it") == 0;
-        position = ast_new_expr(p->arena, it ? EXPR_IT : EXPR_NAME, parser_token_pos(token));
-        if (!it) position->as.name = token->text;
+    if (parser_at_word(p, 0, "it")) {
+        position = ast_new_expr(p->arena, EXPR_IT, parser_token_pos(parser_advance(p)));
+    } else if (is_position_word(token)) {
+        const KnownName *known = parser_match_name(p, 0, false);
+        Name name;
+        parser_take_name(p, known ? known->words : 1, &name);
+        position = ast_new_expr(p->arena, EXPR_NAME, name.pos);
+        position->as.name = name.text;
+        position->display = name.display;
     } else {
         position = parse_primary(p);
     }
@@ -194,7 +201,11 @@ static Expr *parse_item(Parser *p) {
 // parentheses), or 0 if none starts there.
 static size_t position_length(const Parser *p, size_t at) {
     const Token *token = parser_peek(p, at);
-    if (token->kind == TOK_NUMBER || token->kind == TOK_STRING || is_position_word(token)) return 1;
+    if (token->kind == TOK_NUMBER || token->kind == TOK_STRING) return 1;
+    if (is_position_word(token)) {
+        const KnownName *known = parser_match_name(p, at, false);
+        return known ? known->words : 1;
+    }
     if (token->kind != TOK_LPAREN) return 0;
     size_t depth = 0;
     for (size_t i = at;; i++) {

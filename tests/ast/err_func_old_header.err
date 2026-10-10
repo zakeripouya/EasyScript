@@ -1,0 +1,4 @@
+Line 3: I don't know a sentence that starts with "greet".
+    greet "Paris"
+    ^^^^^
+The function is called "greet someone": a function's name is every word before "with", "of", "using" or "to". To give "greet" an input, write "to greet with someone:".

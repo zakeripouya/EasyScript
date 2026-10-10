@@ -3,16 +3,6 @@ Line 1: I expected the sentence to end after "total".
                    ^^^^
 End the sentence with a period, or start a new line.
 
-Line 2: I expected the sentence to end after "total".
-    subtract 1 from total now
-                          ^^^
-End the sentence with a period, or start a new line.
-
-Line 3: I expected the sentence to end after "name".
-    ask "?" and call the answer name please
-                                     ^^^^^^
-End the sentence with a period, or start a new line.
-
 Line 4: I expected the sentence to end after "notes".
     read file "f" and call it notes 2
                                     ^

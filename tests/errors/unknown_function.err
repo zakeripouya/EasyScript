@@ -1,4 +1,4 @@
 Line 1: I don't know a function called "greet".
     say greet using "Ada"
         ^^^^^^^^^^^^^^^^^
-Define it first, like "to greet someone:" with its sentences indented below.
+Define it first, like "to greet with someone:" with its sentences indented below.

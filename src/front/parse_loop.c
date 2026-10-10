@@ -23,6 +23,7 @@ static Stmt *new_loop(Parser *p, LoopKind kind, const Token *verb) {
     Stmt *stmt = parser_new_stmt(p, STMT_LOOP, verb);
     stmt->as.loop.kind = kind;
     stmt->as.loop.var.text = "number";
+    stmt->as.loop.var.display = "number";
     stmt->as.loop.var.pos = parser_token_pos(verb);
     return stmt;
 }

@@ -1,16 +1,16 @@
 to:
     say 1
-to say x:
+to say with x:
     say x
 to greet a:
     say 1
-to greet yes:
+to greet with yes:
     say 1
 to greet with:
     say 1
-to greet someone
+to greet with someone
     say 1
-to greet someone: say someone
+to greet with someone: say someone
 give hello
 call
 call 5

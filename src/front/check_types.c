@@ -215,11 +215,12 @@ static bool undecided(Checker *c, TypeVar var) {
 static const char *header_with_kind(Checker *c, const Function *f, size_t marked) {
     StrBuf sb;
     sb_init(&sb, c->arena);
-    sb_appendf(&sb, "to %s", f->name);
+    sb_appendf(&sb, "to %s", f->display);
     const Stmt *def = f->definition;
     for (size_t i = 0; i < def->as.function.params.len; i++) {
-        sb_append(&sb, i == 0 ? " with " : " and ");
-        sb_append(&sb, def->as.function.params.items[i].text);
+        if (i == 0) sb_appendf(&sb, " %s ", def->as.function.intro ? def->as.function.intro : "with");
+        if (i > 0) sb_append(&sb, " and ");
+        sb_append(&sb, def->as.function.params.items[i].display);
         if (i == marked) sb_appendf(&sb, " (%s)", suggested_kind(c, f->params.items[i]));
     }
     return sb.data;
@@ -230,13 +231,13 @@ static void report_undecided(Checker *c, const Function *f) {
     for (size_t i = 0; i < f->params.len; i++) {
         if (!undecided(c, f->params.items[i])) continue;
         const Name *param = &def->as.function.params.items[i];
-        diag_error(c->diag, param->pos.span, "I can't tell what kind of value \"%s\" is.", param->text);
+        diag_error(c->diag, param->pos.span, "I can't tell what kind of value \"%s\" is.", param->display);
         diag_note(c->diag, "Nothing in the program decides it. Say which kind in the definition, like \"%s:\".",
                   header_with_kind(c, f, i));
         types_require(c, f->params.items[i], TYPE_ERROR, 0);  // and everything that depends on it
     }
     if (!undecided(c, f->result)) return;
-    diag_error(c->diag, def->as.function.name.pos.span, "I can't tell what kind of value \"%s\" gives back.", f->name);
+    diag_error(c->diag, def->as.function.name.pos.span, "I can't tell what kind of value \"%s\" gives back.", f->display);
     diag_note(c->diag, "Say which kind in the definition, like \"%s, giving back %s:\".",
               checker_function_header(c, f), suggested_kind(c, f->result));
     types_require(c, f->result, TYPE_ERROR, 0);

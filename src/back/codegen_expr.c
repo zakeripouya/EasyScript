@@ -15,12 +15,15 @@
 
 // --- Names and literals ------------------------------------------------------
 
-// A C name: the prefix plus the name with "_" doubled and "'" as "_q", so
-// different EasyScript names can never collide.
+// A C name: the prefix plus the name with "_" doubled, "'" as "_q", and the
+// space between the words of a name as one "_", so different EasyScript
+// names can never collide ("late fee" is late_fee, "late_fee" late__fee).
 void cg_append_prefixed(StrBuf *out, const char *prefix, const char *name) {
     sb_append(out, prefix);
     for (const char *c = name; *c; c++) {
-        if (*c == '_') {
+        if (*c == ' ') {
+            sb_append_char(out, '_');
+        } else if (*c == '_') {
             sb_append(out, "__");
         } else if (*c == '\'') {
             sb_append(out, "_q");

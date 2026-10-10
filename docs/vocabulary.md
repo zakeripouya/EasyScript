@@ -34,7 +34,8 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | `nothing` | What a function gives back when it gives back no value. It can't be used as a value | `return` (gives back nothing) | Available |
 | `it` | The number of the loop you're in, or the item of a `for each` loop (see [Loops](#it-and-names-in-loops)) | `say it` | Available |
 | `a list of X, Y and Z` | A list (see [Lists](#lists)) | `a list of 72, 95 and 88` | Available |
-| names | Start with a letter, then letters, digits, `_`, or an apostrophe between letters. A name is one word | `total`, `player_2`, `guest's` | Available |
+| names | Start with a letter, then letters, digits, `_`, or an apostrophe between letters | `total`, `player_2`, `guest's`, `clientName` | Available |
+| names of several words | Words separated by spaces, made by `let`, `keep`, `to`, `as`, `call`, `for each` or `every`, and then recognized everywhere (the longest known name wins). They can't contain the operator and value words or `be`, `equal`, `to`, `from`, `by`, `of`, `with`, `in`, `at`, `then`, `that`, `giving` | `late fee`, `hourly rate`, `session number` | Available |
 | `( X )` | Grouping: work this out first | `(price plus tax) times 2` | Available |
 
 **How values print:** whole numbers print without decimals (`7`, not `7.0`), other numbers with up to 15 significant digits (`0.1 plus 0.2` prints `0.3`), yes/no as `yes`/`no`, and lists in English: `72, 95 and 88`.
@@ -123,6 +124,7 @@ These take a single value, so `length of name plus 1` means `(length of name) pl
 |---|---|---|---|
 | `NAME of X and Y` | Call a function and use the value it gives back | `area of 3 and 4` | Available |
 | `NAME with X and Y` | Same as `of` | `area with 3 and 4` | Available |
+| `NAME to X` | Same, for a function whose definition introduced its inputs with `to` | `add tax to 100` | Available |
 | `NAME using X, Y` | Same, with the inputs separated by commas (or `and`) | `area using 3, 4` | Available |
 | `NAME` | Call a function that takes no inputs (written like a variable) | `say pi times 2` | Available |
 
@@ -151,13 +153,13 @@ The words that start statements are only special at the start of a sentence, so 
 | `multiply NAME by X` | `NAME` becomes `NAME times X` | `multiply price by 2` | Available |
 | `divide NAME by X` | `NAME` becomes `NAME divided by X` | `divide total by 4` | Available |
 
-**Names** are single words (see [Values](#values)). `a`, `an`, and `the` can't be names because EasyScript ignores them, so `let a be 5` is an error that explains this. Words that already mean something (`yes`, `no`, `true`, `false`, `nothing`, `it`, and the operator words) can't be names either.
+**Names** are a word or several (see [Values](#values)); where a sentence makes or changes a name, the name runs up to the sentence's next word (`set late fee to 30`). `a`, `an`, and `the` can't be names because EasyScript ignores them, so `let a be 5` is an error that explains this. Words that already mean something (`yes`, `no`, `true`, `false`, `nothing`, `it`, and the operator words) can't be names either.
 
 ### Constants
 
 | Pattern | Meaning | Example | Status |
 |---|---|---|---|
-| `keep NAME as X` | Make a constant: a name whose value never changes | `keep tax_rate as 0.2` | Available |
+| `keep NAME as X` | Make a constant: a name whose value never changes | `keep tax rate as 0.2` | Available |
 | `keep NAME at X` | Same as `as` | `keep speed_limit at 50` | Available |
 
 - **Fixed before the program starts:** X may use numbers, text, yes and no, arithmetic, joining (`followed by`, `and`), comparisons, `and`/`or`/`not`, `as text`, `as a number`, `length of`, and constants made above it. Variables, function calls, `it`, `nothing`, and `contents of file` are errors, because their values are only known while the program runs. The compiler works the value out, so a constant costs nothing while the program runs.
@@ -264,15 +266,14 @@ All function sentences are **Available**.
 
 | Pattern | Meaning | Example |
 |---|---|---|
-| `to NAME:` | Define a function with no inputs | `to cheer:` |
-| `to NAME INPUT:` | Define a function with one input | `to greet someone:` |
-| `to NAME with INPUT and INPUT:` | Define a function with inputs (`of` and `using` work like `with`; commas work like `and`) | `to area with width and height:` |
+| `to NAME:` | Define a function with no inputs. NAME is every word before the colon | `to cheer:`, `to make tea:` |
+| `to NAME with INPUT and INPUT:` | Define a function with inputs (`of`, `using` and `to` work like `with`; commas work like `and`). NAME is every word before them | `to area with width and height:`, `to add tax to amount:` |
 | `give back X` / `return X` | End the function and hand X back to whoever called it | `give back width times height` |
 | `return` | End the function early, handing back nothing (`give back nothing` is the same) | `return` |
 | `INPUT (KIND)` | Say what kind of value an input is (optional) | `to area with width (a number) and height (a number):`<br>`to average of scores (a list of numbers):` |
 | `, giving back KIND` | Say what kind of value the function gives back (optional; the comma is optional) | `to roll, giving back a number:` |
 | `NAME X and Y` | Call a function as a sentence | `greet "Paris".` |
-| `NAME with X and Y` | Same | `greet with "Paris".` |
+| `NAME with X and Y` | Same (`of` and `using` too, and `to` for a function defined with `to`) | `greet with "Paris".`, `add tax to 100.` |
 | `call NAME [with X and Y]` | Same | `call greet with "Paris".` |
 
 Rules:
@@ -281,7 +282,7 @@ Rules:
 - **Its own names:** a function sees only its inputs and the names it makes, not the program's other variables (pass those in as inputs). Names made inside it follow the same block rules as `if`s and loops.
 - **Giving back:** a function with no `give back X` gives back nothing, and can only be called as a sentence of its own. One that gives back a value always gives back the same kind, and stops with an error if it reaches its end without `give back`. `give back` outside a function is an error.
 - **Kinds:** an input's kind comes from how the function uses it and what it's given; what it gives back comes from its `give back`s. When nothing decides a kind, write it (see below).
-- **Names:** a function's name is one word that isn't a sentence word (like `say` or `count`). Functions and variables share names, so `area` can't be both. Each input needs its own name.
+- **Names:** a function's name is every word before the word that introduces its inputs (`with`, `of`, `using`, `to`), so `to greet someone:` is a function called `greet someone` with no inputs (`to greet with someone:` gives it one). A one-word name can't be a sentence word (like `say` or `count`), but a name of several words can start with one (`add tax`), and then a sentence starting with it calls the function. Functions and variables share names, so `area` can't be both. Each input needs its own name.
 - **Checks before running:** calling a function that doesn't exist suggests the closest one; giving it the wrong number of inputs says how many it needs and where it's defined.
 - **Deep recursion** stops with "Functions are calling each other too deeply (more than 10000 calls inside each other)." instead of crashing.
 

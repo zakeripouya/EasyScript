@@ -65,14 +65,15 @@ Hello, Ada!
 | Piece | What you can do |
 |---|---|
 | Variables | `let total be 0`, `set`/`change ... to`, and `add 5 to total`, `subtract`, `increase`/`decrease`/`multiply`/`divide ... by` |
-| Constants | `keep tax_rate as 0.2`: worked out by the compiler, usable everywhere (including inside functions), and never changed |
+| Names | A word (`total`, `clientName`) or several (`let late fee be 25`, `keep hourly rate as 150`, `to add tax to amount:`), recognized everywhere once made; matched without caring about capitals |
+| Constants | `keep tax rate as 0.2`: worked out by the compiler, usable everywhere (including inside functions), and never changed |
 | Values and expressions | Numbers, text, yes/no; arithmetic in words or symbols; comparisons (`is at least`, `>=`, ...); `and`/`or`/`not`; joining text with `and` or `followed by`; `as a number`, `as text`, `length of`, `contents of file` |
 | Output and input | `say` (or `print`, `show`, `display`, `write`), `ask "..." and call the answer name` |
 | Files | `write ... to file`, `append ... to file`, `read file ... and call it ...` |
 | Decisions | `if ... :` with indented blocks, `otherwise if`, `otherwise` (or `else`), and one-line `if x is 5, say "hi".` / `if x is 5 then say "hi".` |
 | Loops | `count from 1 to 10:` (up or down, `by`/`in steps of`, `as n`), `for each`, `repeat 3 times:`, `while`/`as long as`, `keep doing this until`, `forever`, with `stop the loop` and `skip this one`; `it` is the loop's number |
 | Lists | `a list of 72, 95 and 88`, `an empty list of text`, `item 2 of scores`, `the first item in`/`the last item of`; `add 5 to the end of scores`, `insert`, `remove item 2 from`, `set item 2 of scores to 100`, `sort` (also `biggest first`, `by their length`); `contains`, `is empty`, `the number of items in`; `for each score in scores:`; slices (`items 2 to 4 of scores`, `the first 3 items in`, `the last 2 items in`, `scores without the first item`, `every second item of`); `every score in scores plus 5`, `only the scores that are at least 70`, `added together`, `the biggest of`, `reversed`, `a copy of`; nested lists; printed in English ("72, 95 and 88") |
-| Functions | `to greet someone:` / `to area with width and height:`, `give back` / `return`, calls as sentences (`greet "Paris".`, `call greet with "Paris".`) or values (`area of 3 and 4`); recursion, and calling a function before it's defined |
+| Functions | `to make tea:` / `to greet with someone:` / `to area with width and height:` / `to add tax to amount:`, `give back` / `return`, calls as sentences (`greet "Paris".`, `call greet with "Paris".`, `add tax to 100.`) or values (`area of 3 and 4`); recursion, and calling a function before it's defined |
 | Types | Every value is a number, text, yes/no, or a list of one kind, worked out by the compiler (no annotations needed); kind mistakes are caught before the program runs; optional kinds in definitions: `to area with width (a number) and height (a number), giving back a number:`, `(a list of numbers)` |
 | Other | `stop the program`; any sentence can start with `please` |
 | Memory | Nothing to manage: text and lists are freed as soon as nothing uses them, so loops that make them run in flat memory ([how](docs/memory.md)) |

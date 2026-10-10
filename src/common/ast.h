@@ -128,16 +128,21 @@ typedef enum {
 
 typedef struct Expr Expr;
 
-// A name written in the program, e.g. a variable.
+// A name written in the program, e.g. a variable. A name can be several
+// words ("hourly rate"); `text` is how it's matched (lowercased, one space
+// between words) and `display` how it was written here ("Hourly Rate",
+// "clientName"), for messages.
 typedef struct {
-    const char *text;  // lowercased
+    const char *text;
+    const char *display;
     SourcePos pos;
 } Name;
 
 struct Expr {
     ExprKind kind;
     SourcePos pos;
-    Type type;  // filled in by the checker
+    Type type;            // filled in by the checker
+    const char *display;  // EXPR_NAME, EXPR_CALL: the name as written here, for messages
     union {
         struct {
             const char *text;  // as written, e.g. "19.99"
@@ -148,7 +153,7 @@ struct Expr {
             size_t len;
         } text;
         bool boolean;
-        const char *name;  // EXPR_NAME, lowercased
+        const char *name;  // EXPR_NAME: matched lowercased, one space between words (see Name)
         struct {
             const char *name;
             Vec(Expr *) args;
@@ -310,6 +315,7 @@ struct Stmt {
         } if_stmt;
         struct {
             Name name;
+            const char *intro;     // the word before the inputs: "with", "of", "using" or "to" (NULL: none)
             Vec(Name) params;
             Vec(Type) declared;    // per input: the kind written in "(a number)", or TYPE_UNKNOWN
             Type declared_result;  // "giving back a number", or TYPE_UNKNOWN

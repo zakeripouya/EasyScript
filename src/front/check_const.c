@@ -39,18 +39,19 @@ static bool lookup_constant(void *context, const Expr *expr, ConstValue *out) {
         diag_error(c->diag, expr->pos.span, "A constant can't use itself.");
         diag_note(c->diag, "Give it a value made from numbers, text, yes or no, and constants made above it.");
     } else if (k) {
-        diag_error(c->diag, expr->pos.span, "\"%s\" is a constant made later, on line %zu.", name, k->definition->pos.line);
-        diag_note(c->diag, "A constant can only use constants made above it. Move \"keep %s ...\" higher up.", name);
+        diag_error(c->diag, expr->pos.span, "\"%s\" is a constant made later, on line %zu.", k->display,
+                   k->definition->pos.line);
+        diag_note(c->diag, "A constant can only use constants made above it. Move \"keep %s ...\" higher up.", k->display);
     } else if (checker_find_function(c, name)) {
         diag_error(c->diag, expr->pos.span, "A constant can't call a function, because functions only run while the "
                                             "program runs.");
         diag_note(c->diag, "%s", keep_note);
     } else if (checker_find_later(c, name)) {
         diag_error(c->diag, expr->pos.span, "\"%s\" is a variable, so its value isn't known before the program runs.",
-                   name);
+                   checker_find_later(c, name)->display);
         diag_note(c->diag, "%s", keep_note);
     } else {
-        checker_report_unknown(c, name, expr->pos);
+        checker_report_unknown(c, name, expr->display, expr->pos);
     }
     return false;
 }
@@ -60,7 +61,7 @@ void checker_check_constant(Checker *c, const Stmt *stmt) {
         diag_error(c->diag, stmt->as.constant.name.pos.span, "Constants can only be made at the top level, not inside %s.",
                    c->function ? "a function" : "an \"if\" or a loop");
         diag_note(c->diag, "Move \"keep %s ...\" to the start of a line, outside every block.",
-                  stmt->as.constant.name.text);
+                  stmt->as.constant.name.display);
         return;
     }
     Constant *k = (Constant *)checker_find_constant(c, stmt->as.constant.name.text);
@@ -79,18 +80,18 @@ void checker_collect_constants(Checker *c, const Block *program) {
         const Constant *existing = checker_find_constant(c, name->text);
         const Function *function = checker_find_function(c, name->text);
         if (existing) {
-            diag_error(c->diag, name->pos.span, "You already made the constant \"%s\" on line %zu.", name->text,
+            diag_error(c->diag, name->pos.span, "You already made the constant \"%s\" on line %zu.", existing->display,
                        existing->definition->pos.line);
             diag_note(c->diag, "Each constant needs its own name.");
             continue;
         }
         if (function) {
-            diag_error(c->diag, name->pos.span, "\"%s\" is the name of a function, defined on line %zu.", name->text,
+            diag_error(c->diag, name->pos.span, "\"%s\" is the name of a function, defined on line %zu.", name->display,
                        function->definition->pos.line);
             diag_note(c->diag, "Give the constant a different name.");
             continue;
         }
-        Constant k = {name->text, stmt, c->constants.len, false};
+        Constant k = {name->text, name->display, stmt, c->constants.len, false};
         vec_push(c->arena, &c->constants, k);
     }
 }

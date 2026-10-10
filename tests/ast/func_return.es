@@ -1,4 +1,4 @@
-to first_even_up_to n:
+to first_even_up_to with n:
     count from 1 to n:
         if it mod 2 is 0, give back it
     return

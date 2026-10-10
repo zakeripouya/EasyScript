@@ -1,4 +1,4 @@
 Line 1: I can't tell what kind of value "forever_down" gives back.
-    to forever_down n:
+    to forever_down with n:
        ^^^^^^^^^^^^
 Say which kind in the definition, like "to forever_down with n, giving back a number:".

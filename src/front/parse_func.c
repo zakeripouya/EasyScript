@@ -1,47 +1,29 @@
 // Top-level definitions: functions (defining, giving back, calling as a
 // statement) and constants ("keep rate as 0.2").
 //
-//   to greet someone:                    give back E / return E / return
-//   to area with width and height:       ("of" and "using" work like "with")
+//   to make tea:                         give back E / return E / return
+//   to greet with someone:               ("of", "using" and "to" work like "with")
+//   to area with width and height:       to add tax to amount:
 //   to area with width (a number) and height (a number), giving back a number:
 //   to average of scores (a list of numbers), giving back a number:
 //                                        (the kinds are optional; the checker
 //                                        works them out when they're left out)
 //
-//   greet "Paris".   greet with "Paris".   call greet with "Paris".
+//   greet "Paris".   greet with "Paris".   call greet with "Paris".   add tax to 100.
 //
-// Calls inside expressions ("area of 3 and 4") are in parse_expr.c. A
-// pre-scan collects every "to NAME" at the start of a line first, so a
-// sentence can call a function that's defined further down.
+// A function's name is every word up to the word that introduces its inputs
+// (with, of, using, to), so it can be several words ("add tax"); "to" calls
+// it only if the definition used "to". Calls inside expressions ("area of 3
+// and 4") are in parse_value.c. The pre-scan (parse_names.c) finds every
+// "to NAME" at the start of a line first, so a sentence can call a function
+// that's defined further down.
 
 #include <string.h>
 #include "front/parse_internal.h"
 
-static bool at_line_start(const Parser *p, size_t index) {
-    if (index == 0) return true;
-    TokenKind before = p->tokens[index - 1].kind;
-    return before == TOK_NEWLINE || before == TOK_INDENT || before == TOK_DEDENT;
-}
-
-void parser_find_functions(Parser *p) {
-    for (size_t i = 0; i + 1 < p->count; i++) {
-        const Token *token = &p->tokens[i];
-        if (token->kind == TOK_WORD && strcmp(token->text, "to") == 0 && at_line_start(p, i) &&
-            p->tokens[i + 1].kind == TOK_WORD) {
-            vec_push(p->arena, &p->functions, p->tokens[i + 1].text);
-        }
-    }
-}
-
-bool parser_is_function(const Parser *p, const char *name) {
-    for (size_t i = 0; i < p->functions.len; i++) {
-        if (strcmp(p->functions.items[i], name) == 0) return true;
-    }
-    return false;
-}
-
 // --- Defining ------------------------------------------------------------------
 
+// A one-word function name can't be a sentence word; "add tax" can.
 static bool reject_statement_word_name(Parser *p, const Name *name) {
     if (!parser_is_statement_word(name->text)) return false;
     if (parser_error(p, name->pos.span, "\"%s\" starts sentences in EasyScript, so it can't be the name of a function.",
@@ -83,9 +65,22 @@ static bool parse_param_kind(Parser *p, Type *type) {
 // [with | using] P [(KIND)] [and | ,] Q [(KIND)] ... [, giving back KIND] up to the colon.
 static bool parse_params(Parser *p, Stmt *stmt) {
     static const char *const after_param[] = {"and", "giving", NULL};
-    bool introduced = parser_at_word(p, 0, "with") || parser_at_word(p, 0, "using") || parser_at_word(p, 0, "of");
-    if (introduced) parser_advance(p);
+    bool introduced = parser_at_word(p, 0, "with") || parser_at_word(p, 0, "using") || parser_at_word(p, 0, "of") ||
+                      parser_at_word(p, 0, "to");
+    if (introduced) stmt->as.function.intro = parser_advance(p)->text;
     const Token *next = parser_peek(p, 0);
+    if (!introduced && next->kind == TOK_LPAREN) {  // "to greet who (text):"
+        if (parser_error(p, next->span, "A kind in parentheses goes after an input, and inputs come after \"with\".")) {
+            const char *name = stmt->as.function.name.display;
+            const char *space = strchr(name, ' ');  // "greet who": the input was probably "who"
+            if (space) {
+                diag_note(p->diag, "Write it like \"to %.*s with %s (text):\".", (int)(space - name), name, space + 1);
+            } else {
+                diag_note(p->diag, "Write it like \"to %s with someone (text):\".", name);
+            }
+        }
+        return false;
+    }
     if (next->kind == TOK_COLON && next->filler.length > 0) {
         Name ignored;
         return parser_parse_name(p, &ignored, NULL);  // "to greet a:": explains that "a" is filler
@@ -110,10 +105,11 @@ static bool parse_params(Parser *p, Stmt *stmt) {
 }
 
 Stmt *parse_function(Parser *p, const Token *verb) {
-    static const char *const after_name[] = {"with", "using", "of", NULL};
+    static const char *const after_name[] = {"with", "using", "of", "to", "giving", NULL};
     Stmt *stmt = parser_new_stmt(p, STMT_FUNCTION, verb);
     bool ok = parser_parse_name(p, &stmt->as.function.name, after_name) &&
-              !reject_statement_word_name(p, &stmt->as.function.name) && parse_params(p, stmt);
+              (strchr(stmt->as.function.name.text, ' ') || !reject_statement_word_name(p, &stmt->as.function.name)) &&
+              parse_params(p, stmt);
     if (!ok) {
         parser_skip_line_and_block(p);
     } else {
@@ -150,19 +146,29 @@ Stmt *parse_return(Parser *p, const Token *verb) {
 
 // --- Calling as a statement --------------------------------------------------------
 
-Stmt *parse_call_statement(Parser *p, const Token *verb) {
-    static const char *const after_name[] = {"with", "using", "of", NULL};
-    Name name = {parser_peek(p, 0)->text, parser_token_pos(verb)};
-    if (strcmp(verb->text, "call") == 0) {
-        if (!parser_parse_name(p, &name, after_name)) return NULL;
-    } else {
-        name.text = verb->text;  // the function's name was the first word
+bool parser_at_call_intro(const Parser *p, const char *function) {
+    if (parser_at_word(p, 0, "with") || parser_at_word(p, 0, "using") || parser_at_word(p, 0, "of")) return true;
+    if (!parser_at_word(p, 0, "to")) return false;
+    for (size_t i = 0; i < p->names.len; i++) {
+        if (strcmp(p->names.items[i].text, function) == 0) return p->names.items[i].to_inputs;
+    }
+    return false;
+}
+
+Stmt *parse_call_statement(Parser *p, const Token *verb, const KnownName *function) {
+    static const char *const after_name[] = {"with", "using", "of", "to", NULL};
+    Name name = {0};
+    if (function) {
+        parser_take_name(p, function->words, &name);  // the function's name starts the sentence
+    } else if (!parser_parse_name(p, &name, after_name)) {  // after "call"
+        return NULL;
     }
     Stmt *stmt = parser_new_stmt(p, STMT_CALL, verb);
     Expr *call = ast_new_expr(p->arena, EXPR_CALL, name.pos);
     call->as.call.name = name.text;
+    call->display = name.display;
     bool commas = false;
-    bool introduced = parser_at_word(p, 0, "with") || parser_at_word(p, 0, "using") || parser_at_word(p, 0, "of");
+    bool introduced = parser_at_call_intro(p, name.text);
     if (introduced) {
         commas = parser_at_word(p, 0, "using");
         parser_advance(p);

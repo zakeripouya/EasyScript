@@ -1,5 +1,5 @@
 greet "Paris".
-to greet someone:
+to greet with someone:
     say "Hello, " followed by someone followed by "!"
 greet with "Rome".
 call greet with "Oslo".

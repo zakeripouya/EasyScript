@@ -21,7 +21,7 @@ to before_word with one and other:
     give back one is less than other
 say before_word of "apple" and "pear"
 note: recursion, and a function that gives back nothing
-to countdown from_n:
+to countdown with from_n:
     if from_n is 0:
         say "lift off"
         give back nothing

@@ -1,4 +1,4 @@
-to first_even_up_to n:
+to first_even_up_to with n:
     count from 1 to n:
         if it mod 2 is 0, give back it
     give back 0
@@ -7,7 +7,7 @@ say first_even_up_to of 1
 to nothing_back:
     say "falls off the end"
 nothing_back
-to early x:
+to early with x:
     if x is 1:
         give back "one"
     give back "other"

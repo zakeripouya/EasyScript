@@ -71,9 +71,20 @@ Try it: [`examples/lexer/sentences.es`](../examples/lexer/sentences.es). The out
 
 ### Names
 
-A name starts with a letter and can contain letters, digits, and underscores: `total`, `player_2`. An apostrophe can sit between letters, so `guest's` and `isn't` are single words.
+A name starts with a letter and can contain letters, digits, and underscores: `total`, `player_2`, `clientName`. An apostrophe can sit between letters, so `guest's` and `isn't` are single words.
 
-There are no reserved words. Whether `count` is a command or a variable depends on where it appears in the sentence, so you can name a variable `count`.
+A name can also be **several words**: `let late fee be 25.`, `keep hourly rate as 150.`, `count from 1 to 3 as session number:`. Once the program makes a name like that (with `let`, `keep`, `to`, `as`, `call`, or `for each`), EasyScript recognizes it everywhere, always taking the longest name it knows: if the program has both `total` and `total cost`, then `total cost plus 1` uses `total cost`. Words that already mean something in a sentence (like `plus`, `is`, `and`, `of`, `with`, `to`, `in`, `be`) can't be part of a name of several words; trying it is an error that suggests another name:
+
+```
+Line 1: "plus" can't be part of a name, because it already means something in EasyScript.
+    let price plus tax be 5
+              ^^^^
+Try a name without it, like "price_plus_tax".
+```
+
+Names are matched without caring about capitals, so `clientName`, `clientname` and `CLIENTNAME` are the same name; messages show a name the way you first wrote it.
+
+There are no reserved words for single-word names. Whether `count` is a command or a variable depends on where it appears in the sentence, so you can name a variable `count`.
 
 ### Numbers
 
@@ -310,7 +321,7 @@ A variable keeps the kind of value it was made with. To keep text, make a new va
 A **constant** is a name for a value that stays the same for the whole program. Make one with `keep`:
 
 ```
-keep tax_rate as 0.2.
+keep tax rate as 0.2.
 keep shop at "Corner Shop".
 keep welcome as "Welcome to " followed by shop.
 say welcome.
@@ -445,16 +456,32 @@ Try it: `./easyscript run examples/programs/loops.es`
 
 **Status: Available.**
 
-A function is a named set of steps. It's defined with `to`, like a recipe ("to make tea: ..."), and its sentences are indented below:
+A function is a named set of steps. It's defined with `to`, like a recipe ("to make tea: ..."), and its sentences are indented below. Its name is every word up to `with`, `of`, `using`, or `to`, which introduce its inputs:
 
 ```
-to greet someone:
+to make tea:
+    say "Boil the water.".
+
+to greet with someone:
     say "Hello, " and someone and "!".
 
+make tea.
 greet "Ada".
 greet with "Alan".
 call greet with "Grace".
 ```
+
+So `to make tea:` is a function called `make tea` with no inputs, and `to greet with someone:` is `greet` with the input `someone`. (Writing `to greet someone:` makes a function called `greet someone`; the error you get when you then use `someone` explains how to make it an input.) A function's name can be several words, and if its inputs are introduced with `to`, it's called with `to` too:
+
+```
+to add tax to amount:
+    give back amount plus amount times 0.25.
+
+say add tax to 100.
+add tax to 100.
+```
+
+A sentence that starts with a function's name calls it, even if its first word usually starts other sentences (like `add`).
 
 A function can take several inputs, separated by `and`, and give back a result. Use it like a value with `of` (or `with`):
 
@@ -479,10 +506,10 @@ say factorial of 5.
 Functions are defined at the top level of the program, and you can use one before its definition. A function only sees its own inputs, the names it makes, and constants (`keep`, chapter 3), so pass in anything else it needs:
 
 ```
-keep tax_rate as 0.2.
-to price_with_tax of amount:
-    give back amount plus amount times tax_rate.
-say price_with_tax of 50.
+keep tax rate as 0.2.
+to add tax to amount:
+    give back amount plus amount times tax rate.
+say add tax to 50.
 ``` Giving it the wrong number of inputs is an error that says how many it needs and where it's defined.
 
 You don't write down what kind of value each input is: the compiler works it out from how the function uses it and what it's given, and tells you before the program runs if something doesn't fit. When it can't tell, you can say, like `to area with width (a number) and height (a number), giving back a number:`. See [chapter 9](#9-types).
@@ -530,7 +557,7 @@ Most programs never mention kinds. They come from:
 - **Functions:** an input's kind comes from how the function uses it (`x divided by 2` makes `x` a number) and from what it's given when it's called. What a function gives back comes from its `give back`s. A function with no `give back` gives back nothing, so it can only be called as a sentence of its own.
 
 ```
-to halve x:
+to halve with x:
     give back x divided by 2
 say halve of 4
 say halve of "four"
@@ -561,7 +588,7 @@ Write the kind in parentheses after an input, and what the function gives back w
 ```
 to area with width (a number) and height (a number), giving back a number:
     give back width times height.
-to greet who (text), giving back nothing:
+to greet with who (text), giving back nothing:
     say "Hello, " and who.
 to both with first (yes or no) and second (yes or no):
     give back first and second.

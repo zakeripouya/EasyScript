@@ -3,7 +3,7 @@ to factorial of n:
     give back n times factorial of (n minus 1)
 say factorial of 5
 say factorial of 10
-to fib n:
+to fib with n:
     if n is less than 2, give back n
     give back fib of (n minus 1) plus fib of (n minus 2)
 say fib of 10

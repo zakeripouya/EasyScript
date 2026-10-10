@@ -1,0 +1,6 @@
+define greet someone () [1:1]
+  do
+    say [2:5]
+      join [2:9]
+        text "Hello, " [2:9]
+        name someone [2:31]

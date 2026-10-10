@@ -1,4 +1,4 @@
-to greet someone:
+to greet with someone:
     say someone
 to area with width and height:
     give back width times height

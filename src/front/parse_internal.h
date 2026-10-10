@@ -9,6 +9,15 @@
 #include "common/ast.h"
 #include "front/lexer.h"
 
+// A name the program introduces somewhere (pre-scan, parse_names.c): every
+// function, and every variable or constant whose name is several words.
+typedef struct {
+    const char *text;  // lowercased, one space between words
+    size_t words;
+    bool function;
+    bool to_inputs;    // a function whose definition introduces its inputs with "to"
+} KnownName;
+
 typedef struct {
     Arena *arena;
     Diag *diag;
@@ -22,7 +31,8 @@ typedef struct {
     bool ends_with_name;    // ... or ended with a name or keyword ("add 5 to total")
     Vec(SourcePos) open_ifs; // ifs whose blocks are being parsed, innermost last
     bool as_ends_value;     // in a count loop's header, "as" names the loop variable
-    Vec(const char *) functions; // names after "to" at the start of a line (pre-scan)
+    Vec(const char *) functions; // every function's name (pre-scan), for suggestions
+    Vec(KnownName) names;        // every function, and every name of several words (pre-scan)
     Expr *pending_item;     // "every NAME in L": the item's name, the first value of what follows
 } Parser;
 
@@ -156,13 +166,26 @@ Expr *parser_finish_call(Parser *p, Expr *call);
 bool parser_is_statement_word(const char *word);
 
 // parse_func.c
-void parser_find_functions(Parser *p);  // fills p->functions
-bool parser_is_function(const Parser *p, const char *name);
+// "with", "of", "using", or "to" for a function defined with "to".
+bool parser_at_call_intro(const Parser *p, const char *function);
 Stmt *parse_function(Parser *p, const Token *verb);   // to NAME ...:
 Stmt *parse_return(Parser *p, const Token *verb);     // give back / return
 Stmt *parse_constant(Parser *p, const Token *verb);   // keep NAME as E
-// "call NAME ..." (verb "call") or "NAME ..." (verb is a function's name).
-Stmt *parse_call_statement(Parser *p, const Token *verb);
+// "call NAME ..." (function NULL; at "call") or "NAME ..." (at the function's name).
+Stmt *parse_call_statement(Parser *p, const Token *verb, const KnownName *function);
+
+// parse_names.c
+// Fills p->names and p->functions: every name introduced by let, keep, to,
+// as, call, for each and every.
+void parser_find_names(Parser *p);
+// The longest known name (or function, if functions_only) starting `ahead`
+// tokens from here, or NULL.
+const KnownName *parser_match_name(const Parser *p, size_t ahead, bool functions_only);
+bool parser_is_function(const Parser *p, const char *name);
+// A word that can be a name, or start one (not an operator or value word).
+bool parser_is_name_word(const Token *token);
+// Consumes the next `words` tokens as a name.
+void parser_take_name(Parser *p, size_t words, Name *name);
 
 // parse_list.c
 // A kind of value: "number" (after the dropped "a"), "text", "yes or no" (or

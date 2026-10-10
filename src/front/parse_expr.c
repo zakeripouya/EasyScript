@@ -175,23 +175,27 @@ static Expr *parse_left_assoc(Parser *p, const Phrase *ops, size_t n, ParseFn op
     }
 }
 
+// "every NAME in", where NAME may be several words ("every guest name in").
 bool parser_at_every(const Parser *p) {
-    const Token *name = parser_peek(p, 1);
-    return parser_at_word(p, 0, "every") && name->kind == TOK_WORD && !parser_is_operator_word(name->text) &&
-           !parser_is_value_word(name->text) && parser_at_word(p, 2, "in");
+    if (!parser_at_word(p, 0, "every") || !parser_is_name_word(parser_peek(p, 1))) return false;
+    for (size_t i = 2; parser_peek(p, i)->kind == TOK_WORD; i++) {
+        if (parser_at_word(p, i, "in")) return true;
+        if (!parser_is_name_word(parser_peek(p, i))) return false;
+    }
+    return false;
 }
 
 // every NAME in L <the rest>: the rest of the value is worked out for each
 // item, as if it started with NAME ("every score in scores plus 5").
 static Expr *parse_every(Parser *p) {
+    static const char *const in[] = {"in", NULL};
     Expr *every = ast_new_expr(p->arena, EXPR_EVERY, parser_token_pos(parser_advance(p)));
-    const Token *name = parser_advance(p);
-    every->as.every.var.text = name->text;
-    every->as.every.var.pos = parser_token_pos(name);
+    if (!parser_parse_name(p, &every->as.every.var, in)) return parser_error_expr(p);
     parser_advance(p);  // in
     every->as.every.list = parse_primary(p);
-    Expr *item = ast_new_expr(p->arena, EXPR_NAME, parser_token_pos(name));
-    item->as.name = name->text;
+    Expr *item = ast_new_expr(p->arena, EXPR_NAME, every->as.every.var.pos);
+    item->as.name = every->as.every.var.text;
+    item->display = every->as.every.var.display;
     p->pending_item = item;
     every->as.every.body = parse_or(p);
     p->pending_item = NULL;

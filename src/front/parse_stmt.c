@@ -45,55 +45,6 @@ static bool word_in(const Token *token, const char *const *words) {
     return false;
 }
 
-static bool is_name_word(const Token *token) {
-    return token->kind == TOK_WORD && !parser_is_operator_word(token->text) && !parser_is_value_word(token->text);
-}
-
-static void report_filler_name(Parser *p, Span filler) {
-    if (parser_error(p, filler, "\"%s\" can't be used as a name.", parser_text(p, filler))) {
-        diag_note(p->diag, "EasyScript ignores the words \"a\", \"an\" and \"the\" wherever they appear, "
-                           "so they can't be names.");
-        diag_note(p->diag, "Try a name that says what it holds, like \"total\" or \"answer\".");
-    }
-}
-
-static void report_reserved_name(Parser *p, const Token *token) {
-    if (parser_error(p, token->span, "\"%s\" can't be used as a name.", token->text)) {
-        diag_note(p->diag, "\"%s\" already means something in EasyScript.", token->text);
-        diag_note(p->diag, "Try a different name, like \"my_%s\".", token->text);
-    }
-}
-
-static void report_name_missing_after_prev(Parser *p) {
-    if (parser_error(p, p->prev_span, "Something is missing after %s.", parser_quoted(p, p->prev_span))) {
-        diag_note(p->diag, "Add a name there, like \"total\".");
-    }
-}
-
-// Parses a variable name. `next` lists the words that follow the name in this
-// statement ("be" after "let X"), or is NULL when the name ends it. A filler
-// word dropped right before `next` ("let a be 5") was meant as the name.
-bool parser_parse_name(Parser *p, Name *name, const char *const *next) {
-    const Token *token = parser_peek(p, 0);
-    bool is_next_word = word_in(token, next);
-    if (is_name_word(token) && !is_next_word) {
-        parser_advance(p);
-        name->text = token->text;
-        name->pos = parser_token_pos(token);
-        return true;
-    }
-    if (token->filler.length > 0 && (!is_name_word(token) || is_next_word)) {
-        report_filler_name(p, token->filler);
-    } else if (token->kind == TOK_WORD && !is_next_word) {
-        report_reserved_name(p, token);
-    } else if (is_next_word || parser_at_sentence_end(p) || parser_at(p, 0, TOK_COLON)) {
-        report_name_missing_after_prev(p);
-    } else if (parser_error(p, token->span, "I expected a name here, but found %s.", parser_describe(p, token))) {
-        diag_note(p->diag, "A name is a single word, like \"total\" or \"player_2\".");
-    }
-    return false;
-}
-
 static void report_expected(Parser *p, const char *display, const char *example) {
     const Token *token = parser_peek(p, 0);
     bool reported = parser_at_sentence_end(p)
@@ -267,7 +218,7 @@ static Stmt *parse_return_form(Parser *p, const Token *verb, const StmtForm *for
 
 static Stmt *parse_call_form(Parser *p, const Token *verb, const StmtForm *form) {
     (void)form;
-    return parse_call_statement(p, verb);
+    return parse_call_statement(p, verb, NULL);
 }
 
 // "keep doing this until" is a loop; any other "keep" makes a constant.
@@ -375,19 +326,34 @@ static void report_unknown_start(Parser *p) {
         }
         return;
     }
-    if (!parser_error(p, token->span, "I don't know a sentence that starts with \"%s\".", token->text)) return;
+    // A name of several words ("late fee is 5") is shown whole.
+    const KnownName *known = parser_match_name(p, 0, false);
+    size_t words = known ? known->words : 1;
+    Span span = {token->span.offset, parser_peek(p, words - 1)->span.offset + parser_peek(p, words - 1)->span.length -
+                                         token->span.offset};
+    const char *written = parser_text(p, span);
+    if (!parser_error(p, span, "I don't know a sentence that starts with \"%s\".", written)) return;
     // Statement words and the program's function names, as suggestions.
     size_t n = COUNT(forms) + 1 + p->functions.len;
-    const char **words = arena_alloc(p->arena, n * sizeof(char *));
-    for (size_t i = 0; i < COUNT(forms); i++) words[i] = forms[i].word;
-    words[COUNT(forms)] = "please";
-    for (size_t i = 0; i < p->functions.len; i++) words[COUNT(forms) + 1 + i] = p->functions.items[i];
-    const char *closest = parser_closest_words(p, token->text, words, n);
-    if (closest) {
+    const char **candidates = arena_alloc(p->arena, n * sizeof(char *));
+    for (size_t i = 0; i < COUNT(forms); i++) candidates[i] = forms[i].word;
+    candidates[COUNT(forms)] = "please";
+    for (size_t i = 0; i < p->functions.len; i++) candidates[COUNT(forms) + 1 + i] = p->functions.items[i];
+    const char *closest = words == 1 ? parser_closest_words(p, token->text, candidates, n) : NULL;
+    const char *longer = NULL;  // a function whose name starts with this word: "to greet someone:"
+    for (size_t i = 0; words == 1 && !longer && i < p->functions.len; i++) {
+        const char *f = p->functions.items[i];
+        if (strncmp(f, token->text, token->text_len) == 0 && f[token->text_len] == ' ') longer = f;
+    }
+    if (longer) {
+        diag_note(p->diag, "The function is called \"%s\": a function's name is every word before \"with\", "
+                           "\"of\", \"using\" or \"to\". To give \"%s\" an input, write \"to %s with %s:\".",
+                  longer, written, written, longer + token->text_len + 1);
+    } else if (closest) {
         diag_note(p->diag, "Did you mean %s?", closest);
-    } else if (parser_looks_like_assignment(parser_peek(p, 1))) {
+    } else if (parser_looks_like_assignment(parser_peek(p, words))) {
         diag_note(p->diag, "To make a variable, write \"let %s be ...\". To change one, write \"set %s to ...\".",
-                  token->text, token->text);
+                  written, written);
     } else {
         diag_note(p->diag, "%s", generic);
     }
@@ -407,9 +373,11 @@ Stmt *parse_statement(Parser *p) {
     }
     const Token *verb = parser_peek(p, 0);
     const StmtForm *form = find_form(verb);
-    if (!form && verb->kind == TOK_WORD && parser_is_function(p, verb->text)) {
-        parser_advance(p);
-        Stmt *call = parse_call_statement(p, verb);
+    // A function's name starts a call: one of several words even if its first
+    // word starts sentences ("add tax to 100"), a one-word one otherwise.
+    const KnownName *function = parser_match_name(p, 0, true);
+    if (function && (function->words > 1 || !form)) {
+        Stmt *call = parse_call_statement(p, verb, function);
         if (call) call->pos = ast_pos_join(call->pos, (SourcePos){p->prev_span, 0, 0});
         return call;
     }
@@ -528,7 +496,7 @@ Block *parse_program(Arena *arena, Diag *diag, const char *source, const TokenLi
     p.count = tokens->len;
 
     Block *program = arena_alloc(arena, sizeof(Block));
-    parser_find_functions(&p);
+    parser_find_names(&p);
     parse_statements(&p, program, false);
     return program;
 }

@@ -1,4 +1,4 @@
 Line 3: You already defined "greet" on line 1.
-    to greet anyone:
+    to greet with anyone:
        ^^^^^
 Each function needs its own name.

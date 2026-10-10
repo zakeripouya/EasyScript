@@ -1,0 +1,29 @@
+Line 5: "clientName" is text (made on line 2), but this is a number.
+    set clientname to 5
+                      ^
+A variable keeps the kind of value it was made with. To keep a number, make a new variable for it.
+
+Line 6: "HOURLY_RATE" is a constant, so it can't change.
+    set hourly_rate to 1
+        ^^^^^^^^^^^
+It's kept on line 3. If it needs to change, make it with "let HOURLY_RATE be ..." instead of "keep".
+
+Line 7: You already made "Late Fee" on line 4.
+    let late fee be 3
+        ^^^^^^^^
+To change it, write "set Late Fee to ...".
+
+Line 8: I don't know anything called "clientnam".
+    say clientnam
+        ^^^^^^^^^
+Did you mean "clientName"? You made it on line 2.
+
+Line 11: "Add Tax" needs a number for "amount", but this is text.
+    say add tax to "x"
+                   ^^^
+"amount" is a number because of line 10. An input has one kind of value everywhere; to make it clear, write it in the definition, like "to Add Tax to amount (a number):".
+
+Line 12: "Add Tax" needs 1 value, but this gives it 0.
+    say add tax
+        ^^^^^^^
+It's defined on line 9: "to Add Tax to amount".

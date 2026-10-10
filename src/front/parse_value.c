@@ -118,14 +118,27 @@ Expr *parser_finish_call(Parser *p, Expr *call) {
     return call->as.call.args.len > 0 ? reject_ambiguous_call(p, call) : call;
 }
 
-// NAME of A and B / NAME with A and B / NAME using A, B. Each argument is a
-// unary expression.
-static Expr *parse_call(Parser *p, const Token *name) {
-    const Token *intro = parser_advance(p);  // "of", "with", or "using"
-    Expr *call = ast_new_expr(p->arena, EXPR_CALL, parser_token_pos(name));
+// NAME of A and B / NAME with A and B / NAME using A, B (and NAME to A for a
+// function defined with "to"). Each argument is a unary expression.
+static Expr *parse_call(Parser *p, const Name *name) {
+    const Token *intro = parser_advance(p);  // "of", "with", "using", or "to"
+    Expr *call = ast_new_expr(p->arena, EXPR_CALL, name->pos);
     call->as.call.name = name->text;
+    call->display = name->display;
     parser_parse_call_args(p, call, strcmp(intro->text, "using") == 0);
     return parser_finish_call(p, call);
+}
+
+// A name (the longest known one, if several words start one), or a call.
+static Expr *parse_name_or_call(Parser *p) {
+    const KnownName *known = parser_match_name(p, 0, false);
+    Name name;
+    parser_take_name(p, known ? known->words : 1, &name);
+    if (parser_at_call_intro(p, name.text)) return parse_call(p, &name);
+    Expr *expr = ast_new_expr(p->arena, EXPR_NAME, name.pos);
+    expr->as.name = name.text;
+    expr->display = name.display;
+    return expr;
 }
 
 // "every NAME in" anywhere but the start of a value.
@@ -159,18 +172,14 @@ static Expr *parse_word(Parser *p) {
         return parser_error_expr(p);
     }
     if (parser_is_operator_word(word)) return expected_value(p);
+    const KnownName *known = parser_match_name(p, 0, false);
+    if (known && known->words > 1) return parse_name_or_call(p);  // "late fee", before any other meaning
     Expr *list = parser_parse_list_word(p);
     if (list) return list;
     if (parser_at_only(p)) return parser_parse_only(p);
     if (parser_at_every(p)) return reject_inner_every(p);
 
-    parser_advance(p);
-    if (parser_at_word(p, 0, "using") || parser_at_word(p, 0, "of") || parser_at_word(p, 0, "with")) {
-        return parse_call(p, token);
-    }
-    Expr *expr = ast_new_expr(p->arena, EXPR_NAME, parser_token_pos(token));
-    expr->as.name = word;
-    return expr;
+    return parse_name_or_call(p);
 }
 
 Expr *parse_primary(Parser *p) {

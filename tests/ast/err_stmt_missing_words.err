@@ -38,9 +38,9 @@ Line 8: I expected "by" here, but found "1".
                ^
 Write it like "increase total by 5".
 
-Line 9: I expected "by" here, but found "into".
+Line 9: I expected "by" here, but found "2".
     divide x into 2
-             ^^^^
+                  ^
 Write it like "divide total by 2".
 
 Line 10: Something is missing after the text "Name?".

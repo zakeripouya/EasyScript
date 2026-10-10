@@ -2,7 +2,7 @@ to area with width and height:
     give back width times height
 to pi:
     give back 3.14
-to greet someone:
+to greet with someone:
     say someone
 say area of 3
 greet with 1 and 2

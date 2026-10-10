@@ -1,11 +1,11 @@
 note: each function has its own names; the same name can be used in several places
 let total be "top level"
-to sum_to n:
+to sum_to with n:
     let total be 0
     count from 1 to n:
         add it to total
     give back total
-to twice x:
+to twice with x:
     let total be x times 2
     if total is greater than 10:
         let note be "big"

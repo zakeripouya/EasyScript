@@ -22,7 +22,7 @@ TypeVar checker_require_list(Checker *c, TypeVar var, const Expr *at, const char
 static void require_item(Checker *c, const Expr *list, TypeVar list_var, TypeVar item, const Expr *value,
                          TypeVar value_var, bool contain) {
     if (types_unify(c, item, value_var)) return;
-    const char *subject = list->kind == EXPR_NAME ? arena_sprintf(c->arena, "\"%s\"", list->as.name) : "This";
+    const char *subject = list->kind == EXPR_NAME ? arena_sprintf(c->arena, "\"%s\"", list->display) : "This";
     if (contain) {
         diag_error(c->diag, value->pos.span, "%s is %s, so it can't contain %s.", subject, checker_kind(c, list_var),
                    checker_kind(c, value_var));
@@ -151,7 +151,7 @@ void checker_add_to_list(Checker *c, Stmt *stmt, const Symbol *symbol, TypeVar a
     Type kind = types_of(c, item);
     if (kind == TYPE_ERROR) return;
     if (kind == TYPE_NUMBER || kind == TYPE_UNKNOWN) {
-        const char *name = symbol->name;
+        const char *name = symbol->display;
         diag_error(c->diag, stmt->pos.span, "\"%s\" is %s, so this could mean two things.", name,
                    checker_kind(c, symbol->var));
         diag_note(c->diag, "To put it at the end of the list, write \"add ... to the end of %s\". To add it to every "
@@ -162,6 +162,7 @@ void checker_add_to_list(Checker *c, Stmt *stmt, const Symbol *symbol, TypeVar a
     Expr target = {0};  // only for the message
     target.kind = EXPR_NAME;
     target.as.name = symbol->name;
+    target.display = symbol->display;
     require_item(c, &target, symbol->var, item, stmt->as.change.amount, amount, false);
 }
 

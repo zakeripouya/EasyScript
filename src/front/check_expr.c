@@ -36,11 +36,12 @@ static const char *kind_words(const Checker *c, Type type) {
 static const char *header(const Checker *c, const Function *f, size_t marked, Type mark) {
     StrBuf sb;
     sb_init(&sb, c->arena);
-    sb_appendf(&sb, "to %s", f->name);
+    sb_appendf(&sb, "to %s", f->display);
     const Stmt *def = f->definition;
     for (size_t i = 0; i < def->as.function.params.len; i++) {
-        sb_append(&sb, i == 0 ? " with " : " and ");
-        sb_append(&sb, def->as.function.params.items[i].text);
+        if (i == 0) sb_appendf(&sb, " %s ", def->as.function.intro ? def->as.function.intro : "with");
+        if (i > 0) sb_append(&sb, " and ");
+        sb_append(&sb, def->as.function.params.items[i].display);
         Type kind = i == marked ? mark : def->as.function.declared.items[i];
         if (kind != TYPE_UNKNOWN) sb_appendf(&sb, " (%s)", kind_words(c, kind));
     }
@@ -163,18 +164,20 @@ static TypeVar check_it(Checker *c, const Expr *expr) {
     return error_var(c);
 }
 
-static void report_unknown_function(Checker *c, const char *name, SourcePos pos) {
-    if (checker_find_constant(c, name)) {
-        diag_error(c->diag, pos.span, "\"%s\" is a constant, not a function.", name);
-        diag_note(c->diag, "A constant is a fixed value: use it by its name alone, like \"say %s\".", name);
+static void report_unknown_function(Checker *c, const char *name, const char *display, SourcePos pos) {
+    const Constant *k = checker_find_constant(c, name);
+    if (k) {
+        diag_error(c->diag, pos.span, "\"%s\" is a constant, not a function.", k->display);
+        diag_note(c->diag, "A constant is a fixed value: use it by its name alone, like \"say %s\".", k->display);
         return;
     }
-    if (checker_find_made(c, name)) {
-        diag_error(c->diag, pos.span, "\"%s\" is a variable, not a function.", name);
-        diag_note(c->diag, "Only functions made with \"to %s ...:\" can be called.", name);
+    const Symbol *symbol = checker_find_made(c, name);
+    if (symbol) {
+        diag_error(c->diag, pos.span, "\"%s\" is a variable, not a function.", symbol->display);
+        diag_note(c->diag, "Only functions made with \"to %s ...:\" can be called.", symbol->display);
         return;
     }
-    diag_error(c->diag, pos.span, "I don't know a function called \"%s\".", name);
+    diag_error(c->diag, pos.span, "I don't know a function called \"%s\".", display);
     size_t limit = strlen(name) <= 3 ? 1 : 2;
     const Function *best = NULL;
     size_t best_distance = limit + 1;
@@ -186,18 +189,18 @@ static void report_unknown_function(Checker *c, const char *name, SourcePos pos)
         }
     }
     if (best) {
-        diag_note(c->diag, "Did you mean \"%s\"? It's defined on line %zu.", best->name, best->definition->pos.line);
+        diag_note(c->diag, "Did you mean \"%s\"? It's defined on line %zu.", best->display, best->definition->pos.line);
     } else {
-        diag_note(c->diag, "Define it first, like \"to %s someone:\" with its sentences indented below.", name);
+        diag_note(c->diag, "Define it first, like \"to %s with someone:\" with its sentences indented below.", display);
     }
 }
 
 static void report_argument_count(Checker *c, const Function *f, size_t given, SourcePos pos) {
     size_t wanted = param_count(f);
     if (wanted == 0) {
-        diag_error(c->diag, pos.span, "\"%s\" doesn't take any values, but this gives it %zu.", f->name, given);
+        diag_error(c->diag, pos.span, "\"%s\" doesn't take any values, but this gives it %zu.", f->display, given);
     } else {
-        diag_error(c->diag, pos.span, "\"%s\" needs %zu value%s, but this gives it %zu.", f->name, wanted,
+        diag_error(c->diag, pos.span, "\"%s\" needs %zu value%s, but this gives it %zu.", f->display, wanted,
                    wanted == 1 ? "" : "s", given);
     }
     diag_note(c->diag, "It's defined on line %zu: \"%s\".", f->definition->pos.line, checker_function_header(c, f));
@@ -206,9 +209,9 @@ static void report_argument_count(Checker *c, const Function *f, size_t given, S
 // An argument of the wrong kind: says why the input has its kind.
 static void report_argument_kind(Checker *c, const Function *f, size_t i, const Expr *arg, TypeVar given) {
     const Stmt *def = f->definition;
-    const char *param = def->as.function.params.items[i].text;
+    const char *param = def->as.function.params.items[i].display;
     Type wanted = types_of(c, f->params.items[i]);
-    diag_error(c->diag, arg->pos.span, "\"%s\" needs %s for \"%s\", but this is %s.", f->name,
+    diag_error(c->diag, arg->pos.span, "\"%s\" needs %s for \"%s\", but this is %s.", f->display,
                ast_type_name(c->arena, wanted), param, checker_kind(c, given));
     if (def->as.function.declared.items[i] != TYPE_UNKNOWN) {
         diag_note(c->diag, "It's defined on line %zu: \"%s\".", def->pos.line, checker_function_header(c, f));
@@ -223,7 +226,7 @@ static void report_argument_kind(Checker *c, const Function *f, size_t i, const 
 // called as a sentence of its own.
 static TypeVar call_result(Checker *c, const Function *f, const Expr *expr, bool as_value) {
     if (!as_value || types_of(c, f->result) != TYPE_NOTHING) return f->result;
-    diag_error(c->diag, expr->pos.span, "\"%s\" doesn't give back a value, so it can't be used here.", f->name);
+    diag_error(c->diag, expr->pos.span, "\"%s\" doesn't give back a value, so it can't be used here.", f->display);
     diag_note(c->diag, "It's defined on line %zu. To use what it works out, end it with \"give back ...\".",
               f->definition->pos.line);
     return error_var(c);
@@ -235,7 +238,7 @@ TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value) {
     for (size_t i = 0; i < n; i++) args[i] = checker_check_expr(c, expr->as.call.args.items[i]);
     const Function *f = checker_find_function(c, expr->as.call.name);
     if (!f) {
-        report_unknown_function(c, expr->as.call.name, expr->pos);
+        report_unknown_function(c, expr->as.call.name, expr->display, expr->pos);
         return error_var(c);
     }
     if (param_count(f) != n) {
@@ -263,7 +266,7 @@ static TypeVar check_name(Checker *c, const Expr *expr) {
     }
     const Function *f = checker_find_function(c, expr->as.name);
     if (!f) {
-        checker_report_unknown(c, expr->as.name, expr->pos);
+        checker_report_unknown(c, expr->as.name, expr->display, expr->pos);
         return error_var(c);
     }
     if (param_count(f) > 0) {

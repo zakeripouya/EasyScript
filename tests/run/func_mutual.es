@@ -1,7 +1,7 @@
-to is_even n:
+to is_even with n:
     if n is 0, give back yes
     give back is_odd of (n minus 1)
-to is_odd n:
+to is_odd with n:
     if n is 0, give back no
     give back is_even of (n minus 1)
 say is_even of 10

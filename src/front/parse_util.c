@@ -247,6 +247,20 @@ bool parser_reject_bare_decimal(Parser *p) {
     return true;
 }
 
+// "late fees" after "let late fee be ...": the word before this one starts a
+// known name of two words whose second word is spelled like this one.
+static const char *close_known_name(const Parser *p, const Token *token) {
+    const Token *before = p->pos > 0 ? &p->tokens[p->pos - 1] : NULL;
+    if (!before || before->kind != TOK_WORD || token->kind != TOK_WORD) return NULL;
+    for (size_t i = 0; i < p->names.len; i++) {
+        const KnownName *known = &p->names.items[i];
+        size_t first = strcspn(known->text, " ");
+        if (known->words != 2 || first != before->text_len || memcmp(known->text, before->text, first) != 0) continue;
+        if (edit_distance(p->arena, known->text + first + 1, token->text) <= 2) return known->text;
+    }
+    return NULL;
+}
+
 void parser_report_leftover(Parser *p) {
     const Token *token = parser_peek(p, 0);
     if (token->kind == TOK_RPAREN) {
@@ -270,6 +284,11 @@ void parser_report_leftover(Parser *p) {
         return;
     }
     if (!parser_error(p, token->span, "I don't understand %s here.", parser_describe(p, token))) return;
+    const char *name = close_known_name(p, token);
+    if (name) {
+        diag_note(p->diag, "Did you mean \"%s\"?", name);
+        return;
+    }
     size_t n = sizeof(operator_words) / sizeof(operator_words[0]);
     const char *closest = token->kind == TOK_WORD ? parser_closest_words(p, token->text, operator_words, n) : NULL;
     if (closest) {
