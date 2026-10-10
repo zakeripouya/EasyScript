@@ -1,0 +1,4 @@
+WORD          2:1     say
+STRING        2:5     "Hello, world!."
+NEWLINE       2:20
+EOF           3:1

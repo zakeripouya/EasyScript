@@ -9,6 +9,8 @@
 #                         NAME.out. If NAME.err exists the run must fail and
 #                         stderr must match it; otherwise it must succeed with
 #                         empty stderr
+#   examples/legacy/      like tests/run (NAME.out)
+#   examples/lexer/       like tests/tokens, expected stdout in NAME.tokens
 #   unit tests            tests/unit/*.c, built into the UNIT binary
 #   CLI checks            at the bottom of this file
 #
@@ -79,77 +81,108 @@ if [ $unit_status -ne 0 ] && [ $unit_fails -eq 0 ]; then
 $(tail -n 40 "$WORK/unit")"
 fi
 
-# --- Programs and compile errors -------------------------------------------
+# --- Programs, compile errors, tokens, and examples ------------------------
 
-for src in "$ROOT"/tests/run/*.es; do
-    [ -e "$src" ] || continue
-    name="run/$(basename "$src" .es)"
-    expected="${src%.es}.out"
-    if [ ! -f "$expected" ]; then
-        not_ok "$name" "missing $(basename "$expected")"
-        continue
-    fi
-    fresh_dir
-    (cd "$WORK/cwd" && "$ES" run "$src") >"$WORK/stdout" 2>"$WORK/stderr"
-    status=$?
-    if [ $status -ne 0 ]; then
-        not_ok "$name" "exit status $status
+# check_run DIR LABEL: each DIR/NAME.es is run; stdout must match NAME.out.
+check_run() {
+    for src in "$1"/*.es; do
+        [ -e "$src" ] || continue
+        name="$2/$(basename "$src" .es)"
+        expected="${src%.es}.out"
+        if [ ! -f "$expected" ]; then
+            not_ok "$name" "missing $(basename "$expected")"
+            continue
+        fi
+        fresh_dir
+        (cd "$WORK/cwd" && "$ES" run "$src") >"$WORK/stdout" 2>"$WORK/stderr"
+        status=$?
+        if [ $status -ne 0 ]; then
+            not_ok "$name" "exit status $status
 $(cat "$WORK/stderr")"
-    elif ! out=$(diff -u "$expected" "$WORK/stdout"); then
-        not_ok "$name" "$out"
-    else
-        ok "$name"
-    fi
-done
+        elif ! out=$(diff -u "$expected" "$WORK/stdout"); then
+            not_ok "$name" "$out"
+        else
+            ok "$name"
+        fi
+    done
+}
 
-for src in "$ROOT"/tests/errors/*.es; do
-    [ -e "$src" ] || continue
-    name="errors/$(basename "$src" .es)"
-    expected="${src%.es}.err"
-    if [ ! -f "$expected" ]; then
-        not_ok "$name" "missing $(basename "$expected")"
-        continue
-    fi
-    fresh_dir
-    (cd "$WORK/cwd" && "$ES" emit "$src") >/dev/null 2>"$WORK/stderr"
-    status=$?
-    if [ $status -eq 0 ]; then
-        not_ok "$name" "compiled successfully but an error was expected"
-    elif ! out=$(diff -u "$expected" "$WORK/stderr"); then
-        not_ok "$name" "$out"
-    else
-        ok "$name"
-    fi
-done
+# check_errors DIR LABEL: each DIR/NAME.es must fail to compile with
+# stderr matching NAME.err.
+check_errors() {
+    for src in "$1"/*.es; do
+        [ -e "$src" ] || continue
+        name="$2/$(basename "$src" .es)"
+        expected="${src%.es}.err"
+        if [ ! -f "$expected" ]; then
+            not_ok "$name" "missing $(basename "$expected")"
+            continue
+        fi
+        fresh_dir
+        (cd "$WORK/cwd" && "$ES" emit "$src") >/dev/null 2>"$WORK/stderr"
+        status=$?
+        if [ $status -eq 0 ]; then
+            not_ok "$name" "compiled successfully but an error was expected"
+        elif ! out=$(diff -u "$expected" "$WORK/stderr"); then
+            not_ok "$name" "$out"
+        else
+            ok "$name"
+        fi
+    done
+}
 
-for src in "$ROOT"/tests/tokens/*.es; do
-    [ -e "$src" ] || continue
-    name="tokens/$(basename "$src" .es)"
-    expected_out="${src%.es}.out"
-    expected_err="${src%.es}.err"
-    if [ ! -f "$expected_out" ]; then
-        not_ok "$name" "missing $(basename "$expected_out")"
-        continue
-    fi
-    fresh_dir
-    (cd "$WORK/cwd" && "$ES" tokens "$src") >"$WORK/stdout" 2>"$WORK/stderr"
-    status=$?
-    if [ -f "$expected_err" ]; then
-        want_status=1
-    else
-        want_status=0
-        expected_err=/dev/null
-    fi
-    if [ $status -ne $want_status ]; then
-        not_ok "$name" "exit status $status, expected $want_status
+# check_tokens DIR LABEL OUT_EXT: each DIR/NAME.es is lexed; stdout must
+# match NAME.OUT_EXT. With a NAME.err the run must fail with that stderr;
+# without one it must succeed with empty stderr.
+check_tokens() {
+    for src in "$1"/*.es; do
+        [ -e "$src" ] || continue
+        name="$2/$(basename "$src" .es)"
+        expected_out="${src%.es}.$3"
+        expected_err="${src%.es}.err"
+        if [ ! -f "$expected_out" ]; then
+            not_ok "$name" "missing $(basename "$expected_out")"
+            continue
+        fi
+        fresh_dir
+        (cd "$WORK/cwd" && "$ES" tokens "$src") >"$WORK/stdout" 2>"$WORK/stderr"
+        status=$?
+        if [ -f "$expected_err" ]; then
+            want_status=1
+        else
+            want_status=0
+            expected_err=/dev/null
+        fi
+        if [ $status -ne $want_status ]; then
+            not_ok "$name" "exit status $status, expected $want_status
 $(cat "$WORK/stderr")"
-    elif ! out=$(diff -u "$expected_out" "$WORK/stdout"); then
-        not_ok "$name" "$out"
-    elif ! out=$(diff -u "$expected_err" "$WORK/stderr"); then
-        not_ok "$name" "$out"
-    else
-        ok "$name"
-    fi
+        elif ! out=$(diff -u "$expected_out" "$WORK/stdout"); then
+            not_ok "$name" "$out"
+        elif ! out=$(diff -u "$expected_err" "$WORK/stderr"); then
+            not_ok "$name" "$out"
+        else
+            ok "$name"
+        fi
+    done
+}
+
+check_run "$ROOT/tests/run" run
+check_errors "$ROOT/tests/errors" errors
+check_tokens "$ROOT/tests/tokens" tokens out
+
+# Examples back the docs, so every one of them must be checked.
+check_run "$ROOT/examples/legacy" examples/legacy
+check_tokens "$ROOT/examples/lexer" examples/lexer tokens
+for dir in "$ROOT"/examples/*/; do
+    [ -d "$dir" ] || continue
+    case $(basename "$dir") in
+        legacy|lexer) ;;
+        *) not_ok "examples/$(basename "$dir")" "no test runner covers this directory; add it to tests/run.sh" ;;
+    esac
+done
+for src in "$ROOT"/examples/*.es; do
+    [ -e "$src" ] || continue
+    not_ok "examples/$(basename "$src")" "examples must live in examples/legacy/ or examples/lexer/"
 done
 
 # --- CLI checks -------------------------------------------------------------

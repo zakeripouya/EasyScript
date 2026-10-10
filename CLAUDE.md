@@ -83,8 +83,26 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 - `tests/run/NAME.es` plus `NAME.out`: the program is compiled and run with `easyscript run`. Stdout must match `NAME.out` byte for byte, and the exit status must be 0.
 - `tests/errors/NAME.es` plus `NAME.err`: compiled with `easyscript emit`. It must exit non-zero, and stderr must match `NAME.err` exactly.
 - CLI behavior (modes, usage errors, no files left in the cwd, temp-dir cleanup) is checked at the bottom of `tests/run.sh`. Add a check there when changing the CLI.
-- `tests/run.sh` runs the unit binary, then the run/errors/tokens tests (each in an empty scratch directory), then the CLI checks. It prints PASS/FAIL per test plus one summary and exits 1 if anything fails. The `ES` and `UNIT` env vars choose which binaries are tested.
+- `examples/legacy/NAME.es` plus `NAME.out` (run like `tests/run`) and `examples/lexer/NAME.es` plus `NAME.tokens` and an optional `.err` (lexed like `tests/tokens`) back the docs. `tests/run.sh` fails if any other folder or a loose `.es` appears under `examples/`.
+- `tests/run.sh` runs the unit binary, then the run/errors/tokens tests and the examples (each in an empty scratch directory, via the shared `check_run`/`check_errors`/`check_tokens` functions), then the CLI checks. It prints PASS/FAIL per test plus one summary and exits 1 if anything fails. The `ES` and `UNIT` env vars choose which binaries are tested.
 - Expected files record current behavior, including known quirks (for example, the blank line after `FILE READ` in `run/file_io.out`). When fixing a quirk, update the expected file in the same commit.
+
+## Documentation rules
+
+**Every commit that adds or changes a language feature must, in the same commit:**
+
+1. Update the status in `README.md` (the Status table and "Coming soon" list, and the roadmap table if a phase changes).
+2. Update `docs/vocabulary.md` with every new or changed word, sentence pattern and synonym, each with an example and its status.
+3. Update the matching chapter of `docs/language-guide.md`, including its status label.
+4. Add or update an example in `examples/` with its expected output (`examples/lexer/NAME.tokens` and optional `.err`, or `examples/legacy/NAME.out`; new runnable examples get their own folder plus a runner in `tests/run.sh`).
+5. Add an entry to `CHANGELOG.md` under `[Unreleased]`.
+
+**A feature isn't done until its docs and example exist and pass `make test`.** Also:
+
+- **Never present unimplemented syntax as working.** Anything that doesn't compile today is labelled "Coming soon" (a proposal whose wording may change). Move an item from the planned-examples list in `docs/roadmap.md` into `examples/` when it ships, and tick its roadmap checkbox.
+- **Error text in the docs is copied from tested `.err` files.** If a message changes, update `docs/errors.md` along with the expected file.
+- The new-syntax sentence patterns in `docs/vocabulary.md` (`set … to`, `say`, `if … otherwise`, `repeat …`, `to NAME using …`, `give back`, the file sentences) are **proposals, not decisions**. When implementing the parser, either implement them as written or change the docs in the same commit. Don't let the docs and the parser disagree.
+- Architecture or workflow changes also update `docs/architecture.md` and `CONTRIBUTING.md`. The README's taste program must stay identical to `examples/lexer/taste.es`.
 
 ## Keeping this file current
 
@@ -111,7 +129,9 @@ The code is an early prototype of the old syntax. It doesn't follow the rules ab
 - `src/parser.{c,h}`: recursive descent over a linked list of statements (`AST.right`). `AST_IF`, `AST_FOR_LOOP`, `AST_FUNCTION`, and `AST_CALL` are declared but not implemented. Errors call `exit(1)`.
 - `src/codegen.{c,h}`: global fixed `var_map[100]`, and variables are renamed to `name_N`. Redeclaring a variable makes later reads resolve to the *first* declaration (lookup returns the first match). Generated string variables are `char[256]`.
 - `Makefile`: `CC = cc`, `-Wall -Wextra -Isrc`, no `-std=c11` yet. The old lexer and parser use `strdup`, which strict C11 hides on glibc, so add the flag once they're rewritten. The new `src/common` and `tests/unit` code is already clean under `-std=c11 -Wpedantic`. Includes are written relative to `src/`, for example `#include "common/diag.h"`. Sources are grouped as `COMMON_SRC`, `FRONT_SRC` (also linked into the unit tests) and `LEGACY_SRC`. Objects go under `build/release/` (`-O2`) or `build/debug/` (`-g -O1 -fsanitize=address,undefined -fno-sanitize-recover=all`), mirroring the source path. Header dependencies come from `-MMD`. `./easyscript` is linked at the repo root. Add new `.c` files to the matching `*_SRC` variable; files in `tests/unit/` are picked up by wildcard. It builds with zero warnings in both modes, so keep it that way. `main.c` defines `_XOPEN_SOURCE 700` and `_DARWIN_C_SOURCE` for `mkdtemp`, `getline`, `fork`, and so on.
-- `tests/`: 30 unit tests (arena, StrBuf, Vec, edit distance, diag formatting, lexer spans/decoding/recovery), 21 token tests (14 valid, 7 `err_*`, covering every token kind, indentation edge cases, CRLF, no trailing newline, a 1000-character identifier, and each lexer error message), 4 run tests and 5 error tests, plus CLI checks in `run.sh`. The run and error tests are written in the old syntax because that's all the compiler accepts today. Rewrite them when the syntax changes.
+- `tests/`: 30 unit tests (arena, StrBuf, Vec, edit distance, diag formatting, lexer spans/decoding/recovery), 21 token tests (14 valid, 7 `err_*`, covering every token kind, indentation edge cases, CRLF, no trailing newline, a 1000-character identifier, and each lexer error message), 4 run tests, 5 error tests, and 13 examples, plus CLI checks in `run.sh`. The run and error tests are written in the old syntax because that's all the compiler accepts today. Rewrite them when the syntax changes.
+- **Docs:** `README.md` (front page: vision, taste, honest status, roadmap, design rules, build/CLI, pipeline, links, "License: TBD"). Also `docs/language-guide.md` (chapters 0 and 1 available; chapters 2–7 coming soon; legacy appendix), `docs/vocabulary.md` (every word and pattern, with status Available (lexer) / Coming soon / Legacy), `docs/errors.md`, `docs/architecture.md`, `docs/roadmap.md` (phase checklists and planned examples), `CHANGELOG.md`, `CONTRIBUTING.md`, and `examples/README.md`.
+- **Examples:** `examples/lexer/` has 10 new-syntax files: `taste` (the README program), `sentences`, `text`, `numbers`, `comparisons`, `blocks`, `comments`, and 3 `err_*` files. `examples/legacy/` has 3 runnable prototype programs: `print_text`, `variables`, `files`. No license has been chosen; the user will pick one.
 - `old/`: old-syntax `.code` examples, kept for reference only. `attempt1.code` and `script.code` compile and run. `combined_code.code` fails on `PRINT # 3` (printing a literal number isn't supported), `attempt1_src.code` fails because `FILE WRITE myfile HelloWorld` treats `HelloWorld` as an undefined variable, and `logan.code` uses an unsupported `FOR … END FOR` form.
 - `.gitignore` covers build outputs (`build/`, `easyscript`, stray `*.o`/`*.d`) `myfile*` (created when the examples are run from the repo root), and `.idea/` (CLion). Never commit these. `.gitattributes` marks `tests/tokens/**` as `-text` so git never rewrites their line endings.
 

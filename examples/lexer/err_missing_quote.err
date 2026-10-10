@@ -1,0 +1,4 @@
+Line 2: This text is missing its closing quote.
+    say "Hello, world!.
+        ^^^^^^^^^^^^^^^
+Add a " where the text ends. Text has to finish on the line it starts on.

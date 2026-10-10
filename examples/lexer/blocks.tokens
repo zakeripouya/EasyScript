@@ -1,0 +1,38 @@
+WORD          4:1     if
+WORD          4:4     total
+WORD          4:10    is
+WORD          4:13    greater
+WORD          4:21    than
+NUMBER        4:26    10
+COLON         4:28    :
+NEWLINE       4:29
+INDENT        5:1
+WORD          5:5     say
+STRING        5:9     "big"
+PERIOD        5:14    .
+NEWLINE       5:15
+WORD          6:5     if
+WORD          6:8     total
+WORD          6:14    is
+WORD          6:17    greater
+WORD          6:25    than
+NUMBER        6:30    100
+COLON         6:33    :
+NEWLINE       6:34
+INDENT        7:1
+WORD          7:9     say
+STRING        7:13    "huge"
+PERIOD        7:19    .
+NEWLINE       7:20
+DEDENT        8:1
+DEDENT        8:1
+WORD          8:1     otherwise
+COLON         8:10    :
+NEWLINE       8:11
+INDENT        9:1
+WORD          9:5     say
+STRING        9:9     "small"
+PERIOD        9:16    .
+NEWLINE       9:17
+DEDENT        10:1
+EOF           10:1

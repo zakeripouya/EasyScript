@@ -1,0 +1,4 @@
+Line 4: This line is indented 2 spaces, which doesn't line up with any block above it.
+      say "done".
+    ^^
+Use 0 or 4 spaces to match one of the blocks it belongs to.

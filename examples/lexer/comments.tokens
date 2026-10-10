@@ -1,0 +1,5 @@
+WORD          3:1     say
+STRING        3:5     "hello"
+PERIOD        3:12    .
+NEWLINE       3:36
+EOF           6:1

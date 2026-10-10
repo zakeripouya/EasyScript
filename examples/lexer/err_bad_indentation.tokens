@@ -1,0 +1,19 @@
+WORD          2:1     if
+WORD          2:4     total
+WORD          2:10    is
+WORD          2:13    greater
+WORD          2:21    than
+NUMBER        2:26    10
+COLON         2:28    :
+NEWLINE       2:29
+INDENT        3:1
+WORD          3:5     say
+STRING        3:9     "big"
+PERIOD        3:14    .
+NEWLINE       3:15
+DEDENT        4:3
+WORD          4:3     say
+STRING        4:7     "done"
+PERIOD        4:13    .
+NEWLINE       4:14
+EOF           5:1

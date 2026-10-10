@@ -1,0 +1,47 @@
+WORD          3:1     set
+WORD          3:5     price
+WORD          3:11    to
+NUMBER        3:14    19.99
+PERIOD        3:19    .
+NEWLINE       3:20
+WORD          4:1     set
+WORD          4:5     count
+WORD          4:11    to
+NUMBER        4:14    3
+PERIOD        4:15    .
+NEWLINE       4:16
+WORD          5:1     set
+WORD          5:5     area
+WORD          5:10    to
+WORD          5:13    width
+STAR          5:19    *
+WORD          5:21    height
+PERIOD        5:27    .
+NEWLINE       5:28
+WORD          6:1     set
+WORD          6:5     change
+WORD          6:12    to
+WORD          6:15    price
+MINUS         6:21    -
+NUMBER        6:23    5
+PLUS          6:25    +
+NUMBER        6:27    1
+PERIOD        6:28    .
+NEWLINE       6:29
+WORD          7:1     set
+WORD          7:5     half
+WORD          7:10    to
+WORD          7:13    total
+SLASH         7:19    /
+NUMBER        7:21    2
+PERIOD        7:22    .
+NEWLINE       7:23
+WORD          8:1     set
+WORD          8:5     leftover
+WORD          8:14    to
+WORD          8:17    total
+PERCENT       8:23    %
+NUMBER        8:25    7
+PERIOD        8:26    .
+NEWLINE       8:27
+EOF           9:1

@@ -1,0 +1,12 @@
+WORD          2:1     repeat
+NUMBER        2:8     3
+WORD          2:9     times
+COLON         2:14    :
+NEWLINE       2:15
+INDENT        3:1
+WORD          3:5     say
+STRING        3:9     "hi"
+PERIOD        3:13    .
+NEWLINE       3:14
+DEDENT        4:1
+EOF           4:1

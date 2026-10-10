@@ -1,0 +1,53 @@
+WORD          2:1     set
+WORD          2:5     count
+WORD          2:11    to
+NUMBER        2:14    3
+PERIOD        2:15    .
+NEWLINE       2:16
+WORD          3:1     repeat
+WORD          3:8     while
+WORD          3:14    count
+WORD          3:20    is
+WORD          3:23    greater
+WORD          3:31    than
+NUMBER        3:36    0
+COLON         3:37    :
+NEWLINE       3:38
+INDENT        4:1
+WORD          4:5     say
+WORD          4:9     count
+PERIOD        4:14    .
+NEWLINE       4:15
+WORD          5:5     subtract
+NUMBER        5:14    1
+WORD          5:16    from
+WORD          5:21    count
+PERIOD        5:26    .
+NEWLINE       5:27
+DEDENT        6:1
+WORD          6:1     say
+STRING        6:5     "Liftoff!"
+PERIOD        6:15    .
+NEWLINE       6:16
+WORD          8:1     to
+WORD          8:4     greet
+WORD          8:10    using
+WORD          8:16    name
+COLON         8:20    :
+NEWLINE       8:21
+INDENT        9:1
+WORD          9:5     say
+STRING        9:9     "Hello, "
+PLUS          9:19    +
+WORD          9:21    name
+PLUS          9:26    +
+STRING        9:28    "!"
+PERIOD        9:31    .
+NEWLINE       9:32
+DEDENT        11:1
+WORD          11:1    greet
+WORD          11:7    using
+STRING        11:13   "Ada"
+PERIOD        11:18   .
+NEWLINE       11:19
+EOF           12:1

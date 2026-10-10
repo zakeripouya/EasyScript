@@ -1,0 +1,22 @@
+WORD          3:1     say
+STRING        3:5     "Hello, world!"
+PERIOD        3:20    .
+NEWLINE       3:21
+WORD          4:1     say
+STRING        4:5     "Two lines:\nfirst\nsecond"
+PERIOD        4:32    .
+NEWLINE       4:33
+WORD          5:1     say
+STRING        5:5     "She said \"hi\""
+PERIOD        5:22    .
+NEWLINE       5:23
+WORD          6:1     say
+STRING        6:5     "A backslash: \\"
+PERIOD        6:22    .
+NEWLINE       6:23
+WORD          8:1     say
+WORD          8:9     guest's
+WORD          8:17    name
+PERIOD        8:21    .
+NEWLINE       8:22
+EOF           9:1
