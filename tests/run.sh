@@ -5,21 +5,26 @@
 #                         exit status must be 0
 #   tests/errors/NAME.es  compiled (emit); must fail, and stderr must match
 #                         NAME.err exactly
+#   unit tests            tests/unit/*.c, built into the UNIT binary
 #   CLI checks            at the bottom of this file
 #
 # Programs run in a scratch directory, so nothing is written into the repo.
+# ES and UNIT override the binaries under test (make test-debug uses this).
 
 set -u
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-ES="$ROOT/easyscript"
+ES=${ES:-$ROOT/easyscript}
+UNIT=${UNIT:-$ROOT/build/release/unit_tests}
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/easyscript-test-XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
 
-if [ ! -x "$ES" ]; then
-    echo "error: $ES not found; run make first" >&2
-    exit 1
-fi
+for bin in "$ES" "$UNIT"; do
+    if [ ! -x "$bin" ]; then
+        echo "error: $bin not found; run make first" >&2
+        exit 1
+    fi
+done
 
 pass=0
 fail=0
@@ -45,6 +50,32 @@ fresh_dir() {
     rm -rf "$WORK/cwd"
     mkdir "$WORK/cwd"
 }
+
+# --- Unit tests -------------------------------------------------------------
+#
+# The binary prints "RUN name", indented failure details, then "PASS name" or
+# "FAIL name". A crash (e.g. a sanitizer report) shows up as a non-zero exit
+# with no matching verdict line.
+
+"$UNIT" >"$WORK/unit" 2>&1
+unit_status=$?
+details=""
+unit_fails=0
+while IFS= read -r line; do
+    case $line in
+        "RUN  "*) details="" ;;
+        "PASS "*) ok "unit/${line#PASS }" ;;
+        "FAIL "*) not_ok "unit/${line#FAIL }" "$details"; unit_fails=$((unit_fails + 1)) ;;
+        *) details="$details${details:+
+}${line#    }" ;;
+    esac
+done <"$WORK/unit"
+if [ $unit_status -ne 0 ] && [ $unit_fails -eq 0 ]; then
+    not_ok "unit" "exit status $unit_status
+$(tail -n 40 "$WORK/unit")"
+fi
+
+# --- Programs and compile errors -------------------------------------------
 
 for src in "$ROOT"/tests/run/*.es; do
     [ -e "$src" ] || continue

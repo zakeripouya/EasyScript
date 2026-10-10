@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "arena.h"
+#include "common/arena.h"
 
 // Default size of a new block. Larger requests get a block of their own size,
 // so this is a growth step, not a limit.
@@ -67,16 +67,22 @@ char *arena_strdup(Arena *arena, const char *s) {
     return copy;
 }
 
-char *arena_sprintf(Arena *arena, const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    int len = vsnprintf(NULL, 0, fmt, args);
-    va_end(args);
+char *arena_vsprintf(Arena *arena, const char *fmt, va_list args) {
+    va_list copy;
+    va_copy(copy, args);
+    int len = vsnprintf(NULL, 0, fmt, copy);
+    va_end(copy);
     if (len < 0) out_of_memory();
 
     char *s = arena_alloc(arena, (size_t)len + 1);
-    va_start(args, fmt);
     vsnprintf(s, (size_t)len + 1, fmt, args);
+    return s;
+}
+
+char *arena_sprintf(Arena *arena, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char *s = arena_vsprintf(arena, fmt, args);
     va_end(args);
     return s;
 }

@@ -1,6 +1,8 @@
 # Compiler build outputs
-*.o
+/build/
 /easyscript
+*.o
+*.d
 
 # Files created by running the example programs from the repo root
 myfile*

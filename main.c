@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "arena.h"
+#include "common/arena.h"
 #include "lexer.h"
 #include "parser.h"
 #include "codegen.h"

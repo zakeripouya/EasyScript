@@ -1,33 +1,55 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -I./src
+CC = cc
+CFLAGS = -Wall -Wextra -Isrc
+RELEASE_FLAGS = -O2
+DEBUG_FLAGS = -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all
 
-SRC = src/arena.c src/lexer.c src/parser.c src/codegen.c
-OBJ = $(SRC:.c=.o)
+COMMON_SRC = src/common/arena.c src/common/util.c src/common/diag.c
+COMPILER_SRC = main.c src/lexer.c src/parser.c src/codegen.c $(COMMON_SRC)
+UNIT_SRC = $(wildcard tests/unit/*.c) $(COMMON_SRC)
 
-all: easyscript
+RELEASE_DIR = build/release
+DEBUG_DIR = build/debug
 
-easyscript: $(OBJ) main.o
-	$(CC) $(CFLAGS) -o easyscript $(OBJ) main.o
+release_objs = $(patsubst %.c,$(RELEASE_DIR)/%.o,$(1))
+debug_objs = $(patsubst %.c,$(DEBUG_DIR)/%.o,$(1))
 
-main.o: main.c src/arena.h src/lexer.h src/parser.h src/codegen.h
-	$(CC) $(CFLAGS) -c main.c
+all: easyscript $(RELEASE_DIR)/unit_tests
 
-src/arena.o: src/arena.c src/arena.h
-	$(CC) $(CFLAGS) -c src/arena.c -o src/arena.o
+easyscript: $(call release_objs,$(COMPILER_SRC))
+	$(CC) $(CFLAGS) $(RELEASE_FLAGS) -o $@ $^
 
-src/lexer.o: src/lexer.c src/lexer.h
-	$(CC) $(CFLAGS) -c src/lexer.c -o src/lexer.o
+$(RELEASE_DIR)/unit_tests: $(call release_objs,$(UNIT_SRC))
+	$(CC) $(CFLAGS) $(RELEASE_FLAGS) -o $@ $^
 
-src/parser.o: src/parser.c src/parser.h src/lexer.h
-	$(CC) $(CFLAGS) -c src/parser.c -o src/parser.o
+$(RELEASE_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(RELEASE_FLAGS) -MMD -MP -c $< -o $@
 
-src/codegen.o: src/codegen.c src/codegen.h src/parser.h
-	$(CC) $(CFLAGS) -c src/codegen.c -o src/codegen.o
+# Sanitizer build of the compiler and unit tests, in build/debug/.
+debug: $(DEBUG_DIR)/easyscript $(DEBUG_DIR)/unit_tests
 
-test: easyscript
+$(DEBUG_DIR)/easyscript: $(call debug_objs,$(COMPILER_SRC))
+	$(CC) $(CFLAGS) $(DEBUG_FLAGS) -o $@ $^
+
+$(DEBUG_DIR)/unit_tests: $(call debug_objs,$(UNIT_SRC))
+	$(CC) $(CFLAGS) $(DEBUG_FLAGS) -o $@ $^
+
+$(DEBUG_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(DEBUG_FLAGS) -MMD -MP -c $< -o $@
+
+test: all
 	sh tests/run.sh
 
-clean:
-	rm -f $(OBJ) main.o easyscript
+# Full suite against the sanitizer build. Leak checking is off until the
+# lexer, parser, and codegen allocate from the arena instead of malloc.
+test-debug: debug
+	ES=$(CURDIR)/$(DEBUG_DIR)/easyscript UNIT=$(CURDIR)/$(DEBUG_DIR)/unit_tests \
+	ASAN_OPTIONS=detect_leaks=0 sh tests/run.sh
 
-.PHONY: all clean test
+clean:
+	rm -rf build easyscript
+
+-include $(shell find build -name '*.d' 2>/dev/null)
+
+.PHONY: all debug test test-debug clean
