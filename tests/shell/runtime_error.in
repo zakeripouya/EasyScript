@@ -1,0 +1,4 @@
+say "start"
+say 1 divided by 0
+say "the session goes on"
+quit

@@ -88,6 +88,23 @@ bless_dump() {
     done
 }
 
+# bless_shell: tests/shell/NAME.in typed into the shell; stdout goes to
+# NAME.out, stderr to NAME.err (removed when empty).
+bless_shell() {
+    for input in "$ROOT"/tests/shell/*.in; do
+        [ -e "$input" ] || continue
+        rm -rf "$WORK/cwd"
+        mkdir "$WORK/cwd"
+        (cd "$WORK/cwd" && "$ES") <"$input" >"${input%.in}.out" 2>"$WORK/stderr"
+        if [ -s "$WORK/stderr" ]; then
+            cp "$WORK/stderr" "${input%.in}.err"
+        else
+            rm -f "${input%.in}.err"
+        fi
+    done
+}
+
+bless_shell
 bless_run "$ROOT/tests/run"
 bless_errors "$ROOT/tests/errors"
 bless_dump tokens "$ROOT/tests/tokens" out

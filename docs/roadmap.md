@@ -110,4 +110,4 @@ Open questions:
 - **Running one statement at a time:** EasyScript compiles to C, so it needs a way to run each statement while keeping the session's variables between messages (for example, recompiling the session, or a long-lived session process).
 - **Rendering results:** how a result says it's a table or a chart, so the notebook can display it that way.
 
-It builds on the interactive shell, which now runs the new syntax but reruns the whole session for every line; the notebook needs a real one-statement-at-a-time session.
+It builds on the interactive shell, which reruns the whole session for each entry (hiding output already shown and replaying earlier answers). That's fine for typing, but a notebook with tables and charts will want a real one-statement-at-a-time session.

@@ -1,0 +1,4 @@
+Line 4: I don't know anything called "oops".
+    say oops
+        ^^^^
+Make it first, like "let oops be 0".

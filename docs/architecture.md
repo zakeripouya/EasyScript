@@ -99,7 +99,7 @@ These are the rules every module follows (the full list is in [CONTRIBUTING.md](
 | `easyscript emit FILE` | Print the generated C |
 | `easyscript tokens FILE` | Print the lexer's tokens (`KIND line:col text`), and any errors to stderr |
 | `easyscript ast FILE` | Print the syntax tree as an indented outline (`node [line:col]`), and any errors to stderr |
-| `easyscript` | Interactive shell: each line is tried with the lines kept so far, and kept only if the whole session then compiles and runs (so earlier output repeats). The Notebook will replace it. |
+| `easyscript` | Interactive shell (`src/shell.c`): type sentences one at a time; a line ending in `:` starts a block that ends at a blank line. Each entry is run together with everything kept so far, without repeating earlier output (the runtime skips `ES_SKIP_OUTPUT` bytes) or asking earlier `ask` questions again (answers are replayed from `ES_ANSWERS`). Entries with errors are shown and dropped. `exit`, `quit`, or `stop the program` leaves. |
 
 `run`, `build`, and `emit` share one pipeline: lex, parse, check (only if parsing succeeded), print every error and exit 1 if there were any, otherwise generate C. `cc` is run as `cc -O2 FILE -o OUT -lm`. Generated C and binaries go in a fresh temporary directory that's removed on exit. Nothing is written next to your source except `build`'s `-o` output. `cc` is started directly (`fork`/`exec`), never through a shell.
 

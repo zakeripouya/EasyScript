@@ -1,0 +1,10 @@
+ask "First? " and call the answer first
+one
+say "got " followed by first
+ask "Q? " and call the answer q. say q plus 1
+x
+ask "Again? " and call the answer again
+y
+say first followed by again
+stop the program
+say "never runs"

@@ -76,8 +76,42 @@ static char *es_alloc(size_t n) {
     return p;
 }
 
+/* The interactive shell reruns the whole session for every line it keeps,
+ * and sets two environment variables (normal programs see neither):
+ *   ES_SKIP_OUTPUT=N  don't print the first N bytes (shown on earlier runs)
+ *   ES_ANSWERS=path   answers to earlier "ask"s, one per line, used before
+ *                     reading the keyboard; new answers are added to it */
+static size_t es_skip_output;
+static FILE *es_answers;
+static bool es_answers_used_up;
+
+static void es_close_answers(void) {
+    if (es_answers) fclose(es_answers);
+}
+
 static void es_init(void) {
     atexit(es_free_all);
+    const char *skip = getenv("ES_SKIP_OUTPUT");
+    if (skip) es_skip_output = (size_t)strtoull(skip, NULL, 10);
+    const char *answers = getenv("ES_ANSWERS");
+    if (answers) {
+        es_answers = fopen(answers, "a+");
+        if (es_answers) rewind(es_answers);
+        atexit(es_close_answers);
+        setvbuf(stdin, NULL, _IONBF, 0); /* read only our own line: the shell reads the rest */
+    }
+}
+
+/* Everything the program prints goes through here. */
+static void es_out(const char *s, size_t n) {
+    if (es_skip_output >= n) {
+        es_skip_output -= n;
+        return;
+    }
+    s += es_skip_output;
+    n -= es_skip_output;
+    es_skip_output = 0;
+    fwrite(s, 1, n, stdout);
 }
 
 /* --- Errors ------------------------------------------------------------- */
@@ -181,8 +215,8 @@ static EsValue es_join(EsValue a, EsValue b) {
 
 static void es_say(EsValue v) {
     EsValue t = es_to_text(v);
-    fwrite(t.text, 1, t.len, stdout);
-    fputc('\n', stdout);
+    es_out(t.text, t.len);
+    es_out("\n", 1);
 }
 
 /* --- Arithmetic --------------------------------------------------------- */
@@ -506,15 +540,33 @@ static void es_write_file(int line, EsValue value, EsValue path, bool append) {
     if (fclose(f) != 0) es_fail(line, NULL, "I couldn't write to the file \"%s\": %s.", path.text, es_reason(errno));
 }
 
+/* Reads one line: a replayed answer (in the shell) if any are left,
+ * otherwise from the keyboard, remembering it for the shell's next run. */
+static ssize_t es_read_answer(char **buffer, size_t *cap) {
+    if (es_answers && !es_answers_used_up) {
+        ssize_t n = getline(buffer, cap, es_answers);
+        if (n > 0) return n;
+        es_answers_used_up = true;
+    }
+    ssize_t n = getline(buffer, cap, stdin);
+    if (es_answers) {
+        fseek(es_answers, 0, SEEK_END);
+        if (n > 0) fwrite(*buffer, 1, (size_t)n, es_answers);
+        if (n <= 0 || (*buffer)[n - 1] != '\n') fputc('\n', es_answers);
+        fflush(es_answers);
+    }
+    return n;
+}
+
 /* Prints the question, then reads one line. At the end of input the answer is empty text. */
 static EsValue es_ask(int line, EsValue prompt) {
     (void)line;
     EsValue question = es_to_text(prompt);
-    fwrite(question.text, 1, question.len, stdout);
+    es_out(question.text, question.len);
     fflush(stdout);
     char *buffer = NULL;
     size_t cap = 0;
-    ssize_t n = getline(&buffer, &cap, stdin);
+    ssize_t n = es_read_answer(&buffer, &cap);
     size_t len = n > 0 ? (size_t)n : 0;
     if (len > 0 && buffer[len - 1] == '\n') len--;
     if (len > 0 && buffer[len - 1] == '\r') len--;

@@ -1,0 +1,7 @@
+EasyScript interactive shell. Type a sentence, like: say "hello"
+End a line with ":" to start a block (an if, a loop, or a function); a blank line ends it.
+Lines with errors aren't kept. Type exit to leave.
+>> start
+>> (That line wasn't kept.)
+>> the session goes on
+>> 

@@ -10,6 +10,8 @@
 #                         NAME.out. If NAME.err exists the run must fail and
 #                         stderr must match it; otherwise it must succeed with
 #                         empty stderr
+#   tests/shell/NAME.in   typed into the interactive shell; stdout must match
+#                         NAME.out and stderr NAME.err (empty if none)
 #   examples/programs/    like tests/run
 #   tests/ast/NAME.es     like tests/tokens, but with `easyscript ast`
 #   examples/lexer/       like tests/tokens, expected stdout in NAME.tokens
@@ -204,6 +206,35 @@ done
 for src in "$ROOT"/examples/*.es; do
     [ -e "$src" ] || continue
     not_ok "examples/$(basename "$src")" "examples must live in examples/programs/, examples/lexer/ or examples/parser/"
+done
+
+# --- Interactive shell --------------------------------------------------------
+#
+# tests/shell/NAME.in is typed into `easyscript` (the shell); its stdout must
+# match NAME.out, and its stderr NAME.err (or be empty if there's no .err).
+
+for input in "$ROOT"/tests/shell/*.in; do
+    [ -e "$input" ] || continue
+    name="shell/$(basename "$input" .in)"
+    expected_out="${input%.in}.out"
+    expected_err="${input%.in}.err"
+    [ -f "$expected_err" ] || expected_err=/dev/null
+    if [ ! -f "$expected_out" ]; then
+        not_ok "$name" "missing $(basename "$expected_out")"
+        continue
+    fi
+    fresh_dir
+    (cd "$WORK/cwd" && "$ES") <"$input" >"$WORK/stdout" 2>"$WORK/stderr"
+    status=$?
+    if [ $status -ne 0 ]; then
+        not_ok "$name" "exit status $status"
+    elif ! out=$(diff -u "$expected_out" "$WORK/stdout"); then
+        not_ok "$name" "$out"
+    elif ! out=$(diff -u "$expected_err" "$WORK/stderr"); then
+        not_ok "$name" "$out"
+    else
+        ok "$name"
+    fi
 done
 
 # --- CLI checks -------------------------------------------------------------

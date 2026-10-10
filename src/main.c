@@ -16,6 +16,7 @@
 #include "front/parse.h"
 #include "front/check.h"
 #include "back/codegen_c.h"
+#include "shell.h"
 
 static Arena *arena;
 
@@ -24,12 +25,7 @@ static char *temp_dir;
 static char *temp_c_path;
 static char *temp_bin_path;
 static char *temp_session_path;
-
-static void print_banner(void) {
-    printf("EasyScript interactive shell. Type a sentence, like: say \"hello\"\n");
-    printf("Each line is added to the session and the whole session runs again;\n");
-    printf("a line with an error isn't kept. Type exit to leave.\n");
-}
+static char *temp_answers_path;
 
 static void print_usage(FILE *out) {
     fprintf(out, "Usage:\n");
@@ -55,6 +51,7 @@ static void remove_temp_dir(void) {
     remove(temp_c_path);
     remove(temp_bin_path);
     remove(temp_session_path);
+    remove(temp_answers_path);
     rmdir(temp_dir);
 }
 
@@ -72,6 +69,7 @@ static void make_temp_dir(void) {
     temp_c_path = arena_sprintf(arena, "%s/program.c", temp_dir);
     temp_bin_path = arena_sprintf(arena, "%s/program", temp_dir);
     temp_session_path = arena_sprintf(arena, "%s/session.es", temp_dir);
+    temp_answers_path = arena_sprintf(arena, "%s/answers.txt", temp_dir);
     atexit(remove_temp_dir);
 }
 
@@ -239,56 +237,13 @@ static int cmd_run(const char *source_path) {
     return status < 0 ? 1 : status;
 }
 
-static bool write_session(const StrBuf *session) {
-    FILE *file = fopen(temp_session_path, "w");
-    if (!file) return false;
-    fwrite(session->data, 1, session->len, file);
-    return fclose(file) == 0;
-}
-
-// Each line is tried together with the lines kept so far; it's kept only if
-// the whole session then compiles and runs without an error.
-static void interactive_shell(char *self) {
-    print_banner();
-    make_temp_dir();
-    StrBuf session;
-    sb_init(&session, arena);
-
-    char *line = NULL;
-    size_t cap = 0;
-    while (1) {
-        printf(">> ");
-        fflush(stdout);
-        ssize_t len = getline(&line, &cap, stdin);
-        if (len < 0) {
-            break;
-        }
-        if (len > 0 && line[len - 1] == '\n') {
-            line[--len] = '\0';
-        }
-        if (strcmp(line, "exit") == 0 || strcmp(line, "quit") == 0) {
-            break;
-        }
-
-        size_t kept = session.len;
-        sb_append_n(&session, line, (size_t)len);
-        sb_append_char(&session, '\n');
-        char *argv[] = {self, "run", temp_session_path, NULL};
-        if (!write_session(&session) || run_process(argv) != 0) {
-            session.len = kept;  // drop the line
-            session.data[kept] = '\0';
-            printf("(That line wasn't kept.)\n");
-        }
-    }
-    free(line);
-}
-
 int main(int argc, char *argv[]) {
     arena = arena_new();
     atexit(free_arena);
 
     if (argc == 1) {
-        interactive_shell(argv[0]);
+        make_temp_dir();
+        shell_run(arena, argv[0], temp_session_path, temp_answers_path);
         return 0;
     }
 

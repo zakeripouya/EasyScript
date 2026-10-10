@@ -1,0 +1,16 @@
+let x be 2
+if x is 2:
+    say "two"
+    say "still two"
+
+repeat 2 times:
+    say it
+
+to double of n:
+    give back n times 2
+
+say double of 21
+if x is 2:
+    say nope
+
+say "after the bad block"

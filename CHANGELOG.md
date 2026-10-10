@@ -6,6 +6,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **A better interactive shell:** earlier output isn't printed again, earlier `ask` questions aren't asked again (their answers are replayed), a line ending in `:` starts a block (if, loop, function) that ends at a blank line, and entries with errors are shown and dropped. `exit`, `quit`, or `stop the program` leaves. Tested by `tests/shell/`.
 - **Benchmarks:** `benchmarks/` (recursive Fibonacci, a counting loop to 100 million, nested loops, building a large text) in EasyScript, C, Go, and Python, and `make bench`, which prints time and peak memory and checks that every language gives the same result. Results and history are in `docs/performance.md`; the README has a summary.
 - **Constants:** `keep NAME as X` (or `at X`), top level only. The compiler works the value out before the program runs (numbers, text, yes/no, arithmetic, joining, comparisons, logic, conversions, `length of`, and earlier constants) and generates a C static initializer, so constants cost nothing at run time. Constants are visible everywhere, including inside functions.
   - Compile-time errors: values only known while the program runs (variables, function calls, `it`, file contents), later constants or itself, changing a constant (with a suggestion to use `let`), name clashes with variables, inputs, loop numbers, or functions, duplicates, constants inside blocks, and mistakes in the value (worded like the runtime's errors).
@@ -104,7 +105,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - Text made while a program runs is freed only when it exits, so a long loop that builds text grows (about 20 bytes per round in a simple case).
 - `stop` on its own now means "stop the loop"; to end the program, write `stop the program`.
 - Functions can't see the program's other variables yet (pass values in as inputs).
-- The interactive shell reads one line at a time, so blocks (`if ...:`, loops) can't be typed there; one-line `if`s work. It also reruns the whole session for every line, so earlier output (and questions from `ask`) repeat.
+- In the shell, error line numbers count from the start of the session, and every entry reruns the whole session (so slow sessions get slower, and files are written again).
 
 ## 2024-07-06: First prototype
 

@@ -1,0 +1,6 @@
+say "hello"
+let x be 2
+say x times 3
+say oops
+say x plus 1
+exit

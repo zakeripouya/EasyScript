@@ -1,0 +1,4 @@
+Line 11: I don't know anything called "nope".
+        say nope
+            ^^^^
+Make it first, like "let nope be 0".

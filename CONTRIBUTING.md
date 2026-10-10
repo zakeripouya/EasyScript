@@ -45,6 +45,7 @@ Docs must never show syntax as working before it does. Mark planned features "Co
 | `examples/lexer/` | `NAME.es` plus `NAME.tokens`, and `NAME.err` for error cases | `easyscript tokens` |
 | `examples/parser/` | `NAME.es` plus `NAME.ast`, and `NAME.err` for error cases | `easyscript ast` |
 | `examples/programs/` | like `tests/run` | `easyscript run` |
+| `tests/shell/` | `NAME.in` typed into the shell, plus `NAME.out` and `NAME.err` | `easyscript` with no arguments |
 | CLI checks | the end of `tests/run.sh` | |
 
 Expected-output files must match **byte for byte**. When you change a message on purpose, update its expected file in the same commit.
