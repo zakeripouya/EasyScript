@@ -1,0 +1,4 @@
+Line 2: "price" is a variable, so its value isn't known before the program runs.
+    keep tax as price times 0.2
+                ^^^^^
+A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".

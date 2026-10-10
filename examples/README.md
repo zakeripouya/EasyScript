@@ -16,6 +16,7 @@ Small programs, one per feature. **Every example is checked by `make test`** aga
 | [decisions.es](programs/decisions.es) | `if`, `otherwise if`, `otherwise`, and the one-line forms |
 | [loops.es](programs/loops.es) | Counting up and down, `repeat ... times`, `while`, `skip this one`, `stop the loop`, `it` |
 | [logan.es](programs/logan.es) | The 2024 prototype's loop example (`old/logan.code`), ported to today's syntax |
+| [tax.es](programs/tax.es) | A constant (`keep tax_rate as 0.2`) used by a function |
 | [factorial.es](programs/factorial.es) | A function that calls itself |
 | [fibonacci.es](programs/fibonacci.es) | Recursion with two calls, and joining results into one line |
 | [taste.es](programs/taste.es) | The README's bigger example: a loop and a function |

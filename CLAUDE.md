@@ -84,6 +84,7 @@ EasyScript is a programming language with English sentence syntax. The compiler 
   | `count` / `go` / `for` / `do` / `repeat` / `while` / `as long as` / `keep doing this until` / `forever` | `STMT_LOOP` (parse_loop.c) |
   | `stop the loop`, `stop`, `break` / `skip this one`, `skip`, `continue`, `move on` | `STMT_BREAK` / `STMT_CONTINUE` (parse_loop.c) |
   | `to NAME …:` / `give back E`, `return [E]` / `call NAME …`, or a sentence starting with a pre-scanned function name | `STMT_FUNCTION` / `STMT_RETURN` / `STMT_CALL` (parse_func.c) |
+  | `keep NAME as E` / `keep NAME at E` (`keep doing …` is the loop) | `STMT_CONSTANT` (parse_func.c) |
 
 - **Statement words are contextual.** They're special only as the first word, so `let say be 2`, `add 1 to add` and `let file be …` are fine.
 - **Names:** a name is a single WORD that's neither an operator word nor a value word. `parse_name(p, name, next)` takes the words that follow the name in that form, e.g. `be`/`equal` after `let X`.
@@ -100,6 +101,16 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 - **Leftovers:** forms ending in a name or keyword (`add`, `subtract`, `ask`, `read`, `stop`, `break`, `skip`, `continue`, `move`) report extra words as "I expected the sentence to end after …". Others use the expression leftover reporting. Statements with errors are left out of the returned `Block`.
 - **Quoting in messages:** `parser_quoted` renders text spans as `the text "…"` to avoid nested quotes.
 
+### Constants (implemented in `parse_func.c`, `consteval.c`, `check.c`, `codegen_c.c`)
+
+- **Syntax:** `keep NAME (as | at) E`. `parse_keep_form` sends `keep` + `doing` to the loop and everything else to `parse_constant`. AST: `STMT_CONSTANT {name, value, folded}`, where `folded` (a `ConstValue`: number/text/yes-no) is filled in by the checker.
+- **Evaluation** (`front/consteval.c`, `const_eval(arena, diag, expr, lookup, ctx, out)`): literals (not `nothing`), unary minus and `not`, arithmetic, `followed by`, `and`/`or` (with the runtime's short-circuit and join rules), comparisons (with the 1e-12 tolerance), `as text`/`as a number`, and `length of`. Calls, `it`, `contents of file` and `nothing` are errors with a "fixed before the program starts … use let instead of keep" note. **It mirrors `runtime/es_runtime.h` exactly**, including `const_number_text` (= `es_number_text`) and the error wording. `tests/run/constant_matches_runtime.es` prints each constant next to the same runtime expression, so change both together.
+- **Checker:**
+  - **Collection:** `checker_collect_constants` runs after `collect_functions`, so constants can be used anywhere. Duplicates are errors, and so is a constant named like a function (reported at the constant).
+  - **Values:** `checker_check_constant` rejects constants inside blocks or functions. Otherwise it evaluates the value via `lookup_constant`: only constants with a lower `index` are allowed, and a failed earlier constant adds no extra error. Self, later constants, functions, variables and unknown names get specific errors.
+  - **Use:** names resolve to constants everywhere (`check_name_expr` ignores `floor`). `check_target` rejects changing a constant ("… is a constant, so it can't change", with a `let` suggestion). `checker_clashes` also rejects variables, inputs and loop numbers named like a constant. Unknown names can get "Did you mean "rate"? It's a constant, kept on line N.".
+- **Codegen:** after the globals, each constant becomes `static const EsValue es_k_NAME = {ES_…, …};` from `folded` (NAN/HUGE_VAL for special numbers, text as a C string literal). `EXPR_NAME` resolves constants first (`es_k_`), and `main` adds a `(void)es_k_NAME;` per constant so unused ones don't warn.
+
 ### Functions (implemented in `src/front/parse_func.c`, `check.c`, `codegen_c.c`)
 
 - **Definition:** `to NAME [with | of | using] P [and | ,] Q …:` plus an indented block. AST: `STMT_FUNCTION {name, params, body}`. The name can't be a statement word (`parser_is_statement_word`, which includes `please`): "… starts sentences in EasyScript, so it can't be the name of a function". `to greet a:` (filler before the colon) and `to greet with:` are errors.
@@ -111,7 +122,7 @@ EasyScript is a programming language with English sentence syntax. The compiler 
   - **Function bodies:** a body sees only its parameters and the names it makes. `Checker.floor` hides `made[0..floor)`, and the loop stack is cleared. An unknown name that exists outside gives "A function only sees its own inputs and the names it makes. … pass it in as an input." Duplicate parameters are errors.
   - **Calls:** an unknown function gets "Did you mean "area"? It's defined on line N." or a "Define it first" note; a variable called like a function gets "… is a variable, not a function". A wrong count is "needs N value(s), but this gives it M" (or "doesn't take any values"), with a note quoting `to area with width and height` and the definition line. A bare name that's a function with parameters counts as 0 arguments.
   - **`give back` outside a function** is an error.
-  - **Names:** making a variable, parameter or loop number with a function's name is an error (`clashes_with_function`).
+  - **Names:** making a variable, parameter or loop number with a function's name is an error (`checker_clashes`).
 - **Codegen:**
   - **Signature and order:** each function becomes `static EsValue es_f_NAME(int es_line, EsValue es_v_P…)`, with prototypes before all function bodies and main.
   - **Each body:** `emit_function` uses a fresh `Codegen` (its own body, temps, loops, depth). It declares temporaries, then `EsValue es_v_local = es_nothing();` for every name made in the function (`declare_name` hoists into `locals`, skipping parameters), then `(void)` casts so unused inputs or locals can't warn, then `es_enter(es_line)`.
@@ -246,7 +257,7 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 
 Phase 1 is in progress. Programs in the sentence syntax compile to C and run, including `if`/`otherwise` blocks, loops and top-level functions.
 
-- **Layout:** `src/main.c` is the driver. `src/common/` holds arena, util, diag and ast. `src/front/` holds lexer, parse_util, parse_expr, parse_stmt, parse_if, parse_loop, parse_func and check. `src/back/` holds codegen_c. `runtime/es_runtime.h` is the runtime, and `tools/embed.c` is a build tool.
+- **Layout:** `src/main.c` is the driver. `src/common/` holds arena, util, diag and ast. `src/front/` holds lexer, parse_util, parse_expr, parse_stmt, parse_if, parse_loop, parse_func, consteval, check and check_const (with private headers `parse_internal.h` and `check_internal.h`). `src/back/` holds codegen_c and codegen_expr (with `codegen_internal.h`). `runtime/es_runtime.h` is the runtime, and `tools/embed.c` is a build tool.
 - **Pipeline** (`generate_c` in `src/main.c`, shared by `run`/`build`/`emit`):
   1. Lex and parse.
   2. If there were no errors, run `check_program`.
@@ -261,10 +272,10 @@ Phase 1 is in progress. Programs in the sentence syntax compile to C and run, in
 - `src/common/arena.{c,h}`: arena allocator (`arena_new`, `arena_alloc` returns zeroed, aligned memory, `arena_strdup`, `arena_sprintf`/`arena_vsprintf`, `arena_free`). It grows in 64 KiB blocks and gives oversized requests their own block. All compiler memory comes from here.
 - `src/common/util.{c,h}`: `StrBuf` (`sb_*`, including `sb_append_quoted`), `Vec(T)` with `vec_push`/`vec_last`/`vec_pop`, `edit_distance` (optimal string alignment, so an adjacent swap counts 1), and `PRINTF_LIKE`.
 - `src/common/diag.{c,h}`: opaque `Diag` made by `diag_new(arena, source, len)`. Report with `diag_error(d, span, fmt, ...)`, then `diag_note(d, fmt, ...)` for help lines attached to the latest error. `Span` is a byte `{offset, length}`. `diag_line` gives the 1-based line and `diag_count` the number of errors. `diag_render` (to a `StrBuf`) and `diag_print` (to a `FILE *`) output every error in report order, separated by blank lines: `Line N: message`, then the source line indented 4 spaces, then carets under the span, then the notes. Carets are clamped to the first line of the span, with at least one. Tabs are copied into the padding, UTF-8 is counted per character, and a trailing `\r` is dropped.
-- `src/common/ast.{h,c}`: `Expr` (kinds ERROR, NUMBER (text plus `is_decimal`), TEXT, BOOLEAN, NOTHING, IT, NAME, CALL, LENGTH, FILE_CONTENTS, UNARY, BINARY, CONVERT), `Stmt` (LET, SET, CHANGE + `ChangeOp`, SAY, ASK, WRITE_FILE, APPEND_FILE, READ_FILE, STOP, IF with `IfBranch`es, LOOP, BREAK, CONTINUE, FUNCTION, RETURN, CALL, each with a `verb` span), `Name {text, pos}`, and `Block` (`Vec(Stmt *)`). Every node has a `SourcePos`. It also has `ast_dump_block` for `easyscript ast`.
+- `src/common/ast.{h,c}`: `Expr` (kinds ERROR, NUMBER (text plus `is_decimal`), TEXT, BOOLEAN, NOTHING, IT, NAME, CALL, LENGTH, FILE_CONTENTS, UNARY, BINARY, CONVERT), `Stmt` (LET, SET, CHANGE + `ChangeOp`, SAY, ASK, WRITE_FILE, APPEND_FILE, READ_FILE, STOP, IF with `IfBranch`es, LOOP, BREAK, CONTINUE, FUNCTION, RETURN, CALL, CONSTANT (with `ConstValue folded`), each with a `verb` span), `Name {text, pos}`, and `Block` (`Vec(Stmt *)`). Every node has a `SourcePos`. It also has `ast_dump_block` for `easyscript ast`.
 - `src/front/lexer.{c,h}`: `lex(arena, diag, source, len)` returns a `TokenList` that always ends with `TOK_EOF`; tokens carry a `filler` span. Also `token_kind_name` and `tokens_dump(tokens, source, out)`.
 - `src/front/parse.h`, `parse_internal.h`, `parse_util.c`, `parse_expr.c`, `parse_stmt.c`, `parse_if.c`, `parse_loop.c`, `parse_func.c`: the parser. Shared statement helpers have `parser_` names (`parser_new_stmt`, `parser_parse_name`, `parser_expect_word`, `parser_expect_phrase`, `parser_looks_like_assignment`, `parser_parse_block`); see the grammar sections above. The if parser was fuzzed with 2,500 inputs under ASan/UBSan (no crashes or hangs; all 74 accepted programs compiled with `-Werror`). The expression and statement parsers were each fuzzed with 3,000 inputs under ASan/UBSan, with no findings.
-- `src/front/check.{c,h}`: `check_program(arena, diag, program)`. A `Checker` context holds `made` (names made so far, with lines) and `later` (all names the program makes, for "You make "x" later, on line N").
+- `src/front/check.{c,h}` plus `check_const.c` (constants), sharing `check_internal.h` (the `Checker`, `Symbol`, `Loop`, `Function`, `Constant` structs and the `checker_` helpers: `checker_find_made`, `checker_find_function`, `checker_find_constant`, `checker_report_unknown`, `checker_clashes`, `checker_check_expr`, `checker_collect_constants`, `checker_check_constant`, `checker_closest_constant`): `check_program(arena, diag, program)`. A `Checker` context holds `made` (names made so far, with lines) and `later` (all names the program makes, for "You make "x" later, on line N").
   - **Making names:** `let` makes a name; making it twice is "You already made …" with a "set" hint. `ask` and `read file … and call it` make the name if it's new and silently reuse it otherwise. `set`/`change`/arithmetic statements and `EXPR_NAME` need an existing name.
   - **Unknown names:** "I don't know anything called "x"." plus one note:
     - "Did you mean "total"? You made it on line 1." for the single closest name (OSA distance, limit 1 for names of 3 or fewer characters, otherwise 2)
@@ -273,7 +284,7 @@ Phase 1 is in progress. Programs in the sentence syntax compile to C and run, in
     - otherwise "Make it first, like "let x be 0"."
   - **Loops:** a `Loop` stack (`has_it` for count and times loops). `EXPR_IT` needs some enclosing loop with `has_it`; otherwise "it doesn't refer to anything here", with a note that's different inside a non-counting loop and outside any loop. `STMT_BREAK`/`STMT_CONTINUE` outside any loop are errors. Loop values (from/to/step/times/condition) are checked in the outer scope. The count variable is made in the loop's scope; if the name exists, it's an error ("This loop calls each number "number", but you already made…" when defaulted). The loop body ends the scope as "the loop"; a loop variable used afterwards gets "is the number of the loop on line N, so it only exists inside that loop" (`Symbol.loop_number`).
   - **Scopes:** each if branch body is a scope (`check_block`): names made inside are dropped from `made` at its end and recorded in `ended` with the if's line, so a later use says "You made "x" inside the "if" on line N, so it only exists inside that block." A name that exists outside can't be made again inside ("You already made …"); different blocks can make the same name.
-- `src/back/codegen_c.{c,h}` (574 lines, close to the ~600 limit: split it, e.g. expressions into their own file, before adding more): `codegen_c(arena, program, out)` writes the embedded runtime (the `es_runtime_source` byte array), `static EsValue es_v_<name>;` globals, and `int main(void)`.
+- `src/back/codegen_c.{c,h}` (statements, loops, functions, constants, the program) plus `codegen_expr.c` (names, literals, expressions) sharing `codegen_internal.h` (the `Codegen`/`LoopCode` structs and the `cg_` helpers: `cg_emit_expr`, `cg_emit_call1`, `cg_append_prefixed`, `cg_append_name`, `cg_append_c_string`, `cg_declare_name`, `cg_new_temp`): `codegen_c(arena, program, out)` writes the embedded runtime (the `es_runtime_source` byte array), `static EsValue es_v_<name>;` globals, and `int main(void)`.
   - **Names:** variables are mangled to `es_v_` plus the name, with `_` written as `__` and `'` as `_q`.
   - **Temporaries:** the left operand of every binary operation, and the text of file writes, go into temporaries `es_t1…` declared at the top of `main`. This forces left-to-right evaluation.
   - **Short-circuit:** `and`/`or` compile to `(t = L, es_is_no(t) ? t : es_and(line, t, R))`, and `or` uses `es_is_yes`.
@@ -290,18 +301,18 @@ Phase 1 is in progress. Programs in the sentence syntax compile to C and run, in
   - Zero warnings in both modes. `src/main.c` defines `_XOPEN_SOURCE 700` and `_DARWIN_C_SOURCE`.
 - `tests/`:
   - 40 unit tests
-  - 47 AST tests (28 valid, including `if_*`, `loop_*`, `func_define`, `func_calls`, `func_return`; 19 `err_*`, including `err_if_header`, `err_if_otherwise`, `err_loop_header`, `err_func_header`)
+  - 49 AST tests (29 valid, including `if_*`, `loop_*`, `func_*`, `const_define`; 20 `err_*`, including `err_if_header`, `err_if_otherwise`, `err_loop_header`, `err_func_header`, `err_const_header`)
   - 21 token tests (14 valid, 7 `err_*`)
-  - 62 run tests (29 programs, including `if_*`, `loop_*`, `func_basic`, `func_recursion`, `func_locals`, `func_return`, `func_mutual`, covering numbers, number equality with tolerance, text (including `followed by` precedence), logic and short-circuiting, every comparison, variables, files, `ask` with and without input, `stop`, sentences and synonyms; plus 33 `err_*` runtime-error tests, including left-to-right error order, non-yes/no `if`/loop conditions, bad counts, steps and times, an error's line number inside a loop or function, and endless recursion)
-  - 32 compile-error tests (checker messages including block scopes, loop numbers, `it`, stop/skip outside loops, unknown functions, argument counts, `give back` outside functions, functions in blocks, function scopes and name clashes, plus one parse error)
-  - 39 examples, 2 README sync checks, and CLI checks
+  - 64 run tests (31 programs, including `if_*`, `loop_*`, `func_*`, `const_basic`, `constant_matches_runtime`, covering numbers, number equality with tolerance, text (including `followed by` precedence), logic and short-circuiting, every comparison, variables, files, `ask` with and without input, `stop`, sentences and synonyms; plus 33 `err_*` runtime-error tests, including left-to-right error order, non-yes/no `if`/loop conditions, bad counts, steps and times, an error's line number inside a loop or function, and endless recursion)
+  - 47 compile-error tests (checker messages including block scopes, loop numbers, `it`, stop/skip outside loops, unknown functions, argument counts, `give back` outside functions, functions in blocks, function scopes and name clashes, every constant rule, plus one parse error)
+  - 40 examples, 2 README sync checks, and CLI checks
 - **Docs:**
   - `README.md`: front page with "A first program" (runs, and is tested), "A bigger example" (a loop and a function; runs, and is tested), honest status, roadmap with Notebook, design rules, build/CLI, pipeline, links, and "License: TBD".
   - `docs/language-guide.md`: chapters 0–8 available, except `file X exists` (coming soon).
   - `docs/vocabulary.md`: statuses Available / Coming soon.
   - Also `docs/errors.md` (lexer, parser, checker and runtime errors), `docs/architecture.md`, `docs/roadmap.md`, `CHANGELOG.md`, `CONTRIBUTING.md` and `examples/README.md`.
 - **Examples:**
-  - `examples/programs/` (14 runnable): `hello`, `first_program`, `taste` (README), `variables`, `text`, `logic`, `decisions`, `loops`, `logan` (old/logan.code ported), `factorial`, `fibonacci`, `ask_name` (+ `.in`), `files`, `err_divide_by_zero`.
+  - `examples/programs/` (15 runnable): `hello`, `first_program`, `taste` (README), `variables`, `text`, `logic`, `decisions`, `loops`, `logan` (old/logan.code ported), `tax` (a constant used by a function), `factorial`, `fibonacci`, `ask_name` (+ `.in`), `files`, `err_divide_by_zero`.
   - `examples/parser/` (16): syntax-tree demos, many using names they never make, plus `err_otherwise_misplaced`.
   - `examples/lexer/` (9).
 - No license has been chosen; the user will pick one.

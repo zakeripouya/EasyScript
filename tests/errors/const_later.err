@@ -1,0 +1,4 @@
+Line 1: "base" is a constant made later, on line 2.
+    keep total as base plus 1
+                  ^^^^
+A constant can only use constants made above it. Move "keep base ..." higher up.

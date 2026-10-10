@@ -1,0 +1,39 @@
+Line 2: "rate" is a constant, so it can't change.
+    set rate to 0.3
+        ^^^^
+It's kept on line 1. If it needs to change, make it with "let rate be ..." instead of "keep".
+
+Line 3: "rate" is a constant, so it can't change.
+    change rate to 0.3
+           ^^^^
+It's kept on line 1. If it needs to change, make it with "let rate be ..." instead of "keep".
+
+Line 4: "rate" is a constant, so it can't change.
+    add 1 to rate
+             ^^^^
+It's kept on line 1. If it needs to change, make it with "let rate be ..." instead of "keep".
+
+Line 5: "rate" is a constant, so it can't change.
+    subtract 1 from rate
+                    ^^^^
+It's kept on line 1. If it needs to change, make it with "let rate be ..." instead of "keep".
+
+Line 6: "rate" is a constant, so it can't change.
+    increase rate by 1
+             ^^^^
+It's kept on line 1. If it needs to change, make it with "let rate be ..." instead of "keep".
+
+Line 7: "rate" is a constant, so it can't change.
+    decrease rate by 1
+             ^^^^
+It's kept on line 1. If it needs to change, make it with "let rate be ..." instead of "keep".
+
+Line 8: "rate" is a constant, so it can't change.
+    multiply rate by 2
+             ^^^^
+It's kept on line 1. If it needs to change, make it with "let rate be ..." instead of "keep".
+
+Line 9: "rate" is a constant, so it can't change.
+    divide rate by 2
+           ^^^^
+It's kept on line 1. If it needs to change, make it with "let rate be ..." instead of "keep".

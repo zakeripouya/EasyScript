@@ -1,0 +1,39 @@
+Line 1: I can't subtract a number from text.
+    keep k1 as "a" minus 1
+               ^^^^^^^^^^^
+
+Line 2: I can't use "and" between a number and a number.
+    keep k2 as 1 and 2
+               ^^^^^^^
+To add numbers, use "plus".
+
+Line 3: "or" needs yes or no on both sides, but the left side is text.
+    keep k3 as "a" or yes
+               ^^^^^^^^^^
+
+Line 4: "not" needs a yes/no value, but this is text.
+    keep k4 as not "a"
+               ^^^^^^^
+
+Line 5: I can't compare a number with text.
+    keep k5 as 1 is less than "2"
+               ^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 6: I can't turn "12abc" into a number.
+    keep k6 as "12abc" as a number
+               ^^^^^^^^^^^^^^^^^^^
+
+Line 7: I can't use "and" between a yes/no value and text.
+    keep k7 as yes and "x"
+               ^^^^^^^^^^^
+To join them, turn the yes/no value into text first with "as text".
+
+Line 8: I can't make text negative.
+    keep k8 as -"a"
+               ^^^^
+
+Line 9: I can't add text to a number.
+    keep k9 as 1 plus "2"
+               ^^^^^^^^^^
+To join text, use "and" or "followed by".

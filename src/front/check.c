@@ -1,34 +1,6 @@
 #include <string.h>
-#include "front/check.h"
+#include "front/check_internal.h"
 
-typedef struct {
-    const char *name;
-    size_t line;        // where it was made
-    const char *where;  // in `ended`: "the \"if\"" or "the loop" that held it
-    bool loop_number;   // a loop's own number ("count ... as n")
-} Symbol;
-
-typedef struct {
-    bool has_it;  // count and times loops have a number that "it" refers to
-} Loop;
-
-typedef struct {
-    const char *name;
-    const Stmt *definition;  // STMT_FUNCTION: params and line
-} Function;
-
-typedef struct {
-    Arena *arena;
-    Diag *diag;
-    Vec(Function) functions;          // every top-level function (pre-scanned)
-    const Stmt *function;             // the function being checked, if any
-    size_t floor;                     // made[floor..] is visible (a function sees only its own names)
-    size_t blocks;                    // how many if/loop blocks we're inside
-    Vec(Symbol) made;    // names that exist here: made so far, in blocks still open
-    Vec(Symbol) later;   // every name the program makes anywhere, for "you make it later"
-    Vec(Symbol) ended;   // names whose block has ended; line = the if or loop that held them
-    Vec(Loop) loops;     // loops the current statement is inside, innermost last
-} Checker;
 
 static const Symbol *find(const Symbol *items, size_t len, const char *name) {
     for (size_t i = 0; i < len; i++) {
@@ -37,14 +9,21 @@ static const Symbol *find(const Symbol *items, size_t len, const char *name) {
     return NULL;
 }
 
-static const Symbol *find_made(const Checker *c, const char *name) {
+const Symbol *checker_find_made(const Checker *c, const char *name) {
     if (c->made.len == c->floor) return NULL;  // also avoids NULL + 0 on an empty list
     return find(c->made.items + c->floor, c->made.len - c->floor, name);
 }
 
-static const Function *find_function(const Checker *c, const char *name) {
+const Function *checker_find_function(const Checker *c, const char *name) {
     for (size_t i = 0; i < c->functions.len; i++) {
         if (strcmp(c->functions.items[i].name, name) == 0) return &c->functions.items[i];
+    }
+    return NULL;
+}
+
+const Constant *checker_find_constant(const Checker *c, const char *name) {
+    for (size_t i = 0; i < c->constants.len; i++) {
+        if (strcmp(c->constants.items[i].name, name) == 0) return &c->constants.items[i];
     }
     return NULL;
 }
@@ -53,9 +32,17 @@ static size_t param_count(const Function *f) {
     return f->definition->as.function.params.len;
 }
 
-// A variable can't share a name with a function. Reports and returns true if it does.
-static bool clashes_with_function(Checker *c, const Name *name) {
-    const Function *f = find_function(c, name->text);
+// A variable can't share a name with a function or a constant. Reports and
+// returns true if it does.
+bool checker_clashes(Checker *c, const Name *name) {
+    const Constant *k = checker_find_constant(c, name->text);
+    if (k) {
+        diag_error(c->diag, name->pos.span, "\"%s\" is a constant, made on line %zu.", name->text,
+                   k->definition->pos.line);
+        diag_note(c->diag, "Give the variable a different name.");
+        return true;
+    }
+    const Function *f = checker_find_function(c, name->text);
     if (!f) return false;
     diag_error(c->diag, name->pos.span, "\"%s\" is the name of a function, defined on line %zu.", name->text,
                f->definition->pos.line);
@@ -64,7 +51,7 @@ static bool clashes_with_function(Checker *c, const Name *name) {
 }
 
 static void make(Checker *c, const Name *name) {
-    if (find_made(c, name->text) || clashes_with_function(c, name)) return;
+    if (checker_find_made(c, name->text) || checker_clashes(c, name)) return;
     Symbol symbol = {name->text, name->pos.line, NULL, false};
     vec_push(c->arena, &c->made, symbol);
 }
@@ -105,13 +92,15 @@ static void note_choices(Checker *c, const char *name, size_t limit) {
     diag_note(c->diag, "Did you mean %s?", choices.data);
 }
 
-static void report_unknown(Checker *c, const char *name, SourcePos pos) {
+
+void checker_report_unknown(Checker *c, const char *name, SourcePos pos) {
     diag_error(c->diag, pos.span, "I don't know anything called \"%s\".", name);
     size_t count;
     const Symbol *near = closest(c, name, &count);
     const Symbol *later = find(c->later.items, c->later.len, name);
     const Symbol *ended = find(c->ended.items, c->ended.len, name);
     const Symbol *outside = c->function ? find(c->made.items, c->floor, name) : NULL;
+    const Constant *near_constant = checker_closest_constant(c, name);
     if (outside) {
         diag_note(c->diag, "A function only sees its own inputs and the names it makes. To use \"%s\" here, "
                            "pass it in as an input.", name);
@@ -121,6 +110,9 @@ static void report_unknown(Checker *c, const char *name, SourcePos pos) {
     } else if (ended) {
         diag_note(c->diag, "You made \"%s\" inside %s on line %zu, so it only exists inside that block. "
                            "To use it afterwards, make it before %s.", name, ended->where, ended->line, ended->where);
+    } else if (near_constant && !near) {
+        diag_note(c->diag, "Did you mean \"%s\"? It's a constant, kept on line %zu.", near_constant->name,
+                  near_constant->definition->pos.line);
     } else if (near && count == 1) {
         diag_note(c->diag, "Did you mean \"%s\"? You made it on line %zu.", near->name, near->line);
     } else if (near) {
@@ -133,7 +125,14 @@ static void report_unknown(Checker *c, const char *name, SourcePos pos) {
 }
 
 static void check_target(Checker *c, const Name *name) {
-    if (!find_made(c, name->text)) report_unknown(c, name->text, name->pos);
+    const Constant *k = checker_find_constant(c, name->text);
+    if (k) {
+        diag_error(c->diag, name->pos.span, "\"%s\" is a constant, so it can't change.", name->text);
+        diag_note(c->diag, "It's kept on line %zu. If it needs to change, make it with \"let %s be ...\" instead of "
+                           "\"keep\".", k->definition->pos.line, name->text);
+        return;
+    }
+    if (!checker_find_made(c, name->text)) checker_report_unknown(c, name->text, name->pos);
 }
 
 // "it" is the number of the innermost loop that has one (count and times loops).
@@ -150,7 +149,6 @@ static void check_it(Checker *c, const Expr *expr) {
     }
 }
 
-static void check_expr(Checker *c, const Expr *expr);
 
 // "to area with width and height"
 static const char *function_header(const Checker *c, const Function *f) {
@@ -166,7 +164,12 @@ static const char *function_header(const Checker *c, const Function *f) {
 }
 
 static void report_unknown_function(Checker *c, const char *name, SourcePos pos) {
-    if (find_made(c, name)) {
+    if (checker_find_constant(c, name)) {
+        diag_error(c->diag, pos.span, "\"%s\" is a constant, not a function.", name);
+        diag_note(c->diag, "Only functions made with \"to %s ...:\" can be called.", name);
+        return;
+    }
+    if (checker_find_made(c, name)) {
         diag_error(c->diag, pos.span, "\"%s\" is a variable, not a function.", name);
         diag_note(c->diag, "Only functions made with \"to %s ...:\" can be called.", name);
         return;
@@ -202,9 +205,9 @@ static void report_argument_count(Checker *c, const Function *f, size_t given, S
 
 static void check_call(Checker *c, const Expr *expr) {
     for (size_t i = 0; i < expr->as.call.args.len; i++) {
-        check_expr(c, expr->as.call.args.items[i]);
+        checker_check_expr(c, expr->as.call.args.items[i]);
     }
-    const Function *f = find_function(c, expr->as.call.name);
+    const Function *f = checker_find_function(c, expr->as.call.name);
     if (!f) {
         report_unknown_function(c, expr->as.call.name, expr->pos);
     } else if (param_count(f) != expr->as.call.args.len) {
@@ -214,36 +217,36 @@ static void check_call(Checker *c, const Expr *expr) {
 
 // A bare name: a variable, or a function that takes no values.
 static void check_name_expr(Checker *c, const Expr *expr) {
-    if (find_made(c, expr->as.name)) return;
-    const Function *f = find_function(c, expr->as.name);
+    if (checker_find_made(c, expr->as.name) || checker_find_constant(c, expr->as.name)) return;
+    const Function *f = checker_find_function(c, expr->as.name);
     if (!f) {
-        report_unknown(c, expr->as.name, expr->pos);
+        checker_report_unknown(c, expr->as.name, expr->pos);
     } else if (param_count(f) > 0) {
         report_argument_count(c, f, 0, expr->pos);
     }
 }
 
-static void check_expr(Checker *c, const Expr *expr) {
+void checker_check_expr(Checker *c, const Expr *expr) {
     switch (expr->kind) {
     case EXPR_NAME: check_name_expr(c, expr); break;
     case EXPR_CALL: check_call(c, expr); break;
     case EXPR_IT: check_it(c, expr); break;
     case EXPR_LENGTH:
-    case EXPR_FILE_CONTENTS: check_expr(c, expr->as.operand); break;
-    case EXPR_UNARY: check_expr(c, expr->as.unary.operand); break;
+    case EXPR_FILE_CONTENTS: checker_check_expr(c, expr->as.operand); break;
+    case EXPR_UNARY: checker_check_expr(c, expr->as.unary.operand); break;
     case EXPR_BINARY:
-        check_expr(c, expr->as.binary.left);
-        check_expr(c, expr->as.binary.right);
+        checker_check_expr(c, expr->as.binary.left);
+        checker_check_expr(c, expr->as.binary.right);
         break;
-    case EXPR_CONVERT: check_expr(c, expr->as.convert.operand); break;
+    case EXPR_CONVERT: checker_check_expr(c, expr->as.convert.operand); break;
     default: break;
     }
 }
 
 static void check_let(Checker *c, const Stmt *stmt) {
     const Name *name = &stmt->as.assign.name;
-    check_expr(c, stmt->as.assign.value);
-    const Symbol *existing = find_made(c, name->text);
+    checker_check_expr(c, stmt->as.assign.value);
+    const Symbol *existing = checker_find_made(c, name->text);
     if (existing) {
         diag_error(c->diag, name->pos.span, "You already made \"%s\" on line %zu.", name->text, existing->line);
         diag_note(c->diag, "To change it, write \"set %s to ...\".", name->text);
@@ -253,7 +256,7 @@ static void check_let(Checker *c, const Stmt *stmt) {
 }
 
 static void check_return(Checker *c, const Stmt *stmt) {
-    if (stmt->as.returned) check_expr(c, stmt->as.returned);
+    if (stmt->as.returned) checker_check_expr(c, stmt->as.returned);
     if (c->function) return;
     diag_error(c->diag, stmt->pos.span, "\"give back\" only works inside a function.");
     diag_note(c->diag, "It ends a function and hands a value back to whoever called it. "
@@ -291,7 +294,7 @@ static void check_block(Checker *c, const Block *block, size_t line, const char 
 static void check_params(Checker *c, const Stmt *stmt) {
     for (size_t i = 0; i < stmt->as.function.params.len; i++) {
         const Name *param = &stmt->as.function.params.items[i];
-        if (find_made(c, param->text)) {
+        if (checker_find_made(c, param->text)) {
             diag_error(c->diag, param->pos.span, "This function already has an input called \"%s\".", param->text);
             diag_note(c->diag, "Give each input its own name.");
         } else {
@@ -327,15 +330,15 @@ static void check_function(Checker *c, const Stmt *stmt) {
 static void check_if(Checker *c, const Stmt *stmt) {
     for (size_t i = 0; i < stmt->as.if_stmt.branches.len; i++) {
         const IfBranch *branch = &stmt->as.if_stmt.branches.items[i];
-        if (branch->condition) check_expr(c, branch->condition);
+        if (branch->condition) checker_check_expr(c, branch->condition);
         check_block(c, &branch->body, stmt->pos.line, "the \"if\"");
     }
 }
 
 static void check_loop_variable(Checker *c, const Stmt *stmt) {
     const Name *var = &stmt->as.loop.var;
-    const Symbol *existing = find_made(c, var->text);
-    if (!existing && clashes_with_function(c, var)) return;
+    const Symbol *existing = checker_find_made(c, var->text);
+    if (!existing && checker_clashes(c, var)) return;
     if (!existing) {
         Symbol symbol = {var->text, var->pos.line, NULL, true};
         vec_push(c->arena, &c->made, symbol);
@@ -356,7 +359,7 @@ static void check_loop(Checker *c, const Stmt *stmt) {
     const Expr *values[] = {stmt->as.loop.from, stmt->as.loop.to, stmt->as.loop.step, stmt->as.loop.times,
                             stmt->as.loop.condition};
     for (size_t i = 0; i < sizeof(values) / sizeof(values[0]); i++) {
-        if (values[i]) check_expr(c, values[i]);
+        if (values[i]) checker_check_expr(c, values[i]);
     }
     size_t outer = c->made.len;
     if (stmt->as.loop.kind == LOOP_COUNT) check_loop_variable(c, stmt);
@@ -384,25 +387,25 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
     switch (stmt->kind) {
     case STMT_LET: check_let(c, stmt); break;
     case STMT_SET:
-        check_expr(c, stmt->as.assign.value);
+        checker_check_expr(c, stmt->as.assign.value);
         check_target(c, &stmt->as.assign.name);
         break;
     case STMT_CHANGE:
-        check_expr(c, stmt->as.change.amount);
+        checker_check_expr(c, stmt->as.change.amount);
         check_target(c, &stmt->as.change.target);
         break;
-    case STMT_SAY: check_expr(c, stmt->as.value); break;
+    case STMT_SAY: checker_check_expr(c, stmt->as.value); break;
     case STMT_ASK:
-        check_expr(c, stmt->as.ask.prompt);
+        checker_check_expr(c, stmt->as.ask.prompt);
         make(c, &stmt->as.ask.answer);
         break;
     case STMT_WRITE_FILE:
     case STMT_APPEND_FILE:
-        check_expr(c, stmt->as.file_write.text);
-        check_expr(c, stmt->as.file_write.path);
+        checker_check_expr(c, stmt->as.file_write.text);
+        checker_check_expr(c, stmt->as.file_write.path);
         break;
     case STMT_READ_FILE:
-        check_expr(c, stmt->as.read_file.path);
+        checker_check_expr(c, stmt->as.read_file.path);
         make(c, &stmt->as.read_file.name);
         break;
     case STMT_STOP: break;
@@ -412,7 +415,8 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
     case STMT_CONTINUE: check_loop_control(c, stmt); break;
     case STMT_FUNCTION: check_function(c, stmt); break;
     case STMT_RETURN: check_return(c, stmt); break;
-    case STMT_CALL: check_expr(c, stmt->as.call); break;
+    case STMT_CALL: checker_check_expr(c, stmt->as.call); break;
+    case STMT_CONSTANT: checker_check_constant(c, stmt); break;
     }
 }
 
@@ -448,7 +452,7 @@ static void collect_functions(Checker *c, const Block *program) {
         const Stmt *stmt = program->items[i];
         if (stmt->kind != STMT_FUNCTION) continue;
         const Name *name = &stmt->as.function.name;
-        const Function *existing = find_function(c, name->text);
+        const Function *existing = checker_find_function(c, name->text);
         if (existing) {
             diag_error(c->diag, name->pos.span, "You already defined \"%s\" on line %zu.", name->text,
                        existing->definition->pos.line);
@@ -465,6 +469,7 @@ void check_program(Arena *arena, Diag *diag, const Block *program) {
     c.arena = arena;
     c.diag = diag;
     collect_functions(&c, program);
+    checker_collect_constants(&c, program);
     collect_names(&c, program);
     check_statements(&c, program);
 }

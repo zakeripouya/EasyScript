@@ -1,0 +1,9 @@
+Line 5: A constant can't call a function, because functions only run while the program runs.
+    keep a2 as double of 2
+               ^^^^^^^^^^^
+A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".
+
+Line 6: A constant can't call a function, because functions only run while the program runs.
+    keep b2 as pi times 2
+               ^^
+A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".

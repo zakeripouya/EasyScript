@@ -1,0 +1,4 @@
+Line 1: A constant can't read a file, because files are read while the program runs.
+    keep text_of as contents of file "notes.txt"
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".

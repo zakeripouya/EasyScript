@@ -149,6 +149,18 @@ The words that start statements are only special at the start of a sentence, so 
 
 **Names** are single words (see [Values](#values)). `a`, `an`, and `the` can't be names because EasyScript ignores them, so `let a be 5` is an error that explains this. Words that already mean something (`yes`, `no`, `true`, `false`, `nothing`, `it`, and the operator words) can't be names either.
 
+### Constants
+
+| Pattern | Meaning | Example | Status |
+|---|---|---|---|
+| `keep NAME as X` | Make a constant: a name whose value never changes | `keep tax_rate as 0.2` | Available |
+| `keep NAME at X` | Same as `as` | `keep speed_limit at 50` | Available |
+
+- **Fixed before the program starts:** X may use numbers, text, yes and no, arithmetic, joining (`followed by`, `and`), comparisons, `and`/`or`/`not`, `as text`, `as a number`, `length of`, and constants made above it. Variables, function calls, `it`, `nothing`, and `contents of file` are errors, because their values are only known while the program runs. The compiler works the value out, so a constant costs nothing while the program runs.
+- **Visible everywhere,** including inside functions (which can't see variables), and even above the line that makes it.
+- **Never changes:** `set`, `change`, `add`, `subtract`, `increase`, `decrease`, `multiply`, and `divide` on a constant are errors that suggest `let` instead. A variable, input, loop number, or function can't have a constant's name.
+- **Top level only:** not inside an `if`, a loop, or a function.
+
 ### Output and input
 
 | Pattern | Meaning | Example | Status |

@@ -1,4 +1,5 @@
-// Functions: defining, giving back, and calling as a statement.
+// Top-level definitions: functions (defining, giving back, calling as a
+// statement) and constants ("keep rate as 0.2").
 //
 //   to greet someone:                    give back E / return E / return
 //   to area with width and height:       ("of" and "using" work like "with")
@@ -88,6 +89,19 @@ Stmt *parse_function(Parser *p, const Token *verb) {
     }
     p->ended_with_block = true;  // set last: statements inside the block reset it
     return ok ? stmt : NULL;
+}
+
+// --- Constants -------------------------------------------------------------------
+
+// keep NAME as E / keep NAME at E. Whether E is fixed before the program runs
+// is checked (and E worked out) by the checker.
+Stmt *parse_constant(Parser *p, const Token *verb) {
+    static const char *const as_at[] = {"as", "at", NULL};
+    static const char *const example = "keep tax_rate as 0.2";
+    Stmt *stmt = parser_new_stmt(p, STMT_CONSTANT, verb);
+    if (!parser_parse_name(p, &stmt->as.constant.name, as_at) || !parser_expect_word(p, as_at, example)) return NULL;
+    stmt->as.constant.value = parse_expression(p);
+    return stmt;
 }
 
 // --- Giving back -----------------------------------------------------------------

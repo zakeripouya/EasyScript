@@ -281,6 +281,19 @@ Did you mean "total"? You made it on line 1.
 
 A variable can hold any kind of value, and can change kind: `set total to "done"` is fine.
 
+### Values that never change
+
+A **constant** is a name for a value that stays the same for the whole program. Make one with `keep`:
+
+```
+keep tax_rate as 0.2.
+keep shop at "Corner Shop".
+keep welcome as "Welcome to " followed by shop.
+say welcome.
+```
+
+A constant's value has to be known before the program starts, so it can use numbers, text, yes and no, and other constants, but not variables or anything the program works out while it runs. Trying to change a constant is an error that suggests `let` instead. Constants can be used everywhere, including inside functions (chapter 7).
+
 Try it: `./easyscript run examples/programs/variables.es`
 
 ---
@@ -439,7 +452,14 @@ to factorial of n:
 say factorial of 5.
 ```
 
-Functions are defined at the top level of the program, and you can use one before its definition. A function only sees its own inputs and the names it makes, so pass in anything else it needs. Giving it the wrong number of inputs is an error that says how many it needs and where it's defined.
+Functions are defined at the top level of the program, and you can use one before its definition. A function only sees its own inputs, the names it makes, and constants (`keep`, chapter 3), so pass in anything else it needs:
+
+```
+keep tax_rate as 0.2.
+to price_with_tax of amount:
+    give back amount plus amount times tax_rate.
+say price_with_tax of 50.
+``` Giving it the wrong number of inputs is an error that says how many it needs and where it's defined.
 
 Try it: `./easyscript run examples/programs/factorial.es` and `examples/programs/fibonacci.es`
 

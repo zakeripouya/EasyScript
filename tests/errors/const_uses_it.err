@@ -1,0 +1,4 @@
+Line 1: "it" changes while the program runs, so a constant can't use it.
+    keep k as it
+              ^^
+A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".

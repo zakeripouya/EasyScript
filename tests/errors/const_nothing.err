@@ -1,0 +1,4 @@
+Line 1: A constant can't be nothing.
+    keep empty as nothing
+                  ^^^^^^^
+Use a number, text, or yes or no.

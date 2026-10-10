@@ -133,6 +133,7 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch) {
         break;
     case STMT_RETURN: return "give back";
     case STMT_CALL: return "call";
+    case STMT_CONSTANT: sb_appendf(scratch, "keep %s", stmt->as.constant.name.text); break;
     }
     return scratch->data;
 }
@@ -212,6 +213,7 @@ static void dump_stmt(const Stmt *stmt, size_t depth, StrBuf *out) {
         if (stmt->as.returned) dump_expr(stmt->as.returned, depth + 1, out);
         break;
     case STMT_CALL: dump_expr(stmt->as.call, depth + 1, out); break;
+    case STMT_CONSTANT: dump_expr(stmt->as.constant.value, depth + 1, out); break;
     }
 }
 

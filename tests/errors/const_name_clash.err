@@ -1,0 +1,29 @@
+Line 11: "shop" is the name of a function, defined on line 9.
+    keep shop as "x"
+         ^^^^
+Give the constant a different name.
+
+Line 2: "rate" is a constant, made on line 1.
+    let rate be 1
+        ^^^^
+Give the variable a different name.
+
+Line 3: "rate" is a constant, made on line 1.
+    ask "?" and call the answer rate
+                                ^^^^
+Give the variable a different name.
+
+Line 4: "rate" is a constant, made on line 1.
+    read file "f" and call it rate
+                              ^^^^
+Give the variable a different name.
+
+Line 5: "rate" is a constant, made on line 1.
+    count from 1 to 2 as rate:
+                         ^^^^
+Give the variable a different name.
+
+Line 7: "rate" is a constant, made on line 1.
+    to use_rate with rate:
+                     ^^^^
+Give the variable a different name.

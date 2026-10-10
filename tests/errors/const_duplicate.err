@@ -1,0 +1,4 @@
+Line 2: You already made the constant "rate" on line 1.
+    keep rate as 0.3
+         ^^^^
+Each constant needs its own name.

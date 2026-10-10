@@ -1,0 +1,16 @@
+keep tax_rate [1:1]
+  number 0.2 [1:18]
+keep shop [2:1]
+  text "Corner Shop" [2:14]
+keep label [3:1]
+  join [3:15]
+    text "Shop: " [3:15]
+    name shop [3:36]
+keep open [4:1]
+  yes [4:14]
+repeat until [5:1]
+  condition
+    name open [5:23]
+  do
+    say [6:5]
+      number 1 [6:9]

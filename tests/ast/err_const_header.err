@@ -1,0 +1,26 @@
+Line 1: I expected "as" here, but found "0.2".
+    keep rate 0.2
+              ^^^
+Write it like "keep tax_rate as 0.2".
+
+Line 2: "a" can't be used as a name.
+    keep a as 1
+         ^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 3: "yes" can't be used as a name.
+    keep yes as 1
+         ^^^
+"yes" already means something in EasyScript.
+Try a different name, like "my_yes".
+
+Line 4: Something is missing after "as".
+    keep rate as
+              ^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 5: I expected "keep doing this until" here, but found "doing this while".
+    keep doing this while x:
+         ^^^^^^^^^^^^^^^^
+Write it like "keep doing this until done:".

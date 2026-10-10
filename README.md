@@ -65,6 +65,7 @@ EasyScript is in **Phase 1 (core language)**. Programs written in the sentence s
 | Piece | What you can do |
 |---|---|
 | Variables | `let total be 0`, `set`/`change ... to`, and `add 5 to total`, `subtract`, `increase`/`decrease`/`multiply`/`divide ... by` |
+| Constants | `keep tax_rate as 0.2`: worked out by the compiler, usable everywhere (including inside functions), and never changed |
 | Values and expressions | Numbers, text, yes/no, nothing; arithmetic in words or symbols; comparisons (`is at least`, `>=`, ...); `and`/`or`/`not`; joining text with `and` or `followed by`; `as a number`, `as text`, `length of`, `contents of file` |
 | Output and input | `say` (or `print`, `show`, `display`, `write`), `ask "..." and call the answer name` |
 | Files | `write ... to file`, `append ... to file`, `read file ... and call it ...` |
@@ -84,7 +85,7 @@ See the runnable [example programs](examples/programs/).
 
 | Phase | Focus | Status |
 |---|---|---|
-| 1 | **Core language:** variables, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | In progress (variables, expressions, decisions, loops, functions, output, input, and files run) |
+| 1 | **Core language:** variables, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | In progress (variables, constants, expressions, decisions, loops, functions, output, input, and files run) |
 | 2 | **Data and structure:** records, lists, maps, modules, static types | Coming soon |
 | 3 | **Self-hosting:** the EasyScript compiler, written in EasyScript | Coming soon |
 | 4 | **Real-world programs:** standard library, C interop, concurrency, backend servers | Coming soon |

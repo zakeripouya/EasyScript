@@ -145,6 +145,7 @@ void parser_find_functions(Parser *p);  // fills p->functions
 bool parser_is_function(const Parser *p, const char *name);
 Stmt *parse_function(Parser *p, const Token *verb);   // to NAME ...:
 Stmt *parse_return(Parser *p, const Token *verb);     // give back / return
+Stmt *parse_constant(Parser *p, const Token *verb);   // keep NAME as E
 // "call NAME ..." (verb "call") or "NAME ..." (verb is a function's name).
 Stmt *parse_call_statement(Parser *p, const Token *verb);
 

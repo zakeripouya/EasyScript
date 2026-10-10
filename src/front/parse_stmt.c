@@ -264,6 +264,12 @@ static Stmt *parse_call_form(Parser *p, const Token *verb, const StmtForm *form)
     return parse_call_statement(p, verb);
 }
 
+// "keep doing this until" is a loop; any other "keep" makes a constant.
+static Stmt *parse_keep_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parser_at_word(p, 0, "doing") ? parse_loop(p, verb) : parse_constant(p, verb);
+}
+
 static Stmt *parse_loop_form(Parser *p, const Token *verb, const StmtForm *form) {
     (void)form;
     return parse_loop(p, verb);
@@ -305,7 +311,7 @@ static const StmtForm forms[] = {
     {"repeat", parse_loop_form, false, 0, NULL, "repeat 3 times:"},
     {"while", parse_loop_form, false, 0, NULL, "while x is less than 10:"},
     {"as", parse_loop_form, false, 0, NULL, "as long as x is less than 10:"},
-    {"keep", parse_loop_form, false, 0, NULL, "keep doing this until done:"},
+    {"keep", parse_keep_form, false, 0, NULL, "keep tax_rate as 0.2"},
     {"forever", parse_loop_form, false, 0, NULL, "forever:"},
     {"to", parse_function_form, false, 0, NULL, "to greet someone:"},
     {"give", parse_return_form, false, 0, NULL, "give back total"},

@@ -1,0 +1,4 @@
+Line 1: A constant can't use itself.
+    keep loop_me as loop_me plus 1
+                    ^^^^^^^
+Give it a value made from numbers, text, yes or no, and constants made above it.

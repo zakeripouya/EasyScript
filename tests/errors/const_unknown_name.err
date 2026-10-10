@@ -1,0 +1,4 @@
+Line 2: I don't know anything called "rtae".
+    keep tax as rtae times 2
+                ^^^^
+Did you mean "rate"? It's a constant, kept on line 1.

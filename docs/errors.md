@@ -245,7 +245,25 @@ Line 3: I don't know anything called "total".
 A function only sees its own inputs and the names it makes. To use "total" here, pass it in as an input.
 ```
 
-The checker also explains `skip this one` outside a loop, `it` outside a counting loop, using a loop's number after the loop ("it only exists inside that loop"), `give back` outside a function, a function defined inside an `if`, a loop, or another function, two functions with the same name, two inputs with the same name, a variable named like a function, and calling a variable. The full, tested set is in [`tests/errors/`](../tests/errors/).
+**Changing a constant**: [`const_change.es`](../tests/errors/const_change.es)
+
+```
+Line 2: "rate" is a constant, so it can't change.
+    set rate to 0.3
+        ^^^^
+It's kept on line 1. If it needs to change, make it with "let rate be ..." instead of "keep".
+```
+
+**A constant that uses a variable**: [`const_uses_variable.es`](../tests/errors/const_uses_variable.es)
+
+```
+Line 2: "price" is a variable, so its value isn't known before the program runs.
+    keep tax as price times 0.2
+                ^^^^^
+A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".
+```
+
+The checker also explains `skip this one` outside a loop, `it` outside a counting loop, using a loop's number after the loop ("it only exists inside that loop"), `give back` outside a function, a function defined inside an `if`, a loop, or another function, two functions with the same name, two inputs with the same name, a variable named like a function, and calling a variable. For constants it also explains calls, `it`, file contents and `nothing` in a constant's value, a constant that uses a later constant or itself, constants inside blocks, duplicate constants, names that clash with a constant, and mistakes in the value itself (like dividing by zero), with the same wording as the runtime errors. The full, tested set is in [`tests/errors/`](../tests/errors/).
 
 ### While the program runs
 

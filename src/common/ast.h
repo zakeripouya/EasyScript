@@ -120,7 +120,23 @@ typedef enum {
     STMT_FUNCTION,     // to NAME [with] P and Q:  (top level only)
     STMT_RETURN,       // give back E / return E / return
     STMT_CALL,         // greet "Paris" / greet with "Paris" / call greet with "Paris"
+    STMT_CONSTANT,     // keep NAME as E / keep NAME at E  (top level only)
 } StmtKind;
+
+// A constant's value, worked out by the compiler (see front/consteval.h).
+typedef enum {
+    CONST_NUMBER,
+    CONST_TEXT,
+    CONST_YESNO,
+} ConstKind;
+
+typedef struct {
+    ConstKind kind;
+    double number;
+    bool yes;
+    const char *text;  // NUL-terminated
+    size_t len;
+} ConstValue;
 
 typedef enum {
     LOOP_COUNT,    // count [down] from A to B [by S] [as N]; go from; for each N from
@@ -194,6 +210,11 @@ struct Stmt {
         } function;
         Expr *returned;  // STMT_RETURN; NULL for a bare "return"
         Expr *call;      // STMT_CALL: an EXPR_CALL
+        struct {
+            Name name;
+            Expr *value;
+            ConstValue folded;  // filled in by the checker
+        } constant;
         struct {
             LoopKind kind;
             Expr *from, *to, *step;  // LOOP_COUNT (step NULL: 1)

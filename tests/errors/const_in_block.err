@@ -1,0 +1,14 @@
+Line 2: Constants can only be made at the top level, not inside an "if" or a loop.
+        keep a1 as 1
+             ^^
+Move "keep a1 ..." to the start of a line, outside every block.
+
+Line 4: Constants can only be made at the top level, not inside an "if" or a loop.
+        keep b1 as 2
+             ^^
+Move "keep b1 ..." to the start of a line, outside every block.
+
+Line 6: Constants can only be made at the top level, not inside a function.
+        keep c1 as 3
+             ^^
+Move "keep c1 ..." to the start of a line, outside every block.
