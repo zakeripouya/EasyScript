@@ -1,0 +1,4 @@
+Line 2: "total" is a variable, not a function.
+    say total of 3
+        ^^^^^^^^^^
+Only functions made with "to total ...:" can be called.

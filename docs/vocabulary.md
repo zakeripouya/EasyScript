@@ -5,7 +5,6 @@ Every word, symbol, and sentence pattern in EasyScript, grouped by category, wit
 **Status labels:**
 
 - **Available:** works today: it compiles and runs.
-- **Parses only:** the parser understands it (see `easyscript ast`), but using it in a program is an error because its meaning isn't implemented yet (only calling functions, today).
 - **Coming soon:** planned for the phase shown. Sentence patterns marked this way are **proposals**: the wording may change before they ship, and they don't compile today.
 
 In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressions, and `CONDITION` is anything that is yes or no. Keywords are case-insensitive. The filler words `the`, `a`, and `an` may appear anywhere and are ignored, so they're left out of the patterns below.
@@ -118,10 +117,14 @@ These take a single value, so `length of name plus 1` means `(length of name) pl
 
 | Pattern | Meaning | Example | Status |
 |---|---|---|---|
-| `NAME using X, Y, ...` | Call a function with inputs, separated by commas | `greet using "Ada"`<br>`add using 2, 3` | Parses only (making functions is coming soon) |
-| `NAME` | Call a function with no inputs (written like a variable) | `cheer` | Coming soon (today a bare name is always a variable) |
+| `NAME of X and Y` | Call a function and use the value it gives back | `area of 3 and 4` | Available |
+| `NAME with X and Y` | Same as `of` | `area with 3 and 4` | Available |
+| `NAME using X, Y` | Same, with the inputs separated by commas (or `and`) | `area using 3, 4` | Available |
+| `NAME` | Call a function that takes no inputs (written like a variable) | `say pi times 2` | Available |
 
-Each input is a single value (a negative number, a conversion, or anything in parentheses is fine). Arithmetic straight after the inputs could belong to the last input or to the whole result, so `double using 21 plus 1` is an error that asks you to write `(double using 21) plus 1` or `double using (21 plus 1)`. Comparisons and `and`/`or` end the inputs: `double using 2 is 4` compares the result with 4.
+- **Inputs are separated by `and`.** Each input is a single value: a number, text, a name, a negative number, a conversion, another call in parentheses, or anything in parentheses. So `"Hi " and name` as an input needs parentheses: `greet with ("Hi " and name)`. Every `and` straight after an input starts another input, and the checker then says if the count is wrong.
+- **Arithmetic straight after the inputs** could belong to the last input or to the whole result, so `double of 21 plus 1` is an error that asks you to write `(double of 21) plus 1` or `double of (21 plus 1)`. When the last input is already in parentheses it's clear, so `fib of (n minus 1) plus fib of (n minus 2)` adds two calls.
+- Comparisons, `or`, and `and call` end the inputs: `area of 3 and 4 is 12` compares the result with 12.
 
 ## Statements
 
@@ -240,14 +243,27 @@ Using either outside a loop is an error. `stop the program` still ends the whole
 
 ## Functions
 
-| Pattern | Meaning | Example | Status |
-|---|---|---|---|
-| `to NAME:` | Define a function with no inputs | `to cheer:` | Coming soon (Phase 1) |
-| `to NAME using NAME, NAME, ...:` | Define a function with inputs | `to greet using name:` | Coming soon (Phase 1) |
-| `give back X.` | Return a value from a function | `give back number times 2.` | Coming soon (Phase 1) |
-| `return X.` | Synonym of `give back` | `return number times 2.` | Coming soon (Phase 1) |
+All function sentences are **Available**.
 
-Calling a function is an expression; see [Calling a function](#calling-a-function).
+| Pattern | Meaning | Example |
+|---|---|---|
+| `to NAME:` | Define a function with no inputs | `to cheer:` |
+| `to NAME INPUT:` | Define a function with one input | `to greet someone:` |
+| `to NAME with INPUT and INPUT:` | Define a function with inputs (`of` and `using` work like `with`; commas work like `and`) | `to area with width and height:` |
+| `give back X` / `return X` | End the function and hand X back to whoever called it | `give back width times height` |
+| `return` | End the function early, handing back nothing | `return` |
+| `NAME X and Y` | Call a function as a sentence | `greet "Paris".` |
+| `NAME with X and Y` | Same | `greet with "Paris".` |
+| `call NAME [with X and Y]` | Same | `call greet with "Paris".` |
+
+Rules:
+
+- **Top level only:** a function is defined at the start of a line, outside every `if`, loop, and other function, with its sentences indented below. It can be used anywhere in the file, even before its definition, and it can call itself (recursion) or other functions.
+- **Its own names:** a function sees only its inputs and the names it makes, not the program's other variables (pass those in as inputs). Names made inside it follow the same block rules as `if`s and loops.
+- **Giving back:** a function that ends without `give back` gives back nothing. `give back` outside a function is an error.
+- **Names:** a function's name is one word that isn't a sentence word (like `say` or `count`). Functions and variables share names, so `area` can't be both. Each input needs its own name.
+- **Checks before running:** calling a function that doesn't exist suggests the closest one; giving it the wrong number of inputs says how many it needs and where it's defined.
+- **Deep recursion** stops with "Functions are calling each other too deeply (more than 10000 calls inside each other)." instead of crashing.
 
 ## Later phases
 

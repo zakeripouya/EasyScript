@@ -1,0 +1,66 @@
+Line 1: Something is missing after "to".
+    to:
+    ^^
+Add a name there, like "total".
+
+Line 3: "say" starts sentences in EasyScript, so it can't be the name of a function.
+    to say x:
+       ^^^
+Pick another name, like "say_it".
+
+Line 5: "a" can't be used as a name.
+    to greet a:
+             ^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 7: "yes" can't be used as a name.
+    to greet yes:
+             ^^^
+"yes" already means something in EasyScript.
+Try a different name, like "my_yes".
+
+Line 9: Something is missing after "with".
+    to greet with:
+             ^^^^
+Name the inputs, like "to area with width and height:", or leave out "with".
+
+Line 11: I expected a colon after this function, but found the end of the line.
+    to greet someone
+                    ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 13: After the colon, start a new line.
+    to greet someone: say someone
+                      ^^^
+Put the sentences that belong to it on the next lines, indented.
+
+Line 14: I expected "back" here, but found "hello".
+    give hello
+         ^^^^^
+Write it like "give back total".
+
+Line 15: Something is missing after "call".
+    call
+    ^^^^
+Add a name there, like "total".
+
+Line 16: I expected a name here, but found "5".
+    call 5
+         ^
+A name is a single word, like "total" or "player_2".
+
+Line 17: Something is missing after "with".
+    greet with
+          ^^^^
+Add the values to give it, like "greet with "Paris"", or leave out "with".
+
+Line 18: Something is missing after "and".
+    say area of 3 and
+                  ^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 19: "area of 3 and 4 plus 1" could mean two things.
+    say area of 3 and 4 plus 1
+        ^^^^^^^^^^^^^^^^^^^^^^
+Use parentheses to say which: "(area of 3 and 4) plus 1" or "area of 3 and (4 plus 1)".

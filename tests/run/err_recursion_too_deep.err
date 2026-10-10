@@ -1,0 +1,2 @@
+Line 2: Functions are calling each other too deeply (more than 10000 calls inside each other).
+Check that the function stops calling itself at some point.

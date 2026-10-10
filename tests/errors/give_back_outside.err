@@ -1,0 +1,9 @@
+Line 2: "give back" only works inside a function.
+    give back 2
+    ^^^^^^^^^^^
+It ends a function and hands a value back to whoever called it. To end the whole program, write "stop the program".
+
+Line 4: "give back" only works inside a function.
+        return
+        ^^^^^^
+It ends a function and hands a value back to whoever called it. To end the whole program, write "stop the program".

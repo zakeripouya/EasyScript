@@ -333,9 +333,17 @@ static Expr *parse_prefixed(Parser *p, ExprKind kind, size_t words) {
     return expr;
 }
 
+static bool is_parenthesized(const Parser *p, const Expr *expr) {
+    Span span = expr->pos.span;
+    return span.length >= 2 && p->source[span.offset] == '(' && p->source[span.offset + span.length - 1] == ')';
+}
+
 // An argument directly followed by arithmetic could belong to the call or
 // to the whole sentence ("double using 21 plus 1"), so that's an error.
+// A last argument in parentheses is already closed, so then the arithmetic
+// belongs outside: "fib of (n minus 1) plus 1".
 static Expr *reject_ambiguous_call(Parser *p, Expr *call) {
+    if (is_parenthesized(p, call->as.call.args.items[call->as.call.args.len - 1])) return call;
     size_t len;
     const Phrase *op = parser_match_phrase(p, additive_ops, COUNT(additive_ops), &len);
     if (!op) op = parser_match_phrase(p, multiplicative_ops, COUNT(multiplicative_ops), &len);
@@ -356,17 +364,31 @@ static Expr *reject_ambiguous_call(Parser *p, Expr *call) {
     return ast_new_expr(p->arena, EXPR_ERROR, whole);
 }
 
-// NAME using ARG, ARG, ...  Each argument is a unary expression.
-static Expr *parse_call(Parser *p, const Token *name) {
-    parser_advance(p);  // "using"
-    Expr *call = ast_new_expr(p->arena, EXPR_CALL, parser_token_pos(name));
-    call->as.call.name = name->text;
+static bool at_argument_separator(const Parser *p, bool commas) {
+    if (parser_at_word(p, 0, "and") && !parser_at_word(p, 1, "call")) return true;
+    return commas && parser_at(p, 0, TOK_COMMA);
+}
+
+void parser_parse_call_args(Parser *p, Expr *call, bool commas) {
     do {
         Expr *arg = parse_unary(p);
         vec_push(p->arena, &call->as.call.args, arg);
         call->pos = ast_pos_join(call->pos, arg->pos);
-    } while (parser_at(p, 0, TOK_COMMA) && parser_advance(p));
-    return reject_ambiguous_call(p, call);
+    } while (at_argument_separator(p, commas) && parser_advance(p));
+}
+
+Expr *parser_finish_call(Parser *p, Expr *call) {
+    return call->as.call.args.len > 0 ? reject_ambiguous_call(p, call) : call;
+}
+
+// NAME of A and B / NAME with A and B / NAME using A, B. Each argument is a
+// unary expression.
+static Expr *parse_call(Parser *p, const Token *name) {
+    const Token *intro = parser_advance(p);  // "of", "with", or "using"
+    Expr *call = ast_new_expr(p->arena, EXPR_CALL, parser_token_pos(name));
+    call->as.call.name = name->text;
+    parser_parse_call_args(p, call, strcmp(intro->text, "using") == 0);
+    return parser_finish_call(p, call);
 }
 
 static Expr *parse_word(Parser *p) {
@@ -392,7 +414,9 @@ static Expr *parse_word(Parser *p) {
     if (parser_is_operator_word(word)) return expected_value(p);
 
     parser_advance(p);
-    if (parser_at_word(p, 0, "using")) return parse_call(p, token);
+    if (parser_at_word(p, 0, "using") || parser_at_word(p, 0, "of") || parser_at_word(p, 0, "with")) {
+        return parse_call(p, token);
+    }
     Expr *expr = ast_new_expr(p->arena, EXPR_NAME, parser_token_pos(token));
     expr->as.name = word;
     return expr;

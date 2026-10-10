@@ -249,6 +249,21 @@ static Stmt *parse_if_form(Parser *p, const Token *verb, const StmtForm *form) {
     return parse_if(p, verb);
 }
 
+static Stmt *parse_function_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parse_function(p, verb);
+}
+
+static Stmt *parse_return_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parse_return(p, verb);
+}
+
+static Stmt *parse_call_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parse_call_statement(p, verb);
+}
+
 static Stmt *parse_loop_form(Parser *p, const Token *verb, const StmtForm *form) {
     (void)form;
     return parse_loop(p, verb);
@@ -292,16 +307,27 @@ static const StmtForm forms[] = {
     {"as", parse_loop_form, false, 0, NULL, "as long as x is less than 10:"},
     {"keep", parse_loop_form, false, 0, NULL, "keep doing this until done:"},
     {"forever", parse_loop_form, false, 0, NULL, "forever:"},
+    {"to", parse_function_form, false, 0, NULL, "to greet someone:"},
+    {"give", parse_return_form, false, 0, NULL, "give back total"},
+    {"return", parse_return_form, false, 0, NULL, "return total"},
+    {"call", parse_call_form, false, 0, NULL, "call greet with \"Paris\""},
 };
 
 // --- Sentences ---------------------------------------------------------------
 
-static const StmtForm *find_form(const Token *token) {
-    if (token->kind != TOK_WORD) return NULL;
+static const StmtForm *find_form_word(const char *word) {
     for (size_t i = 0; i < COUNT(forms); i++) {
-        if (strcmp(token->text, forms[i].word) == 0) return &forms[i];
+        if (strcmp(word, forms[i].word) == 0) return &forms[i];
     }
     return NULL;
+}
+
+static const StmtForm *find_form(const Token *token) {
+    return token->kind == TOK_WORD ? find_form_word(token->text) : NULL;
+}
+
+bool parser_is_statement_word(const char *word) {
+    return find_form_word(word) != NULL || strcmp(word, "please") == 0;
 }
 
 bool parser_looks_like_assignment(const Token *next) {
@@ -320,10 +346,13 @@ static void report_unknown_start(Parser *p) {
         return;
     }
     if (!parser_error(p, token->span, "I don't know a sentence that starts with \"%s\".", token->text)) return;
-    const char *words[COUNT(forms) + 1];
+    // Statement words and the program's function names, as suggestions.
+    size_t n = COUNT(forms) + 1 + p->functions.len;
+    const char **words = arena_alloc(p->arena, n * sizeof(char *));
     for (size_t i = 0; i < COUNT(forms); i++) words[i] = forms[i].word;
     words[COUNT(forms)] = "please";
-    const char *closest = parser_closest_words(p, token->text, words, COUNT(words));
+    for (size_t i = 0; i < p->functions.len; i++) words[COUNT(forms) + 1 + i] = p->functions.items[i];
+    const char *closest = parser_closest_words(p, token->text, words, n);
     if (closest) {
         diag_note(p->diag, "Did you mean %s?", closest);
     } else if (parser_looks_like_assignment(parser_peek(p, 1))) {
@@ -348,6 +377,12 @@ Stmt *parse_statement(Parser *p) {
     }
     const Token *verb = parser_peek(p, 0);
     const StmtForm *form = find_form(verb);
+    if (!form && verb->kind == TOK_WORD && parser_is_function(p, verb->text)) {
+        parser_advance(p);
+        Stmt *call = parse_call_statement(p, verb);
+        if (call) call->pos = ast_pos_join(call->pos, (SourcePos){p->prev_span, 0, 0});
+        return call;
+    }
     if (!form) {
         report_unknown_start(p);
         return NULL;
@@ -463,6 +498,7 @@ Block *parse_program(Arena *arena, Diag *diag, const char *source, const TokenLi
     p.count = tokens->len;
 
     Block *program = arena_alloc(arena, sizeof(Block));
+    parser_find_functions(&p);
     parse_statements(&p, program, false);
     return program;
 }

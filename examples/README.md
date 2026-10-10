@@ -16,6 +16,9 @@ Small programs, one per feature. **Every example is checked by `make test`** aga
 | [decisions.es](programs/decisions.es) | `if`, `otherwise if`, `otherwise`, and the one-line forms |
 | [loops.es](programs/loops.es) | Counting up and down, `repeat ... times`, `while`, `skip this one`, `stop the loop`, `it` |
 | [logan.es](programs/logan.es) | The 2024 prototype's loop example (`old/logan.code`), ported to today's syntax |
+| [factorial.es](programs/factorial.es) | A function that calls itself |
+| [fibonacci.es](programs/fibonacci.es) | Recursion with two calls, and joining results into one line |
+| [taste.es](programs/taste.es) | The README's bigger example: a loop and a function |
 | [ask_name.es](programs/ask_name.es) | `ask … and call the answer …` (input from `ask_name.in`) |
 | [files.es](programs/files.es) | `write`, `append`, and `read file` |
 | [err_divide_by_zero.es](programs/err_divide_by_zero.es) | A runtime error: "Line 3: You divided by zero." |
@@ -26,11 +29,10 @@ Small programs, one per feature. **Every example is checked by `make test`** aga
 
 ## `lexer/`: how text is split into words and symbols
 
-These show how the lexer reads each feature (some, like `taste.es`, use planned sentences that don't run yet). `NAME.tokens` holds the expected output of `easyscript tokens NAME.es`, and `err_*` examples also have `NAME.err` with the exact error message.
+These show how the lexer reads each feature. `NAME.tokens` holds the expected output of `easyscript tokens NAME.es`, and `err_*` examples also have `NAME.err` with the exact error message.
 
 | Example | Shows |
 |---|---|
-| [taste.es](lexer/taste.es) | The program from the README |
 | [sentences.es](lexer/sentences.es) | Periods and new lines end sentences; capitals and filler words |
 | [text.es](lexer/text.es) | Text in quotes, escapes, apostrophes in words |
 | [numbers.es](lexer/numbers.es) | Whole numbers, decimals, arithmetic symbols |

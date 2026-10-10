@@ -1,0 +1,14 @@
+Line 2: Functions can only be defined at the top level, not inside an "if" or a loop.
+        to inner:
+           ^^^^^
+Move "to inner ...:" to the start of a line, outside every block.
+
+Line 5: Functions can only be defined at the top level, not inside an "if" or a loop.
+        to inner2:
+           ^^^^^^
+Move "to inner2 ...:" to the start of a line, outside every block.
+
+Line 8: Functions can only be defined at the top level, not inside another function.
+        to inside:
+           ^^^^^^
+Move "to inside ...:" to the start of a line, outside every block.

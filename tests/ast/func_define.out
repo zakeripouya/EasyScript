@@ -1,0 +1,26 @@
+define cheer () [1:1]
+  do
+    say [2:5]
+      text "hooray" [2:9]
+define greet (someone) [3:1]
+  do
+    say [4:5]
+      name someone [4:9]
+define area (width, height) [5:1]
+  do
+    give back [6:5]
+      multiply [6:15]
+        name width [6:15]
+        name height [6:27]
+define sum_up (p, q, r) [7:1]
+  do
+    give back [8:5]
+      add [8:12]
+        add [8:12]
+          name p [8:12]
+          name q [8:19]
+        name r [8:26]
+define to_upper (word) [9:1]
+  do
+    give back [10:5]
+      name word [10:15]

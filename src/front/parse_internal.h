@@ -21,6 +21,7 @@ typedef struct {
     bool ends_with_name;    // ... or ended with a name or keyword ("add 5 to total")
     Vec(SourcePos) open_ifs; // ifs whose blocks are being parsed, innermost last
     bool as_ends_value;     // in a count loop's header, "as" names the loop variable
+    Vec(const char *) functions; // names after "to" at the start of a line (pre-scan)
 } Parser;
 
 // A word or symbol sequence with a meaning, e.g. "is greater than".
@@ -129,6 +130,23 @@ bool parser_at_otherwise(const Parser *p);  // "otherwise" or "else"
 Stmt *parse_if(Parser *p, const Token *verb);
 // An "otherwise" that doesn't belong to an if just above it.
 void parse_orphan_otherwise(Parser *p, const Stmt *previous);
+
+// Call arguments: single (unary) values separated by "and" (not "and call"),
+// and also by commas when `commas` ("NAME using A, B").
+void parser_parse_call_args(Parser *p, Expr *call, bool commas);
+// After a call's arguments: arithmetic straight after them is ambiguous.
+Expr *parser_finish_call(Parser *p, Expr *call);
+
+// parse_stmt.c
+bool parser_is_statement_word(const char *word);
+
+// parse_func.c
+void parser_find_functions(Parser *p);  // fills p->functions
+bool parser_is_function(const Parser *p, const char *name);
+Stmt *parse_function(Parser *p, const Token *verb);   // to NAME ...:
+Stmt *parse_return(Parser *p, const Token *verb);     // give back / return
+// "call NAME ..." (verb "call") or "NAME ..." (verb is a function's name).
+Stmt *parse_call_statement(Parser *p, const Token *verb);
 
 // parse_loop.c: a loop starting with `verb` (count, go, for, do, repeat,
 // while, as, keep, forever), and stop/break/skip/continue/move on.

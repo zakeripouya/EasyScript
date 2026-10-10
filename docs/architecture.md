@@ -54,6 +54,7 @@ What exists today:
 | `src/front/parse_stmt.c` | A table of statement forms, names (with filler and reserved-word errors), and the statement loop (`parse_statements`), used for the whole program and for each block. |
 | `src/front/parse_if.c` | `if` / `otherwise if` / `otherwise`: blocks, one-line forms, and errors for misplaced `otherwise`s. Also the shared block parser. |
 | `src/front/parse_loop.c` | Every loop form, and `stop the loop` / `skip this one`. |
+| `src/front/parse_func.c` | Function definitions, `give back`, call sentences, and the pre-scan that finds every `to NAME` first. |
 | `src/front/check.{c,h}` | Done for names. `check_program` walks the statements in order with a symbol table of the names made so far; each `if` block is a scope of its own. |
 | `src/back/codegen_c.{c,h}` | Done. `codegen_c` writes the program; see [Code generation](#code-generation). |
 | `runtime/es_runtime.h` | Done for Phase 1. A header-only runtime copied to the top of every generated program. |
@@ -70,6 +71,7 @@ es_say((es_t1 = es_v_total, es_sub(4, es_t1, es_num(1))));
 
 - **`if`** becomes C `if (es_if(line, C)) { ... } else if (...) { ... } else { ... }`; `es_if` stops the program with a friendly error if the condition isn't yes or no.
 - **Loops** become C loops inside their own `{ }`: a count is `EsCount es_cN = es_count_start(...)` plus `for (long long es_iN = 0; es_count_next(&es_cN, es_iN, &es_v_number); es_iN++)`, which works out each number from the start; `repeat N times` is a `for` over `es_times(...)`; `while`/`until` use `es_loop_condition`; `forever` is `for (;;)`. `stop the loop` and `skip this one` are C `break` and `continue`. `it` becomes the innermost count's variable, or `es_num(es_iN)` for a `times` loop.
+- **Functions** become C functions named `es_f_` plus the name: `static EsValue es_f_area(int es_line, EsValue es_v_width, EsValue es_v_height)`. Prototypes come first, so calls work in any order and functions can call themselves. A function's temporaries and the names it makes are declared at its top (hoisted). It starts with `es_enter(es_line)`, which stops endless recursion with a friendly error, and every exit is `return es_leave(...)`. Calls evaluate their inputs into temporaries first: `(t1 = A, t2 = B, es_f_area(line, t1, t2))`.
 - **Variables** become C globals named `es_v_` plus the name, with `_` doubled and `'` written as `_q`, so names can't collide. Names made inside `if` and loop blocks, and loop numbers, are globals too: the checker makes sure each is only used inside its block, and the same name can be reused by different blocks. (Locals will be hoisted per function when functions arrive.)
 - **Left to right:** the left side of every binary operation is stored in a temporary (`es_t1`, ...) before the right side is evaluated. C doesn't fix argument order, and this keeps evaluation, and so which error appears first, deterministic.
 - **`and` and `or` short-circuit:** `(t = LEFT, es_is_no(t) ? t : es_and(line, t, RIGHT))`. `es_and` then decides at run time between logical and (two yes/no values) and joining text.

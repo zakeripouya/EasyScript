@@ -1,0 +1,4 @@
+Line 3: I don't know a function called "aera".
+    say aera of 3 and 4
+        ^^^^^^^^^^^^^^^
+Did you mean "area"? It's defined on line 1.

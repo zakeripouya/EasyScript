@@ -1,0 +1,4 @@
+Line 1: This function already has an input called "x".
+    to pair with x and x:
+                       ^
+Give each input its own name.

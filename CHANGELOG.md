@@ -6,6 +6,12 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Functions** (top level only): `to greet someone:` / `to area with width and height:` (also `of`/`using`), `give back E` / `return E` / `return`, calls as sentences (`greet "Paris".`, `greet with "Paris".`, `call greet with "Paris".`) and as values (`area of 3 and 4`, `area with 3 and 4`; a bare name calls a function with no inputs).
+  - Functions can be used before they're defined, and can call themselves. Each sees only its inputs and the names it makes; its locals are hoisted to the top of the generated C function.
+  - Compile-time errors with suggestions: unknown functions ("Did you mean "area"? It's defined on line 1."), the wrong number of inputs (pointing to the definition), `give back` outside a function, functions defined inside blocks, duplicate functions or inputs, and variables named like functions.
+  - Endless recursion stops with a friendly runtime error instead of crashing.
+  - `and` straight after a call's input now starts another input (`greet using name and age` gives two inputs); a parenthesized last input ends the call, so `fib of (n minus 1) plus 1` adds.
+  - Examples: `factorial.es`, `fibonacci.es`; the README's bigger example now runs and is tested.
 - **Loops:** `count from A to B` (counts down by itself when A is bigger; `by S` / `in steps of S`; `and call each number N` / `as N`, otherwise the number is called `number`), `count down from`, `go from A to B in steps of S`, `for each N from A to B`, `do this N times` / `repeat N times`, `while` / `as long as` / `repeat while`, `keep doing this until` / `repeat until`, and `forever`.
   - `stop the loop` (`stop`, `break`) and `skip this one` (`skip`, `continue`, `move on`); both are errors outside a loop.
   - `it` is the innermost counting loop's number (or the round of a `times` loop); `it` outside one is an error.
@@ -93,7 +99,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 - Text made while a program runs is freed only when it exits, so a long loop that builds text grows (about 20 bytes per round in a simple case).
 - `stop` on its own now means "stop the loop"; to end the program, write `stop the program`.
-- Functions are coming soon.
+- Functions can't see the program's other variables yet (pass values in as inputs).
 - The interactive shell reads one line at a time, so blocks (`if ...:`, loops) can't be typed there; one-line `if`s work. It also reruns the whole session for every line, so earlier output (and questions from `ask`) repeat.
 
 ## 2024-07-06: First prototype

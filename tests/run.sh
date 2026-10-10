@@ -317,7 +317,7 @@ $out"
 }
 
 check_readme_block "## A first program" "$ROOT/examples/programs/first_program.es" "docs/readme-first-program"
-check_readme_block "## A taste of what's coming" "$ROOT/examples/lexer/taste.es" "docs/readme-taste"
+check_readme_block "## A bigger example" "$ROOT/examples/programs/taste.es" "docs/readme-bigger-example"
 
 # --- Summary ----------------------------------------------------------------
 

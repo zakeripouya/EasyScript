@@ -13,8 +13,17 @@ typedef struct {
 } Loop;
 
 typedef struct {
+    const char *name;
+    const Stmt *definition;  // STMT_FUNCTION: params and line
+} Function;
+
+typedef struct {
     Arena *arena;
     Diag *diag;
+    Vec(Function) functions;          // every top-level function (pre-scanned)
+    const Stmt *function;             // the function being checked, if any
+    size_t floor;                     // made[floor..] is visible (a function sees only its own names)
+    size_t blocks;                    // how many if/loop blocks we're inside
     Vec(Symbol) made;    // names that exist here: made so far, in blocks still open
     Vec(Symbol) later;   // every name the program makes anywhere, for "you make it later"
     Vec(Symbol) ended;   // names whose block has ended; line = the if or loop that held them
@@ -29,11 +38,33 @@ static const Symbol *find(const Symbol *items, size_t len, const char *name) {
 }
 
 static const Symbol *find_made(const Checker *c, const char *name) {
-    return find(c->made.items, c->made.len, name);
+    if (c->made.len == c->floor) return NULL;  // also avoids NULL + 0 on an empty list
+    return find(c->made.items + c->floor, c->made.len - c->floor, name);
+}
+
+static const Function *find_function(const Checker *c, const char *name) {
+    for (size_t i = 0; i < c->functions.len; i++) {
+        if (strcmp(c->functions.items[i].name, name) == 0) return &c->functions.items[i];
+    }
+    return NULL;
+}
+
+static size_t param_count(const Function *f) {
+    return f->definition->as.function.params.len;
+}
+
+// A variable can't share a name with a function. Reports and returns true if it does.
+static bool clashes_with_function(Checker *c, const Name *name) {
+    const Function *f = find_function(c, name->text);
+    if (!f) return false;
+    diag_error(c->diag, name->pos.span, "\"%s\" is the name of a function, defined on line %zu.", name->text,
+               f->definition->pos.line);
+    diag_note(c->diag, "Give the variable a different name.");
+    return true;
 }
 
 static void make(Checker *c, const Name *name) {
-    if (find_made(c, name->text)) return;
+    if (find_made(c, name->text) || clashes_with_function(c, name)) return;
     Symbol symbol = {name->text, name->pos.line, NULL, false};
     vec_push(c->arena, &c->made, symbol);
 }
@@ -44,7 +75,7 @@ static const Symbol *closest(const Checker *c, const char *name, size_t *count) 
     size_t best = limit + 1;
     const Symbol *found = NULL;
     *count = 0;
-    for (size_t i = 0; i < c->made.len; i++) {
+    for (size_t i = c->floor; i < c->made.len; i++) {
         size_t d = edit_distance(c->arena, name, c->made.items[i].name);
         if (d < best) {
             best = d;
@@ -61,11 +92,11 @@ static void note_choices(Checker *c, const char *name, size_t limit) {
     StrBuf choices;
     sb_init(&choices, c->arena);
     size_t total = 0;
-    for (size_t i = 0; i < c->made.len; i++) {
+    for (size_t i = c->floor; i < c->made.len; i++) {
         if (edit_distance(c->arena, name, c->made.items[i].name) == limit) total++;
     }
     size_t n = 0;
-    for (size_t i = 0; i < c->made.len; i++) {
+    for (size_t i = c->floor; i < c->made.len; i++) {
         if (edit_distance(c->arena, name, c->made.items[i].name) != limit) continue;
         n++;
         if (n > 1) sb_append(&choices, n == total ? " or " : ", ");
@@ -80,7 +111,11 @@ static void report_unknown(Checker *c, const char *name, SourcePos pos) {
     const Symbol *near = closest(c, name, &count);
     const Symbol *later = find(c->later.items, c->later.len, name);
     const Symbol *ended = find(c->ended.items, c->ended.len, name);
-    if (ended && ended->loop_number) {
+    const Symbol *outside = c->function ? find(c->made.items, c->floor, name) : NULL;
+    if (outside) {
+        diag_note(c->diag, "A function only sees its own inputs and the names it makes. To use \"%s\" here, "
+                           "pass it in as an input.", name);
+    } else if (ended && ended->loop_number) {
         diag_note(c->diag, "\"%s\" is the number of the loop on line %zu, so it only exists inside that loop. "
                            "To keep it, make a variable before the loop and set it inside.", name, ended->line);
     } else if (ended) {
@@ -115,15 +150,83 @@ static void check_it(Checker *c, const Expr *expr) {
     }
 }
 
+static void check_expr(Checker *c, const Expr *expr);
+
+// "to area with width and height"
+static const char *function_header(const Checker *c, const Function *f) {
+    StrBuf sb;
+    sb_init(&sb, c->arena);
+    sb_appendf(&sb, "to %s", f->name);
+    const Stmt *def = f->definition;
+    for (size_t i = 0; i < def->as.function.params.len; i++) {
+        sb_append(&sb, i == 0 ? " with " : " and ");
+        sb_append(&sb, def->as.function.params.items[i].text);
+    }
+    return sb.data;
+}
+
+static void report_unknown_function(Checker *c, const char *name, SourcePos pos) {
+    if (find_made(c, name)) {
+        diag_error(c->diag, pos.span, "\"%s\" is a variable, not a function.", name);
+        diag_note(c->diag, "Only functions made with \"to %s ...:\" can be called.", name);
+        return;
+    }
+    diag_error(c->diag, pos.span, "I don't know a function called \"%s\".", name);
+    size_t limit = strlen(name) <= 3 ? 1 : 2;
+    const Function *best = NULL;
+    size_t best_distance = limit + 1;
+    for (size_t i = 0; i < c->functions.len; i++) {
+        size_t d = edit_distance(c->arena, name, c->functions.items[i].name);
+        if (d < best_distance) {
+            best_distance = d;
+            best = &c->functions.items[i];
+        }
+    }
+    if (best) {
+        diag_note(c->diag, "Did you mean \"%s\"? It's defined on line %zu.", best->name, best->definition->pos.line);
+    } else {
+        diag_note(c->diag, "Define it first, like \"to %s someone:\" with its sentences indented below.", name);
+    }
+}
+
+static void report_argument_count(Checker *c, const Function *f, size_t given, SourcePos pos) {
+    size_t wanted = param_count(f);
+    if (wanted == 0) {
+        diag_error(c->diag, pos.span, "\"%s\" doesn't take any values, but this gives it %zu.", f->name, given);
+    } else {
+        diag_error(c->diag, pos.span, "\"%s\" needs %zu value%s, but this gives it %zu.", f->name, wanted,
+                   wanted == 1 ? "" : "s", given);
+    }
+    diag_note(c->diag, "It's defined on line %zu: \"%s\".", f->definition->pos.line, function_header(c, f));
+}
+
+static void check_call(Checker *c, const Expr *expr) {
+    for (size_t i = 0; i < expr->as.call.args.len; i++) {
+        check_expr(c, expr->as.call.args.items[i]);
+    }
+    const Function *f = find_function(c, expr->as.call.name);
+    if (!f) {
+        report_unknown_function(c, expr->as.call.name, expr->pos);
+    } else if (param_count(f) != expr->as.call.args.len) {
+        report_argument_count(c, f, expr->as.call.args.len, expr->pos);
+    }
+}
+
+// A bare name: a variable, or a function that takes no values.
+static void check_name_expr(Checker *c, const Expr *expr) {
+    if (find_made(c, expr->as.name)) return;
+    const Function *f = find_function(c, expr->as.name);
+    if (!f) {
+        report_unknown(c, expr->as.name, expr->pos);
+    } else if (param_count(f) > 0) {
+        report_argument_count(c, f, 0, expr->pos);
+    }
+}
+
 static void check_expr(Checker *c, const Expr *expr) {
     switch (expr->kind) {
-    case EXPR_NAME:
-        if (!find_made(c, expr->as.name)) report_unknown(c, expr->as.name, expr->pos);
-        break;
-    case EXPR_CALL:
-        diag_error(c->diag, expr->pos.span, "I don't know a function called \"%s\".", expr->as.call.name);
-        diag_note(c->diag, "Making your own functions isn't available yet.");
-        break;
+    case EXPR_NAME: check_name_expr(c, expr); break;
+    case EXPR_CALL: check_call(c, expr); break;
     case EXPR_IT: check_it(c, expr); break;
     case EXPR_LENGTH:
     case EXPR_FILE_CONTENTS: check_expr(c, expr->as.operand); break;
@@ -149,6 +252,14 @@ static void check_let(Checker *c, const Stmt *stmt) {
     make(c, name);
 }
 
+static void check_return(Checker *c, const Stmt *stmt) {
+    if (stmt->as.returned) check_expr(c, stmt->as.returned);
+    if (c->function) return;
+    diag_error(c->diag, stmt->pos.span, "\"give back\" only works inside a function.");
+    diag_note(c->diag, "It ends a function and hands a value back to whoever called it. "
+                       "To end the whole program, write \"stop the program\".");
+}
+
 static void check_stmt(Checker *c, const Stmt *stmt);
 
 // A block's statements in a scope of their own: names made inside are
@@ -156,7 +267,7 @@ static void check_stmt(Checker *c, const Stmt *stmt);
 // Ends a scope opened when made.len was `outer`: its names are forgotten,
 // and remembered as "ended" in `where` on `line`.
 static void end_scope(Checker *c, size_t outer, size_t line, const char *where) {
-    for (size_t i = outer; i < c->made.len; i++) {
+    for (size_t i = outer; where && i < c->made.len; i++) {
         Symbol ended = {c->made.items[i].name, line, where, c->made.items[i].loop_number};
         vec_push(c->arena, &c->ended, ended);
     }
@@ -171,8 +282,46 @@ static void check_statements(Checker *c, const Block *block) {
 
 static void check_block(Checker *c, const Block *block, size_t line, const char *where) {
     size_t outer = c->made.len;
+    c->blocks++;
     check_statements(c, block);
+    c->blocks--;
     end_scope(c, outer, line, where);
+}
+
+static void check_params(Checker *c, const Stmt *stmt) {
+    for (size_t i = 0; i < stmt->as.function.params.len; i++) {
+        const Name *param = &stmt->as.function.params.items[i];
+        if (find_made(c, param->text)) {
+            diag_error(c->diag, param->pos.span, "This function already has an input called \"%s\".", param->text);
+            diag_note(c->diag, "Give each input its own name.");
+        } else {
+            make(c, param);
+        }
+    }
+}
+
+// A function's body sees only its inputs and the names it makes; loops and
+// blocks outside it don't count.
+static void check_function(Checker *c, const Stmt *stmt) {
+    if (c->function || c->blocks > 0) {
+        diag_error(c->diag, stmt->as.function.name.pos.span,
+                   "Functions can only be defined at the top level, not inside %s.",
+                   c->function ? "another function" : "an \"if\" or a loop");
+        diag_note(c->diag, "Move \"to %s ...:\" to the start of a line, outside every block.",
+                  stmt->as.function.name.text);
+        return;
+    }
+    size_t saved_floor = c->floor;
+    size_t saved_loops = c->loops.len;
+    c->floor = c->made.len;
+    c->loops.len = 0;
+    c->function = stmt;
+    check_params(c, stmt);
+    check_statements(c, &stmt->as.function.body);
+    end_scope(c, c->floor, stmt->pos.line, NULL);
+    c->function = NULL;
+    c->floor = saved_floor;
+    c->loops.len = saved_loops;
 }
 
 static void check_if(Checker *c, const Stmt *stmt) {
@@ -186,6 +335,7 @@ static void check_if(Checker *c, const Stmt *stmt) {
 static void check_loop_variable(Checker *c, const Stmt *stmt) {
     const Name *var = &stmt->as.loop.var;
     const Symbol *existing = find_made(c, var->text);
+    if (!existing && clashes_with_function(c, var)) return;
     if (!existing) {
         Symbol symbol = {var->text, var->pos.line, NULL, true};
         vec_push(c->arena, &c->made, symbol);
@@ -212,7 +362,9 @@ static void check_loop(Checker *c, const Stmt *stmt) {
     if (stmt->as.loop.kind == LOOP_COUNT) check_loop_variable(c, stmt);
     Loop loop = {stmt->as.loop.kind == LOOP_COUNT || stmt->as.loop.kind == LOOP_TIMES};
     vec_push(c->arena, &c->loops, loop);
+    c->blocks++;
     check_statements(c, &stmt->as.loop.body);
+    c->blocks--;
     c->loops.len--;
     end_scope(c, outer, stmt->pos.line, "the loop");
 }
@@ -258,6 +410,9 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
     case STMT_LOOP: check_loop(c, stmt); break;
     case STMT_BREAK:
     case STMT_CONTINUE: check_loop_control(c, stmt); break;
+    case STMT_FUNCTION: check_function(c, stmt); break;
+    case STMT_RETURN: check_return(c, stmt); break;
+    case STMT_CALL: check_expr(c, stmt->as.call); break;
     }
 }
 
@@ -275,6 +430,7 @@ static void collect_names(Checker *c, const Block *program) {
             collect_names(c, &stmt->as.loop.body);
             continue;
         }
+        if (stmt->kind == STMT_FUNCTION) continue;  // its names are its own
         const Name *name = stmt->kind == STMT_LET    ? &stmt->as.assign.name
                            : stmt->kind == STMT_ASK  ? &stmt->as.ask.answer
                            : stmt->kind == STMT_READ_FILE ? &stmt->as.read_file.name
@@ -286,10 +442,29 @@ static void collect_names(Checker *c, const Block *program) {
     }
 }
 
+// Every top-level function, so calls can come before definitions.
+static void collect_functions(Checker *c, const Block *program) {
+    for (size_t i = 0; i < program->len; i++) {
+        const Stmt *stmt = program->items[i];
+        if (stmt->kind != STMT_FUNCTION) continue;
+        const Name *name = &stmt->as.function.name;
+        const Function *existing = find_function(c, name->text);
+        if (existing) {
+            diag_error(c->diag, name->pos.span, "You already defined \"%s\" on line %zu.", name->text,
+                       existing->definition->pos.line);
+            diag_note(c->diag, "Each function needs its own name.");
+            continue;
+        }
+        Function f = {name->text, stmt};
+        vec_push(c->arena, &c->functions, f);
+    }
+}
+
 void check_program(Arena *arena, Diag *diag, const Block *program) {
     Checker c = {0};
     c.arena = arena;
     c.diag = diag;
+    collect_functions(&c, program);
     collect_names(&c, program);
     check_statements(&c, program);
 }

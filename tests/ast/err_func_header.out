@@ -1,0 +1,6 @@
+define area (width, height) [20:1]
+  do
+    give back [21:5]
+      multiply [21:15]
+        name width [21:15]
+        name height [21:27]

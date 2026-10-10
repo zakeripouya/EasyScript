@@ -218,7 +218,34 @@ Line 2: This loop calls each number "number", but you already made "number" on l
 Give this loop's number its own name, like "count from 1 to 10 as n".
 ```
 
-The checker also explains `skip this one` outside a loop, `it` outside a counting loop, and using a loop's number after the loop ("it only exists inside that loop"). Calling a function (`greet using "Ada"`) is also a checker error for now, because what it means isn't implemented yet. The full, tested set is in [`tests/errors/`](../tests/errors/).
+**A misspelled function**: [`unknown_function_suggest.es`](../tests/errors/unknown_function_suggest.es)
+
+```
+Line 3: I don't know a function called "aera".
+    say aera of 3 and 4
+        ^^^^^^^^^^^^^^^
+Did you mean "area"? It's defined on line 1.
+```
+
+**The wrong number of inputs**: [`wrong_arg_count.es`](../tests/errors/wrong_arg_count.es). The note points to the function's definition.
+
+```
+Line 7: "area" needs 2 values, but this gives it 1.
+    say area of 3
+        ^^^^^^^^^
+It's defined on line 1: "to area with width and height".
+```
+
+**A function using the program's variables**: [`function_sees_no_globals.es`](../tests/errors/function_sees_no_globals.es)
+
+```
+Line 3: I don't know anything called "total".
+        say total
+            ^^^^^
+A function only sees its own inputs and the names it makes. To use "total" here, pass it in as an input.
+```
+
+The checker also explains `skip this one` outside a loop, `it` outside a counting loop, using a loop's number after the loop ("it only exists inside that loop"), `give back` outside a function, a function defined inside an `if`, a loop, or another function, two functions with the same name, two inputs with the same name, a variable named like a function, and calling a variable. The full, tested set is in [`tests/errors/`](../tests/errors/).
 
 ### While the program runs
 
@@ -241,6 +268,7 @@ Line 3: I can't subtract text from a number.
 | Arithmetic with text, yes/no, or nothing | "I can't add text to a number." With text, the hint suggests `and` or `followed by` |
 | Dividing or `mod` by zero | "You divided by zero." |
 | An `if` condition that isn't yes or no (`if count:`) | "An "if" needs yes or no to decide, but this is a number." with a hint to compare it |
+| A function that keeps calling itself | "Functions are calling each other too deeply (more than 10000 calls inside each other)." with a hint to check that it stops |
 | A `while`/`until` condition that isn't yes or no | "A loop needs yes or no to decide whether to keep going, but this is a number." |
 | A count that doesn't start or end at a number | "A count has to start at a number, but this is text." |
 | A count step that's zero or negative | "The step of a count has to be more than zero, but it's -1." with a hint that counting picks its own direction |
@@ -256,7 +284,5 @@ Line 3: I can't subtract text from a number.
 Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).
 
 ## Coming soon
-
-**Ambiguous functions.** Functions (coming soon) will follow the same rule as everything else: if a sentence could be read in more than one way, the compiler stops and lists the readings.
 
 **Source lines in runtime errors.** Runtime errors will show the line of your program and point at the part that failed, like compile errors do.

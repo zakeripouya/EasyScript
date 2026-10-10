@@ -26,7 +26,7 @@ typedef enum {
     EXPR_NOTHING,
     EXPR_IT,
     EXPR_NAME,           // a variable, or a function called with no inputs
-    EXPR_CALL,           // NAME using ARG, ARG, ...
+    EXPR_CALL,           // NAME of A and B / NAME with A and B / NAME using A, B
     EXPR_LENGTH,         // length of X
     EXPR_FILE_CONTENTS,  // contents of file X
     EXPR_UNARY,
@@ -117,6 +117,9 @@ typedef enum {
     STMT_LOOP,         // count / repeat / while / until / forever
     STMT_BREAK,        // stop the loop
     STMT_CONTINUE,     // skip this one
+    STMT_FUNCTION,     // to NAME [with] P and Q:  (top level only)
+    STMT_RETURN,       // give back E / return E / return
+    STMT_CALL,         // greet "Paris" / greet with "Paris" / call greet with "Paris"
 } StmtKind;
 
 typedef enum {
@@ -184,6 +187,13 @@ struct Stmt {
             Vec(IfBranch) branches;  // the "if" first, then each "otherwise"
             bool one_line;           // "if C, S." or "if C then S."
         } if_stmt;
+        struct {
+            Name name;
+            Vec(Name) params;
+            Block body;
+        } function;
+        Expr *returned;  // STMT_RETURN; NULL for a bare "return"
+        Expr *call;      // STMT_CALL: an EXPR_CALL
         struct {
             LoopKind kind;
             Expr *from, *to, *step;  // LOOP_COUNT (step NULL: 1)

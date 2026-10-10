@@ -278,6 +278,25 @@ static bool es_if(int line, EsValue v) {
     return v.yes;
 }
 
+/* --- Functions ------------------------------------------------------------- */
+
+/* Every function call goes one level deeper; endless recursion stops with a
+ * friendly error instead of crashing. */
+#define ES_MAX_DEPTH 10000
+static int es_depth;
+
+static void es_enter(int line) {
+    if (++es_depth > ES_MAX_DEPTH) {
+        es_fail(line, "Check that the function stops calling itself at some point.",
+                "Functions are calling each other too deeply (more than %d calls inside each other).", ES_MAX_DEPTH);
+    }
+}
+
+static EsValue es_leave(EsValue result) {
+    es_depth--;
+    return result;
+}
+
 /* --- Loops ----------------------------------------------------------------- */
 
 /* "count from A to B by S": counts toward B, up or down, by S each round.

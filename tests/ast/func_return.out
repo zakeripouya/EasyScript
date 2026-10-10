@@ -1,0 +1,24 @@
+define first_even_up_to (n) [1:1]
+  do
+    count, call each number number [2:5]
+      from
+        number 1 [2:16]
+      to
+        name n [2:21]
+      do
+        if (one line) [3:9]
+          branch if [3:9]
+            condition
+              equal [3:12]
+                modulo [3:12]
+                  it [3:12]
+                  number 2 [3:19]
+                number 0 [3:24]
+            then
+              give back [3:27]
+                it [3:37]
+    give back [4:5]
+define nothing_back () [5:1]
+  do
+    say [6:5]
+      text "falls off the end" [6:9]

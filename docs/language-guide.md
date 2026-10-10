@@ -11,12 +11,12 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 |---|---|
 | [0. Getting set up](#0-getting-set-up) | Available |
 | [1. How EasyScript reads your sentences](#1-how-easyscript-reads-your-sentences) | Available |
-| [2. Values and expressions](#2-values-and-expressions) | Available (calling functions: coming soon) |
+| [2. Values and expressions](#2-values-and-expressions) | Available |
 | [3. Variables](#3-variables) | Available |
 | [4. Output and input](#4-output-and-input) | Available |
 | [5. Decisions](#5-decisions) | Available |
 | [6. Loops](#6-loops) | Available |
-| [7. Functions](#7-functions) | Coming soon |
+| [7. Functions](#7-functions) | Available |
 | [8. Files](#8-files) | Available, except `file X exists` |
 
 ---
@@ -140,7 +140,7 @@ EasyScript also understands a few symbols: `+ - * / %` for arithmetic, `( )` for
 
 ## 2. Values and expressions
 
-**Status: Available**, except calling your own functions (coming soon). The examples show expressions on their own; in a program they appear inside sentences, such as `say price plus tax` (chapter 4).
+**Status: Available.** The examples show expressions on their own; in a program they appear inside sentences, such as `say price plus tax` (chapter 4).
 
 ### Values
 
@@ -213,11 +213,11 @@ Try it: `./easyscript ast examples/parser/text.es`
 
 ### Calling functions
 
-**Coming soon:** making your own functions. The way they'll be called already parses (try `easyscript ast`), but running a program that calls one is an error for now. A function is called by its name, with `using` and its inputs:
+A function (chapter 7) is called by its name, with `of` (or `with`) and its inputs separated by `and`:
 
 ```
-greet using "Ada"
-add using 2, 3
+area of 3 and 4
+greet with "Ada"
 ```
 
 Each input is a single value. If arithmetic comes straight after, EasyScript can't tell whether it belongs to the last input or to the result, so it asks:
@@ -406,26 +406,42 @@ Try it: `./easyscript run examples/programs/loops.es`
 
 ## 7. Functions
 
-**Status: Coming soon (Phase 1).** These examples are the planned syntax and don't compile yet.
+**Status: Available.**
 
-A function is a named set of steps. It's defined with `to`, like a recipe ("to make tea: ..."):
-
-```
-to greet using name:
-    say "Hello, " and name and "!".
-
-greet using "Ada".
-greet using "Alan".
-```
-
-A function can give back a result:
+A function is a named set of steps. It's defined with `to`, like a recipe ("to make tea: ..."), and its sentences are indented below:
 
 ```
-to double using number:
-    give back number * 2.
+to greet someone:
+    say "Hello, " and someone and "!".
 
-say double using 21.
+greet "Ada".
+greet with "Alan".
+call greet with "Grace".
 ```
+
+A function can take several inputs, separated by `and`, and give back a result. Use it like a value with `of` (or `with`):
+
+```
+to area with width and height:
+    give back width times height.
+
+say area of 3 and 4.
+if area of 2 and 5 is 10, say "ten".
+```
+
+A function can call itself. Here the factorial of a number is the number times the factorial of the number below it:
+
+```
+to factorial of n:
+    if n is at most 1, give back 1.
+    give back n times factorial of (n minus 1).
+
+say factorial of 5.
+```
+
+Functions are defined at the top level of the program, and you can use one before its definition. A function only sees its own inputs and the names it makes, so pass in anything else it needs. Giving it the wrong number of inputs is an error that says how many it needs and where it's defined.
+
+Try it: `./easyscript run examples/programs/factorial.es` and `examples/programs/fibonacci.es`
 
 ---
 

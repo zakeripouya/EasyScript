@@ -124,6 +124,15 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch) {
     case STMT_LOOP: return loop_label(stmt, scratch);
     case STMT_BREAK: return "stop the loop";
     case STMT_CONTINUE: return "skip this one";
+    case STMT_FUNCTION:
+        sb_appendf(scratch, "define %s (", stmt->as.function.name.text);
+        for (size_t i = 0; i < stmt->as.function.params.len; i++) {
+            sb_appendf(scratch, "%s%s", i ? ", " : "", stmt->as.function.params.items[i].text);
+        }
+        sb_append_char(scratch, ')');
+        break;
+    case STMT_RETURN: return "give back";
+    case STMT_CALL: return "call";
     }
     return scratch->data;
 }
@@ -193,6 +202,16 @@ static void dump_stmt(const Stmt *stmt, size_t depth, StrBuf *out) {
     case STMT_LOOP: dump_loop(stmt, depth, out); break;
     case STMT_BREAK:
     case STMT_CONTINUE: break;
+    case STMT_FUNCTION:
+        dump_label(depth + 1, out, "do");
+        for (size_t i = 0; i < stmt->as.function.body.len; i++) {
+            dump_stmt(stmt->as.function.body.items[i], depth + 2, out);
+        }
+        break;
+    case STMT_RETURN:
+        if (stmt->as.returned) dump_expr(stmt->as.returned, depth + 1, out);
+        break;
+    case STMT_CALL: dump_expr(stmt->as.call, depth + 1, out); break;
     }
 }
 

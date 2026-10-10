@@ -27,9 +27,9 @@ $ ./easyscript run hello.es
 Hello, Ada! Your total is 15.
 ```
 
-## A taste of what's coming
+## A bigger example
 
-This is what a slightly bigger program is planned to look like:
+A loop and a function, also running today:
 
 ```
 note: Count down from 3, then greet someone.
@@ -45,7 +45,16 @@ to greet using name:
 greet using "Ada".
 ```
 
-> **Coming soon:** functions (`to greet using name`) don't run yet; everything above them does. The lexer already reads this program, and the test suite checks that it does ([`examples/lexer/taste.es`](examples/lexer/taste.es)). The wording of planned sentences may still change before they ship; [docs/vocabulary.md](docs/vocabulary.md) tracks the proposals.
+```
+$ ./easyscript run examples/programs/taste.es
+3
+2
+1
+Liftoff!
+Hello, Ada!
+```
+
+`make test` runs this program ([`examples/programs/taste.es`](examples/programs/taste.es)) and checks its output, so this page can't drift from what the compiler does.
 
 ## Status
 
@@ -61,6 +70,7 @@ EasyScript is in **Phase 1 (core language)**. Programs written in the sentence s
 | Files | `write ... to file`, `append ... to file`, `read file ... and call it ...` |
 | Decisions | `if ... :` with indented blocks, `otherwise if`, `otherwise` (or `else`), and one-line `if x is 5, say "hi".` / `if x is 5 then say "hi".` |
 | Loops | `count from 1 to 10:` (up or down, `by`/`in steps of`, `as n`), `for each`, `repeat 3 times:`, `while`/`as long as`, `keep doing this until`, `forever`, with `stop the loop` and `skip this one`; `it` is the loop's number |
+| Functions | `to greet someone:` / `to area with width and height:`, `give back` / `return`, calls as sentences (`greet "Paris".`, `call greet with "Paris".`) or values (`area of 3 and 4`); recursion, and calling a function before it's defined |
 | Other | `stop the program`; any sentence can start with `please` |
 | Friendly errors | Compile errors show the line, the source, carets, and a suggestion ("Did you mean "total"? You made it on line 1."). Runtime errors say what happened and where: "Line 8: You divided by zero." |
 | Tools | `run`, `build`, `emit`, `tokens`, `ast`, and an interactive shell. Generated programs are self-contained C. |
@@ -68,13 +78,13 @@ EasyScript is in **Phase 1 (core language)**. Programs written in the sentence s
 
 See the runnable [example programs](examples/programs/).
 
-**Coming soon** (Phase 1): your own functions, and a few more built-ins. Follow along in the [roadmap](docs/roadmap.md).
+**Coming soon** (Phase 1): `file ... exists`, reclaiming memory while loops run, and type checking. After that, Phase 2: records, lists, maps, and modules. Follow along in the [roadmap](docs/roadmap.md).
 
 ## Roadmap
 
 | Phase | Focus | Status |
 |---|---|---|
-| 1 | **Core language:** variables, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | In progress (variables, expressions, decisions, loops, output, input, and files run; functions next) |
+| 1 | **Core language:** variables, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | In progress (variables, expressions, decisions, loops, functions, output, input, and files run) |
 | 2 | **Data and structure:** records, lists, maps, modules, static types | Coming soon |
 | 3 | **Self-hosting:** the EasyScript compiler, written in EasyScript | Coming soon |
 | 4 | **Real-world programs:** standard library, C interop, concurrency, backend servers | Coming soon |

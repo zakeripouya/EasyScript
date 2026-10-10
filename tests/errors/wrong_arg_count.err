@@ -1,0 +1,24 @@
+Line 7: "area" needs 2 values, but this gives it 1.
+    say area of 3
+        ^^^^^^^^^
+It's defined on line 1: "to area with width and height".
+
+Line 8: "greet" needs 1 value, but this gives it 2.
+    greet with 1 and 2
+    ^^^^^^^^^^^^^^^^^^
+It's defined on line 5: "to greet with someone".
+
+Line 9: "pi" doesn't take any values, but this gives it 1.
+    say pi of 1
+        ^^^^^^^
+It's defined on line 3: "to pi".
+
+Line 10: "area" needs 2 values, but this gives it 0.
+    say area
+        ^^^^
+It's defined on line 1: "to area with width and height".
+
+Line 11: "greet" needs 1 value, but this gives it 0.
+    call greet
+         ^^^^^
+It's defined on line 5: "to greet with someone".

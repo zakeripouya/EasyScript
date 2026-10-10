@@ -1,0 +1,4 @@
+Line 4: I don't know anything called "secret".
+    say secret
+        ^^^^^^
+Make it first, like "let secret be 0".

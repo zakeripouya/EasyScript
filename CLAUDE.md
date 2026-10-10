@@ -53,10 +53,11 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 - **`times` needs a value after it:** it's multiplication only when the next token can start a value, so `repeat 3 times:` keeps its `times`.
 - **Reserved words:** these can't start a value or be names: `and or not is isn't equals reaches plus minus times multiplied divided mod followed as using`. The value words `yes no true false nothing it` are literals. Every other word is a name. `length`, `contents` and `file` are only special when followed by `of` / `of file`.
 - **Prefix forms bind tightly:** `length of X` and `contents of file X` take a single *primary*, so `length of x plus 1` means `(length of x) plus 1`. Postfix conversions wrap the whole form.
-- **Calls:** a call is `NAME using ARG, ARG, ...`, a single-word name followed by `using`. Each argument is a *unary* expression, and arguments are separated only by commas.
-  - **Arithmetic after the arguments** (+ - * / % plus minus times multiplied divided mod followed by) is an ambiguity error that suggests both parenthesized forms.
-  - **Comparisons, `and` and `or` end the call.**
-  - **No inputs:** a bare `NAME` is `EXPR_NAME`, and the checker decides whether it's a variable or a call with no inputs.
+- **Calls:** a call is a single-word name followed by `of`, `with` or `using`, then arguments (`parser_parse_call_args`). Each argument is a *unary* expression.
+  - **Separators:** arguments are separated by `and` (but not `and call`), and also by commas after `using` only, so `if f of x, say y` keeps its comma. The `and`s are taken greedily, and the checker reports a wrong count.
+  - **Arithmetic after the arguments** (+ - * / % plus minus times multiplied divided mod followed by) is an ambiguity error that suggests both parenthesized forms, unless the last argument is parenthesized (`fib of (n minus 1) plus 1` adds; `is_parenthesized` looks at the source).
+  - **Comparisons and `or` end the call.**
+  - **No inputs:** a bare `NAME` is `EXPR_NAME`, and the checker and codegen treat it as a call when it's a function with no parameters (functions and variables share one namespace).
 - **Positions:** every node has a `SourcePos`, holding its span and the line and column of its first token. A parenthesized group's span includes its parentheses. Binary, unary and convert nodes also keep `op_span`.
 - **Errors and recovery:** at most one error per sentence (`Parser.sentence_failed`). After an error, the parser skips to the sentence end (`.`, NEWLINE, DEDENT, INDENT or EOF) and continues.
 - **`.5`** (a period directly followed by a number) is rejected wherever a value or a sentence is expected ("Write 0.5 instead of .5.").
@@ -82,6 +83,7 @@ EasyScript is a programming language with English sentence syntax. The compiler 
   | `if …` | `STMT_IF` (parse_if.c) |
   | `count` / `go` / `for` / `do` / `repeat` / `while` / `as long as` / `keep doing this until` / `forever` | `STMT_LOOP` (parse_loop.c) |
   | `stop the loop`, `stop`, `break` / `skip this one`, `skip`, `continue`, `move on` | `STMT_BREAK` / `STMT_CONTINUE` (parse_loop.c) |
+  | `to NAME …:` / `give back E`, `return [E]` / `call NAME …`, or a sentence starting with a pre-scanned function name | `STMT_FUNCTION` / `STMT_RETURN` / `STMT_CALL` (parse_func.c) |
 
 - **Statement words are contextual.** They're special only as the first word, so `let say be 2`, `add 1 to add` and `let file be …` are fine.
 - **Names:** a name is a single WORD that's neither an operator word nor a value word. `parse_name(p, name, next)` takes the words that follow the name in that form, e.g. `be`/`equal` after `let X`.
@@ -97,6 +99,25 @@ EasyScript is a programming language with English sentence syntax. The compiler 
   A non-word start gives "A sentence can't start with …".
 - **Leftovers:** forms ending in a name or keyword (`add`, `subtract`, `ask`, `read`, `stop`, `break`, `skip`, `continue`, `move`) report extra words as "I expected the sentence to end after …". Others use the expression leftover reporting. Statements with errors are left out of the returned `Block`.
 - **Quoting in messages:** `parser_quoted` renders text spans as `the text "…"` to avoid nested quotes.
+
+### Functions (implemented in `src/front/parse_func.c`, `check.c`, `codegen_c.c`)
+
+- **Definition:** `to NAME [with | of | using] P [and | ,] Q …:` plus an indented block. AST: `STMT_FUNCTION {name, params, body}`. The name can't be a statement word (`parser_is_statement_word`, which includes `please`): "… starts sentences in EasyScript, so it can't be the name of a function". `to greet a:` (filler before the colon) and `to greet with:` are errors.
+- **Return:** `give back E`, `return E`, or bare `return` give `STMT_RETURN` (`returned` is NULL for bare).
+- **Call sentences:** `NAME [with | of | using] A and B`, where NAME was found by `parser_find_functions`, which pre-scans `to WORD` at the start of every line before parsing, or `call NAME …`. Zero arguments is allowed (`greet.`), but `greet with` with nothing after it is an error. AST: `STMT_CALL {call: EXPR_CALL}`. Unknown first words also get the pre-scanned function names as suggestions.
+- **Checker:**
+  - **Function table:** all top-level functions are collected first; a duplicate is "You already defined …".
+  - **Where they can go:** a definition inside an if, a loop or another function (`Checker.blocks` / `function`) is "Functions can only be defined at the top level…", and its body isn't checked.
+  - **Function bodies:** a body sees only its parameters and the names it makes. `Checker.floor` hides `made[0..floor)`, and the loop stack is cleared. An unknown name that exists outside gives "A function only sees its own inputs and the names it makes. … pass it in as an input." Duplicate parameters are errors.
+  - **Calls:** an unknown function gets "Did you mean "area"? It's defined on line N." or a "Define it first" note; a variable called like a function gets "… is a variable, not a function". A wrong count is "needs N value(s), but this gives it M" (or "doesn't take any values"), with a note quoting `to area with width and height` and the definition line. A bare name that's a function with parameters counts as 0 arguments.
+  - **`give back` outside a function** is an error.
+  - **Names:** making a variable, parameter or loop number with a function's name is an error (`clashes_with_function`).
+- **Codegen:**
+  - **Signature and order:** each function becomes `static EsValue es_f_NAME(int es_line, EsValue es_v_P…)`, with prototypes before all function bodies and main.
+  - **Each body:** `emit_function` uses a fresh `Codegen` (its own body, temps, loops, depth). It declares temporaries, then `EsValue es_v_local = es_nothing();` for every name made in the function (`declare_name` hoists into `locals`, skipping parameters), then `(void)` casts so unused inputs or locals can't warn, then `es_enter(es_line)`.
+  - **Returns:** every return is `return es_leave(E)`, and the body ends with `return es_leave(es_nothing());`.
+  - **Calls:** `(es_tA = arg1, es_tB = arg2, es_f_NAME(line, es_tA, es_tB))`, so arguments are evaluated left to right. A zero-parameter function used as a name is `es_f_NAME(line)`.
+- **Runtime:** `es_enter(line)` counts depth and fails above `ES_MAX_DEPTH` (10000) with "Functions are calling each other too deeply (more than 10000 calls inside each other)." and a hint. `es_leave(v)` decrements and returns `v`.
 
 ### Loops (implemented in `src/front/parse_loop.c`)
 
@@ -188,7 +209,7 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 - `tests/unit/*.c`: C unit tests for `src/common` and `src/front`. Don't use `a`, `an` or `the` as variable names in `.es` fixtures, because the lexer drops them, linked into `build/*/unit_tests`. Each test is `static void test_x(TestContext *t)`, registered with `unit_run` in that file's `*_tests(TestRunner *)` function. Declare that function in `unit.h` and call it from `main` in `unit.c`. Use `CHECK`, `CHECK_SIZE`, and `CHECK_STR`. `t->arena` is fresh for each test.
 - `tests/run/NAME.es` plus `NAME.out`: the program is compiled and run with `easyscript run`, with stdin from `NAME.in` if it exists (otherwise `/dev/null`). Stdout must match `NAME.out`. If `NAME.err` exists, the program must exit 1 with exactly that stderr; these are the runtime-error tests, named `err_*`. Otherwise it must exit 0 with empty stderr.
 - `tests/errors/NAME.es` plus `NAME.err`: compiled with `easyscript emit`. It must exit non-zero, and stderr must match `NAME.err` exactly. Mostly checker errors, plus one parse error showing that the checker is skipped.
-- **README sync checks:** the end of `tests/run.sh` checks that the README's "A first program" block equals `examples/programs/first_program.es`, and its "A taste of what's coming" block equals `examples/lexer/taste.es`.
+- **README sync checks:** the end of `tests/run.sh` checks that the README's "A first program" block equals `examples/programs/first_program.es`, and its "A bigger example" block equals `examples/programs/taste.es` (which runs and has a `.out`).
 - CLI behavior (modes, usage errors, no files left in the cwd, temp-dir cleanup) is checked at the bottom of `tests/run.sh`. Add a check there when changing the CLI.
 - `examples/programs/NAME.es` plus `NAME.out` and optional `.in`/`.err` (run like `tests/run`), `examples/lexer/NAME.es` plus `NAME.tokens`, and `examples/parser/NAME.es` plus `NAME.ast` (both with an optional `.err`) back the docs. `tests/run.sh` fails if any other folder or a loose `.es` appears under `examples/`.
 - `tests/run.sh` runs the unit binary, then the run/errors/tokens tests and the examples (each in an empty scratch directory, via the shared `check_run`/`check_errors`/`check_dump` functions), then the CLI checks. It prints PASS/FAIL per test plus one summary and exits 1 if anything fails. The `ES` and `UNIT` env vars choose which binaries are tested.
@@ -214,8 +235,8 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 
 - **Never present unimplemented syntax as working.** Anything that doesn't compile today is labelled "Coming soon" (a proposal whose wording may change). Move an item from the planned-examples list in `docs/roadmap.md` into `examples/` when it ships, and tick its roadmap checkbox.
 - **Error text in the docs is copied from tested `.err` files.** If a message changes, update `docs/errors.md` along with the expected file.
-- Expressions, simple statements, `if` and loops are implemented and documented as "Available" (calls as "Parses only"). The remaining **proposed** patterns in `docs/vocabulary.md` (`to NAME using …`, `give back`/`return`, `file X exists`) are still **proposals, not decisions**. When implementing them, either implement them as written or change the docs in the same commit. Don't let the docs and the parser disagree.
-- Architecture or workflow changes also update `docs/architecture.md` and `CONTRIBUTING.md`. The README's taste program must stay identical to `examples/lexer/taste.es`.
+- Everything in `docs/vocabulary.md` is implemented and "Available" except `file X exists` (still a **proposal, not a decision**) and the later phases. When implementing them, either implement them as written or change the docs in the same commit. Don't let the docs and the parser disagree.
+- Architecture or workflow changes also update `docs/architecture.md` and `CONTRIBUTING.md`. The README's program blocks must stay identical to their example files (checked by `make test`).
 
 ## Keeping this file current
 
@@ -223,9 +244,9 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 
 ## Current state of the repo
 
-Phase 1 is in progress. Programs in the sentence syntax compile to C and run, including `if`/`otherwise` blocks and loops; functions don't exist yet.
+Phase 1 is in progress. Programs in the sentence syntax compile to C and run, including `if`/`otherwise` blocks, loops and top-level functions.
 
-- **Layout:** `src/main.c` is the driver. `src/common/` holds arena, util, diag and ast. `src/front/` holds lexer, parse_util, parse_expr, parse_stmt, parse_if, parse_loop and check. `src/back/` holds codegen_c. `runtime/es_runtime.h` is the runtime, and `tools/embed.c` is a build tool.
+- **Layout:** `src/main.c` is the driver. `src/common/` holds arena, util, diag and ast. `src/front/` holds lexer, parse_util, parse_expr, parse_stmt, parse_if, parse_loop, parse_func and check. `src/back/` holds codegen_c. `runtime/es_runtime.h` is the runtime, and `tools/embed.c` is a build tool.
 - **Pipeline** (`generate_c` in `src/main.c`, shared by `run`/`build`/`emit`):
   1. Lex and parse.
   2. If there were no errors, run `check_program`.
@@ -233,16 +254,16 @@ Phase 1 is in progress. Programs in the sentence syntax compile to C and run, in
   4. Otherwise run `codegen_c` and write `program.c` to the temp dir.
 
   `cc -O2 program.c -o OUT -lm` is run via `fork`/`execvp`, and `run` returns the program's exit status.
-- **Stage boundaries:** these now follow the target design. Codegen trusts the checker and reports nothing; it asserts if it ever sees `EXPR_CALL`, `EXPR_ERROR`, or an `it` with no counting loop around it. `src/main.c` still has file-scope `arena` and `temp_*` pointers for its `atexit` cleanup (the only global state in the compiler).
+- **Stage boundaries:** these now follow the target design. Codegen trusts the checker and reports nothing; it asserts if it ever sees `EXPR_ERROR` or an `it` with no counting loop around it. `src/main.c` still has file-scope `arena` and `temp_*` pointers for its `atexit` cleanup (the only global state in the compiler).
 - `src/main.c`: the CLI. `run FILE` / `build FILE -o OUT` / `emit FILE` / `tokens FILE` / `ast FILE`, and `help`. Unknown commands and bad arguments print usage and exit 2.
   - Each invocation creates one `mkdtemp` directory under `$TMPDIR` (or `/tmp`), holding `program.c`, `program` and `session.es`. `atexit` removes it.
   - **The shell** (no arguments) keeps the session in a `StrBuf`. Each line is appended, written to `session.es` and run through `argv[0] run`, and kept only if that exits 0. So earlier output and `ask` prompts repeat on every line, and blocks can't be typed (use the one-line `if` forms). `exit` or `quit` leaves.
 - `src/common/arena.{c,h}`: arena allocator (`arena_new`, `arena_alloc` returns zeroed, aligned memory, `arena_strdup`, `arena_sprintf`/`arena_vsprintf`, `arena_free`). It grows in 64 KiB blocks and gives oversized requests their own block. All compiler memory comes from here.
 - `src/common/util.{c,h}`: `StrBuf` (`sb_*`, including `sb_append_quoted`), `Vec(T)` with `vec_push`/`vec_last`/`vec_pop`, `edit_distance` (optimal string alignment, so an adjacent swap counts 1), and `PRINTF_LIKE`.
 - `src/common/diag.{c,h}`: opaque `Diag` made by `diag_new(arena, source, len)`. Report with `diag_error(d, span, fmt, ...)`, then `diag_note(d, fmt, ...)` for help lines attached to the latest error. `Span` is a byte `{offset, length}`. `diag_line` gives the 1-based line and `diag_count` the number of errors. `diag_render` (to a `StrBuf`) and `diag_print` (to a `FILE *`) output every error in report order, separated by blank lines: `Line N: message`, then the source line indented 4 spaces, then carets under the span, then the notes. Carets are clamped to the first line of the span, with at least one. Tabs are copied into the padding, UTF-8 is counted per character, and a trailing `\r` is dropped.
-- `src/common/ast.{h,c}`: `Expr` (kinds ERROR, NUMBER (text plus `is_decimal`), TEXT, BOOLEAN, NOTHING, IT, NAME, CALL, LENGTH, FILE_CONTENTS, UNARY, BINARY, CONVERT), `Stmt` (LET, SET, CHANGE + `ChangeOp`, SAY, ASK, WRITE_FILE, APPEND_FILE, READ_FILE, STOP, IF with `IfBranch`es, each with a `verb` span), `Name {text, pos}`, and `Block` (`Vec(Stmt *)`). Every node has a `SourcePos`. It also has `ast_dump_block` for `easyscript ast`.
+- `src/common/ast.{h,c}`: `Expr` (kinds ERROR, NUMBER (text plus `is_decimal`), TEXT, BOOLEAN, NOTHING, IT, NAME, CALL, LENGTH, FILE_CONTENTS, UNARY, BINARY, CONVERT), `Stmt` (LET, SET, CHANGE + `ChangeOp`, SAY, ASK, WRITE_FILE, APPEND_FILE, READ_FILE, STOP, IF with `IfBranch`es, LOOP, BREAK, CONTINUE, FUNCTION, RETURN, CALL, each with a `verb` span), `Name {text, pos}`, and `Block` (`Vec(Stmt *)`). Every node has a `SourcePos`. It also has `ast_dump_block` for `easyscript ast`.
 - `src/front/lexer.{c,h}`: `lex(arena, diag, source, len)` returns a `TokenList` that always ends with `TOK_EOF`; tokens carry a `filler` span. Also `token_kind_name` and `tokens_dump(tokens, source, out)`.
-- `src/front/parse.h`, `parse_internal.h`, `parse_util.c`, `parse_expr.c`, `parse_stmt.c`, `parse_if.c`, `parse_loop.c`: the parser. Shared statement helpers have `parser_` names (`parser_new_stmt`, `parser_parse_name`, `parser_expect_word`, `parser_expect_phrase`, `parser_looks_like_assignment`, `parser_parse_block`); see the grammar sections above. The if parser was fuzzed with 2,500 inputs under ASan/UBSan (no crashes or hangs; all 74 accepted programs compiled with `-Werror`). The expression and statement parsers were each fuzzed with 3,000 inputs under ASan/UBSan, with no findings.
+- `src/front/parse.h`, `parse_internal.h`, `parse_util.c`, `parse_expr.c`, `parse_stmt.c`, `parse_if.c`, `parse_loop.c`, `parse_func.c`: the parser. Shared statement helpers have `parser_` names (`parser_new_stmt`, `parser_parse_name`, `parser_expect_word`, `parser_expect_phrase`, `parser_looks_like_assignment`, `parser_parse_block`); see the grammar sections above. The if parser was fuzzed with 2,500 inputs under ASan/UBSan (no crashes or hangs; all 74 accepted programs compiled with `-Werror`). The expression and statement parsers were each fuzzed with 3,000 inputs under ASan/UBSan, with no findings.
 - `src/front/check.{c,h}`: `check_program(arena, diag, program)`. A `Checker` context holds `made` (names made so far, with lines) and `later` (all names the program makes, for "You make "x" later, on line N").
   - **Making names:** `let` makes a name; making it twice is "You already made …" with a "set" hint. `ask` and `read file … and call it` make the name if it's new and silently reuse it otherwise. `set`/`change`/arithmetic statements and `EXPR_NAME` need an existing name.
   - **Unknown names:** "I don't know anything called "x"." plus one note:
@@ -250,10 +271,9 @@ Phase 1 is in progress. Programs in the sentence syntax compile to C and run, in
     - a list when several are equally close
     - "You make "x" later, on line N."
     - otherwise "Make it first, like "let x be 0"."
-  - **Not available yet:** `EXPR_CALL` ("I don't know a function called …") is an error.
   - **Loops:** a `Loop` stack (`has_it` for count and times loops). `EXPR_IT` needs some enclosing loop with `has_it`; otherwise "it doesn't refer to anything here", with a note that's different inside a non-counting loop and outside any loop. `STMT_BREAK`/`STMT_CONTINUE` outside any loop are errors. Loop values (from/to/step/times/condition) are checked in the outer scope. The count variable is made in the loop's scope; if the name exists, it's an error ("This loop calls each number "number", but you already made…" when defaulted). The loop body ends the scope as "the loop"; a loop variable used afterwards gets "is the number of the loop on line N, so it only exists inside that loop" (`Symbol.loop_number`).
   - **Scopes:** each if branch body is a scope (`check_block`): names made inside are dropped from `made` at its end and recorded in `ended` with the if's line, so a later use says "You made "x" inside the "if" on line N, so it only exists inside that block." A name that exists outside can't be made again inside ("You already made …"); different blocks can make the same name.
-- `src/back/codegen_c.{c,h}`: `codegen_c(arena, program, out)` writes the embedded runtime (the `es_runtime_source` byte array), `static EsValue es_v_<name>;` globals, and `int main(void)`.
+- `src/back/codegen_c.{c,h}` (574 lines, close to the ~600 limit: split it, e.g. expressions into their own file, before adding more): `codegen_c(arena, program, out)` writes the embedded runtime (the `es_runtime_source` byte array), `static EsValue es_v_<name>;` globals, and `int main(void)`.
   - **Names:** variables are mangled to `es_v_` plus the name, with `_` written as `__` and `'` as `_q`.
   - **Temporaries:** the left operand of every binary operation, and the text of file writes, go into temporaries `es_t1…` declared at the top of `main`. This forces left-to-right evaluation.
   - **Short-circuit:** `and`/`or` compile to `(t = L, es_is_no(t) ? t : es_and(line, t, R))`, and `or` uses `es_is_yes`.
@@ -270,20 +290,20 @@ Phase 1 is in progress. Programs in the sentence syntax compile to C and run, in
   - Zero warnings in both modes. `src/main.c` defines `_XOPEN_SOURCE 700` and `_DARWIN_C_SOURCE`.
 - `tests/`:
   - 40 unit tests
-  - 43 AST tests (25 valid, including `if_*` and `loop_count`, `loop_times`, `loop_conditions`, `loop_control`, `loop_nested`; 18 `err_*`, including `err_if_header`, `err_if_otherwise`, `err_loop_header`)
+  - 47 AST tests (28 valid, including `if_*`, `loop_*`, `func_define`, `func_calls`, `func_return`; 19 `err_*`, including `err_if_header`, `err_if_otherwise`, `err_loop_header`, `err_func_header`)
   - 21 token tests (14 valid, 7 `err_*`)
-  - 55 run tests (24 programs, including `if_*` and `loop_count`, `loop_times`, `loop_while`, `loop_control`, `loop_it`, `loop_scope`, covering numbers, number equality with tolerance, text (including `followed by` precedence), logic and short-circuiting, every comparison, variables, files, `ask` with and without input, `stop`, sentences and synonyms; plus 31 `err_*` runtime-error tests, including left-to-right error order, non-yes/no `if`/loop conditions, bad counts, steps and times, and an error's line number inside a loop)
-  - 21 compile-error tests (checker messages including block scopes, loop numbers, `it`, and stop/skip outside loops, plus one parse error)
-  - 37 examples, 2 README sync checks, and CLI checks
+  - 62 run tests (29 programs, including `if_*`, `loop_*`, `func_basic`, `func_recursion`, `func_locals`, `func_return`, `func_mutual`, covering numbers, number equality with tolerance, text (including `followed by` precedence), logic and short-circuiting, every comparison, variables, files, `ask` with and without input, `stop`, sentences and synonyms; plus 33 `err_*` runtime-error tests, including left-to-right error order, non-yes/no `if`/loop conditions, bad counts, steps and times, an error's line number inside a loop or function, and endless recursion)
+  - 32 compile-error tests (checker messages including block scopes, loop numbers, `it`, stop/skip outside loops, unknown functions, argument counts, `give back` outside functions, functions in blocks, function scopes and name clashes, plus one parse error)
+  - 39 examples, 2 README sync checks, and CLI checks
 - **Docs:**
-  - `README.md`: front page with "A first program" (runs, and is tested), "A taste of what's coming" (preview), honest status, roadmap with Notebook, design rules, build/CLI, pipeline, links, and "License: TBD".
-  - `docs/language-guide.md`: chapters 0–6 and 8 available; functions and `file X exists` coming soon.
-  - `docs/vocabulary.md`: statuses Available / Parses only (calls, `it`) / Coming soon.
+  - `README.md`: front page with "A first program" (runs, and is tested), "A bigger example" (a loop and a function; runs, and is tested), honest status, roadmap with Notebook, design rules, build/CLI, pipeline, links, and "License: TBD".
+  - `docs/language-guide.md`: chapters 0–8 available, except `file X exists` (coming soon).
+  - `docs/vocabulary.md`: statuses Available / Coming soon.
   - Also `docs/errors.md` (lexer, parser, checker and runtime errors), `docs/architecture.md`, `docs/roadmap.md`, `CHANGELOG.md`, `CONTRIBUTING.md` and `examples/README.md`.
 - **Examples:**
-  - `examples/programs/` (11 runnable): `hello`, `first_program`, `variables`, `text`, `logic`, `decisions`, `loops`, `logan` (old/logan.code ported), `ask_name` (+ `.in`), `files`, `err_divide_by_zero`.
+  - `examples/programs/` (14 runnable): `hello`, `first_program`, `taste` (README), `variables`, `text`, `logic`, `decisions`, `loops`, `logan` (old/logan.code ported), `factorial`, `fibonacci`, `ask_name` (+ `.in`), `files`, `err_divide_by_zero`.
   - `examples/parser/` (16): syntax-tree demos, many using names they never make, plus `err_otherwise_misplaced`.
-  - `examples/lexer/` (10), including `taste`.
+  - `examples/lexer/` (9).
 - No license has been chosen; the user will pick one.
 - `old/`: the 2024 prototype `.code` files. Historical only; they no longer compile. `old/logan.code` is ported as `examples/programs/logan.es`.
 - `.gitignore` covers build outputs (`build/`, `easyscript`, stray `*.o`/`*.d`), `myfile*`, `.idea/` (CLion), and `.vscode/` (no longer tracked). `.gitattributes` marks `tests/tokens/**` as `-text`.

@@ -31,6 +31,9 @@ typedef struct {
     size_t depth;              // how many blocks the current statement is inside
     Vec(LoopCode) loops;       // loops the current statement is inside, innermost last
     size_t loop_ids;
+    Vec(const Stmt *) functions; // every top-level STMT_FUNCTION
+    const Stmt *function;        // the function being generated, or NULL for main()
+    Vec(const char *) locals;    // names made in that function, hoisted to its top
 } Codegen;
 
 // Starts a line of main()'s body at the current nesting depth.
@@ -42,10 +45,10 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out);
 
 // --- Names and literals ------------------------------------------------------
 
-// A variable's C name: "es_v_" plus the name with "_" doubled and "'" as "_q",
-// so different EasyScript names can never collide.
-static void append_c_name(StrBuf *out, const char *name) {
-    sb_append(out, "es_v_");
+// A C name: the prefix plus the name with "_" doubled and "'" as "_q", so
+// different EasyScript names can never collide.
+static void append_prefixed(StrBuf *out, const char *prefix, const char *name) {
+    sb_append(out, prefix);
     for (const char *c = name; *c; c++) {
         if (*c == '_') {
             sb_append(out, "__");
@@ -57,11 +60,42 @@ static void append_c_name(StrBuf *out, const char *name) {
     }
 }
 
-static void declare_global(Codegen *g, const char *name) {
-    for (size_t i = 0; i < g->globals.len; i++) {
-        if (strcmp(g->globals.items[i], name) == 0) return;
+// A variable: "es_v_total". A function: "es_f_area".
+static void append_c_name(StrBuf *out, const char *name) {
+    append_prefixed(out, "es_v_", name);
+}
+
+static bool contains(const char *const *items, size_t len, const char *name) {
+    for (size_t i = 0; i < len; i++) {
+        if (strcmp(items[i], name) == 0) return true;
     }
-    vec_push(g->arena, &g->globals, name);
+    return false;
+}
+
+static bool is_param(const Codegen *g, const char *name) {
+    if (!g->function) return false;
+    for (size_t i = 0; i < g->function->as.function.params.len; i++) {
+        if (strcmp(g->function->as.function.params.items[i].text, name) == 0) return true;
+    }
+    return false;
+}
+
+// A name made by the program: a global in main(), a hoisted local in a function.
+static void declare_name(Codegen *g, const char *name) {
+    if (g->function) {
+        if (!is_param(g, name) && !contains(g->locals.items, g->locals.len, name)) {
+            vec_push(g->arena, &g->locals, name);
+        }
+    } else if (!contains(g->globals.items, g->globals.len, name)) {
+        vec_push(g->arena, &g->globals, name);
+    }
+}
+
+static bool is_function(const Codegen *g, const char *name) {
+    for (size_t i = 0; i < g->functions.len; i++) {
+        if (strcmp(g->functions.items[i]->as.function.name.text, name) == 0) return true;
+    }
+    return false;
 }
 
 // A C string literal. Non-ASCII and control bytes use three-digit octal
@@ -177,6 +211,25 @@ static void emit_it(Codegen *g, StrBuf *out) {
     sb_append(out, "es_nothing()");
 }
 
+// (t1 = A, t2 = B, es_f_area(line, t1, t2)): arguments left to right.
+static void emit_call(Codegen *g, const Expr *expr, StrBuf *out) {
+    size_t n = expr->as.call.args.len;
+    size_t first = g->temps + 1;
+    g->temps += n;
+    sb_append_char(out, '(');
+    for (size_t i = 0; i < n; i++) {
+        sb_appendf(out, "es_t%zu = ", first + i);
+        emit_expr(g, expr->as.call.args.items[i], out);
+        sb_append(out, ", ");
+    }
+    append_prefixed(out, "es_f_", expr->as.call.name);
+    sb_appendf(out, "(%zu", expr->pos.line);
+    for (size_t i = 0; i < n; i++) {
+        sb_appendf(out, ", es_t%zu", first + i);
+    }
+    sb_append(out, "))");
+}
+
 static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     size_t line = expr->pos.line;
     switch (expr->kind) {
@@ -188,7 +241,15 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
         break;
     case EXPR_BOOLEAN: sb_appendf(out, "es_yesno(%d)", expr->as.boolean ? 1 : 0); break;
     case EXPR_NOTHING: sb_append(out, "es_nothing()"); break;
-    case EXPR_NAME: append_c_name(out, expr->as.name); break;
+    case EXPR_NAME:
+        if (is_function(g, expr->as.name)) {
+            append_prefixed(out, "es_f_", expr->as.name);  // a function that takes no values
+            sb_appendf(out, "(%zu)", line);
+        } else {
+            append_c_name(out, expr->as.name);
+        }
+        break;
+    case EXPR_CALL: emit_call(g, expr, out); break;
     case EXPR_LENGTH: emit_call1(g, "es_length", line, expr->as.operand, out); break;
     case EXPR_FILE_CONTENTS: emit_call1(g, "es_read_file", line, expr->as.operand, out); break;
     case EXPR_UNARY:
@@ -204,7 +265,6 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
         break;
     case EXPR_IT: emit_it(g, out); break;
     case EXPR_ERROR:
-    case EXPR_CALL:
         // The checker rejects these before codegen runs.
         assert(!"unchecked expression reached codegen");
         sb_append(out, "es_nothing()");
@@ -342,7 +402,7 @@ static void emit_loop_head(Codegen *g, const Stmt *stmt, size_t id) {
 // { <setup> for/while (...) { body } }
 static void emit_loop(Codegen *g, const Stmt *stmt) {
     size_t id = ++g->loop_ids;
-    if (stmt->as.loop.kind == LOOP_COUNT) declare_global(g, stmt->as.loop.var.text);
+    if (stmt->as.loop.kind == LOOP_COUNT) declare_name(g, stmt->as.loop.var.text);
     indent(g);
     sb_append(&g->body, "{\n");
     g->depth++;
@@ -363,7 +423,7 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
     sb_appendf(&g->body, "/* line %zu */\n", stmt->pos.line);
     switch (stmt->kind) {
     case STMT_LET:
-        declare_global(g, stmt->as.assign.name.text);
+        declare_name(g, stmt->as.assign.name.text);
         emit_assign(g, stmt->as.assign.name.text, stmt->as.assign.value);
         break;
     case STMT_SET: emit_assign(g, stmt->as.assign.name.text, stmt->as.assign.value); break;
@@ -375,7 +435,7 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
         sb_append(&g->body, ");\n");
         break;
     case STMT_ASK:
-        declare_global(g, stmt->as.ask.answer.text);
+        declare_name(g, stmt->as.ask.answer.text);
         begin_assignment(g, stmt->as.ask.answer.text);
         emit_call1(g, "es_ask", stmt->pos.line, stmt->as.ask.prompt, &g->body);
         sb_append(&g->body, ";\n");
@@ -383,7 +443,7 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
     case STMT_WRITE_FILE:
     case STMT_APPEND_FILE: emit_file_write(g, stmt); break;
     case STMT_READ_FILE:
-        declare_global(g, stmt->as.read_file.name.text);
+        declare_name(g, stmt->as.read_file.name.text);
         begin_assignment(g, stmt->as.read_file.name.text);
         emit_call1(g, "es_read_file", stmt->pos.line, stmt->as.read_file.path, &g->body);
         sb_append(&g->body, ";\n");
@@ -394,6 +454,22 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
         break;
     case STMT_IF: emit_if(g, stmt); break;
     case STMT_LOOP: emit_loop(g, stmt); break;
+    case STMT_FUNCTION: break;  // generated separately, before main()
+    case STMT_RETURN:
+        indent(g);
+        sb_append(&g->body, "return es_leave(");
+        if (stmt->as.returned) {
+            emit_expr(g, stmt->as.returned, &g->body);
+        } else {
+            sb_append(&g->body, "es_nothing()");
+        }
+        sb_append(&g->body, ");\n");
+        break;
+    case STMT_CALL:
+        indent(g);
+        emit_expr(g, stmt->as.call, &g->body);
+        sb_append(&g->body, ";\n");
+        break;
     case STMT_BREAK:
         indent(g);
         sb_append(&g->body, "break;\n");
@@ -407,12 +483,71 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
 
 // --- Program -------------------------------------------------------------------
 
+// static EsValue es_f_area(int es_line, EsValue es_v_width, EsValue es_v_height)
+static void append_signature(StrBuf *out, const Stmt *fn) {
+    sb_append(out, "static EsValue ");
+    append_prefixed(out, "es_f_", fn->as.function.name.text);
+    sb_append(out, "(int es_line");
+    for (size_t i = 0; i < fn->as.function.params.len; i++) {
+        sb_append(out, ", EsValue ");
+        append_c_name(out, fn->as.function.params.items[i].text);
+    }
+    sb_append_char(out, ')');
+}
+
+// The C function for one EasyScript function: temporaries and locals
+// (hoisted), then the body; falling off the end gives back nothing.
+static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
+    Codegen f = {0};
+    f.arena = g->arena;
+    f.functions = g->functions;
+    f.function = fn;
+    f.loop_ids = g->loop_ids;
+    sb_init(&f.body, g->arena);
+    for (size_t i = 0; i < fn->as.function.body.len; i++) {
+        emit_stmt(&f, fn->as.function.body.items[i]);
+    }
+    g->loop_ids = f.loop_ids;
+
+    append_signature(out, fn);
+    sb_append(out, " {\n");
+    for (size_t t = 1; t <= f.temps; t++) {
+        sb_appendf(out, "    EsValue es_t%zu;\n", t);
+    }
+    for (size_t i = 0; i < f.locals.len; i++) {
+        sb_append(out, "    EsValue ");
+        append_c_name(out, f.locals.items[i]);
+        sb_append(out, " = es_nothing();\n");
+    }
+    for (size_t i = 0; i < fn->as.function.params.len; i++) {  // inputs it never uses
+        sb_append(out, "    (void)");
+        append_c_name(out, fn->as.function.params.items[i].text);
+        sb_append(out, ";\n");
+    }
+    for (size_t i = 0; i < f.locals.len; i++) {  // names it makes but never reads
+        sb_append(out, "    (void)");
+        append_c_name(out, f.locals.items[i]);
+        sb_append(out, ";\n");
+    }
+    sb_append(out, "    es_enter(es_line);\n");
+    sb_append_n(out, f.body.data, f.body.len);
+    sb_append(out, "    return es_leave(es_nothing());\n}\n\n");
+}
+
 void codegen_c(Arena *arena, const Block *program, StrBuf *out) {
     Codegen g = {0};
     g.arena = arena;
     sb_init(&g.body, arena);
     for (size_t i = 0; i < program->len; i++) {
+        if (program->items[i]->kind == STMT_FUNCTION) vec_push(arena, &g.functions, program->items[i]);
+    }
+    for (size_t i = 0; i < program->len; i++) {
         emit_stmt(&g, program->items[i]);
+    }
+    StrBuf functions;
+    sb_init(&functions, arena);
+    for (size_t i = 0; i < g.functions.len; i++) {
+        emit_function(&g, g.functions.items[i], &functions);
     }
 
     sb_append_n(out, (const char *)es_runtime_source, es_runtime_source_len);
@@ -422,7 +557,14 @@ void codegen_c(Arena *arena, const Block *program, StrBuf *out) {
         append_c_name(out, g.globals.items[i]);
         sb_append(out, ";\n");
     }
-    sb_append(out, "\nint main(void) {\n");
+    if (g.functions.len > 0) sb_append_char(out, '\n');
+    for (size_t i = 0; i < g.functions.len; i++) {  // prototypes, for calls in any order
+        append_signature(out, g.functions.items[i]);
+        sb_append(out, ";\n");
+    }
+    sb_append_char(out, '\n');
+    sb_append_n(out, functions.data, functions.len);
+    sb_append(out, "int main(void) {\n");
     for (size_t t = 1; t <= g.temps; t++) {
         sb_appendf(out, "    EsValue es_t%zu;\n", t);
     }

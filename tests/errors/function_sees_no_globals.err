@@ -1,0 +1,4 @@
+Line 3: I don't know anything called "total".
+        say total
+            ^^^^^
+A function only sees its own inputs and the names it makes. To use "total" here, pass it in as an input.

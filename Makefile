@@ -4,7 +4,7 @@ RELEASE_FLAGS = -O2
 DEBUG_FLAGS = -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all
 
 COMMON_SRC = src/common/arena.c src/common/util.c src/common/diag.c src/common/ast.c
-FRONT_SRC = src/front/lexer.c src/front/parse_util.c src/front/parse_expr.c src/front/parse_stmt.c src/front/parse_if.c src/front/parse_loop.c src/front/check.c
+FRONT_SRC = src/front/lexer.c src/front/parse_util.c src/front/parse_expr.c src/front/parse_stmt.c src/front/parse_if.c src/front/parse_loop.c src/front/parse_func.c src/front/check.c
 BACK_SRC = src/back/codegen_c.c
 # The runtime, embedded into the compiler as a byte array by tools/embed.c.
 GEN_RUNTIME = build/gen/es_runtime_embed.c

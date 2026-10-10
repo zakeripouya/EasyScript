@@ -1,0 +1,9 @@
+Line 3: "greet" is the name of a function, defined on line 1.
+    let greet be 1
+        ^^^^^
+Give the variable a different name.
+
+Line 4: "greet" is the name of a function, defined on line 1.
+    count from 1 to 2 as greet:
+                         ^^^^^
+Give the variable a different name.
