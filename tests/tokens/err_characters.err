@@ -1,0 +1,37 @@
+Line 1: I don't understand the character "@".
+    say 5 @ 3.
+          ^
+
+Line 2: I don't understand "!".
+    if x ! y:
+         ^
+To check that two things are different, write "!=".
+
+Line 3: I don't understand this apostrophe.
+    say guests' list.
+              ^
+An apostrophe can only go inside a word, like isn't or guest's. Text goes in double quotes, like "hello".
+
+Line 4: I don't understand the character "’".
+    say it isn’t.
+              ^
+That's a curly apostrophe. Use a straight one (') instead.
+
+Line 5: I don't understand the character "“".
+    say “hi”.
+        ^
+That's a curly quote. Use straight double quotes (") around text.
+
+Line 5: I don't understand the character "”".
+    say “hi”.
+           ^
+That's a curly quote. Use straight double quotes (") around text.
+
+Line 6: I don't understand the character "é".
+    set café to 1.
+           ^
+Words can only use the letters a to z, digits and underscores. Put other text in double quotes.
+
+Line 7: I don't understand the character "$".
+    say $5.
+        ^

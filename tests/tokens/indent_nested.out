@@ -1,0 +1,59 @@
+WORD          1:1     if
+WORD          1:4     x
+COLON         1:5     :
+NEWLINE       1:6
+INDENT        2:1
+WORD          2:5     say
+NUMBER        2:9     1
+PERIOD        2:10    .
+NEWLINE       2:11
+WORD          3:5     if
+WORD          3:8     y
+COLON         3:9     :
+NEWLINE       3:10
+INDENT        4:1
+WORD          4:9     say
+NUMBER        4:13    2
+PERIOD        4:14    .
+NEWLINE       4:15
+WORD          5:9     if
+WORD          5:12    z
+COLON         5:13    :
+NEWLINE       5:14
+INDENT        6:1
+WORD          6:13    say
+NUMBER        6:17    3
+PERIOD        6:18    .
+NEWLINE       6:19
+DEDENT        7:1
+DEDENT        7:1
+DEDENT        7:1
+WORD          7:1     say
+NUMBER        7:5     4
+PERIOD        7:6     .
+NEWLINE       7:7
+WORD          8:1     if
+WORD          8:4     x
+COLON         8:5     :
+NEWLINE       8:6
+INDENT        9:1
+WORD          9:5     say
+NUMBER        9:9     5
+PERIOD        9:10    .
+NEWLINE       9:11
+WORD          10:5    if
+WORD          10:8    y
+COLON         10:9    :
+NEWLINE       10:10
+INDENT        11:1
+WORD          11:9    say
+NUMBER        11:13   6
+PERIOD        11:14   .
+NEWLINE       11:15
+DEDENT        12:5
+WORD          12:5    say
+NUMBER        12:9    7
+PERIOD        12:10   .
+NEWLINE       12:11
+DEDENT        13:1
+EOF           13:1

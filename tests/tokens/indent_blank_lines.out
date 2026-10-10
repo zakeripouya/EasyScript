@@ -1,0 +1,19 @@
+WORD          1:1     if
+WORD          1:4     x
+COLON         1:5     :
+NEWLINE       1:6
+INDENT        2:1
+WORD          2:5     say
+NUMBER        2:9     1
+PERIOD        2:10    .
+NEWLINE       2:11
+WORD          8:5     say
+NUMBER        8:9     2
+PERIOD        8:10    .
+NEWLINE       8:11
+WORD          10:5    say
+NUMBER        10:9    3
+PERIOD        10:10   .
+NEWLINE       10:11
+DEDENT        11:1
+EOF           11:1

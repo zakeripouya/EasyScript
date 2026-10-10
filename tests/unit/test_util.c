@@ -90,6 +90,9 @@ static void test_vec_push(TestContext *t) {
     }
     CHECK(t, ok);
     CHECK(t, vec_last(&numbers) == 999 * 3);
+    CHECK(t, vec_pop(&numbers) == 999 * 3);
+    CHECK(t, vec_pop(&numbers) == 998 * 3);
+    CHECK_SIZE(t, numbers.len, 998);
 }
 
 static void test_vec_of_structs(TestContext *t) {

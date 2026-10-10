@@ -4,8 +4,10 @@ RELEASE_FLAGS = -O2
 DEBUG_FLAGS = -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all
 
 COMMON_SRC = src/common/arena.c src/common/util.c src/common/diag.c
-COMPILER_SRC = main.c src/lexer.c src/parser.c src/codegen.c $(COMMON_SRC)
-UNIT_SRC = $(wildcard tests/unit/*.c) $(COMMON_SRC)
+FRONT_SRC = src/front/lexer.c
+LEGACY_SRC = src/legacy.c src/lexer.c src/parser.c src/codegen.c
+COMPILER_SRC = main.c $(FRONT_SRC) $(LEGACY_SRC) $(COMMON_SRC)
+UNIT_SRC = $(wildcard tests/unit/*.c) $(FRONT_SRC) $(COMMON_SRC)
 
 RELEASE_DIR = build/release
 DEBUG_DIR = build/debug

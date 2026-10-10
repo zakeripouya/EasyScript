@@ -1,0 +1,23 @@
+WORD          1:1     say
+STRING        1:5     "hello"
+PERIOD        1:12    .
+NEWLINE       1:13
+WORD          2:1     say
+STRING        2:5     ""
+PERIOD        2:7     .
+NEWLINE       2:8
+WORD          3:1     say
+STRING        3:5     "line\none\ttab \"quoted\" back\\slash"
+PERIOD        3:44    .
+NEWLINE       3:45
+WORD          4:1     say
+STRING        4:5     "# not a comment"
+WORD          4:23    and
+STRING        4:27    "note: not a comment either"
+PERIOD        4:55    .
+NEWLINE       4:56
+WORD          5:1     say
+STRING        5:5     "isn't it café?"
+PERIOD        5:21    .
+NEWLINE       5:22
+EOF           6:1

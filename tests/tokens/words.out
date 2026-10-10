@@ -1,0 +1,24 @@
+WORD          1:1     set
+WORD          1:9     total
+WORD          1:15    to
+WORD          1:18    count
+PERIOD        1:23    .
+NEWLINE       1:24
+WORD          2:4     apple
+WORD          2:10    is
+WORD          2:15    fruit
+COMMA         2:20    ,
+WORD          2:22    and
+WORD          2:30    theory
+WORD          2:37    isn't
+WORD          2:43    another
+WORD          2:51    anthem
+PERIOD        2:57    .
+NEWLINE       2:58
+WORD          3:5     guest's
+WORD          3:13    rock'n'roll
+WORD          3:25    player_2
+WORD          3:34    x1
+WORD          3:37    count
+NEWLINE       3:42
+EOF           4:1

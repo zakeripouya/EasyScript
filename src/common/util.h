@@ -43,6 +43,7 @@ void sb_vappendf(StrBuf *sb, const char *fmt, va_list args);
      (v)->items[(v)->len++] = (x))
 
 #define vec_last(v) ((v)->items[(v)->len - 1])
+#define vec_pop(v) ((v)->items[--(v)->len])
 
 // Returns storage for at least `need` elements, copying the old items if it
 // had to grow. Used by vec_push; not meant to be called directly.

@@ -8,4 +8,5 @@
 myfile*
 
 # Editor / OS
+.idea/
 .DS_Store

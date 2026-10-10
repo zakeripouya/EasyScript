@@ -1,0 +1,14 @@
+Line 1: This text is missing its closing quote.
+    say "hello.
+        ^^^^^^^
+Add a " where the text ends. Text has to finish on the line it starts on.
+
+Line 3: This text is missing its closing quote.
+    say "ends with a backslash\
+        ^^^^^^^^^^^^^^^^^^^^^^^
+Add a " where the text ends. Text has to finish on the line it starts on.
+
+Line 4: This text is missing its closing quote.
+    say "crlf.
+        ^^^^^^
+Add a " where the text ends. Text has to finish on the line it starts on.

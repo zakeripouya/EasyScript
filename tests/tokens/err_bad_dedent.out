@@ -1,0 +1,25 @@
+WORD          1:1     if
+WORD          1:4     x
+COLON         1:5     :
+NEWLINE       1:6
+INDENT        2:1
+WORD          2:5     if
+WORD          2:8     y
+COLON         2:9     :
+NEWLINE       2:10
+INDENT        3:1
+WORD          3:9     say
+NUMBER        3:13    1
+PERIOD        3:14    .
+NEWLINE       3:15
+DEDENT        4:7
+WORD          4:7     say
+NUMBER        4:11    2
+PERIOD        4:12    .
+NEWLINE       4:13
+DEDENT        5:3
+WORD          5:3     say
+NUMBER        5:7     3
+PERIOD        5:8     .
+NEWLINE       5:9
+EOF           6:1

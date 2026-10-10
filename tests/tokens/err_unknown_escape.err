@@ -1,0 +1,9 @@
+Line 1: I don't know the escape "\q".
+    say "tab\q and \é and \n".
+            ^^
+Inside text you can use \n (new line), \t (tab), \" (quote) and \\ (backslash).
+
+Line 1: I don't know the escape "\é".
+    say "tab\q and \é and \n".
+                   ^^
+Inside text you can use \n (new line), \t (tab), \" (quote) and \\ (backslash).

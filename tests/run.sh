@@ -5,6 +5,10 @@
 #                         exit status must be 0
 #   tests/errors/NAME.es  compiled (emit); must fail, and stderr must match
 #                         NAME.err exactly
+#   tests/tokens/NAME.es  lexed with `easyscript tokens`; stdout must match
+#                         NAME.out. If NAME.err exists the run must fail and
+#                         stderr must match it; otherwise it must succeed with
+#                         empty stderr
 #   unit tests            tests/unit/*.c, built into the UNIT binary
 #   CLI checks            at the bottom of this file
 #
@@ -112,6 +116,36 @@ for src in "$ROOT"/tests/errors/*.es; do
     if [ $status -eq 0 ]; then
         not_ok "$name" "compiled successfully but an error was expected"
     elif ! out=$(diff -u "$expected" "$WORK/stderr"); then
+        not_ok "$name" "$out"
+    else
+        ok "$name"
+    fi
+done
+
+for src in "$ROOT"/tests/tokens/*.es; do
+    [ -e "$src" ] || continue
+    name="tokens/$(basename "$src" .es)"
+    expected_out="${src%.es}.out"
+    expected_err="${src%.es}.err"
+    if [ ! -f "$expected_out" ]; then
+        not_ok "$name" "missing $(basename "$expected_out")"
+        continue
+    fi
+    fresh_dir
+    (cd "$WORK/cwd" && "$ES" tokens "$src") >"$WORK/stdout" 2>"$WORK/stderr"
+    status=$?
+    if [ -f "$expected_err" ]; then
+        want_status=1
+    else
+        want_status=0
+        expected_err=/dev/null
+    fi
+    if [ $status -ne $want_status ]; then
+        not_ok "$name" "exit status $status, expected $want_status
+$(cat "$WORK/stderr")"
+    elif ! out=$(diff -u "$expected_out" "$WORK/stdout"); then
+        not_ok "$name" "$out"
+    elif ! out=$(diff -u "$expected_err" "$WORK/stderr"); then
         not_ok "$name" "$out"
     else
         ok "$name"

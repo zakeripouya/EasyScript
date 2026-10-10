@@ -1,0 +1,14 @@
+Line 1: A number can't have letters stuck to it: "3times".
+    repeat 3times.
+           ^^^^^^
+Put a space between them, like "3 times".
+
+Line 2: A number can't have letters stuck to it: "2.5kg".
+    add 2.5kg to bag.
+        ^^^^^
+Put a space between them, like "2.5 kg".
+
+Line 3: I don't understand the character "_".
+    say 7_up.
+         ^
+A word has to start with a letter.

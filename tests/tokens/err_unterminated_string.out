@@ -1,0 +1,18 @@
+WORD          1:1     say
+STRING        1:5     "hello."
+NEWLINE       1:12
+WORD          2:1     say
+STRING        2:5     "fine"
+PERIOD        2:11    .
+NEWLINE       2:12
+WORD          3:1     say
+STRING        3:5     "ends with a backslash"
+NEWLINE       3:28
+WORD          4:1     say
+STRING        4:5     "crlf."
+NEWLINE       4:11
+WORD          5:1     say
+NUMBER        5:5     1
+PERIOD        5:6     .
+NEWLINE       5:7
+EOF           6:1

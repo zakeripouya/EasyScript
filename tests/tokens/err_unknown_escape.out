@@ -1,0 +1,5 @@
+WORD          1:1     say
+STRING        1:5     "tab\\q and \\é and \n"
+PERIOD        1:26    .
+NEWLINE       1:27
+EOF           2:1

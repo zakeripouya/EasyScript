@@ -1,0 +1,4 @@
+Line 3: This line is indented 6 spaces, which doesn't line up with any block above it.
+      	say 2.
+    ^^^
+Use 0 or 8 spaces to match one of the blocks it belongs to. (A tab counts as 4 spaces.)

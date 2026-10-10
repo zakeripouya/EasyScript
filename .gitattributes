@@ -1,0 +1,2 @@
+# Lexer tests depend on exact bytes (CRLF, tabs, invalid UTF-8); never convert them.
+tests/tokens/** -text

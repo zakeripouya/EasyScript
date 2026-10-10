@@ -1,0 +1,7 @@
+WORD          1:1     say
+PERIOD        1:6     .
+NEWLINE       1:7
+WORD          2:1     say
+PERIOD        2:6     .
+NEWLINE       2:7
+EOF           3:1

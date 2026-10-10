@@ -1,0 +1,12 @@
+if x:
+    say 1.
+    if y:
+        say 2.
+        if z:
+            say 3.
+say 4.
+if x:
+    say 5.
+    if y:
+        say 6.
+    say 7.

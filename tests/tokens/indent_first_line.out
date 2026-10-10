@@ -1,0 +1,11 @@
+INDENT        1:1
+WORD          1:5     say
+NUMBER        1:9     1
+PERIOD        1:10    .
+NEWLINE       1:11
+DEDENT        2:1
+WORD          2:1     say
+NUMBER        2:5     2
+PERIOD        2:6     .
+NEWLINE       2:7
+EOF           3:1

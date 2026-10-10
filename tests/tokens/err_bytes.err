@@ -1,0 +1,7 @@
+Line 1: I don't understand the byte 0xFF. Is this file saved as UTF-8?
+    say ÿ.
+        ^
+
+Line 2: I don't understand the invisible character U+0007.
+    say .
+        ^

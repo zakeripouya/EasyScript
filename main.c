@@ -9,9 +9,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include "common/arena.h"
-#include "lexer.h"
-#include "parser.h"
-#include "codegen.h"
+#include "common/diag.h"
+#include "common/util.h"
+#include "front/lexer.h"
+#include "legacy.h"
 
 static Arena *arena;
 
@@ -47,6 +48,7 @@ static void print_usage(FILE *out) {
     fprintf(out, "  easyscript run FILE           Compile FILE and run it\n");
     fprintf(out, "  easyscript build FILE -o OUT  Compile FILE to the executable OUT\n");
     fprintf(out, "  easyscript emit FILE          Print the C code generated for FILE\n");
+    fprintf(out, "  easyscript tokens FILE        Print the tokens of FILE, one per line\n");
     fprintf(out, "  easyscript                    Start the interactive shell\n");
 }
 
@@ -116,10 +118,6 @@ static char *read_file(const char *path, size_t *length_out) {
 static void generate_c(const char *source_path) {
     char *source = read_file(source_path, NULL);
 
-    Lexer *lexer = create_lexer(source);
-    Parser *parser = create_parser(lexer);
-    AST *root = program(parser);
-
     FILE *output_file = fopen(temp_c_path, "w");
     if (!output_file) {
         fprintf(stderr, "Error: Unable to create output file.\n");
@@ -129,7 +127,7 @@ static void generate_c(const char *source_path) {
     fprintf(output_file, "#include <stdio.h>\n");
     fprintf(output_file, "#include <stdlib.h>\n");
     fprintf(output_file, "int main() {\n");
-    generate_code(root, output_file);
+    legacy_compile(source, output_file);
     fprintf(output_file, "return 0;\n");
     fprintf(output_file, "}\n");
 
@@ -185,6 +183,25 @@ static int cmd_emit(const char *source_path) {
     size_t length;
     char *code = read_file(temp_c_path, &length);
     fwrite(code, 1, length, stdout);
+    return 0;
+}
+
+// Lexes FILE with the new lexer and prints its tokens. Lexer errors are
+// printed after the tokens, to stderr.
+static int cmd_tokens(const char *source_path) {
+    size_t length;
+    char *source = read_file(source_path, &length);
+    Diag *diag = diag_new(arena, source, length);
+    TokenList tokens = lex(arena, diag, source, length);
+
+    StrBuf out;
+    sb_init(&out, arena);
+    tokens_dump(&tokens, &out);
+    fwrite(out.data, 1, out.len, stdout);
+    if (diag_count(diag) > 0) {
+        diag_print(diag, stderr);
+        return 1;
+    }
     return 0;
 }
 
@@ -280,7 +297,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (strcmp(command, "run") == 0 || strcmp(command, "emit") == 0 || strcmp(command, "build") == 0) {
+    if (strcmp(command, "run") == 0 || strcmp(command, "emit") == 0 || strcmp(command, "build") == 0 ||
+        strcmp(command, "tokens") == 0) {
         if (!source_path) {
             return usage_error("No source file given.");
         }
@@ -301,6 +319,9 @@ int main(int argc, char *argv[]) {
     }
     if (strcmp(command, "run") == 0) {
         return cmd_run(source_path);
+    }
+    if (strcmp(command, "tokens") == 0) {
+        return cmd_tokens(source_path);
     }
     return cmd_emit(source_path);
 }
