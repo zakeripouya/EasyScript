@@ -299,6 +299,13 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 - `make bench` (`benchmarks/run.sh`) builds every program in `benchmarks/NAME/` (`NAME.es`, plus `.c`, `.go`, `.py` where present). It runs each 3 times (`BENCH_RUNS`) under `/usr/bin/time`, prints the fastest time and peak RSS, and fails if any language's first output line differs from EasyScript's.
 - `docs/performance.md` has the latest full table (machine, tool versions, date) and a **History** table with one EasyScript row per milestone. **Never edit past history rows' results; only add new rows.** A benchmark added later gets a new column, with "(none)" in the rows from before it existed. At each milestone, run `make bench`, replace the "Latest results" table, add a history row, and update the README's compact Performance table to match.
 
+## Working efficiently
+
+- **Run the test suite locally on macOS only.** Don't run the Docker Linux tests unless you're debugging a Linux-specific failure; GitHub Actions CI covers Linux after each push.
+- **Show only summaries and failures** when running tests, benchmarks or builds (pipe through `tail`/`grep`). Never read full passing output.
+- **Time-box investigations.** If a problem isn't solved after a few attempts, stop and report what you found and the options, instead of continuing to experiment.
+- **Read only the files a task needs.** Use `grep` to find code rather than reading whole directories.
+
 ## Keeping this file current
 
 **Every change that affects layout, build, or behavior must update the "Current state" and "Build" sections below in the same commit.** Those sections describe the repo as it is, not as it should be.
