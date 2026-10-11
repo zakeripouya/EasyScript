@@ -6,6 +6,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Design principles** ([docs/design-principles.md](docs/design-principles.md)): the rules every phrasing follows (statements and values, how inputs are introduced, `of` and `in`, optional and "not found" results, errors, equality, copying), the known exceptions and why each exists, and open questions. Future ideas, starting with a deep copy, are in [docs/ideas.md](docs/ideas.md).
 - **Maps** (Phase 2, step 18). See the new [Maps chapter](docs/language-guide.md#13-maps).
   - **Making them:** `a map of "coffee" to 3, "tea" to 2` and `an empty map from text to numbers`. Keys are text or numbers; values any kind (lists, records and other maps too), one kind each per map. A key written out twice is a compile error.
   - **Looking up and setting:** `the value for "Paris" in ages`; a missing key stops the program with an error naming it ("There's no value for "Bob" in the map."). `the value for "Bob" in ages, or 0` gives another value instead, worked out only when it's needed (arithmetic straight after it is an ambiguity error). `set the value for "Paris" in ages to 19` adds or changes a key.
