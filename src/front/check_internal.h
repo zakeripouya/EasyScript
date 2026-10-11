@@ -1,7 +1,7 @@
 #ifndef FRONT_CHECK_INTERNAL_H
 #define FRONT_CHECK_INTERNAL_H
 
-// Shared by the checker's source files (check.c, check_names.c, check_expr.c, check_types.c,
+// Shared by the checker's source files (check.c, check_names.c, check_expr.c, check_types.c, check_narrow.c, check_kind.c,
 // check_const.c, check_list.c, check_text.c, check_record.c, check_map.c).
 // Not for use outside src/front/.
 
@@ -79,9 +79,14 @@ typedef struct {
     bool loop_item;     // a "for each" loop's item
 } Symbol;
 
+// "Not a variant": a narrowing that only says a value isn't nothing.
+#define NO_VARIANT ((size_t)-1)
+
 typedef struct {
     bool has_it;  // count, times and for-each loops (and "every"/"only") have something "it" refers to
     TypeVar it;   // its kind: a number, or the item's kind
+    bool subject;    // not a loop: a "when" of "check which kind S is", where "it" is S
+    size_t variant;  // the "when"'s one variant, or NO_VARIANT
 } Loop;
 
 typedef struct {
@@ -105,7 +110,8 @@ typedef struct {
 // ends (or something sets it), it's used as the record it holds.
 typedef struct {
     const char *path;
-    bool killed;  // set since it was checked
+    bool killed;     // set since it was checked
+    size_t variant;  // checked to be this variant ("if s is a circle"), or NO_VARIANT
 } Narrowing;
 
 typedef struct {
@@ -115,6 +121,7 @@ typedef struct {
     Vec(Narrowing) present;           // values checked not to be nothing, innermost last
     const Expr *unnarrowed;           // checked as written even if it was checked ("x is nothing", "set x's f to")
     bool explained_default;           // a field's starting value used a name, and that was explained
+    bool setting_field;               // checking the field a sentence sets ("set s's radius to")
     Vec(Function) functions;          // every top-level function (pre-scanned)
     Vec(Constant) constants;          // every top-level constant (pre-scanned)
     const Constant *constant;         // the constant whose value is being worked out, if any
@@ -185,6 +192,8 @@ void checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Sp
 
 // The name each item of a list gets ("for each score in", "every score in").
 void checker_make_item_name(Checker *c, const Name *name, TypeVar item);
+// A block of statements, a scope of its own: names made in it end with it (`where` on `line`).
+void checker_check_block(Checker *c, const Block *block, size_t line, const char *where);
 
 // check_list.c
 // The kind of a list's items; if `var` isn't a list, reports "<message>, but this is <kind>."
@@ -213,6 +222,9 @@ void checker_collect_records(Checker *c, const Block *program);  // reports kind
 void checker_check_record(Checker *c, Stmt *stmt);               // STMT_RECORD: its fields and starting values
 TypeVar checker_check_field(Checker *c, const Expr *expr);       // EXPR_FIELD
 TypeVar checker_check_new(Checker *c, const Expr *expr);         // EXPR_NEW
+const char *checker_capitalized(Checker *c, Type type);           // "A dog", for the start of a sentence
+
+// check_narrow.c
 // A value that may be "nothing" (stored, given to a function, given back):
 // "nothing" gets the kind nothing (TYPE_NOTHING), which only fits a record
 // or nothing; anything else is checked as usual.
@@ -224,8 +236,13 @@ bool checker_fits(Checker *c, TypeVar target, TypeVar value, size_t line);
 bool checker_check_nothing_test(Checker *c, const Expr *expr, TypeVar *result);
 // A name or field read where it was checked not to be nothing: its record.
 TypeVar checker_narrow(Checker *c, const Expr *expr, TypeVar var);
-// What a condition being `when` (true or false) says isn't nothing, added to c->present.
+// What a condition being `when` (true or false) says isn't nothing (or is a
+// variant), added to c->present.
 void checker_narrow_condition(Checker *c, const Expr *condition, bool when);
+// The path (a name, or name's field...) is checked: not nothing, and the variant unless it's NO_VARIANT.
+void checker_add_narrowing(Checker *c, const char *path, size_t variant);
+// The variant a value is checked to be here ("if s is a circle:", "when it's a circle:"), or NO_VARIANT.
+size_t checker_narrowed_variant(Checker *c, const Expr *expr);
 // Forgets that a name or field (and everything under it) was checked: it's being set.
 void checker_kill_path(Checker *c, const Expr *target, const char *name);
 // Forgets every check of something a block sets (before a loop body that sets it).
@@ -234,10 +251,23 @@ void checker_kill_set_in(Checker *c, const Block *block);
 const char *checker_path(Checker *c, const Expr *expr);
 // "\"node's next\" could be nothing, so check it first." for a record-or-nothing used as a record.
 void checker_report_maybe(Checker *c, const Expr *at, TypeVar var);
-bool checker_settle_field(Checker *c, const Deferred *d);
 bool checker_settle_present(Checker *c, const Deferred *d);
-// A kind of record that has a field called `name`, for suggestions (NULL if none).
+
+// check_record.c (fields)
+bool checker_settle_field(Checker *c, const Deferred *d);
+// A kind of record (or with variants) that has a field called `name`, for suggestions (NULL if none).
 const RecordKind *checker_field_owner(const Checker *c, const char *name);
+
+// check_kind.c: kinds with variants
+void checker_collect_sums(Checker *c, const Block *program);   // reports kinds and variants named twice
+void checker_check_sum(Checker *c, const Stmt *stmt);           // STMT_SUM: its variants' fields
+TypeVar checker_check_new_variant(Checker *c, const Expr *expr);  // EXPR_NEW of a variant
+// R's NAME where R is of a kind with variants (`base` its kind): R has to be checked to be a variant that has it.
+TypeVar checker_sum_field(Checker *c, const Expr *expr, TypeVar base, Type type);
+TypeVar checker_check_kind_test(Checker *c, const Expr *expr);  // EXPR_KIND_TEST
+void checker_check_match(Checker *c, const Stmt *stmt);         // STMT_MATCH
+// The kind with variants that has a field called `name` (TYPE_UNKNOWN if none, TYPE_ERROR if several do).
+Type checker_sum_with_field(const Checker *c, const char *name);
 
 // check_map.c
 // The kinds of a map's keys and values; if `var` isn't a map, reports

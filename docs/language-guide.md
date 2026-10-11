@@ -23,6 +23,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [11. Text](#11-text) | Available |
 | [12. Records](#12-records) | Available |
 | [13. Maps](#13-maps) | Available |
+| [14. Kinds with variants](#14-kinds-with-variants) | Available |
 
 ---
 
@@ -1243,3 +1244,141 @@ Its keys are fixed text or numbers and its values fixed numbers, text or yes/no 
 Asking for, changing or removing a key that isn't there. Every kind mistake is caught before the program runs.
 
 Try it: `./easyscript run examples/programs/word_counter.es` and `./easyscript run examples/programs/graph.es`
+
+---
+
+## 14. Kinds with variants
+
+**Available.** Some values are one of several things: a shape is a circle, a rectangle or a point, and each has different fields. A **kind with variants** says so, and `check which kind` tells them apart:
+
+```
+a shape is one of:
+    a circle with a radius (a number).
+    a rectangle with a width (a number) and a height (a number).
+    a point.
+
+to area of s:
+    check which kind s is:
+        when it's a circle:
+            give back 3.14159 times its radius times its radius.
+        when it's a rectangle:
+            give back its width times its height.
+        when it's a point:
+            give back 0.
+
+say area of (a new rectangle with width 3 and height 4).
+```
+
+```
+12
+```
+
+### Defining a kind
+
+A definition is `NAME is one of:` at the start of a line (never inside an `if`, a loop or a function), with its **variants** indented below, one per line. A variant is a name, then `with` and its fields: each a name with its kind in parentheses, separated by `and` or commas. A variant can have no fields at all (`a point.`). Fields have no starting values.
+
+Kinds can be **recursive**: a field can hold the kind it's in, as long as some variant doesn't need one, so a value can be made at all:
+
+```
+an expression is one of:
+    a number value with an amount (a number).
+    a sum with a left (an expression) and a right (an expression).
+```
+
+Every kind, record kind and variant needs its own name, because `a new circle` has to say which kind it makes.
+
+### Making values
+
+A value is made like a record: `a new circle with radius 3`, `a new point`. Its kind is the kind the variant is in (`a shape`), so a list can hold circles and rectangles together: `a list of (a new circle with radius 1) and (a new point)`, or `an empty list of shapes`.
+
+A value **never changes** once it's made: `set s's radius to 4` is an error. Make a new one instead: `set s to a new circle with radius 4`.
+
+### Telling variants apart
+
+`check which kind S is:` has a `when` for each variant, and an optional `otherwise` at the end. Inside a `when`, `it` is the value, and `its radius` (or `it's radius`) is its field:
+
+```
+check which kind s is:
+    when it's a circle:
+        say "radius " followed by its radius.
+    when it's a rectangle or a square:
+        say "it has corners".
+    otherwise:
+        say "something else".
+```
+
+`when it's a rectangle or a square:` covers several variants; `when it is a circle:` works too. If S is a name (or a field, like `the drawing's shape`), it's checked in the `when` too, so `s's radius` works there as well.
+
+Every variant needs a `when`, unless there's an `otherwise`. A missing one is an error before the program runs:
+
+```
+Line 11: This doesn't say what to do when s is a rectangle or a point.
+    check which kind s is:
+    ^^^^^^^^^^^^^^^^^^^^^^
+Add "when it's a rectangle:" and the others, or an "otherwise:" at the end.
+```
+
+An `otherwise` after a `when` for every variant can never run. That's a **warning**: the program still runs, and the warning is shown before it.
+
+```
+Line 12 (a warning): This "otherwise" can never run: the "when"s above it cover every kind s can be.
+        otherwise:
+        ^^^^^^^^^^
+Take it out, or the sentences in it will never be used.
+```
+
+`stop the loop` and `skip this one` inside a `when` work on the loop around the `check which kind`.
+
+### Checking one variant
+
+`s is a circle` (and `s is not a circle`, `s isn't a circle`) is yes or no. The `a` (or `an`) is needed, as in `is a letter`: `s is circle` compares s with a name called `circle`.
+
+A field can only be used where the program has **checked** which variant the value is. Using one without checking is an error before the program runs:
+
+```
+Line 10: "s" might not be a circle, so check which kind it is first.
+    say s's radius.
+        ^^^^^^^^^^
+Use it inside "if s is a circle:", or inside "when it's a circle:" after "check which kind s is:".
+```
+
+These count as checks, exactly like the checks for nothing in [chapter 12](#fields-that-can-be-nothing): `if s is a circle:` (and the `otherwise` of `if s is not a circle:`), `while s is a circle:`, the right side of `s is a circle and ...`, the rest of a block after `if s isn't a circle, give back 0.`, a `when` of `check which kind`, and right after `let s be a new circle ...` (until s is set again). While the program runs the variant is checked once more, so if a field was set to another variant through another name for its record in between, the program stops with "This was checked to be a circle, but something has set it to a point since then." instead of crashing.
+
+### Equality and copies
+
+Two values are **equal** when they're the same variant with equal fields, so `s is a new point` and `shapes contains (a new circle with radius 1)` work as you'd expect. (Records inside are compared as records: the same record.)
+
+Values are shared like text: since they never change, sharing one can't be seen, except through a list or map in a field, which can change. `a copy of s` gets its own copies of those.
+
+### Kinds everywhere
+
+A kind with variants works wherever any other kind does: in lists, maps and record fields, as a function's inputs and result (`(a shape)`, `giving back an expression`), worked out by the compiler like any other kind. A field or input can be `a shape or nothing`, and `check which kind` can have a `when it's nothing:` for it.
+
+Methods work too, and can share a name with methods for record kinds:
+
+```
+to describe, for a shape:
+    check which kind the shape is:
+        when it's a circle:
+            say "a circle of radius " followed by its radius.
+        otherwise:
+            say "another shape".
+```
+
+A value prints as its variant and fields: `a circle with radius 3`, `a point`.
+
+### Memory
+
+A value is freed as soon as nothing holds it, like a record. A value can't change, so it can only end up holding itself through a list or map in it (a tree whose list of children holds the tree). That circle is never freed, and the memory check reports it at the end, like records in a circle.
+
+### Things to watch
+
+- **Variant names are global:** two kinds can't both have a `circle`.
+- **`its` is only special before a field's name:** `its radius` is the field of `it`, but a name called `its` still works elsewhere.
+- **Fields are read-only.** Make a new value to change one.
+
+### What's checked while the program runs
+
+Only a value reached through a record's field, checked to be a variant, and then set to another one through another name for the record before it was used. Every other mistake (a missing `when`, an unchecked field, a field a variant doesn't have) is caught before the program runs.
+
+Try it: `./easyscript run examples/programs/shapes.es`, `./easyscript run examples/programs/calculator.es` and `./easyscript run examples/programs/lambda.es`

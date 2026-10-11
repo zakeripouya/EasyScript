@@ -16,10 +16,10 @@
 #include <string.h>
 #include "back/codegen_internal.h"
 
-static char field_kind(Type type) {
+char cg_field_kind(Type type) {
     if (type_is_list(type)) return 'l';
     if (type_is_map(type)) return 'm';
-    if (type_is_record(type)) return 'r';
+    if (type_is_object(type)) return 'r';
     return type == TYPE_TEXT ? 't' : type == TYPE_YESNO ? 'b' : 'n';
 }
 
@@ -50,8 +50,8 @@ static void emit_kind(Codegen *g, size_t index, const RecordKind *kind, StrBuf *
                                      kind->display);
     cg_append_c_string(out, name, strlen(name));
     sb_appendf(out, ", %zu, es_rn%zu, \"", n, index);
-    for (size_t i = 0; i < n; i++) sb_append_char(out, field_kind(def->as.record.fields.items[i].type));
-    sb_appendf(out, "\", es_ro%zu, sizeof(es_R%zu)};\n", index, index);
+    for (size_t i = 0; i < n; i++) sb_append_char(out, cg_field_kind(def->as.record.fields.items[i].type));
+    sb_appendf(out, "\", es_ro%zu, sizeof(es_R%zu), ES_RECORD};\n", index, index);
     // Making one: takes every field's value (owned).
     sb_appendf(out, "static EsRecord *es_new%zu(", index);
     for (size_t i = 0; i < n; i++) {
@@ -105,6 +105,10 @@ static const char *starting_value(Codegen *g, size_t kind, size_t index, const F
 // es_new0(VALUE, ...), the given values worked out in the order they're written.
 void cg_emit_new(Codegen *g, const Expr *expr, StrBuf *out) {
     Type type = expr->as.new_record.type;
+    if (type_is_sum(type)) {
+        cg_emit_new_variant(g, expr, out);
+        return;
+    }
     size_t kind = type_record_index(type);
     const Stmt *def = g->records->items[kind].definition;
     size_t given = expr->as.new_record.values.len, n = def->as.record.fields.len;
@@ -133,6 +137,10 @@ static bool is_plain_variable(const Codegen *g, const Expr *expr) {
 // counted), otherwise es_field_n(R, offsetof(es_R0, f1)), which releases R.
 void cg_emit_field(Codegen *g, const Expr *expr, StrBuf *out) {
     const Expr *record = expr->as.field.record;
+    if (type_is_sum(record->type)) {
+        cg_emit_variant_field(g, expr, out);
+        return;
+    }
     size_t kind = type_record_index(record->type), index = expr->as.field.index;
     Type type = expr->type;
     if (is_plain_variable(g, record)) {
@@ -143,7 +151,7 @@ void cg_emit_field(Codegen *g, const Expr *expr, StrBuf *out) {
         if (type_counted(type)) sb_append_char(out, ')');
         return;
     }
-    sb_appendf(out, "es_field_%c(%s, offsetof(es_R%zu, f%zu))", field_kind(type), cg_operand(g, record, false), kind,
+    sb_appendf(out, "es_field_%c(%s, offsetof(es_R%zu, f%zu))", cg_field_kind(type), cg_operand(g, record, false), kind,
                index);
 }
 

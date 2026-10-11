@@ -1,0 +1,94 @@
+Line 2: The variants of "shape" go on the lines below, indented.
+    a shape is one of: a circle.
+                         ^^^^^^
+Write each one on its own line after "a shape is one of:", like "    a rectangle with a width (a number) and a height (a number)."
+
+Line 4: Say what kind of value "radius" holds, in parentheses after it.
+        a circle with a radius.
+                        ^^^^^^
+Write it like "radius (a number)".
+
+Line 5: I expected ")" after the kind of value, but found the end of the line.
+        a square with a side (a number
+                                      ^
+Write each variant on its own line, like "a rectangle with a width (a number) and a height (a number)."
+
+Line 6: I expected the variant to end here, but found "extra".
+        a dot with a size (a number) extra
+                                     ^^^^^
+Write each variant on its own line, like "a rectangle with a width (a number) and a height (a number)."
+
+Line 7: This line is indented more than the variants above it.
+            a nested
+    ^^^^^^^^
+Line the variants up with each other.
+
+Line 9: I expected a colon after "is", but found the end of the line.
+    check which kind 5 is
+                         ^
+Write it like "check which kind s is:", with "when it's ..." parts indented below.
+
+Line 10: Something is missing after "which kind".
+    check which kind:
+          ^^^^^^^^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 12: I don't know a variant called "triangle".
+        when it's a triangle:
+                    ^^^^^^^^
+Write one of the variants listed where its kind is defined, like "when it's a circle:", or "when it's nothing:".
+
+Line 16: The "otherwise" on line 14 has to come last.
+        when it's nothing:
+        ^^^^
+Move this part above it.
+
+Line 18: Each part of "check which kind" starts with "when it's ..." or "otherwise", but this starts with "say".
+        say 4.
+        ^^^
+Write it like "when it's a circle:", with its sentences indented below.
+
+Line 20: "check which kind" needs a "when" before its "otherwise".
+        otherwise:
+        ^^^^^^^^^^
+Write a part like "when it's a circle:" first.
+
+Line 23: Something is missing after "when".
+        when:
+        ^^^^
+Write it like "when it's a circle:".
+
+Line 25: Something is missing after "it's".
+        when it's:
+             ^^^^
+Say which variant, like "when it's a circle:".
+
+Line 27: I expected "it's" here, but found "its".
+        when its a circle:
+             ^^^
+Write it like "when it's a circle:".
+
+Line 29: I expected the name of a variant here, but found "5".
+        when it's 5:
+                  ^
+Write it like "when it's a circle:".
+
+Line 31: I don't know a variant called "circel".
+        when it's a circel:
+                    ^^^^^^
+Did you mean "circle"?
+
+Line 33: Nothing is indented under this "check which kind".
+    check which kind x is:
+    ^^^^^^^^^^^^^^^^^^^^^^
+Put a part like "when it's a circle:" on the next line, indented, with its sentences indented below it.
+
+Line 35: Nothing is indented under this "check which kind".
+    check which kind x is: say 1.
+    ^^^^^^^^^^^^^^^^^^^^^^
+Put a part like "when it's a circle:" on the next line, indented, with its sentences indented below it.
+
+Line 36: "make" doesn't make values; a new value is written with "new".
+    let u be make a circle with radius 1.
+             ^^^^
+Write it like "a new circle".

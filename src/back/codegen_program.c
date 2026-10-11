@@ -154,7 +154,7 @@ static void emit_function_info(const Stmt *fn, StrBuf *out) {
     sb_append(out, ", \"");
     for (size_t i = 0; i < n; i++) {
         Type type = fn->as.function.param_types.items[i];
-        sb_append_char(out, type_is_list(type) ? 'l' : type_is_record(type) ? 'r' : type_is_map(type) ? 'm'
+        sb_append_char(out, type_is_list(type) ? 'l' : type_is_object(type) ? 'r' : type_is_map(type) ? 'm'
                             : type == TYPE_TEXT ? 't' : type == TYPE_YESNO ? 'b' : 'n');
     }
     sb_append(out, "\"};\n");
@@ -163,7 +163,7 @@ static void emit_function_info(const Stmt *fn, StrBuf *out) {
 // One input's value for its frame: "{.n = es_vn_width}", "{.t = es_retain(es_vt_label)}".
 static void append_input(const Stmt *fn, size_t i, StrBuf *out) {
     Type type = fn->as.function.param_types.items[i];
-    bool record = type_is_record(type);
+    bool record = type_is_object(type);
     sb_append(out, type_is_list(type) || type_is_map(type) ? "{.list = " : record ? "{.r = es_record_retain("
                    : type == TYPE_TEXT ? "{.t = es_retain(" : type == TYPE_YESNO ? "{.b = " : "{.n = ");
     cg_append_var(out, fn->as.function.params.items[i].text, type);
@@ -284,6 +284,7 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
         emit_constant(&g, g.constants.items[i], &constants);
     }
     cg_emit_records(&g, &constants);
+    cg_emit_variants(&g, &constants);
     sb_append_n(out, texts.code.data, texts.code.len);  // after the constants and records added theirs
     sb_append_n(out, constants.data, constants.len);
     if (g.functions.len > 0) sb_append_char(out, '\n');

@@ -126,6 +126,10 @@ static void generate_c(const char *source_path) {
         diag_print(diag, stderr);
         exit(1);
     }
+    if (diag_warning_count(diag) > 0) {  // the shell shows each line's warnings once
+        const char *from = getenv("ES_WARN_FROM_LINE");
+        diag_print_warnings(diag, from ? strtoul(from, NULL, 10) : 1, stderr);
+    }
 
     StrBuf lines;  // the source lines, for runtime errors to show
     sb_init(&lines, arena);

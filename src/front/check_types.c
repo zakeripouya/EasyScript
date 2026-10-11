@@ -176,7 +176,7 @@ static bool settle_and(Checker *c, const Deferred *d) {
 static unsigned kind_bit(Type type) {
     if (type_is_list(type)) return KIND_LIST;
     if (type_is_map(type)) return KIND_MAP;
-    if (type_is_record(type) && !type_is_maybe(type)) return KIND_RECORD;
+    if ((type_is_record(type) || type_is_sum(type)) && !type_is_maybe(type)) return KIND_RECORD;
     return type == TYPE_NUMBER ? KIND_NUMBER : type == TYPE_TEXT ? KIND_TEXT : type == TYPE_YESNO ? KIND_YESNO : 0;
 }
 
@@ -222,7 +222,7 @@ static bool settle(Checker *c, Deferred *d) {
     Type type = types_of(c, d->left);
     if (type == TYPE_UNKNOWN) return false;
     const char *name = checker_type_name(c, type);
-    bool other = type == TYPE_YESNO || type_is_list(type) || type_is_record(type) || type_is_map(type) ||
+    bool other = type == TYPE_YESNO || type_is_list(type) || type_is_object(type) || type_is_map(type) ||
                  type == TYPE_MAYBE;
     if (other && d->kind == DEFER_ORDER) {
         report(c, d->expr, NULL, arena_sprintf(c->arena, "I can't compare %s with %s.", name, name));

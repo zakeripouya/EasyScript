@@ -39,6 +39,32 @@ static void test_spec_example(TestContext *t) {
               "Did you mean \"total\"? You made it on line 1.\n");
 }
 
+static void test_warnings_are_kept_apart(TestContext *t) {
+    const char *source = "say 1.\notherwise:\n";
+    Diag *diag = diag_for(t, source);
+    diag_warning(diag, span_of(source, "otherwise", 0), "This can never run.");
+    diag_note(diag, "Take it out.");
+    CHECK_SIZE(t, diag_count(diag), 0);
+    CHECK_SIZE(t, diag_warning_count(diag), 1);
+    CHECK_STR(t, render(t, diag), "");
+    StrBuf out;
+    sb_init(&out, t->arena);
+    diag_render_warnings(diag, 1, &out);
+    CHECK_STR(t, out.data,
+              "Line 2 (a warning): This can never run.\n"
+              "    otherwise:\n"
+              "    ^^^^^^^^^\n"
+              "Take it out.\n");
+    StrBuf later;
+    sb_init(&later, t->arena);
+    diag_render_warnings(diag, 3, &later);  // lines before 3 were shown already
+    CHECK_STR(t, later.data, "");
+    diag_error(diag, span_of(source, "say", 0), "An error.");
+    diag_note(diag, "Its note.");
+    CHECK_SIZE(t, diag_count(diag), 1);
+    CHECK_STR(t, render(t, diag), "Line 1: An error.\n    say 1.\n    ^^^\nIts note.\n");
+}
+
 static void test_no_errors(TestContext *t) {
     Diag *diag = diag_for(t, "print 1.\n");
     CHECK_SIZE(t, diag_count(diag), 0);
@@ -153,6 +179,7 @@ static void test_empty_source(TestContext *t) {
 void diag_tests(TestRunner *runner) {
     unit_run(runner, "diag/spec-example", test_spec_example);
     unit_run(runner, "diag/no-errors", test_no_errors);
+    unit_run(runner, "diag/warnings-kept-apart", test_warnings_are_kept_apart);
     unit_run(runner, "diag/multiple-errors", test_multiple_errors_in_report_order);
     unit_run(runner, "diag/line-numbers", test_line_numbers);
     unit_run(runner, "diag/zero-length-span", test_zero_length_span_at_end_of_line);

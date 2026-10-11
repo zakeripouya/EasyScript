@@ -56,9 +56,10 @@ static bool es_is_nothing(EsRecord *r) {
 }
 
 /* "A is B" for records: whether they're the same record (two records with
- * the same fields are still two records). */
+ * the same fields are still two records); for values of a kind with
+ * variants, whether they're equal (es_kind.h). */
 static bool es_record_same(EsRecord *a, EsRecord *b) {
-    bool same = a == b;
+    bool same = es_record_equal(a, b);
     es_record_release(a);
     es_record_release(b);
     return same;
@@ -102,7 +103,7 @@ static void es_record_render(EsBuf *b, const EsRecord *r, int depth) {
     }
     const EsRecordType *type = r->type;
     es_buf_add_text(b, type->name);
-    if (depth >= ES_RECORD_DEPTH) {
+    if (depth >= ES_RECORD_DEPTH && type->fields > 0) {
         es_buf_add_text(b, " with ...");
         return;
     }
@@ -257,12 +258,13 @@ static bool es_report_cycles(void) {
     free(stack.items);
     size_t circled = 0;
     EsRecord *oldest = NULL;
+    bool variants = false; /* values of kinds with variants in it: the circle goes through a list or map */
     for (EsRecord *r = es_memory.records; r; r = r->next) {
-        if (r->mark != ES_REACHED) circled++, oldest = r;
+        if (r->mark != ES_REACHED) circled++, oldest = r, variants |= r->type->style == ES_VARIANT;
     }
     if (circled == 0) return false;
-    fprintf(stderr, "Memory check: %zu record%s still alive at the end of the program, because they point to each "
-                    "other in a circle:\n", circled, circled == 1 ? " was" : "s were");
+    fprintf(stderr, "Memory check: %zu %s%s still alive at the end of the program, because they point to each "
+                    "other in a circle:\n", circled, variants ? "value" : "record", circled == 1 ? " was" : "s were");
     size_t shown = 0;
     for (EsRecord *r = oldest; r && shown < 3; r = r->prev) {
         if (r->mark == ES_REACHED) continue;
@@ -274,8 +276,13 @@ static bool es_report_cycles(void) {
         shown++;
     }
     if (circled > shown) fprintf(stderr, "    ...and %zu more\n", circled - shown);
-    fputs("Records in a circle are never freed, because each one keeps the next alive. Before the program ends, "
-          "set a field in the circle to nothing, or take a record out of the list or map that holds it.\n", stderr);
+    if (variants) {
+        fputs("Values in a circle are never freed, because each one keeps the next alive. Before the program ends, "
+              "take a value out of the list or map that holds it.\n", stderr);
+    } else {
+        fputs("Records in a circle are never freed, because each one keeps the next alive. Before the program ends, "
+              "set a field in the circle to nothing, or take a record out of the list or map that holds it.\n", stderr);
+    }
     return true;
 }
 

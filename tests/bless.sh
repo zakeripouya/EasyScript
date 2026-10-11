@@ -79,6 +79,24 @@ bless_errors() {
     done
 }
 
+# bless_warnings DIR: programs that compile with warnings and run: stdout
+# goes to NAME.out and stderr (the warnings) to NAME.err.
+bless_warnings() {
+    for src in "$1"/*.es; do
+        [ -e "$src" ] || continue
+        rm -rf "$WORK/cwd"
+        mkdir "$WORK/cwd"
+        (cd "$WORK/cwd" && ES_DEBUG_MEMORY=1 "$ES" run "$src") </dev/null >"$WORK/stdout" 2>"$WORK/stderr"
+        if [ $? -eq 0 ] && [ -s "$WORK/stderr" ]; then
+            cp "$WORK/stdout" "${src%.es}.out"
+            cp "$WORK/stderr" "${src%.es}.err"
+        else
+            warn "${src#$ROOT/}" "it must run with warnings and exit 0:
+$(sed 's/^/    /' "$WORK/stderr")"
+        fi
+    done
+}
+
 # bless_dump CMD DIR EXT: stdout goes to NAME.EXT. On failure stderr goes to
 # NAME.err; on success any NAME.err is removed.
 bless_dump() {
@@ -117,6 +135,7 @@ bless_shell
 bless_run "$ROOT/tests/run"
 bless_run "$ROOT/tests/memory" 70
 bless_errors "$ROOT/tests/errors"
+bless_warnings "$ROOT/tests/warnings"
 bless_dump tokens "$ROOT/tests/tokens" out
 bless_dump ast "$ROOT/tests/ast" out
 bless_run "$ROOT/examples/programs"

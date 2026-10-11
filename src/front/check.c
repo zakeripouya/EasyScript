@@ -43,9 +43,18 @@ static void store(Checker *c, const Symbol *symbol, TypeVar value, Span span) {
 static TypeVar check_field_target(Checker *c, const Expr *field) {
     const Expr *saved = c->unnarrowed;
     c->unnarrowed = field;
+    c->setting_field = true;
     TypeVar var = checker_check_expr(c, field);
+    c->setting_field = false;
     c->unnarrowed = saved;
     return var;
+}
+
+// "let s be a new circle ...": s is known to be a circle until it's set.
+static void narrow_new(Checker *c, const char *name, const Expr *value) {
+    if (value->kind == EXPR_NEW && type_is_sum(value->as.new_record.type)) {
+        checker_add_narrowing(c, name, value->as.new_record.variant);
+    }
 }
 
 static void check_set(Checker *c, const Stmt *stmt) {
@@ -72,6 +81,7 @@ static void check_set(Checker *c, const Stmt *stmt) {
         vec_push(c->arena, &c->slots, slot);
     }
     checker_kill_path(c, NULL, stmt->as.assign.name.text);
+    narrow_new(c, stmt->as.assign.name.text, value_expr);
 }
 
 // add/subtract/increase/decrease/multiply/divide: the runtime's arithmetic
@@ -120,6 +130,7 @@ static void check_let(Checker *c, const Stmt *stmt) {
     checker_make(c, name, value);
     TypedSlot slot = {(Type *)&stmt->as.assign.type, value};
     vec_push(c->arena, &c->slots, slot);
+    narrow_new(c, name->text, stmt->as.assign.value);
 }
 
 // A function gives back one kind of value, or nothing, everywhere.
@@ -183,7 +194,7 @@ static void check_statements(Checker *c, const Block *block) {
     }
 }
 
-static void check_block(Checker *c, const Block *block, size_t line, const char *where) {
+void checker_check_block(Checker *c, const Block *block, size_t line, const char *where) {
     size_t outer = c->made.len, checked = c->present.len;
     c->blocks++;
     check_statements(c, block);
@@ -246,7 +257,7 @@ static void check_if(Checker *c, const Stmt *stmt) {
         }
         size_t before = c->present.len;
         if (branch->condition) checker_narrow_condition(c, branch->condition, true);
-        check_block(c, &branch->body, stmt->pos.line, "the \"if\"");
+        checker_check_block(c, &branch->body, stmt->pos.line, "the \"if\"");
         c->present.len = before;
         if (branch->condition) checker_narrow_condition(c, branch->condition, false);
     }
@@ -307,7 +318,7 @@ static void check_loop(Checker *c, const Stmt *stmt) {
     TypeVar item = 0, value = 0;
     if (stmt->as.loop.list) item = checker_check_each(c, stmt, &value);
     size_t outer = c->made.len;
-    Loop loop = {stmt->as.loop.kind == LOOP_COUNT || stmt->as.loop.kind == LOOP_TIMES, 0};
+    Loop loop = {stmt->as.loop.kind == LOOP_COUNT || stmt->as.loop.kind == LOOP_TIMES, 0, false, NO_VARIANT};
     if (stmt->as.loop.kind == LOOP_COUNT) loop.it = check_loop_variable(c, stmt);
     if (stmt->as.loop.kind == LOOP_TIMES) loop.it = types_new(c, TYPE_NUMBER, stmt->pos.line);
     if (stmt->as.loop.kind == LOOP_EACH) {
@@ -327,7 +338,9 @@ static void check_loop(Checker *c, const Stmt *stmt) {
 }
 
 static void check_loop_control(Checker *c, const Stmt *stmt) {
-    if (c->loops.len > 0) return;
+    for (size_t i = 0; i < c->loops.len; i++) {
+        if (!c->loops.items[i].subject) return;  // a "when" of "check which kind" isn't a loop
+    }
     if (stmt->kind == STMT_BREAK) {
         diag_error(c->diag, stmt->pos.span, "\"%s\" only works inside a loop.", "stop the loop");
         diag_note(c->diag, "It leaves the loop it's in. To end the whole program, write \"stop the program\".");
@@ -369,6 +382,8 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
     case STMT_CONSTANT: checker_check_constant(c, stmt); break;
     case STMT_LIST: checker_check_list_stmt(c, stmt); break;
     case STMT_RECORD: checker_check_record(c, (Stmt *)stmt); break;
+    case STMT_SUM: checker_check_sum(c, stmt); break;
+    case STMT_MATCH: checker_check_match(c, stmt); break;
     }
 }
 
@@ -385,6 +400,9 @@ static void collect_names(Checker *c, const Block *program) {
         if (stmt->kind == STMT_LOOP) {
             collect_names(c, &stmt->as.loop.body);
             continue;
+        }
+        for (size_t b = 0; stmt->kind == STMT_MATCH && b < stmt->as.match.branches.len; b++) {
+            collect_names(c, &stmt->as.match.branches.items[b].body);
         }
         if (stmt->kind == STMT_FUNCTION) continue;  // its names are its own
         const Name *name = stmt->kind == STMT_LET    ? &stmt->as.assign.name
@@ -406,6 +424,9 @@ static bool gives_value(const Block *block) {
         if (stmt->kind == STMT_LOOP && gives_value(&stmt->as.loop.body)) return true;
         for (size_t b = 0; stmt->kind == STMT_IF && b < stmt->as.if_stmt.branches.len; b++) {
             if (gives_value(&stmt->as.if_stmt.branches.items[b].body)) return true;
+        }
+        for (size_t b = 0; stmt->kind == STMT_MATCH && b < stmt->as.match.branches.len; b++) {
+            if (gives_value(&stmt->as.match.branches.items[b].body)) return true;
         }
     }
     return false;
@@ -461,7 +482,7 @@ static void mark_shared_methods(Checker *c) {
     for (size_t i = 0; i < c->functions.len; i++) {
         Stmt *def = c->functions.items[i].definition;
         if (checker_shared_method(c, def->as.function.name.text)) {
-            def->as.function.overload = 1 + type_record_index(method_kind(def));
+            def->as.function.overload = 1 + (method_kind(def) - TYPE_RECORD);
         }
     }
 }
@@ -488,13 +509,14 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
     c.records = &whole->records;
     size_t first_error = diag_count(diag);
     checker_collect_records(&c, program);
+    checker_collect_sums(&c, program);
     collect_functions(&c, program);
     checker_collect_constants(&c, program);
     collect_names(&c, program);
     for (size_t pass = 0; pass < 4; pass++) {  // constants, kinds of record, functions, then the rest
         for (size_t i = 0; i < program->len; i++) {
             const Stmt *stmt = program->items[i];
-            int kind_pass = stmt->kind == STMT_CONSTANT ? 0 : stmt->kind == STMT_RECORD ? 1
+            int kind_pass = stmt->kind == STMT_CONSTANT ? 0 : stmt->kind == STMT_RECORD || stmt->kind == STMT_SUM ? 1
                             : stmt->kind == STMT_FUNCTION ? 2 : 3;
             if (kind_pass == (int)pass) check_stmt(&c, stmt);
         }

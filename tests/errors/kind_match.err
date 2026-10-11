@@ -1,0 +1,39 @@
+Line 11: This doesn't say what to do when s is a rectangle or a point.
+    check which kind s is:
+    ^^^^^^^^^^^^^^^^^^^^^^
+Add "when it's a rectangle:" and the others, or an "otherwise:" at the end.
+
+Line 14: This doesn't say what to do when s is a rectangle or a point.
+    check which kind s is:
+    ^^^^^^^^^^^^^^^^^^^^^^
+Add "when it's a rectangle:" and the others, or an "otherwise:" at the end.
+
+Line 18: A shape is never a cat.
+        when it's a circle or a cat:
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+An animal is defined on line 6.
+
+Line 20: A shape is never nothing.
+        when it's nothing:
+        ^^^^^^^^^^^^^^^^^^
+Only a value whose kind is like "a shape or nothing" can be nothing.
+
+Line 22: There's already a "when" for a circle, on line 18.
+        when it's a circle:
+        ^^^^^^^^^^^^^^^^^^^
+Each variant can have one "when".
+
+Line 27: "n" is a number, which has no variants to check.
+    check which kind n is:
+                     ^
+"check which kind" tells apart the variants of a kind defined with "is one of:" (like "a shape is one of:"), or a value that can be nothing.
+
+Line 41: I don't know anything called "inside".
+    say inside.
+        ^^^^^^
+You made "inside" inside the "when" on line 37, so it only exists inside that block. To use it afterwards, make it before the "when".
+
+Line 44: "stop the loop" only works inside a loop.
+            stop the loop.
+            ^^^^^^^^^^^^^
+It leaves the loop it's in. To end the whole program, write "stop the program".

@@ -465,7 +465,7 @@ static bool es_value_equal(EsItems kind, EsValue a, EsValue b) {
     case ES_ITEMS_YESNO: return a.b == b.b;
     case ES_ITEMS_TEXT: return es_text_equal(a.t, b.t);
     case ES_ITEMS_LIST: return es_list_equal(a.l, b.l);
-    case ES_ITEMS_RECORD: return a.r == b.r; /* the same record */
+    case ES_ITEMS_RECORD: return es_record_equal(a.r, b.r);
     case ES_ITEMS_MAP: return es_map_equal(a.m, b.m);
     }
     return false;

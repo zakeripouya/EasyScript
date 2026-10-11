@@ -22,7 +22,9 @@ static TypeVar error_var(Checker *c) {
 // How a kind is written in a definition: "a number", "text", "yes or no",
 // "a list of numbers".
 static const char *kind_words(Checker *c, Type type) {
-    if (type_is_list(type) || type_is_record(type) || type_is_map(type)) return checker_type_name(c, type);
+    if (type_is_list(type) || type_is_record(type) || type_is_sum(type) || type_is_map(type)) {
+        return checker_type_name(c, type);
+    }
     switch (type) {
     case TYPE_NUMBER: return "a number";
     case TYPE_TEXT: return "text";
@@ -101,7 +103,7 @@ static void require_or_side(Checker *c, TypeVar var, const Expr *expr, const cha
 // Two records are the same record or not, even if one could be nothing.
 static bool same_record_kind(Checker *c, TypeVar left, TypeVar right) {
     Type l = types_of(c, left), r = types_of(c, right);
-    return type_is_record(l) && type_is_record(r) && type_present(l) == type_present(r);
+    return (type_is_record(l) || type_is_sum(l)) && type_present(l) == type_present(r);
 }
 
 static TypeVar check_binary(Checker *c, const Expr *expr) {
@@ -293,7 +295,7 @@ static void report_no_method(Checker *c, const Expr *expr, Type kind) {
     const Expr *record = expr->as.call.args.items[0];
     diag_error(c->diag, record->pos.span, "\"%s\" is a method for %s, but this is %s.", first->display, kinds.data,
                ast_type_name(c->arena, c->records, kind));
-    if (type_is_record(kind)) {
+    if (type_is_record(kind) || type_is_sum(kind)) {
         diag_note(c->diag, "Define one for it too, like \"to %s, for %s:\".", first->display,
                   ast_type_name(c->arena, c->records, kind));
     }
@@ -303,7 +305,7 @@ bool checker_settle_method(Checker *c, const Deferred *d) {
     Type kind = types_of(c, d->left);
     if (kind == TYPE_ERROR) return true;
     if (type_is_maybe(kind)) kind = type_present(kind);
-    if (!type_is_record(kind)) {
+    if (!type_is_record(kind) && !type_is_sum(kind)) {
         if (kind == TYPE_UNKNOWN || kind == TYPE_MAYBE) return false;
         report_no_method(c, d->expr, kind);
         return true;
@@ -415,6 +417,7 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_TEXT_OP: return checker_check_text_op(c, expr);
     case EXPR_FIELD: return checker_narrow(c, expr, checker_check_field(c, expr));
     case EXPR_NEW: return checker_check_new(c, expr);
+    case EXPR_KIND_TEST: return checker_check_kind_test(c, expr);
     case EXPR_MAP:
     case EXPR_EMPTY_MAP:
     case EXPR_MAP_GET:

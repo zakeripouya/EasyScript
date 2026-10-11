@@ -60,7 +60,7 @@ static TypeVar check_literal(Checker *c, const Expr *expr) {
 static TypeVar check_for_each_item(Checker *c, const Name *name, TypeVar item, const Expr *body) {
     size_t outer = c->made.len;
     if (name) checker_make_item_name(c, name, item);
-    Loop loop = {true, item};
+    Loop loop = {true, item, false, NO_VARIANT};
     vec_push(c->arena, &c->loops, loop);
     TypeVar result = checker_check_expr(c, body);
     c->loops.len--;
@@ -97,12 +97,14 @@ static TypeVar check_list_op(Checker *c, const Expr *expr) {
         types_defer_one_of(c, operand, item, var, length ? KIND_TEXT | KIND_LIST : KIND_NUMBER | KIND_TEXT, message);
         return var;
     }
-    case LIST_COPY:  // a record or map when it's known to be one, otherwise a list
-        if (type_is_map(types_of(c, var)) || (type_is_record(types_of(c, var)) && !type_is_maybe(types_of(c, var)))) {
+    case LIST_COPY: {  // a record, map or kind with variants when it's known to be one, otherwise a list
+        Type kind = types_of(c, var);
+        if (type_is_map(kind) || ((type_is_record(kind) || type_is_sum(kind)) && !type_is_maybe(kind))) {
             return var;
         }
         checker_require_list(c, var, operand, "I can only copy a list, a map or a record");
         return var;
+    }
     case LIST_IS_EMPTY:
     case LIST_NOT_EMPTY:
         types_defer_one_of(c, operand, var, var, KIND_TEXT | KIND_LIST | KIND_MAP,

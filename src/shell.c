@@ -139,7 +139,7 @@ static long file_size(const char *path) {
 
 // Runs `self run session` with its output piped through the shell. Returns
 // its exit status and adds the bytes it printed to *printed.
-static int run_session(Shell *sh, size_t *printed) {
+static int run_session(Shell *sh, size_t first_line, size_t *printed) {
     int fds[2];
     if (pipe(fds) != 0) return -1;
     fflush(stdout);
@@ -156,6 +156,7 @@ static int run_session(Shell *sh, size_t *printed) {
         setenv("ES_HOOKS", "1", 1);  // so "run" builds the program with the hooks below
         setenv("ES_SKIP_OUTPUT", arena_sprintf(sh->arena, "%zu", sh->shown), 1);
         setenv("ES_ANSWERS", sh->answers_path, 1);
+        setenv("ES_WARN_FROM_LINE", arena_sprintf(sh->arena, "%zu", first_line), 1);  // earlier lines were shown
         char *argv[] = {sh->self, "run", (char *)sh->session_path, NULL};
         execvp(argv[0], argv);
         fprintf(stderr, "I couldn't run %s: %s.\n", argv[0], strerror(errno));
@@ -180,12 +181,13 @@ static int run_session(Shell *sh, size_t *printed) {
 
 // Tries one entry with everything kept so far; keeps it only if it all works.
 static void try_entry(Shell *sh, const StrBuf *entry, size_t lines) {
-    size_t kept = sh->session.len;
+    size_t kept = sh->session.len, first_line = 1;
+    for (size_t i = 0; i < kept; i++) first_line += sh->session.data[i] == '\n';
     long answers = file_size(sh->answers_path);
     sb_append_n(&sh->session, entry->data, entry->len);
     sb_append_char(&sh->session, '\n');
     size_t printed = 0;
-    if (write_session(sh) && run_session(sh, &printed) == 0) {
+    if (write_session(sh) && run_session(sh, first_line, &printed) == 0) {
         sh->shown += printed;
         return;
     }

@@ -1,0 +1,4 @@
+Line 14: This was checked to be a circle, but something has set it to a point since then.
+        say h's shape's radius.
+            ^^^^^^^^^^^^^^^^^^
+Another name for the same record can change it. Check it again just before using it.

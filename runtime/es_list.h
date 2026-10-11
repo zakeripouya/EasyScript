@@ -27,6 +27,8 @@
 static EsMap *es_map_copy_of(const EsMap *m);
 static void es_map_own_deep(EsMap *m);
 static bool es_map_equal(const EsMap *a, const EsMap *b);
+/* Records are the same record; values of a kind with variants are equal (es_kind.h). */
+static bool es_record_equal(const EsRecord *a, const EsRecord *b);
 
 /* --- Making lists ------------------------------------------------------------ */
 
@@ -397,7 +399,7 @@ static bool es_list_equal(const EsList *a, const EsList *b) {
         case ES_ITEMS_YESNO: same = a->at.b[i] == b->at.b[i]; break;
         case ES_ITEMS_TEXT: same = es_text_equal(a->at.t[i], b->at.t[i]); break;
         case ES_ITEMS_LIST: same = es_list_equal(a->at.l[i], b->at.l[i]); break;
-        case ES_ITEMS_RECORD: same = a->at.r[i] == b->at.r[i]; break; /* the same record */
+        case ES_ITEMS_RECORD: same = es_record_equal(a->at.r[i], b->at.r[i]); break;
         case ES_ITEMS_MAP: same = es_map_equal(a->at.m[i], b->at.m[i]); break;
         }
         if (!same) return false;
@@ -412,53 +414,17 @@ static bool es_list_same(EsList *a, EsList *b) {
     return same;
 }
 
-/* "L contains X" */
-static bool es_contains_n(EsList *l, double v) {
-    bool found = false;
-    for (size_t i = 0; i < l->len && !found; i++) found = es_close(l->at.n[i], v);
-    es_list_release(l);
-    return found;
-}
-
-static bool es_contains_b(EsList *l, bool v) {
-    bool found = false;
-    for (size_t i = 0; i < l->len && !found; i++) found = l->at.b[i] == v;
-    es_list_release(l);
-    return found;
-}
-
-static bool es_contains_t(EsList *l, EsText *v) {
-    bool found = false;
-    for (size_t i = 0; i < l->len && !found; i++) found = es_text_equal(l->at.t[i], v);
-    es_release(v);
-    es_list_release(l);
-    return found;
-}
-
-static bool es_contains_l(EsList *l, EsList *v) {
-    bool found = false;
-    for (size_t i = 0; i < l->len && !found; i++) found = es_list_equal(l->at.l[i], v);
-    es_list_release(v);
-    es_list_release(l);
-    return found;
-}
-
-static bool es_contains_m(EsList *l, EsMap *v) {
-    bool found = false;
-    for (size_t i = 0; i < l->len && !found; i++) found = es_map_equal(l->at.m[i], v);
-    es_map_release(v);
-    es_list_release(l);
-    return found;
-}
-
-/* A record is in the list when that same record is (not a record with the same fields). */
-static bool es_contains_r(EsList *l, EsRecord *v) {
-    bool found = false;
-    for (size_t i = 0; i < l->len && !found; i++) found = l->at.r[i] == v;
-    es_record_release(v);
-    es_list_release(l);
-    return found;
-}
+/* "L contains X". Records are compared by es_record_equal: a record is in
+ * the list when that same record is (not a record with the same fields), a
+ * value of a kind with variants when an equal value is. */
+#define ES_CONTAINS(S, T, SAME, RELEASE)                                           \
+    static bool es_contains_##S(EsList *l, T v) {                                  \
+        bool found = false;                                                        \
+        for (size_t i = 0; i < l->len && !found; i++) found = SAME(l->at.S[i], v); \
+        RELEASE(v);                                                                \
+        es_list_release(l);                                                        \
+        return found;                                                              \
+    }
 
 /* "the position of X in L": the position of the first item equal to X, or 0
  * if none is. */
@@ -473,12 +439,13 @@ static bool es_contains_r(EsList *l, EsRecord *v) {
     }
 
 #define ES_SAME_YESNO(a, b) ((a) == (b))
-ES_POSITION(n, double, es_close, ES_IGNORE)
-ES_POSITION(b, bool, ES_SAME_YESNO, ES_IGNORE)
-ES_POSITION(t, EsText *, es_text_equal, es_release)
-ES_POSITION(l, EsList *, es_list_equal, es_list_release)
-ES_POSITION(r, EsRecord *, ES_SAME_YESNO, es_record_release)
-ES_POSITION(m, EsMap *, es_map_equal, es_map_release)
+#define ES_SEARCH(S, T, SAME, RELEASE) ES_CONTAINS(S, T, SAME, RELEASE) ES_POSITION(S, T, SAME, RELEASE)
+ES_SEARCH(n, double, es_close, ES_IGNORE)
+ES_SEARCH(b, bool, ES_SAME_YESNO, ES_IGNORE)
+ES_SEARCH(t, EsText *, es_text_equal, es_release)
+ES_SEARCH(l, EsList *, es_list_equal, es_list_release)
+ES_SEARCH(r, EsRecord *, es_record_equal, es_record_release)
+ES_SEARCH(m, EsMap *, es_map_equal, es_map_release)
 
 /* "L added together" */
 static double es_list_sum(EsList *l) {

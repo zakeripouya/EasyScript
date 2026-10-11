@@ -181,6 +181,14 @@ static Expr *parse_word(Parser *p) {
     }
     if (strcmp(word, "nothing") == 0) return literal(p, EXPR_NOTHING);
     if (strcmp(word, "it") == 0) return literal(p, EXPR_IT);
+    if (strcmp(word, "its") == 0 && parser_known_field_words(p, 1) > 0) {  // "its radius": "it's radius"
+        Expr *it = literal(p, EXPR_IT);
+        Expr *expr = ast_new_expr(p->arena, EXPR_FIELD, it->pos);
+        expr->as.field.record = it;
+        parser_take_name(p, parser_known_field_words(p, 0), &expr->as.field.name);
+        expr->pos = ast_pos_join(it->pos, expr->as.field.name.pos);
+        return expr;
+    }
     if (parser_match_words(p, "length of")) return parse_prefixed(p, EXPR_LENGTH, 2);
     if (parser_match_words(p, "contents of file")) return parse_prefixed(p, EXPR_FILE_CONTENTS, 3);
     if (parser_match_words(p, "contents of")) {
@@ -192,6 +200,16 @@ static Expr *parse_word(Parser *p) {
     }
     if (parser_is_operator_word(word)) return expected_value(p);
     if (parser_at_new(p)) return parser_parse_new(p);
+    size_t words;
+    if (strcmp(word, "make") == 0 && !parser_match_name(p, 0, false) &&
+        (parser_match_kind_name(p, 1, false, &words) || parser_match_variant(p, 1, &words) >= 0)) {
+        // "make a circle with radius 3": made like a record
+        if (parser_error(p, token->span, "\"make\" doesn't make values; a new value is written with \"new\".")) {
+            Span rest = parser_peek(p, 1)->span;
+            diag_note(p->diag, "Write it like \"a new %s\".", parser_text(p, rest));
+        }
+        return parser_error_expr(p);
+    }
     const KnownName *known = parser_match_name(p, 0, false);
     if (known && known->words > 1) return parse_name_or_call(p);  // "late fee", before any other meaning
     Expr *map = parser_parse_map_word(p);

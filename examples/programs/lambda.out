@@ -1,0 +1,5 @@
+two is (fn f. (fn x. (f (f x))))
+two is 2
+two plus three is 5
+two times three is 6
+three times three plus two is 11

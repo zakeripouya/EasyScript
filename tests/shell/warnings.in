@@ -1,0 +1,12 @@
+a shape is one of:
+    a point.
+
+let s be a new point
+check which kind s is:
+    when it's a point:
+        say "point"
+    otherwise:
+        say "never"
+
+say "the warning above isn't shown again"
+exit

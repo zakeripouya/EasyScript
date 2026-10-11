@@ -1,7 +1,7 @@
 """Lists every error message format in the compiler and runtime source.
 
 Used by error_coverage.py. A message is the format string passed to one of
-the error-reporting functions (diag_error, parser_error, es_fail, fail,
+the error-reporting functions (diag_error, diag_warning, parser_error, es_fail, fail,
 fprintf(stderr, "..."), usage_error). Adjacent C string literals are joined.
 """
 import re, os, sys
@@ -10,6 +10,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 SOURCES = ['src', 'runtime']
 CALLS = {
     'diag_error': 2,    # diag_error(diag, span, FMT, ...)
+    'diag_warning': 2,  # diag_warning(diag, span, FMT, ...)
     'parser_error': 2,  # parser_error(p, span, FMT, ...)
     'es_fail': 2,       # es_fail(line, hint, FMT, ...)
     'fail': 3,          # consteval fail(ev, span, hint, FMT, ...)

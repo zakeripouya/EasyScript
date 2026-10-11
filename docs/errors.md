@@ -522,6 +522,54 @@ Use parentheses to say which: "(the value for "x" in ages, or 0) plus 1" or "the
 
 The full, tested set is the `map_*.err` files in [`tests/errors/`](../tests/errors/) and [`err_map_forms.err`](../tests/ast/err_map_forms.err).
 
+### Kinds with variants
+
+A value of a kind with variants only has the fields of its variant, so a field can only be used where the program has checked which variant it is, and `check which kind` has to say what to do for every variant.
+
+**A field used without checking the variant**: [`kind_fields.es`](../tests/errors/kind_fields.es)
+
+```
+Line 10: "s" might not be a circle, so check which kind it is first.
+    say s's radius.
+        ^^^^^^^^^^
+Use it inside "if s is a circle:", or inside "when it's a circle:" after "check which kind s is:".
+```
+
+**A variant left out of `check which kind`**: [`kind_match.es`](../tests/errors/kind_match.es)
+
+```
+Line 11: This doesn't say what to do when s is a rectangle or a point.
+    check which kind s is:
+    ^^^^^^^^^^^^^^^^^^^^^^
+Add "when it's a rectangle:" and the others, or an "otherwise:" at the end.
+```
+
+| Problem | Message (summary) |
+|---|---|
+| A field of a value that isn't a name or a field, unchecked | "This might not be a circle, so check which kind it is first." with a note to give it a name with "let" |
+| A field the checked variant doesn't have | "A rectangle doesn't have a field called "radius"." with "Only a circle has one." |
+| A field no variant has | "A shape doesn't have a field called "colour"." with "Did you mean ...?" or where the kind is defined |
+| Changing a field | "The fields of a shape can't change." with "Make a new one instead, like "set s to a new circle with radius ..."." |
+| A field missing from `new`, given twice, unknown, or of the wrong kind | "A new circle needs a value for "radius"." / "This gives "radius" a value twice." / "A point doesn't have a field called "size"." / "The field "radius" of a circle is a number, but this is text." |
+| Asking for a variant of another kind | ""n" is a number, so it's never a circle." |
+| A `when` for a variant of another kind, for nothing on a value that can't be nothing, or twice | "A shape is never a cat." / "A shape is never nothing." / "There's already a "when" for a circle, on line 18." |
+| `check which kind` on a value without variants | ""n" is a number, which has no variants to check." |
+| A kind or variant named twice, or like a kind of record | "You already defined "shape" on line 2." / ""circle" is already a variant of "shape", on line 3." / ""dog" is already the name of a kind of record, on line 5." |
+| A kind that could never be made | "Every variant of "loop" needs another loop inside it, so none could ever be made." |
+| A field defined twice, a kind defined in a block | ""circle" already has a field called "radius"." / "Kinds can only be defined at the top level, not inside an "if" or a loop." |
+| In a constant, or as a field's starting value | "A constant can't be a shape, because those are made while the program runs." / "A constant can't check which kind a value is, ..." / "A field that holds a shape can't have a starting value, ..." |
+
+Mistakes in how a definition or a `check which kind` is written are parser errors, like "The variants of "shape" go on the lines below, indented.", "Say what kind of value "radius" holds, in parentheses after it.", "I don't know a variant called "circel"." (with "Did you mean "circle"?"), "The "otherwise" on line 12 has to come last.", "Each part of "check which kind" starts with "when it's ..." or "otherwise", ..." and ""make" doesn't make values; a new value is written with "new"." The full set is in [`err_kinds.err`](../tests/ast/err_kinds.err).
+
+**An `otherwise` that can never run** is a warning, not an error: the program still compiles and runs, and the warning is shown first, marked "(a warning)": [`kind_otherwise_never_runs.es`](../tests/warnings/kind_otherwise_never_runs.es)
+
+```
+Line 12 (a warning): This "otherwise" can never run: the "when"s above it cover every kind s can be.
+        otherwise:
+        ^^^^^^^^^^
+Take it out, or the sentences in it will never be used.
+```
+
 ### While the program runs
 
 Runtime errors look like compile errors: `Line N:` and what went wrong, the line with carets under the part that failed, and sometimes a hint. Anything the program printed before the error stays printed. Only mistakes that kinds can't catch are left for this.
@@ -603,6 +651,7 @@ Positions start at 1: the first item is item 1.
 | A map key that isn't there | "There's no value for "Bob" in the map." (keys cut short after 60 characters); changing its value adds "It has to be in the map before it can change. To put it there, write "set the value for ... to ..."." |
 | Removing a key that isn't there | "I can't remove "Bob": the map has no value for it." with "To check first, use "has"." |
 | A record checked not to be nothing, then set to nothing through another name before it's used | "This was checked not to be nothing, but something has set it to nothing since then." with the hint "Another name for the same record can change it. Check it again just before using it." |
+| A record's field checked to be a variant, then set to another one through another name before it's used | "This was checked to be a circle, but something has set it to a point since then." with the same hint |
 
 Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).
 

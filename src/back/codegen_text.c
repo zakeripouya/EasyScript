@@ -188,6 +188,7 @@ static bool reads(const Expr *expr, const char *name) {
         return reads(expr->as.text_op.operand, name) || reads(expr->as.text_op.arg, name) ||
                reads(expr->as.text_op.arg2, name);
     case EXPR_FIELD: return reads(expr->as.field.record, name);
+    case EXPR_KIND_TEST: return reads(expr->as.kind_test.operand, name);
     case EXPR_MAP_GET:
     case EXPR_MAP_WITHOUT:
         return reads(expr->as.lookup.key, name) || reads(expr->as.lookup.map, name) ||

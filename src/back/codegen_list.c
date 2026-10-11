@@ -21,7 +21,7 @@
 
 const char *cg_value_suffix(Type type) {
     if (type_is_map(type)) return "m";
-    return type_is_list(type) ? "l" : type_is_record(type) ? "r" : type == TYPE_TEXT ? "t" : type == TYPE_YESNO ? "b" : "n";
+    return type_is_list(type) ? "l" : type_is_object(type) ? "r" : type == TYPE_TEXT ? "t" : type == TYPE_YESNO ? "b" : "n";
 }
 
 const char *cg_item_suffix(Type list) {
@@ -29,7 +29,7 @@ const char *cg_item_suffix(Type list) {
 }
 
 const char *cg_items(Type type) {
-    if (type_is_record(type)) return "ES_ITEMS_RECORD";
+    if (type_is_object(type)) return "ES_ITEMS_RECORD";
     if (type_is_map(type)) return "ES_ITEMS_MAP";
     return type_is_list(type) ? "ES_ITEMS_LIST" : type == TYPE_TEXT ? "ES_ITEMS_TEXT"
                                               : type == TYPE_YESNO ? "ES_ITEMS_YESNO" : "ES_ITEMS_NUMBER";
@@ -90,7 +90,10 @@ static void emit_list_op(Codegen *g, const Expr *expr, StrBuf *out) {
     case LIST_SORTED_LENGTH_DOWN:
         sb_appendf(out, "es_list_sorted(%s, %d)", code, (int)(expr->as.list_op.op - LIST_SORTED));
         break;
-    case LIST_COPY: sb_appendf(out, "%s(%s)", type_is_record(operand->type) ? "es_record_copy" : "es_list_copy", code); break;
+    case LIST_COPY:
+        sb_appendf(out, "%s(%s)", type_is_sum(operand->type) ? "es_kind_copy" : type_is_record(operand->type) ? "es_record_copy"
+                                  : "es_list_copy", code);
+        break;
     case LIST_IS_EMPTY:
     case LIST_NOT_EMPTY:
         sb_appendf(out, "%s%s(%s)", expr->as.list_op.op == LIST_NOT_EMPTY ? "!" : "",
@@ -173,10 +176,17 @@ static void collect(Codegen *g, const Expr *expr, Names *bound, Codegen *helper)
         for (size_t i = 0; i < helper->captured.len; i++) {
             if (strcmp(helper->captured.items[i].name, name) == 0) return;
         }
-        VarCode var = {name, expr->type};
+        VarCode var = {name, expr->narrowed ? expr->type + TYPE_MAYBE : expr->type};  // kept as it was made
         vec_push(g->arena, &helper->captured, var);
         return;
     }
+    case EXPR_FIELD: collect(g, expr->as.field.record, bound, helper); return;
+    case EXPR_KIND_TEST: collect(g, expr->as.kind_test.operand, bound, helper); return;
+    case EXPR_NEW:
+        for (size_t i = 0; i < expr->as.new_record.values.len; i++) {
+            collect(g, expr->as.new_record.values.items[i].value, bound, helper);
+        }
+        return;
     case EXPR_CALL: collect_all(g, expr->as.call.args.items, expr->as.call.args.len, bound, helper); return;
     case EXPR_LENGTH:
     case EXPR_FILE_CONTENTS: collect(g, expr->as.operand, bound, helper); return;
@@ -235,6 +245,13 @@ static bool calls_function(const Codegen *g, const Expr *expr) {
     case EXPR_LENGTH:
     case EXPR_FILE_CONTENTS: return calls_function(g, expr->as.operand);
     case EXPR_UNARY: return calls_function(g, expr->as.unary.operand);
+    case EXPR_FIELD: return calls_function(g, expr->as.field.record);
+    case EXPR_KIND_TEST: return calls_function(g, expr->as.kind_test.operand);
+    case EXPR_NEW:
+        for (size_t i = 0; i < expr->as.new_record.values.len; i++) {
+            if (calls_function(g, expr->as.new_record.values.items[i].value)) return true;
+        }
+        return false;
     case EXPR_BINARY: return calls_function(g, expr->as.binary.left) || calls_function(g, expr->as.binary.right);
     case EXPR_CONVERT: return calls_function(g, expr->as.convert.operand);
     case EXPR_LIST:

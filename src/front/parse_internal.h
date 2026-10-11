@@ -3,7 +3,7 @@
 
 // Shared by the parser's source files (parse_util.c, parse_expr.c,
 // parse_value.c, parse_stmt.c, parse_if.c, parse_loop.c, parse_func.c,
-// parse_list.c, parse_kind.c, parse_text.c, parse_record.c, parse_map.c, parse_names.c).
+// parse_list.c, parse_kind.c, parse_match.c, parse_text.c, parse_record.c, parse_map.c, parse_names.c).
 // Not for use outside src/front/.
 
 #include <stdbool.h>
@@ -211,6 +211,22 @@ void parser_take_name(Parser *p, size_t words, Name *name);
 bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type);
 // What a list or map holds, in the plural: "numbers", "lists of text", "dogs", ...
 bool parser_parse_items_kind(Parser *p, Type *type);
+// The record kind or kind with variants whose name (or, if plural, whose
+// plural) the tokens `ahead` spell, with its token count in *words (the
+// longest); TYPE_UNKNOWN and 0 words if none.
+Type parser_match_kind_name(const Parser *p, size_t ahead, bool plural, size_t *words);
+// The variant (Records.variants) whose name the tokens `ahead` spell (the longest), or -1.
+int parser_match_variant(const Parser *p, size_t ahead, size_t *words);
+// "X is one of:" starts here (found by the pre-scan).
+bool parser_at_sum_definition(const Parser *p);
+Stmt *parse_sum(Parser *p);  // a shape is one of: (variants indented below)
+
+// parse_match.c
+// After a value: "is a circle", "is not a circle", "isn't a circle" (a
+// variant, written with "a" or "an"); NULL if none is next.
+Expr *parser_parse_kind_test(Parser *p, Expr *left);
+// check which kind S is: (when it's a circle: ... otherwise: ...)
+Stmt *parse_match(Parser *p, const Token *verb);
 
 // parse_list.c
 // "every second item", "every 3rd item", "every other item": a slice.
@@ -239,7 +255,9 @@ Stmt *parse_record(Parser *p);  // a dog is a kind of thing with: (fields indent
 int parser_match_record(const Parser *p, size_t ahead, bool plural, size_t *words);
 // After a value: 's and a field's name ("rex's age"); called at the 's.
 Expr *parser_parse_field(Parser *p, Expr *record);
-// "new" and a record kind's name start here.
+// The longest known field name starting `ahead` tokens from here (0 if none).
+size_t parser_known_field_words(const Parser *p, size_t ahead);
+// "new" and the name of a record kind or a variant start here.
 bool parser_at_new(const Parser *p);
 Expr *parser_parse_new(Parser *p);  // a new dog [with name "Rex" and age 3]
 // What a sentence changes: a name, a field of one ("rex's age", "it's

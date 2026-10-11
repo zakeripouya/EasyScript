@@ -159,6 +159,33 @@ check_errors() {
     done
 }
 
+# check_warnings DIR LABEL: each DIR/NAME.es compiles with warnings and runs:
+# it must exit 0 with stdout matching NAME.out and stderr (the warnings,
+# printed before the program runs) matching NAME.err exactly.
+check_warnings() {
+    for src in "$1"/*.es; do
+        [ -e "$src" ] || continue
+        name="$2/$(basename "$src" .es)"
+        if [ ! -f "${src%.es}.out" ] || [ ! -f "${src%.es}.err" ]; then
+            not_ok "$name" "missing $(basename "${src%.es}").out or .err"
+            continue
+        fi
+        fresh_dir
+        (cd "$WORK/cwd" && ES_DEBUG_MEMORY=1 "$ES" run "$src") </dev/null >"$WORK/stdout" 2>"$WORK/stderr"
+        status=$?
+        if [ $status -ne 0 ]; then
+            not_ok "$name" "exit status $status, expected 0
+$(cat "$WORK/stderr")"
+        elif ! out=$(diff -u "${src%.es}.out" "$WORK/stdout"); then
+            not_ok "$name" "$out"
+        elif ! out=$(diff -u "${src%.es}.err" "$WORK/stderr"); then
+            not_ok "$name" "$out"
+        else
+            ok "$name"
+        fi
+    done
+}
+
 # check_dump COMMAND DIR LABEL OUT_EXT: runs `easyscript COMMAND` on each
 # DIR/NAME.es; stdout must match NAME.OUT_EXT. With a NAME.err the run must
 # fail with exactly that stderr; without one it must succeed with empty stderr.
@@ -198,6 +225,7 @@ $(cat "$WORK/stderr")"
 
 check_run "$ROOT/tests/run" run
 check_errors "$ROOT/tests/errors" errors
+check_warnings "$ROOT/tests/warnings" warnings
 check_dump tokens "$ROOT/tests/tokens" tokens out
 check_dump ast "$ROOT/tests/ast" ast out
 

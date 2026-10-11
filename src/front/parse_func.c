@@ -86,7 +86,7 @@ static bool parse_method_record(Parser *p, Stmt *stmt) {
     size_t words;
     if (parser_at(p, 0, TOK_COMMA) && parser_at_word(p, 1, "for")) {
         parser_advance(p);
-    } else if (!parser_at_word(p, 0, "for") || parser_match_record(p, 1, false, &words) < 0) {
+    } else if (!parser_at_word(p, 0, "for") || !parser_match_kind_name(p, 1, false, &words)) {
         return true;
     }
     parser_advance(p);
@@ -95,14 +95,15 @@ static bool parse_method_record(Parser *p, Stmt *stmt) {
     Type type;
     if (!parser_parse_kind(p, false, &type)) return false;
     record.pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0});
-    if (!type_is_record(type) || type_is_maybe(type)) {
+    if (!(type_is_record(type) || type_is_sum(type)) || type_is_maybe(type)) {
         if (parser_error(p, record.pos.span, "A method is for a kind of record, but this is %s.",
                          ast_type_name(p->arena, p->records, type))) {
             diag_note(p->diag, "Write the kind of record it works on, like \"to bark, for a dog:\".");
         }
         return false;
     }
-    const RecordKind *kind = &p->records->items[type_record_index(type)];
+    const RecordKind *kind = type_is_sum(type) ? &p->records->sums.items[type_sum_index(type)]
+                                               : &p->records->items[type_record_index(type)];
     record.text = kind->name;
     record.display = kind->display;
     stmt->as.function.method = true;

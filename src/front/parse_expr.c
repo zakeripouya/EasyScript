@@ -356,6 +356,7 @@ static Expr *parse_comparison(Parser *p) {
     size_t len;
     Expr *empty = parse_empty_test(p, left, 0, 3);
     if (!empty) empty = parser_parse_char_test(p, left);
+    if (!empty) empty = parser_parse_kind_test(p, left);
     if (empty && parser_match_phrase(p, comparison_ops, COUNT(comparison_ops), &len)) {
         Span op = parser_consume(p, len);
         if (parser_error(p, op, "Comparisons can't be chained like this.")) {

@@ -8,6 +8,7 @@
 //   write E to file F                   append E to file F
 //   read file F and call it X           stop the program
 //   if C: / if C, S / if C then S        (parse_if.c)
+//   check which kind S is:               (parse_match.c)
 //   loops, stop the loop, skip this one   (parse_loop.c)
 //   add E to the end of L, remove, insert, set item N of L to E, sort  (parse_list.c)
 
@@ -227,6 +228,11 @@ static Stmt *parse_if_form(Parser *p, const Token *verb, const StmtForm *form) {
     return parse_if(p, verb);
 }
 
+static Stmt *parse_check_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parse_match(p, verb);
+}
+
 static Stmt *parse_function_form(Parser *p, const Token *verb, const StmtForm *form) {
     (void)form;
     return parse_function(p, verb);
@@ -297,6 +303,7 @@ static const StmtForm forms[] = {
     {"continue", parse_control_form, true, 0, NULL, "skip this one"},
     {"move", parse_control_form, true, 0, NULL, "move on"},
     {"if", parse_if_form, false, 0, NULL, "if total is 5, say \"five\""},
+    {"check", parse_check_form, false, 0, NULL, "check which kind s is:"},
     {"count", parse_loop_form, false, 0, NULL, "count from 1 to 10:"},
     {"go", parse_loop_form, false, 0, NULL, "go from 0 to 100 in steps of 10:"},
     {"for", parse_loop_form, false, 0, NULL, "for each n from 1 to 10:"},
@@ -394,6 +401,7 @@ Stmt *parse_statement(Parser *p) {
     }
     const Token *verb = parser_peek(p, 0);
     if (parser_at_record_definition(p)) return parse_record(p);
+    if (parser_at_sum_definition(p)) return parse_sum(p);
     const StmtForm *form = find_form(verb);
     // A function's name starts a call: one of several words even if its first
     // word starts sentences ("add tax to 100"), a one-word one otherwise.

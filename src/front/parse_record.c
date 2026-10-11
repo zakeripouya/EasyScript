@@ -1,6 +1,6 @@
 // Records: kinds of things the program defines, their fields, and methods.
 //
-//   a dog is a kind of thing with:          a new dog with name "Rex" and age 3
+//   a dog is a kind of thing with:          a new dog with name "Rex" and age 3   (a new circle, likewise)
 //       a name, which is text.              rex's name        the order's customer's name
 //       an age, which is a number, starting at 0.
 //       an owner, which is a person or nothing.
@@ -164,14 +164,19 @@ Stmt *parse_record(Parser *p) {
 
 // --- Fields ----------------------------------------------------------------------------
 
-// How many words the field name starting `ahead` tokens from here has: the
-// longest known one, or one word; 0 if no name starts there.
-static size_t field_words(const Parser *p, size_t ahead) {
+size_t parser_known_field_words(const Parser *p, size_t ahead) {
     size_t best = 0;
     for (size_t i = 0; i < p->fields.len; i++) {
         size_t n = parser_match_words_at(p, ahead, p->fields.items[i].text);
         if (n > best) best = n;
     }
+    return best;
+}
+
+// How many words the field name starting `ahead` tokens from here has: the
+// longest known one, or one word; 0 if no name starts there.
+static size_t field_words(const Parser *p, size_t ahead) {
+    size_t best = parser_known_field_words(p, ahead);
     return best ? best : parser_is_name_word(parser_peek(p, ahead)) ? 1 : 0;
 }
 
@@ -237,7 +242,8 @@ bool parser_parse_target(Parser *p, Name *name, Expr **field, const char *const 
 
 bool parser_at_new(const Parser *p) {
     size_t words;
-    return parser_at_word(p, 0, "new") && parser_match_record(p, 1, false, &words) >= 0;
+    return parser_at_word(p, 0, "new") &&
+           (parser_match_record(p, 1, false, &words) >= 0 || parser_match_variant(p, 1, &words) >= 0);
 }
 
 static bool is_parenthesized(const Parser *p, const Expr *expr) {
@@ -282,11 +288,18 @@ Expr *parser_parse_new(Parser *p) {
         start.span.length += start.span.offset - new_word->filler.offset;
         start.span.offset = new_word->filler.offset;
     }
-    size_t words;
+    size_t words, variant_words;
     int index = parser_match_record(p, 0, false, &words);
-    parser_consume(p, words);
+    int variant = parser_match_variant(p, 0, &variant_words);
     Expr *expr = ast_new_expr(p->arena, EXPR_NEW, start);
-    expr->as.new_record.type = type_record((size_t)index);
+    if (variant >= 0 && (index < 0 || variant_words > words)) {  // "a new circle": a shape
+        words = variant_words;
+        expr->as.new_record.variant = (size_t)variant;
+        expr->as.new_record.type = type_sum(p->records->variants.items[variant].sum);
+    } else {
+        expr->as.new_record.type = type_record((size_t)index);
+    }
+    parser_consume(p, words);
     if (parser_at_word(p, 0, "with")) {
         parser_advance(p);
         do {

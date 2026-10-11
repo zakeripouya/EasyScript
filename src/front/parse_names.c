@@ -110,7 +110,7 @@ static void find_function(Parser *p, size_t i) {
     }
     if (n == 0) return;
     size_t j = i + 1 + n;
-    bool method = (word_at(p, j, "for") && parser_match_record(p, j + 1, false, &words) >= 0) ||
+    bool method = (word_at(p, j, "for") && parser_match_kind_name(p, j + 1, false, &words)) ||
                   (p->tokens[j].kind == TOK_COMMA && word_at(p, j + 1, "for"));
     if (method) {  // skip "for KIND" and a comma after it
         j += p->tokens[j].kind == TOK_COMMA ? 2 : 1;
@@ -156,26 +156,103 @@ static size_t record_definition_words(const Parser *p, size_t i) {
     return kind ? n : 0;
 }
 
-// Every record kind, in order, and every field name: "NAME, which is".
+static void add_field_name(Parser *p, size_t i, size_t n) {
+    for (size_t k = 0; k < p->fields.len; k++) {
+        if (p->fields.items[k].words == n && strcmp(p->fields.items[k].text, join_words(p, i, n, false, ' ')) == 0) return;
+    }
+    KnownName field = {join_words(p, i, n, false, ' '), n, false, false, false};
+    vec_push(p->arena, &p->fields, field);
+}
+
+// A kind (record or with variants) named by tokens [i, i + n): adds it,
+// unless one has the name already (defining it twice is the checker's
+// error). Returns whether it was added.
+static bool add_kind(Parser *p, size_t i, size_t n, bool sum) {
+    const char *name = join_words(p, i, n, false, ' ');
+    for (size_t r = 0; r < p->records->len; r++) {
+        if (strcmp(p->records->items[r].name, name) == 0 && !sum) return false;
+    }
+    for (size_t r = 0; r < p->records->sums.len; r++) {
+        if (strcmp(p->records->sums.items[r].name, name) == 0 && sum) return false;
+    }
+    RecordKind kind = {name, join_words(p, i, n, true, ' '), plural_of(p->arena, name), NULL};
+    if (sum) {
+        vec_push(p->arena, &p->records->sums, kind);
+    } else {
+        vec_push(p->arena, p->records, kind);
+    }
+    add_known(p, name, n, false, false, false);  // a method's input is called this
+    return true;
+}
+
+// NAME is one of: (the "a" before NAME is dropped)
+static size_t sum_definition_words(const Parser *p, size_t i) {
+    if (!at_line_start(p, i)) return 0;
+    size_t n = name_words(p, i);
+    size_t j = i + n;
+    bool sum = n > 0 && word_at(p, j, "is") && word_at(p, j + 1, "one") && word_at(p, j + 2, "of") &&
+               j + 3 < p->count && p->tokens[j + 3].kind == TOK_COLON;
+    return sum ? n : 0;
+}
+
+// One variant's line: NAME [with FIELD (KIND) [and | ,] FIELD (KIND) ...].
+static void find_variant(Parser *p, size_t i, size_t sum) {
+    size_t n = name_words(p, i);
+    if (n == 0) return;
+    VariantKind variant = {join_words(p, i, n, false, ' '), join_words(p, i, n, true, ' '), sum, 0};
+    for (size_t v = 0; v < p->records->variants.len; v++) variant.index += p->records->variants.items[v].sum == sum;
+    vec_push(p->arena, &p->records->variants, variant);
+    size_t j = i + n;
+    if (!word_at(p, j, "with")) return;
+    j++;
+    for (;;) {
+        size_t m = name_words(p, j);
+        if (m == 0) return;
+        add_field_name(p, j, m);
+        j += m;
+        if (j < p->count && p->tokens[j].kind == TOK_LPAREN) {  // (KIND)
+            while (j < p->count && p->tokens[j].kind != TOK_RPAREN && p->tokens[j].kind != TOK_NEWLINE) j++;
+            j++;
+        }
+        if (!(word_at(p, j, "and") || (j < p->count && p->tokens[j].kind == TOK_COMMA))) return;
+        j++;
+    }
+}
+
+// The variants indented below "NAME is one of:" (the colon at index `colon`),
+// one per line. Returns the index after the block.
+static size_t find_variants(Parser *p, size_t colon, size_t sum, bool added) {
+    size_t i = colon + 1;
+    if (i + 1 >= p->count || p->tokens[i].kind != TOK_NEWLINE || p->tokens[i + 1].kind != TOK_INDENT) return i;
+    i += 2;
+    for (size_t depth = 1; depth > 0 && i < p->count; i++) {
+        TokenKind kind = p->tokens[i].kind;
+        if (kind == TOK_INDENT) depth++;
+        if (kind == TOK_DEDENT) depth--;
+        if (depth == 1 && added && kind == TOK_WORD && at_line_start(p, i)) find_variant(p, i, sum);
+    }
+    return i;
+}
+
+// Every record kind and kind with variants, in order, every variant, and
+// every field name: "NAME, which is" in a record, "with NAME (KIND)" in a variant.
 static void find_records(Parser *p) {
     for (size_t i = 0; i < p->count; i++) {
         size_t n = record_definition_words(p, i);
         if (n > 0) {
-            const char *name = join_words(p, i, n, false, ' ');
-            bool known = false;
-            for (size_t r = 0; r < p->records->len; r++) known |= strcmp(p->records->items[r].name, name) == 0;
-            if (!known) {
-                RecordKind kind = {name, join_words(p, i, n, true, ' '), plural_of(p->arena, name), NULL};
-                vec_push(p->arena, p->records, kind);
-                add_known(p, name, n, false, false, false);  // a method's input is called this
-            }
+            add_kind(p, i, n, false);
+            continue;
+        }
+        n = sum_definition_words(p, i);
+        if (n > 0) {
+            bool added = add_kind(p, i, n, true);
+            i = find_variants(p, i + n + 3, p->records->sums.len - 1, added) - 1;
             continue;
         }
         n = at_line_start(p, i) ? name_words(p, i) : 0;
         if (n > 0 && i + n + 2 < p->count && p->tokens[i + n].kind == TOK_COMMA && word_at(p, i + n + 1, "which") &&
             word_at(p, i + n + 2, "is")) {
-            KnownName field = {join_words(p, i, n, false, ' '), n, false, false, false};
-            vec_push(p->arena, &p->fields, field);
+            add_field_name(p, i, n);
         }
     }
 }

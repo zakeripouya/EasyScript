@@ -1,8 +1,8 @@
 /* EasyScript runtime, part 1: heap objects (text, lists, records and maps) and memory.
  *
- * The runtime is eight files, embedded into the compiler at build time (in
+ * The runtime is nine files, embedded into the compiler at build time (in
  * this order: es_memory.h, es_program.h, es_runtime.h, es_list.h, es_sort.h,
- * es_text.h, es_record.h, es_map.h) and copied to the top of every generated C program, so
+ * es_text.h, es_record.h, es_map.h, es_kind.h) and copied to the top of every generated C program, so
  * programs need nothing else to build.
  * Everything is static; generated code calls it.
  *
@@ -78,7 +78,10 @@ static EsText es_empty_text = ES_STATIC_TEXT("");
  * dog"), and each field's name, kind ('n' number, 'b' yes/no, 't' text, 'l'
  * list, 'r' record, which may be NULL for nothing, 'm' map) and offset. The compiler
  * writes one per kind (es_rt0, ...), with a C struct that starts with
- * EsRecord and then has the fields. */
+ * EsRecord and then has the fields. Each variant of a kind with variants
+ * ("a circle" of "a shape is one of:") is laid out the same way, with the
+ * style ES_VARIANT: such a value never changes, and is equal to another
+ * with the same variant and equal fields (es_kind.h). */
 typedef struct {
     const char *name;
     int fields;
@@ -86,7 +89,10 @@ typedef struct {
     const char *kinds;
     const size_t *offsets;
     size_t size;
+    char style; /* ES_RECORD or ES_VARIANT */
 } EsRecordType;
+
+enum { ES_RECORD, ES_VARIANT };
 
 /* A record. Its fields come after this header and own the text, lists and
  * records in them. `prev` and `next` link every record alive while

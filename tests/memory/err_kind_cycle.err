@@ -1,0 +1,4 @@
+Memory check: 2 values were still alive at the end of the program, because they point to each other in a circle:
+    a leaf
+    a node with children ((a leaf) and (a node with ...))
+Values in a circle are never freed, because each one keeps the next alive. Before the program ends, take a value out of the list or map that holds it.

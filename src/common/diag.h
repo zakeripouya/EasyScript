@@ -1,6 +1,7 @@
 #ifndef DIAG_H
 #define DIAG_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include "common/arena.h"
@@ -20,11 +21,17 @@ Diag *diag_new(Arena *arena, const char *source, size_t source_len);
 
 void diag_error(Diag *diag, Span span, const char *fmt, ...) PRINTF_LIKE(3, 4);
 
+// Something that's allowed but probably not meant ("this can never run").
+// Warnings are kept apart from errors: they don't count in diag_count, and
+// the program still compiles.
+void diag_warning(Diag *diag, Span span, const char *fmt, ...) PRINTF_LIKE(3, 4);
+
 // Adds a line of help (e.g. a "Did you mean" suggestion) to the most recent
-// error. There must already be an error.
+// error or warning. There must already be one.
 void diag_note(Diag *diag, const char *fmt, ...) PRINTF_LIKE(2, 3);
 
-size_t diag_count(const Diag *diag);
+size_t diag_count(const Diag *diag);  // errors only
+size_t diag_warning_count(const Diag *diag);
 
 // Puts the errors reported from index `first` on into source order (by where
 // their spans start), keeping the order of errors at the same place.
@@ -43,5 +50,9 @@ size_t diag_line(const Diag *diag, size_t offset);
 // Errors are separated by a blank line.
 void diag_render(const Diag *diag, StrBuf *out);
 void diag_print(const Diag *diag, FILE *out);
+// The warnings, laid out like errors ("Line 7 (a warning): ..."), leaving
+// out those before line `from_line` (1 for all of them).
+void diag_render_warnings(const Diag *diag, size_t from_line, StrBuf *out);
+void diag_print_warnings(const Diag *diag, size_t from_line, FILE *out);
 
 #endif

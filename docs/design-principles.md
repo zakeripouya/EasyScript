@@ -22,7 +22,7 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 - **A function's inputs come after a connector word,** the way English introduces what a verb acts on: `with` (the usual one), `of`, `using`, `to`, `for`, `from` and `in`. `to area with width and height:`, `to add tax to amount:`, `to pause for seconds:`, `to busiest artist from names:`, `to count vowels in word:`.
 - **A call uses the same connector as the definition,** or `with`, `of` and `using`, which work for every function: `add tax to 100`, `pause for 2`, `busiest artist from names`, `area with 3 and 4`. Another connector is an error that names the ones it takes.
 - **Inputs are separated by `and`** (and by commas after `using`). Each input is a single value; anything longer goes in parentheses.
-- **The same shape everywhere:** records take their fields the same way (`a new dog with name "Rex" and age 3`), and methods put the record first (`rename rex with "Max"`).
+- **The same shape everywhere:** records take their fields the same way (`a new dog with name "Rex" and age 3`), values of kinds with variants too (`a new circle with radius 3`), and methods put the record first (`rename rex with "Max"`).
 - **A connector only introduces inputs where it can't mean anything else.** `for` before a kind of record makes a method (`to bark for a dog:`), and `for` always ends a function's name. `to`, `for`, `from` and `in` only start a call's inputs for a function defined with them, because elsewhere they belong to the sentence around the call (`subtract X from Y`, `the value for K in M`).
 
 ## 4. `of` and `in`
@@ -36,6 +36,7 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 - **Asking for something that must be there is an error when it isn't,** with a message that says what was there instead: `item 9 of L` on a list of 3 items, `the value for "Bob" in ages` with no Bob.
 - **Every such lookup has a way to ask first:** `L contains X`, `M has K`, `the number of items in L`.
 - **A value that might be missing says so in its kind:** `a dog or nothing`. It must be checked (`if X is not nothing:`) before it's used, and the compiler enforces that.
+- **A value that's one of several things says so in its kind,** a kind with variants (`a shape is one of:`), and its fields are only used where the program has checked which variant it is (`if s is a circle:`, `check which kind s is:`). The same checks narrow values that can be nothing and values with variants. `check which kind` must cover every variant (or say `otherwise`), so adding a variant shows every place that has to handle it.
 - **A default is written where the value is used:** `the value for K in M, or D`. D is only worked out when it's needed.
 - **New "not found" results use `or nothing`,** not a made-up value like 0 or -1 (see the exception for `the position of` below).
 
@@ -46,6 +47,7 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 - **Suggested names are natural English,** never underscores or invented spellings ("current score", not "each_score").
 - **One mistake, one message.** After an error the rest of that sentence is skipped, and a value whose kind is already wrong doesn't cause more errors.
 - **Runtime errors look like compile errors,** plus the chain of calls that led there with the values each was given.
+- **Something allowed that can never matter is a warning,** not an error: an `otherwise` after a `when` for every variant can never run. The warning is shown like an error, marked "(a warning)", and the program still runs.
 
 ## 7. Equality
 
@@ -54,6 +56,7 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 - **Text is equal when it's the same characters,** exactly (capitals matter).
 - **Lists are equal when their items are, in order. Maps are equal when they have the same keys with equal values, in any order.**
 - **Records are equal only when they're the same record:** two dogs with the same fields are still two dogs.
+- **Values of kinds with variants are equal when they're the same variant with equal fields:** `s is a new point`. They never change, so they have no identity to compare.
 - **Everything that searches uses the same equality:** `contains`, `the position of`, `has` and map keys, with the exception for map number keys below.
 
 ## 8. Sharing and copying
@@ -61,12 +64,13 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 - **Lists, maps and records are shared:** `let b be a` gives the same thing another name, and a function given one can change it.
 - **`a copy of X` copies X and the lists and maps inside it, but shares the records and text inside it.** Lists and maps in a list or map belong to it (they can't be shared by two places in a way you could see without records), so copying them keeps the copy independent. Records have an identity (`is` asks whether two are the same record) and can point to each other, so a copy keeps pointing to the same records. Text never changes, so sharing it can't be seen.
 - **Fixed values (`keep`) never change,** and wherever one could be changed it's copied first.
+- **Values of kinds with variants never change** once made: a different value is made instead (`set s to a new circle with radius 4`). Like text, they're shared, and sharing them can't be seen, except through a list or map in a field (which can change); `a copy of s` gives the copy its own lists and maps.
 
 ## Known exceptions
 
 Each exception exists because following the rule would cost more than it gives. New exceptions are added here with their reason.
 
-- **`is a letter`, `is a digit` and `is a space` need their `a`.** Filler words are ignored everywhere else, but `x is letter` already means "x equals the variable `letter`". Keeping the `a` here lets `letter`, `digit` and `space` stay ordinary names while `x is a letter` still reads naturally. The parser looks at the dropped word only in this one place.
+- **`is a letter`, `is a digit` and `is a space` need their `a`, and so does `is a circle` (any variant, with `a` or `an`).** Filler words are ignored everywhere else, but `x is letter` already means "x equals the variable `letter`". Keeping the `a` here lets `letter`, `digit`, `space` and variant names stay ordinary names while `x is a letter` and `s is a circle` still read naturally. The parser looks at the dropped word only in these places.
 - **`a`, `an` and `the` can't be names.** Because they're filler, `let a be 5` would read as `let be 5`. The error explains this and suggests a name that says what it holds. Other single letters (`b`, `x`, `n`) are ordinary names.
 - **`the position of X in T` gives 0 when X isn't there.** Positions start at 1, so 0 can't be a real position, and it was the simplest result before kinds could say "or nothing" outside records. It breaks the "not found" rule above and will be replaced by `a number or nothing` when values other than records can be nothing (a later step).
 - **Map number keys are compared by rounding, not by `is`.** Keys are the same when they're the same to 12 significant digits, so `0.1 plus 0.2` finds the value kept for `0.3`, as `is` (within a relative 1e-12) would expect. A hash table needs every key to have one exact form, and "within 1e-12" isn't transitive (a can be close to b, and b to c, without a being close to c), so rounding can only come close to `is`: right at a rounding boundary, two numbers `is` calls equal can still be different keys. Printing rounds further, to 10 digits, so two different keys can print alike (`1` and `1.00000000001`).
@@ -78,7 +82,7 @@ Each exception exists because following the rule would cost more than it gives. 
 - **`L followed by M` needs two lists.** Adding one item as a value (`L followed by X`) would read naturally, but `followed by` with a list and text already joins text (`"Slots: " followed by slots`), so its meaning would depend on kinds in a way that's easy to misread. Write `L followed by (a list of X)`.
 - **`a copy of R` is shallow for records** (the records inside are shared) while lists and maps inside a list or map are copied. Records have an identity and can point to each other, so copying them silently would change what `is` says and could copy a whole web of records; a separate deep copy phrase is an [idea](ideas.md#a-deep-copy).
 - **Maps have `M without K` but no `M with K as X`** yet: setting a value as a value form waits until its wording is settled. Copy the map and `set the value for K in ...` the copy.
-- **A word ending in `'s` is always a possessive,** so a name can't end in `'s`, and `it's` means "its" (the field of `it`), not "it is".
+- **A word ending in `'s` is always a possessive,** so a name can't end in `'s`, and `it's` means "its" (the field of `it`), not "it is", except right after `when` in `check which kind`, where `when it's a circle:` reads as English does ("when it is a circle"); `when it is a circle:` works too. `its radius` (without the apostrophe) is also the field of `it`, but only before a field's name, so `its` stays an ordinary name elsewhere.
 
 ## Open questions
 

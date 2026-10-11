@@ -579,6 +579,29 @@ A map needs both names; `for each name in ages:` is an error that suggests `for 
 
 A map is **shared** like a list: `let same be ages` gives the same map another name, and a function given a map can change it. Lists and maps in a map belong to it (`a copy of` copies them); text and records in it are shared. A map kept with `keep` is fixed (see [Constants](#constants)).
 
+## Kinds with variants
+
+All of these are **Available**. A kind with variants is a value that's one of several things, each with its own fields. Values never change once made, and are equal when they're the same variant with equal fields. See the [language guide](language-guide.md#14-kinds-with-variants).
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `NAME is one of:` + indented variants | Defines a kind with variants called NAME (one or more words). Only at the top level | `a shape is one of:` |
+| `VARIANT.` | A variant without fields, one per line (or sentence) | `a point.` |
+| `VARIANT with FIELD (KIND) and FIELD (KIND).` | A variant with fields, separated by `and` or commas. KIND is any kind, also the kind being defined (`(an expression)`) or `... or nothing` | `a rectangle with a width (a number) and a height (a number).` |
+| `a new VARIANT with FIELD X and FIELD Y` / `a new VARIANT` | A new value of the variant's kind. Every field needs a value, unless it can be nothing. As for records, a `new` inside another needs parentheses | `a new circle with radius 3`, `a new point` |
+| `check which kind S is:` + indented `when`s | Does the part for the variant S is. S is a value up to `is` (arithmetic and `followed by` are part of it) | `check which kind s is:` |
+| `when it's VARIANT:` / `when it is VARIANT:` | The sentences indented below run when S is that variant. Inside, `it` is S, and S itself (if it's a name or a field) is checked to be that variant | `when it's a circle:` |
+| `when it's VARIANT or VARIANT:` | For any of several variants | `when it's a rectangle or a square:` |
+| `when it's nothing:` | When S (a kind or nothing) is nothing | `when it's nothing:` |
+| `otherwise:` / `else:` | Last, for every variant without a `when`. Without it, every variant needs one; with it but nothing left to do, it's a warning | `otherwise:` |
+| `its FIELD` | `it's FIELD`: the field of `it` (only before a field's name; elsewhere `its` is an ordinary name) | `its radius` |
+| `S is VARIANT` / `S is not VARIANT` / `S isn't VARIANT` | Yes if S is (or isn't) that variant. The `a` or `an` before it is needed: `s is circle` compares with a name | `if s is a circle:` |
+| `S's FIELD` | A field of a value **checked to be a variant that has it** (inside `if s is a circle:`, a `when`, after `let s be a new circle ...`); otherwise a compile error | `s's radius` |
+| `S is T` | Yes if both are the same variant with equal fields (records in them: the same record) | `s is a new point` |
+| `a copy of S` | The same value with its own copies of the lists and maps in its fields | `a copy of tree` |
+
+A kind with variants is written like any other kind: `(a shape)`, `giving back an expression`, `a list of shapes`, `a map from text to shapes`, `(a shape or nothing)`, and methods `to describe, for a shape:`. Fields can't be changed (`set s's radius to 4` is an error): make a new value instead. Every kind, kind of record and variant needs its own name.
+
 ## Kinds of values
 
 Every value has a kind, worked out by the compiler before the program runs (**Available**). Kind mistakes are compile errors with the line and a caret. See the [language guide](language-guide.md#9-types).
@@ -592,6 +615,7 @@ Every value has a kind, worked out by the compiler before the program runs (**Av
 | list | `(a list of numbers)`, `(a list of text)`, `(a list of yes/no values)` or `(a list of yes or no values)`, `(a list of lists of numbers)`, `(a list of dogs)`, `giving back a list of text` | `a list of ...`, `an empty list of ...`, `every`, `only`, `reversed`, `a copy of` |
 | record | `(a dog)`, `giving back a dog` | `a new dog`, a field holding one, `a copy of` |
 | record or nothing | `(a dog or nothing)`, `giving back a dog or nothing` | a field `which is a dog or nothing`, `nothing` where one goes |
+| kind with variants | `(a shape)`, `(a shape or nothing)`, `giving back an expression` | `a new circle ...`, a field holding one, `a copy of` |
 | map | `(a map from text to numbers)`, `(a map from numbers to lists of text)`, `giving back a map from text to numbers`; in a list or map: `maps from text to numbers` | `a map of ...`, `an empty map from ...`, `a copy of` |
 
 ## Later phases

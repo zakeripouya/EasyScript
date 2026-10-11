@@ -524,8 +524,15 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
         return fail(ev, span, fixed_note, "A constant can't use a field of a record, because records are made while "
                                           "the program runs.");
     case EXPR_NEW:
+        if (type_is_sum(expr->as.new_record.type)) {
+            return fail(ev, span, fixed_note, "A constant can't be %s, because those are made while the program runs.",
+                        ast_type_name(ev->arena, ev->records, expr->as.new_record.type));
+        }
         return fail(ev, span, fixed_note, "A constant can't be a record, because records are made while the program "
                                           "runs.");
+    case EXPR_KIND_TEST:
+        return fail(ev, span, fixed_note, "A constant can't check which kind a value is, because those values are "
+                                          "made while the program runs.");
     case EXPR_ERROR: return false;
     }
     return false;

@@ -1,0 +1,44 @@
+Line 3: "circle" already has a field called "radius".
+        a circle with a radius (a number) and a radius (a number).
+                                                ^^^^^^
+Give each field its own name.
+
+Line 4: "dog" is already the name of a kind of record, on line 5.
+        a dog.
+          ^^^
+Give each kind and each variant its own name, so "a new dog" can only mean one thing.
+
+Line 7: Every variant of "loop" needs another loop inside it, so none could ever be made.
+    a loop is one of:
+      ^^^^
+Add a variant that doesn't hold one (a variant can have no fields at all), or let a field be nothing: write its kind like "(a loop or nothing)".
+
+Line 10: "circle" is already a variant of "shape", on line 3.
+        a circle.
+          ^^^^^^
+Give each kind and each variant its own name, so "a new circle" can only mean one thing.
+
+Line 11: "shape" is already the name of a kind, on line 2.
+        a shape.
+          ^^^^^
+Give each kind and each variant its own name, so "a new shape" can only mean one thing.
+
+Line 12: You already defined "shape" on line 2.
+    a shape is one of:
+      ^^^^^
+Each kind needs its own name.
+
+Line 14: "dog" is already the name of a kind of record, on line 5.
+    a dog is one of:
+      ^^^
+Give each kind and each variant its own name, so "a new dog" can only mean one thing.
+
+Line 17: Kinds can only be defined at the top level, not inside an "if" or a loop.
+        a colour is one of:
+          ^^^^^^
+Move "a colour is one of:" to the start of a line, outside every block.
+
+Line 20: A field that holds a shape can't have a starting value, because its values are made while the program runs.
+        a shape, which is a shape, starting at 1.
+                                               ^
+Leave out "starting at" and give it a value when you make a new record, after "with".

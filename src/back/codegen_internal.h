@@ -9,7 +9,9 @@
 #include "back/codegen_c.h"
 
 // A loop being generated, for "it", "stop the loop" and "skip this one".
-// "every" and "only" helpers have one too (stmt NULL), for "it".
+// "every" and "only" helpers have one too (stmt NULL), for "it", and so do
+// the "when"s of "check which kind" (stmt the STMT_MATCH): "it" is the value
+// checked, kept in a variable.
 typedef struct {
     const Stmt *stmt;
     size_t id;         // es_cN / es_iN / es_nN
@@ -126,6 +128,13 @@ void cg_emit_declarations(const Codegen *g, StrBuf *out);
 // drops before leaving a function or the program, and leaving a frame.
 void cg_emit_stmt(Codegen *g, const Stmt *stmt);
 void cg_push_scope(Codegen *g);
+void cg_pop_scope(Codegen *g);  // releases the innermost scope's variables, then leaves it
+void cg_indent(Codegen *g);     // starts a line of the body
+void cg_emit_block(Codegen *g, const Block *block);  // a block, one level deeper, in a scope of its own
+// A variable gets a value: "es_vn_x = VALUE;", or "es_set(&es_vt_x, VALUE);" for counted kinds.
+void cg_emit_store(Codegen *g, const char *name, Type type, const char *value);
+// The innermost real loop ("stop the loop" leaves it), skipping "when"s.
+const LoopCode *cg_innermost_loop(const Codegen *g);
 void cg_emit_drop_all(Codegen *g);
 const char *cg_leave_code(const Codegen *g);
 // A worked-out number as C: "0.20000000000000001", "NAN", "-HUGE_VAL".
@@ -134,11 +143,19 @@ void cg_append_number(StrBuf *out, double x);
 void cg_emit_fixed_list(Codegen *g, const char *name, const ConstValue *v, StrBuf *out);
 
 // codegen_record.c
+char cg_field_kind(Type type);  // how a field's kind is written in an EsRecordType: 'n', 'b', 't', 'l', 'r', 'm'
 void cg_emit_records(Codegen *g, StrBuf *out);                // every kind's struct, description and maker
 void cg_emit_new(Codegen *g, const Expr *expr, StrBuf *out);    // EXPR_NEW
 void cg_emit_field(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_FIELD
 // "set R's F to V" or "add V to R's F" (and the other changes) as one C statement.
 const char *cg_field_stmt(Codegen *g, const Stmt *stmt);
+
+// codegen_kind.c: kinds with variants
+void cg_emit_variants(Codegen *g, StrBuf *out);  // every variant's struct, description and maker
+void cg_emit_new_variant(Codegen *g, const Expr *expr, StrBuf *out);    // EXPR_NEW of a variant
+void cg_emit_variant_field(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_FIELD of one
+void cg_emit_kind_test(Codegen *g, const Expr *expr, StrBuf *out);      // EXPR_KIND_TEST
+void cg_emit_match(Codegen *g, const Stmt *stmt);                       // STMT_MATCH
 
 // codegen_list.c
 const char *cg_item_suffix(Type list);  // the runtime's suffix for its items: "n", "b", "t", "l"

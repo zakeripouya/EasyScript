@@ -1,0 +1,68 @@
+Line 10: "s" might not be a circle, so check which kind it is first.
+    say s's radius.
+        ^^^^^^^^^^
+Use it inside "if s is a circle:", or inside "when it's a circle:" after "check which kind s is:".
+
+Line 11: "s" might not be a rectangle or a square, so check which kind it is first.
+    say s's width.
+        ^^^^^^^^^
+Use it inside "if s is a rectangle:", or inside "when it's a rectangle:" after "check which kind s is:".
+
+Line 12: This might not be a circle, so check which kind it is first.
+    say (item 2 of shapes)'s radius.
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Give it a name with "let", then use its fields inside "if NAME is a circle:".
+
+Line 14: A rectangle doesn't have a field called "radius".
+        say s's radius.
+                ^^^^^^
+Only a circle has one.
+
+Line 15: The fields of a shape can't change.
+    set s's radius to 4.
+        ^^^^^^^^^^
+Make a new one instead, like "set s to a new circle with radius ...".
+
+Line 16: A shape doesn't have a field called "colour".
+    say s's colour.
+            ^^^^^^
+Each variant's fields are listed where a shape is defined (line 2).
+
+Line 17: A shape doesn't have a field called "radios".
+    say s's radios.
+            ^^^^^^
+Did you mean "radius"?
+
+Line 18: A new circle needs a value for "radius".
+    let p be a new circle.
+             ^^^^^^^^^^^^
+Give it after "with", like "a new circle with radius ...".
+
+Line 19: This gives "radius" a value twice.
+    let q be a new circle with radius 1 and radius 2.
+                                            ^^^^^^
+Give each field one value.
+
+Line 20: A point doesn't have a field called "size".
+    let r be a new point with size 2.
+                              ^^^^
+A point has no fields.
+
+Line 21: The field "radius" of a circle is a number, but this is text.
+    let t be a new circle with radius "big".
+                                      ^^^^^
+
+Line 23: "n" is a number, so it's never a circle.
+    if n is a circle, say 1.
+       ^
+Only a shape can be a circle.
+
+Line 24: A constant can't be a shape, because those are made while the program runs.
+    keep unit as a new point.
+                 ^^^^^^^^^^^
+A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".
+
+Line 25: A constant can't check which kind a value is, because those values are made while the program runs.
+    keep round as s is a circle.
+                  ^^^^^^^^^^^^^
+A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".

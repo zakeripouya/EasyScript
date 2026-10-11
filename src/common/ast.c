@@ -22,116 +22,6 @@ SourcePos ast_pos_join(SourcePos first, SourcePos last) {
     return pos;
 }
 
-// "a dog", "an apple": the article that goes before a word.
-static const char *article(const char *word) {
-    return strchr("aeiouAEIOU", word[0]) ? "an" : "a";
-}
-
-static const RecordKind *record_kind(const Records *records, Type type) {
-    size_t index = type_record_index(type);
-    return records && index < records->len ? &records->items[index] : NULL;
-}
-
-Type ast_map_type(Arena *arena, Records *records, Type key, Type value) {
-    if (records->maps.len == 0) {  // maps[0]: a map whose kinds aren't decided
-        MapKind undecided = {TYPE_UNKNOWN, TYPE_UNKNOWN};
-        vec_push(arena, &records->maps, undecided);
-    }
-    for (size_t i = 0; i < records->maps.len; i++) {
-        if (records->maps.items[i].key == key && records->maps.items[i].value == value) return TYPE_MAP + (Type)i;
-    }
-    MapKind kind = {key, value};
-    vec_push(arena, &records->maps, kind);
-    return TYPE_MAP + (Type)(records->maps.len - 1);
-}
-
-static const MapKind *map_kind(const Records *records, Type map) {
-    size_t index = map - TYPE_MAP;
-    return records && index < records->maps.len ? &records->maps.items[index] : NULL;
-}
-
-Type ast_map_key(const Records *records, Type map) {
-    const MapKind *kind = map_kind(records, map);
-    return kind ? kind->key : TYPE_UNKNOWN;
-}
-
-Type ast_map_value(const Records *records, Type map) {
-    const MapKind *kind = map_kind(records, map);
-    return kind ? kind->value : TYPE_UNKNOWN;
-}
-
-bool ast_type_undecided(const Records *records, Type type) {
-    Type base = type_base(type);
-    if (type_is_map(base)) {
-        return ast_type_undecided(records, ast_map_key(records, base)) ||
-               ast_type_undecided(records, ast_map_value(records, base));
-    }
-    return base == TYPE_UNKNOWN || base == TYPE_MAYBE;
-}
-
-static const char *map_name(Arena *arena, const Records *records, Type type);
-
-// What a list or map holds, in the plural: "numbers", "lists of text",
-// "dogs", "maps from text to numbers"; NULL when the innermost kind isn't decided.
-static const char *plural_name(Arena *arena, const Records *records, Type type) {
-    static const char *const plural[] = {NULL, "numbers", "text", "yes/no values"};
-    StrBuf sb;
-    sb_init(&sb, arena);
-    for (Type t = type; type_is_list(t); t = type_item(t)) sb_append(&sb, "lists of ");
-    Type base = type_base(type);
-    if (base == TYPE_NUMBER || base == TYPE_TEXT || base == TYPE_YESNO) {
-        sb_append(&sb, plural[base]);
-        return sb.data;
-    }
-    const RecordKind *kind = type_is_record(base) ? record_kind(records, base) : NULL;
-    if (kind) {
-        sb_appendf(&sb, "%s%s", kind->plural, type_is_maybe(base) ? " or nothing" : "");
-        return sb.data;
-    }
-    if (!type_is_map(base)) return NULL;
-    sb_appendf(&sb, "maps%s", map_name(arena, records, base) + 5);  // "a map from ..." without "a map"
-    return sb.data;
-}
-
-// "a list of numbers", "a list of lists of text", "a list of dogs"; "a list"
-// (or "a list of lists") when the innermost kind isn't decided.
-static const char *list_name(Arena *arena, const Records *records, Type type) {
-    const char *items = plural_name(arena, records, type_item(type));
-    if (items) return arena_sprintf(arena, "a list of %s", items);
-    StrBuf sb;
-    sb_init(&sb, arena);
-    sb_append(&sb, "a list");
-    for (Type t = type_item(type); type_is_list(t); t = type_item(t)) sb_append(&sb, " of lists");
-    return sb.data;
-}
-
-// "a map from text to numbers", "a map from numbers to lists of text"; "a
-// map" when its keys or values aren't decided.
-static const char *map_name(Arena *arena, const Records *records, Type type) {
-    Type key = ast_map_key(records, type);
-    const char *values = plural_name(arena, records, ast_map_value(records, type));
-    if ((key != TYPE_TEXT && key != TYPE_NUMBER) || !values) return "a map";
-    return arena_sprintf(arena, "a map from %s to %s", key == TYPE_TEXT ? "text" : "numbers", values);
-}
-
-const char *ast_type_name(Arena *arena, const Records *records, Type type) {
-    if (type_is_list(type)) return list_name(arena, records, type);
-    if (type_is_map(type)) return map_name(arena, records, type);
-    if (type == TYPE_MAYBE) return "a record or nothing";
-    const RecordKind *kind = type_is_record(type) ? record_kind(records, type) : NULL;
-    if (kind) {
-        return arena_sprintf(arena, "%s %s%s", article(kind->display), kind->display,
-                             type_is_maybe(type) ? " or nothing" : "");
-    }
-    switch (type) {
-    case TYPE_NUMBER: return "a number";
-    case TYPE_TEXT: return "text";
-    case TYPE_YESNO: return "a yes/no value";
-    case TYPE_NOTHING: return "nothing";
-    default: return "an unknown kind of value";
-    }
-}
-
 const char *ast_binary_op_name(BinaryOp op) {
     static const char *const names[] = {
         "or", "and", "equal", "not equal", "less", "less or equal", "greater",
@@ -243,7 +133,18 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
         }
         return ast_text_op_name(expr->as.text_op.op);
     case EXPR_FIELD: sb_appendf(scratch, "field %s", expr->as.field.name.text); break;
-    case EXPR_NEW: sb_appendf(scratch, "new %s", ast_type_name(scratch->arena, records, expr->as.new_record.type) + 2); break;
+    case EXPR_NEW:
+        if (type_is_sum(expr->as.new_record.type)) {  // "new circle (shape)"
+            const VariantKind *variant = &records->variants.items[expr->as.new_record.variant];
+            sb_appendf(scratch, "new %s (%s)", variant->name, records->sums.items[variant->sum].name);
+            break;
+        }
+        sb_appendf(scratch, "new %s", ast_type_name(scratch->arena, records, expr->as.new_record.type) + 2);
+        break;
+    case EXPR_KIND_TEST:
+        sb_appendf(scratch, "is %s%s", expr->as.kind_test.negated ? "not " : "",
+                   records->variants.items[expr->as.kind_test.variant].name);
+        break;
     case EXPR_MAP: return "map of";
     case EXPR_EMPTY_MAP:
         sb_appendf(scratch, "empty %s", ast_type_name(scratch->arena, records, expr->as.list_type) + 2);  // without "a "
@@ -291,6 +192,7 @@ static void dump_expr(const Expr *expr, size_t depth, Dump *d) {
         dump_expr(expr->as.slice.list, depth + 1, d);
         break;
     case EXPR_FIELD: dump_children(expr->as.field.record, NULL, depth, d); break;
+    case EXPR_KIND_TEST: dump_children(expr->as.kind_test.operand, NULL, depth, d); break;
     case EXPR_NEW:
         for (size_t i = 0; i < expr->as.new_record.values.len; i++) {
             const FieldValue *value = &expr->as.new_record.values.items[i];
@@ -388,6 +290,8 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
     case STMT_CONSTANT: sb_appendf(scratch, "keep %s", stmt->as.constant.name.text); break;
     case STMT_LIST: return list_label(stmt, scratch);
     case STMT_RECORD: sb_appendf(scratch, "record %s", stmt->as.record.name.text); break;
+    case STMT_SUM: sb_appendf(scratch, "kind %s", stmt->as.sum.name.text); break;
+    case STMT_MATCH: return "check which kind";
     }
     return scratch->data;
 }
@@ -435,6 +339,33 @@ static void dump_loop(const Stmt *stmt, size_t depth, Dump *d) {
     dump_label(depth + 1, d, "do");
     for (size_t i = 0; i < stmt->as.loop.body.len; i++) {
         dump_stmt(stmt->as.loop.body.items[i], depth + 2, d);
+    }
+}
+
+static void dump_fields(const Field *fields, size_t n, size_t depth, Dump *d) {
+    for (size_t i = 0; i < n; i++) {
+        StrBuf label;
+        sb_init(&label, d->out->arena);
+        sb_appendf(&label, "field %s: %s", fields[i].name.text, ast_type_name(d->out->arena, d->records, fields[i].type));
+        dump_line(&fields[i].pos, depth, d, label.data);
+        dump_section("starting at", fields[i].initial, depth + 1, d);
+    }
+}
+
+// "when circle or square", "when nothing", "otherwise", each with its sentences.
+static void dump_match(const Stmt *stmt, size_t depth, Dump *d) {
+    dump_section("subject", stmt->as.match.subject, depth + 1, d);
+    for (size_t i = 0; i < stmt->as.match.branches.len; i++) {
+        const MatchBranch *branch = &stmt->as.match.branches.items[i];
+        StrBuf label;
+        sb_init(&label, d->out->arena);
+        sb_append(&label, branch->otherwise ? "otherwise" : "when ");
+        for (size_t v = 0; v < branch->variants.len; v++) {
+            sb_appendf(&label, "%s%s", v ? " or " : "", d->records->variants.items[branch->variants.items[v]].name);
+        }
+        if (branch->nothing) sb_append(&label, branch->variants.len ? " or nothing" : "nothing");
+        dump_line(&branch->pos, depth + 1, d, label.data);
+        for (size_t j = 0; j < branch->body.len; j++) dump_stmt(branch->body.items[j], depth + 2, d);
     }
 }
 
@@ -497,16 +428,18 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
         dump_section(stmt->as.list.op == LIST_REMOVE_KEY ? "map" : "list", stmt->as.list.list, depth + 1, d);
         if (stmt->as.list.op == LIST_SET_ITEM) dump_section("value", stmt->as.list.value, depth + 1, d);
         break;
-    case STMT_RECORD:
-        for (size_t i = 0; i < stmt->as.record.fields.len; i++) {
-            const Field *field = &stmt->as.record.fields.items[i];
+    case STMT_RECORD: dump_fields(stmt->as.record.fields.items, stmt->as.record.fields.len, depth + 1, d); break;
+    case STMT_SUM:
+        for (size_t i = 0; i < stmt->as.sum.variants.len; i++) {
+            const VariantDef *variant = &stmt->as.sum.variants.items[i];
             StrBuf label;
             sb_init(&label, d->out->arena);
-            sb_appendf(&label, "field %s: %s", field->name.text, ast_type_name(d->out->arena, d->records, field->type));
-            dump_line(&field->pos, depth + 1, d, label.data);
-            dump_section("starting at", field->initial, depth + 2, d);
+            sb_appendf(&label, "variant %s", variant->name.text);
+            dump_line(&variant->pos, depth + 1, d, label.data);
+            dump_fields(variant->fields.items, variant->fields.len, depth + 2, d);
         }
         break;
+    case STMT_MATCH: dump_match(stmt, depth, d); break;
     }
 }
 

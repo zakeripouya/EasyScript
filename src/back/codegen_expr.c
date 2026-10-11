@@ -44,7 +44,7 @@ void cg_append_prefixed(StrBuf *out, const char *prefix, const char *name) {
 const char *cg_ctype(Type type) {
     if (type_is_list(type)) return "EsList *";
     if (type_is_map(type)) return "EsMap *";
-    if (type_is_record(type)) return "EsRecord *";
+    if (type_is_object(type)) return "EsRecord *";
     switch (type) {
     case TYPE_NUMBER: return "double";
     case TYPE_YESNO: return "bool";
@@ -57,42 +57,51 @@ const char *cg_ctype(Type type) {
 // A variable: "es_vn_total" (number), "es_vt_name" (text), "es_vb_done"
 // (yes/no), "es_vl1n_scores" (a list of numbers), "es_vl2t_rows" (a list of
 // lists of text), "es_vr0_rex" (record kind 0), "es_vm0_next" (kind 0 or
-// nothing), "es_vl1r0_dogs" (a list of kind 0), "es_vh2_ages" (kind of map 2).
+// nothing), "es_vl1r0_dogs" (a list of kind 0), "es_vh2_ages" (kind of map 2),
+// "es_vk1_s" (kind with variants 1), "es_vq1_s" (kind 1 or nothing), and
+// "es_von_p" (a number or nothing; "ot", "ob" likewise).
 void cg_append_var(StrBuf *out, const char *name, Type type) {
-    Type base = type_base(type);
-    char letter = base == TYPE_TEXT ? 't' : base == TYPE_YESNO ? 'b' : type_is_maybe(base) ? 'm' : type_is_record(base) ? 'r'
-                  : type_is_map(base) ? 'h' : 'n';
+    Type base = type_base(type), present = type_present(base);
+    bool maybe = type_is_maybe(base);
+    char kind = present == TYPE_TEXT ? 't' : present == TYPE_YESNO ? 'b' : 'n';
     if (type_is_list(type)) sb_appendf(out, "es_vl%u", type / TYPE_LIST);
-    sb_appendf(out, "%s%c", type_is_list(type) ? "" : "es_v", letter);
-    if (type_is_record(base)) sb_appendf(out, "%zu", type_record_index(base));
-    if (type_is_map(base)) sb_appendf(out, "%u", base - TYPE_MAP);
+    sb_append(out, type_is_list(type) ? "" : "es_v");
+    if (type_is_record(base)) {
+        sb_appendf(out, "%c%zu", maybe ? 'm' : 'r', type_record_index(base));
+    } else if (type_is_sum(base)) {
+        sb_appendf(out, "%c%zu", maybe ? 'q' : 'k', type_sum_index(base));
+    } else if (type_is_map(base)) {
+        sb_appendf(out, "h%u", base - TYPE_MAP);
+    } else {
+        sb_appendf(out, "%s%c", maybe ? "o" : "", kind);
+    }
     cg_append_prefixed(out, "_", name);
 }
 
 const char *cg_retain(Type type) {
     if (type_is_map(type)) return "es_map_retain";
-    return type_is_list(type) ? "es_list_retain" : type_is_record(type) ? "es_record_retain" : "es_retain";
+    return type_is_list(type) ? "es_list_retain" : type_is_object(type) ? "es_record_retain" : "es_retain";
 }
 
 const char *cg_release(Type type) {
     if (type_is_map(type)) return "es_map_release";
-    return type_is_list(type) ? "es_list_release" : type_is_record(type) ? "es_record_release" : "es_release";
+    return type_is_list(type) ? "es_list_release" : type_is_object(type) ? "es_record_release" : "es_release";
 }
 
 const char *cg_set(Type type) {
     if (type_is_map(type)) return "es_map_set";
-    return type_is_list(type) ? "es_list_set" : type_is_record(type) ? "es_record_set" : "es_set";
+    return type_is_list(type) ? "es_list_set" : type_is_object(type) ? "es_record_set" : "es_set";
 }
 
 const char *cg_drop(Type type) {
     if (type_is_map(type)) return "es_map_drop";
-    return type_is_list(type) ? "es_list_drop" : type_is_record(type) ? "es_record_drop" : "es_drop";
+    return type_is_list(type) ? "es_list_drop" : type_is_object(type) ? "es_record_drop" : "es_drop";
 }
 
 const char *cg_empty(Type type) {
     if (type_is_list(type)) return "&es_no_list";
     if (type_is_map(type)) return "&es_no_map";
-    if (type_is_record(type)) return "NULL";
+    if (type_is_object(type)) return "NULL";
     return type == TYPE_TEXT ? "&es_empty_text" : type == TYPE_YESNO ? "false" : "0";
 }
 
@@ -222,6 +231,7 @@ bool cg_has_effects(const Codegen *g, const Expr *expr) {
     if (expr->narrowed) return true;  // checked again while the program runs
     switch (expr->kind) {
     case EXPR_FIELD: return true;  // a call could change the field
+    case EXPR_KIND_TEST: return cg_has_effects(g, expr->as.kind_test.operand);
     case EXPR_NEW:
         for (size_t i = 0; i < expr->as.new_record.values.len; i++) {
             if (cg_has_effects(g, expr->as.new_record.values.items[i].value)) return true;
@@ -333,7 +343,7 @@ static void emit_compare(Codegen *g, const Expr *expr, StrBuf *out) {
     if (equality && type == TYPE_YESNO) {
         sb_appendf(out, "(%s %s %s)", l, op == BINARY_EQUAL ? "==" : "!=", r);
     } else if (equality) {
-        const char *same = type_is_list(type) ? "es_list_same" : type_is_record(type) ? "es_record_same"
+        const char *same = type_is_list(type) ? "es_list_same" : type_is_object(type) ? "es_record_same"
                            : type_is_map(type) ? "es_map_same" : type == TYPE_TEXT ? "es_text_same" : "es_close";
         sb_appendf(out, "%s%s(%s, %s)", negate, same, l, r);
     } else {
@@ -525,6 +535,7 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     case EXPR_TEXT_OP: cg_emit_text_op(g, expr, out); break;
     case EXPR_FIELD: cg_emit_field(g, expr, out); break;
     case EXPR_NEW: cg_emit_new(g, expr, out); break;
+    case EXPR_KIND_TEST: cg_emit_kind_test(g, expr, out); break;
     case EXPR_MAP:
     case EXPR_EMPTY_MAP:
     case EXPR_MAP_GET:
@@ -542,7 +553,7 @@ void cg_emit_text(Codegen *g, const Expr *expr, StrBuf *out) {
         sb_appendf(out, "es_list_text(%s)", cg_operand(g, expr, false));
         return;
     }
-    if (type_is_record(expr->type)) {
+    if (type_is_object(expr->type)) {
         sb_appendf(out, "es_record_text(%s)", cg_operand(g, expr, false));
         return;
     }

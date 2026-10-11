@@ -6,6 +6,7 @@
 #include "common/arena.h"
 #include "common/diag.h"
 #include "common/util.h"
+#include "common/type.h"
 
 // Where a node came from. `span` covers the whole node as written (including
 // surrounding parentheses); line and column (1-based, counted in characters)
@@ -15,93 +16,6 @@ typedef struct {
     size_t line;
     size_t column;
 } SourcePos;
-
-// --- Types -----------------------------------------------------------------
-
-// The kind of a value, worked out by the checker before the program runs. A
-// list holds one kind of item, so a list type is its innermost kind plus
-// TYPE_LIST for each level of list: TYPE_LIST + TYPE_NUMBER is a list of
-// numbers, 2 * TYPE_LIST + TYPE_TEXT a list of lists of text. A record kind
-// the program defines is TYPE_RECORD + its index in the program's Records;
-// with TYPE_MAYBE added it's "a dog or nothing". A kind of map is TYPE_MAP +
-// its index in Records.maps, where every kind of map the program uses is
-// kept once (a map's key and value kinds don't fit in one number). Two types
-// are the same exactly when they're equal numbers.
-typedef unsigned Type;
-
-enum {
-    TYPE_UNKNOWN,  // not decided (yet); TYPE_LIST + TYPE_UNKNOWN is a list of something not decided
-    TYPE_NUMBER,
-    TYPE_TEXT,
-    TYPE_YESNO,
-    TYPE_NOTHING,  // only what a function gives back when it gives back no value
-    TYPE_ERROR,    // stands in after a type error, so one mistake gives one message
-    TYPE_RECORD = 16,       // TYPE_RECORD + n: the program's record kind n
-    TYPE_MAP = 1u << 13,    // TYPE_MAP + n: kind of map n (Records.maps); TYPE_MAP alone: a map, kinds not decided
-    TYPE_MAYBE = 1u << 14,  // added to a record kind: "or nothing"; alone: a record or nothing, kind not decided
-    TYPE_LIST = 1u << 15,
-};
-
-static inline Type type_list_of(Type item) { return item + TYPE_LIST; }
-static inline bool type_is_list(Type type) { return type >= TYPE_LIST; }
-static inline Type type_item(Type list) { return list - TYPE_LIST; }
-static inline Type type_base(Type type) { return type % TYPE_LIST; }  // the innermost kind
-static inline Type type_present(Type type) { return type_is_list(type) ? type : type & ~(Type)TYPE_MAYBE; }
-static inline bool type_is_map(Type type) { return !type_is_list(type) && type >= TYPE_MAP && type < TYPE_MAYBE; }
-static inline bool type_is_record(Type type) {
-    return !type_is_list(type) && type_present(type) >= TYPE_RECORD && type_present(type) < TYPE_MAP;
-}
-// "a dog or nothing" (not TYPE_MAYBE alone, whose kind of record isn't decided)
-static inline bool type_is_maybe(Type type) { return type_is_record(type) && (type & TYPE_MAYBE); }
-static inline Type type_record(size_t index) { return TYPE_RECORD + (Type)index; }
-static inline size_t type_record_index(Type type) { return type_present(type) - TYPE_RECORD; }
-static inline bool type_counted(Type type) {  // reference counted
-    return type == TYPE_TEXT || type_is_list(type) || type_is_record(type) || type_is_map(type);
-}
-
-typedef struct Stmt Stmt;
-
-// A kind of record the program defines ("a dog is a kind of thing with:"),
-// found by the parser's pre-scan; its index makes its Type.
-typedef struct {
-    const char *name;     // matched: lowercased, one space between words
-    const char *display;  // as written in the definition
-    const char *plural;   // matched: "dogs", "boxes", "berries"
-    Stmt *definition;     // STMT_RECORD (the first one, if it's defined twice)
-} RecordKind;
-
-// A kind of map: what its keys are (text or numbers) and what its values are.
-typedef struct {
-    Type key;
-    Type value;
-} MapKind;
-
-// The kinds the program defines and uses: its record kinds (items, len and
-// cap, as in a Vec, so vec_push works on it), and every kind of map, each
-// kept once so that a map's Type is a single number. maps[0] is "a map"
-// whose key and value kinds aren't decided (TYPE_MAP itself).
-typedef struct {
-    RecordKind *items;
-    size_t len;
-    size_t cap;
-    Vec(MapKind) maps;
-} Records;
-
-// "a number", "text", "a yes/no value", "nothing", "a list of numbers",
-// "a list of lists of text", "a list" (items not decided), "a dog", "a dog
-// or nothing", "a list of dogs", "a map from text to numbers", "a map"
-// (kinds not decided). `records` names the record kinds and maps (NULL if
-// there are none).
-const char *ast_type_name(Arena *arena, const Records *records, Type type);
-
-// The Type of a map from `key` to `value`, adding the kind to records->maps
-// the first time it's used.
-Type ast_map_type(Arena *arena, Records *records, Type key, Type value);
-Type ast_map_key(const Records *records, Type map);    // TYPE_UNKNOWN if not decided
-Type ast_map_value(const Records *records, Type map);  // TYPE_UNKNOWN if not decided
-// Whether some part of the kind isn't decided: its innermost kind, or a
-// map's keys or values (or a record or nothing whose kind of record isn't).
-bool ast_type_undecided(const Records *records, Type type);
 
 // --- Expressions -----------------------------------------------------------
 
@@ -133,6 +47,7 @@ typedef enum {
     EXPR_EMPTY_MAP,      // an empty map from text to numbers
     EXPR_MAP_GET,        // the value for K in M [, or D]
     EXPR_MAP_WITHOUT,    // M without K: a new map (as.lookup: key and map, no fallback)
+    EXPR_KIND_TEST,      // X is a circle / X is not a circle (a variant of a kind with variants)
 } ExprKind;
 
 typedef enum {
@@ -250,6 +165,7 @@ struct Expr {
     SourcePos pos;
     Type type;            // filled in by the checker
     bool narrowed;        // filled in by the checker: "a dog or nothing" checked not to be nothing here
+    bool lifted;          // filled in by the checker: given where "<its kind> or nothing" is kept
     const char *display;  // EXPR_NAME, EXPR_CALL: the name as written here, for messages
     union {
         struct {
@@ -328,11 +244,20 @@ struct Expr {
             Expr *record;  // whose field it is
             Name name;     // the field's name
             size_t index;  // filled in by the checker: its place in the definition
+            size_t variant;  // filled in by the checker for a kind with variants: the variant it's checked
+                             // to be (Records.variants)
         } field;
         struct {
-            Type type;               // the record kind
+            Type type;               // the record kind, or the kind with variants
+            size_t variant;          // for a kind with variants: which (Records.variants)
             Vec(FieldValue) values;  // as written, in order
         } new_record;
+        struct {
+            Expr *operand;
+            size_t variant;  // Records.variants
+            bool negated;    // "is not a circle", "isn't a circle"
+            Span op_span;    // "is a circle"
+        } kind_test;
         struct {
             Expr *key;
             Expr *map;
@@ -363,6 +288,8 @@ typedef enum {
     STMT_CONSTANT,     // keep NAME as E / keep NAME at E  (top level only)
     STMT_LIST,         // add E to the end of L, insert, remove, set item N of L to E, sort
     STMT_RECORD,       // a dog is a kind of thing with: (fields indented below; top level only)
+    STMT_SUM,          // a shape is one of: (variants indented below; top level only)
+    STMT_MATCH,        // check which kind S is: (when it's a circle: ... otherwise: ...)
 } StmtKind;
 
 // A constant's value, worked out by the compiler (see front/consteval.h).
@@ -424,6 +351,25 @@ typedef enum {
 
 // A block is a list of statements, in order. A program is a block.
 typedef Vec(Stmt *) Block;
+
+// One variant in the definition of a kind with variants: "a rectangle with
+// a width (a number) and a height (a number)".
+typedef struct {
+    Name name;
+    size_t id;          // in Records.variants
+    Vec(Field) fields;  // in order; none have starting values
+    SourcePos pos;
+} VariantDef;
+
+// One part of "check which kind S is": "when it's a circle or a square:",
+// "when it's nothing:", or a final "otherwise:".
+typedef struct {
+    Vec(size_t) variants;  // Records.variants
+    bool nothing;          // "when it's nothing" (alone, or with variants)
+    bool otherwise;
+    Block body;
+    SourcePos pos;  // from "when"/"otherwise" to its colon
+} MatchBranch;
 
 // One branch of an if: "if C", "otherwise if C", or a final "otherwise"
 // (condition NULL).
@@ -516,6 +462,15 @@ struct Stmt {
             size_t index;      // in the program's Records
             Vec(Field) fields;
         } record;
+        struct {
+            Name name;
+            size_t index;  // in Records.sums
+            Vec(VariantDef) variants;
+        } sum;
+        struct {
+            Expr *subject;
+            Vec(MatchBranch) branches;  // the "when"s in order, then an "otherwise" if there is one
+        } match;
     } as;
 };
 

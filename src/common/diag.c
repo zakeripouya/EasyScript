@@ -8,6 +8,7 @@ typedef struct {
     Span span;
     const char *message;
     Vec(const char *) notes;
+    bool warning;
 } DiagError;
 
 struct Diag {
@@ -16,6 +17,8 @@ struct Diag {
     size_t source_len;
     Vec(size_t) line_starts;
     Vec(DiagError) errors;
+    Vec(DiagError) warnings;
+    bool warned_last;  // diag_note adds to the latest warning, not the latest error
 };
 
 static void index_lines(Diag *diag) {
@@ -44,15 +47,33 @@ void diag_error(Diag *diag, Span span, const char *fmt, ...) {
     error.message = arena_vsprintf(diag->arena, fmt, args);
     va_end(args);
     vec_push(diag->arena, &diag->errors, error);
+    diag->warned_last = false;
+}
+
+void diag_warning(Diag *diag, Span span, const char *fmt, ...) {
+    DiagError warning = {0};
+    warning.span = span;
+    warning.warning = true;
+    va_list args;
+    va_start(args, fmt);
+    warning.message = arena_vsprintf(diag->arena, fmt, args);
+    va_end(args);
+    vec_push(diag->arena, &diag->warnings, warning);
+    diag->warned_last = true;
 }
 
 void diag_note(Diag *diag, const char *fmt, ...) {
-    assert(diag->errors.len > 0 && "diag_note needs a preceding diag_error");
+    assert((diag->warned_last || diag->errors.len > 0) && "diag_note needs a preceding diag_error");
     va_list args;
     va_start(args, fmt);
     const char *note = arena_vsprintf(diag->arena, fmt, args);
     va_end(args);
-    vec_push(diag->arena, &vec_last(&diag->errors).notes, note);
+    DiagError *last = diag->warned_last ? &vec_last(&diag->warnings) : &vec_last(&diag->errors);
+    vec_push(diag->arena, &last->notes, note);
+}
+
+size_t diag_warning_count(const Diag *diag) {
+    return diag->warnings.len;
 }
 
 size_t diag_count(const Diag *diag) {
@@ -142,7 +163,7 @@ static void render_error(const Diag *diag, const DiagError *error, StrBuf *out) 
     size_t carets = count_chars(diag->source + offset, length);
     if (carets == 0) carets = 1;
 
-    sb_appendf(out, "Line %zu: %s\n", index + 1, error->message);
+    sb_appendf(out, "Line %zu%s: %s\n", index + 1, error->warning ? " (a warning)" : "", error->message);
     sb_append(out, SOURCE_INDENT);
     sb_append_n(out, diag->source + start, end - start);
     sb_append_char(out, '\n');
@@ -160,6 +181,24 @@ void diag_render(const Diag *diag, StrBuf *out) {
         if (i > 0) sb_append_char(out, '\n');
         render_error(diag, &diag->errors.items[i], out);
     }
+}
+
+void diag_render_warnings(const Diag *diag, size_t from_line, StrBuf *out) {
+    bool first = true;
+    for (size_t i = 0; i < diag->warnings.len; i++) {
+        const DiagError *warning = &diag->warnings.items[i];
+        if (line_index(diag, warning->span.offset) + 1 < from_line) continue;
+        if (!first) sb_append_char(out, '\n');
+        render_error(diag, warning, out);
+        first = false;
+    }
+}
+
+void diag_print_warnings(const Diag *diag, size_t from_line, FILE *out) {
+    StrBuf text;
+    sb_init(&text, diag->arena);
+    diag_render_warnings(diag, from_line, &text);
+    fwrite(text.data, 1, text.len, out);
 }
 
 void diag_print(const Diag *diag, FILE *out) {

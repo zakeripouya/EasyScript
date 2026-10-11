@@ -29,14 +29,14 @@
 #include "back/codegen_internal.h"
 
 // Starts a line of the body at the current nesting depth.
-static void indent(Codegen *g) {
+void cg_indent(Codegen *g) {
     sb_append_repeat(&g->body, ' ', 4 * (g->depth + 1));
 }
 
 // --- Releasing text and list variables ------------------------------------------
 
 static void emit_drop(Codegen *g, const char *name, Type type) {
-    indent(g);
+    cg_indent(g);
     sb_appendf(&g->body, "%s(&", cg_drop(type));
     cg_append_var(&g->body, name, type);
     sb_append(&g->body, ");\n");
@@ -56,7 +56,7 @@ void cg_push_scope(Codegen *g) {
 }
 
 // Releases the innermost scope's variables, then leaves it.
-static void pop_scope(Codegen *g) {
+void cg_pop_scope(Codegen *g) {
     emit_drop_scopes(g, g->scopes.len - 1);
     g->scopes.len--;
 }
@@ -69,8 +69,8 @@ void cg_emit_drop_all(Codegen *g) {
         for (size_t i = 0; i < g->function->as.function.params.len; i++) {
             Type type = g->function->as.function.param_types.items[i];
             if (type_counted(type)) emit_drop(g, g->function->as.function.params.items[i].text, type);
-            if (type == TYPE_TEXT || type_is_record(type)) {  // the frame's reference to the value it was given
-                indent(g);
+            if (type == TYPE_TEXT || type_is_object(type)) {  // the frame's reference to the value it was given
+                cg_indent(g);
                 sb_appendf(&g->body, "%s(es_input(%zu).%c);\n", cg_release(type), i, type == TYPE_TEXT ? 't' : 'r');
             }
         }
@@ -84,8 +84,8 @@ void cg_emit_drop_all(Codegen *g) {
 
 // A variable gets a value: "es_vn_x = VALUE;", or "es_set(&es_vt_x, VALUE);"
 // for text (es_list_set for lists), which releases what it held.
-static void emit_store(Codegen *g, const char *name, Type type, const char *value) {
-    indent(g);
+void cg_emit_store(Codegen *g, const char *name, Type type, const char *value) {
+    cg_indent(g);
     if (type_counted(type)) {
         sb_appendf(&g->body, "%s(&", cg_set(type));
         cg_append_var(&g->body, name, type);
@@ -115,7 +115,7 @@ static const char *text_code(Codegen *g, const Expr *expr) {
 static void emit_change(Codegen *g, const Stmt *stmt) {
     if (stmt->as.change.field) {
         const char *code = cg_field_stmt(g, stmt);
-        indent(g);
+        cg_indent(g);
         sb_appendf(&g->body, "%s\n", code);
         return;
     }
@@ -123,7 +123,7 @@ static void emit_change(Codegen *g, const Stmt *stmt) {
     if (stmt->as.change.append) {
         Type list = type_list_of(stmt->as.change.amount->type);
         const char *amount = expr_code(g, stmt->as.change.amount);
-        indent(g);
+        cg_indent(g);
         sb_appendf(&g->body, "es_add_%s(es_list_retain(", cg_item_suffix(list));
         cg_append_var(&g->body, name, list);
         sb_appendf(&g->body, "), %s);\n", amount);
@@ -140,7 +140,7 @@ static void emit_change(Codegen *g, const Stmt *stmt) {
     case CHANGE_MULTIPLY: value = arena_sprintf(g->arena, "%s * %s", var.data, amount); break;
     default: value = arena_sprintf(g->arena, "es_div(%zu, %s, %s)", cg_site(g, stmt->pos), var.data, amount); break;
     }
-    emit_store(g, name, TYPE_NUMBER, value);
+    cg_emit_store(g, name, TYPE_NUMBER, value);
 }
 
 // write/append: the text first, then the file name (left to right).
@@ -150,23 +150,23 @@ static void emit_file_write(Codegen *g, const Stmt *stmt) {
     bool value_effects = cg_has_effects(g, value) || type_is_list(value->type);  // turning a list into text reads it
     if (value_effects && cg_has_effects(g, stmt->as.file_write.path)) {
         size_t t = cg_new_temp(g, TYPE_TEXT);
-        indent(g);
+        cg_indent(g);
         sb_appendf(&g->body, "es_t%zu = %s;\n", t, text);
         text = arena_sprintf(g->arena, "es_t%zu", t);
     }
-    indent(g);
+    cg_indent(g);
     sb_appendf(&g->body, "es_write_file(%zu, %s, %s, %d);\n", cg_site(g, stmt->as.file_write.path->pos), text,
                expr_code(g, stmt->as.file_write.path), stmt->kind == STMT_APPEND_FILE);
 }
 
 
-static void emit_block(Codegen *g, const Block *block) {
+void cg_emit_block(Codegen *g, const Block *block) {
     g->depth++;
     cg_push_scope(g);
     for (size_t i = 0; i < block->len; i++) {
         cg_emit_stmt(g, block->items[i]);
     }
-    pop_scope(g);
+    cg_pop_scope(g);
     g->depth--;
 }
 
@@ -175,14 +175,14 @@ static void emit_if(Codegen *g, const Stmt *stmt) {
     for (size_t i = 0; i < stmt->as.if_stmt.branches.len; i++) {
         const IfBranch *branch = &stmt->as.if_stmt.branches.items[i];
         if (i == 0) {
-            indent(g);
+            cg_indent(g);
         } else {
             sb_append(&g->body, " else ");
         }
         if (branch->condition) sb_appendf(&g->body, "if (%s) ", expr_code(g, branch->condition));
         sb_append(&g->body, "{\n");
-        emit_block(g, &branch->body);
-        indent(g);
+        cg_emit_block(g, &branch->body);
+        cg_indent(g);
         sb_append_char(&g->body, '}');
     }
     sb_append_char(&g->body, '\n');
@@ -191,7 +191,7 @@ static void emit_if(Codegen *g, const Stmt *stmt) {
 // es_tN = NUMBER; (so a count's values are worked out once, left to right)
 static size_t emit_temp(Codegen *g, const Expr *expr) {
     size_t t = cg_new_temp(g, TYPE_NUMBER);
-    indent(g);
+    cg_indent(g);
     sb_appendf(&g->body, "es_t%zu = %s;\n", t, expr_code(g, expr));
     return t;
 }
@@ -203,7 +203,7 @@ static void emit_loop_head(Codegen *g, const Stmt *stmt, size_t id) {
         size_t from = emit_temp(g, stmt->as.loop.from);
         size_t to = emit_temp(g, stmt->as.loop.to);
         size_t step = stmt->as.loop.step ? emit_temp(g, stmt->as.loop.step) : 0;
-        indent(g);
+        cg_indent(g);
         size_t site = cg_site(g, stmt->as.loop.step ? stmt->as.loop.step->pos : stmt->pos);  // only the step can fail
         sb_appendf(&g->body, "EsCount es_c%zu = es_count_start(%zu, es_t%zu, es_t%zu, ", id, site, from, to);
         if (step) {
@@ -211,29 +211,29 @@ static void emit_loop_head(Codegen *g, const Stmt *stmt, size_t id) {
         } else {
             sb_appendf(&g->body, "1.0, 0, %d);\n", stmt->as.loop.down);
         }
-        indent(g);
+        cg_indent(g);
         sb_appendf(&g->body, "for (long long es_i%zu = 0; es_i%zu <= es_c%zu.last; es_i%zu++) {\n", id, id, id, id);
-        indent(g);
+        cg_indent(g);
         sb_append(&g->body, "    ");
         cg_append_var(&g->body, stmt->as.loop.var.text, TYPE_NUMBER);
         sb_appendf(&g->body, " = es_count_value(&es_c%zu, es_i%zu);\n", id, id);
         break;
     }
     case LOOP_TIMES:
-        indent(g);
+        cg_indent(g);
         sb_appendf(&g->body, "long long es_n%zu = es_times(%zu, %s);\n", id, cg_site(g, stmt->as.loop.times->pos),
                    expr_code(g, stmt->as.loop.times));
-        indent(g);
+        cg_indent(g);
         sb_appendf(&g->body, "for (long long es_i%zu = 1; es_i%zu <= es_n%zu; es_i%zu++) {\n", id, id, id, id);
         break;
     case LOOP_WHILE:
     case LOOP_UNTIL:
-        indent(g);
+        cg_indent(g);
         sb_appendf(&g->body, "while (%s%s) {\n", stmt->as.loop.kind == LOOP_UNTIL ? "!" : "",
                    expr_code(g, stmt->as.loop.condition));
         break;
     case LOOP_FOREVER:
-        indent(g);
+        cg_indent(g);
         sb_append(&g->body, "for (;;) {\n");
         break;
     case LOOP_EACH:
@@ -249,7 +249,7 @@ static void emit_loop_head(Codegen *g, const Stmt *stmt, size_t id) {
 // { <setup> for/while (...) { body } }
 static void emit_loop(Codegen *g, const Stmt *stmt) {
     size_t id = ++g->loop_ids;
-    indent(g);
+    cg_indent(g);
     sb_append(&g->body, "{\n");
     g->depth++;
     cg_push_scope(g);
@@ -269,14 +269,22 @@ static void emit_loop(Codegen *g, const Stmt *stmt) {
     emit_loop_head(g, stmt, id);
     loop.scope = g->scopes.len;
     vec_push(g->arena, &g->loops, loop);
-    emit_block(g, &stmt->as.loop.body);
+    cg_emit_block(g, &stmt->as.loop.body);
     g->loops.len--;
-    indent(g);
+    cg_indent(g);
     sb_append(&g->body, "}\n");
-    pop_scope(g);
+    cg_pop_scope(g);
     g->depth--;
-    indent(g);
+    cg_indent(g);
     sb_append(&g->body, "}\n");
+}
+
+const LoopCode *cg_innermost_loop(const Codegen *g) {
+    for (size_t i = g->loops.len; i > 0; i--) {
+        if (g->loops.items[i - 1].stmt && g->loops.items[i - 1].stmt->kind == STMT_LOOP) return &g->loops.items[i - 1];
+    }
+    assert(!"\"stop the loop\" outside a loop reached codegen");
+    return NULL;
 }
 
 // give back E / return: the value is worked out before the function's text
@@ -293,18 +301,18 @@ static void emit_return(Codegen *g, const Stmt *stmt) {
     Type result = g->function->as.function.result;
     if (stmt->as.returned && result != TYPE_NOTHING) {
         t = cg_new_temp(g, result);
-        indent(g);
+        cg_indent(g);
         sb_appendf(&g->body, "es_t%zu = %s;\n", t, expr_code(g, stmt->as.returned));
     }
     cg_emit_drop_all(g);
-    indent(g);
+    cg_indent(g);
     if (t) {
         sb_append(&g->body, cg_leave_code(g));
-        indent(g);
+        cg_indent(g);
         sb_appendf(&g->body, "return es_t%zu;\n", t);
     } else {
         sb_append(&g->body, cg_leave_code(g));
-        indent(g);
+        cg_indent(g);
         sb_append(&g->body, "return;\n");
     }
 }
@@ -313,7 +321,7 @@ static void emit_return(Codegen *g, const Stmt *stmt) {
 static void emit_call_statement(Codegen *g, const Stmt *stmt) {
     Type result = stmt->as.call->as.call.target->as.function.result;
     const char *call = expr_code(g, stmt->as.call);
-    indent(g);
+    cg_indent(g);
     if (type_counted(result)) {
         sb_appendf(&g->body, "%s(%s);\n", cg_release(result), call);
     } else if (result == TYPE_NOTHING) {
@@ -324,7 +332,7 @@ static void emit_call_statement(Codegen *g, const Stmt *stmt) {
 }
 
 static void emit_stop(Codegen *g) {
-    indent(g);
+    cg_indent(g);
     if (!g->function) {  // the end of main() releases everything
         sb_append(&g->body, "goto es_end;\n");
         g->stops = true;
@@ -333,15 +341,15 @@ static void emit_stop(Codegen *g) {
     sb_append(&g->body, "{\n");
     g->depth++;
     cg_emit_drop_all(g);
-    indent(g);
+    cg_indent(g);
     sb_append(&g->body, "es_stop();\n");
     g->depth--;
-    indent(g);
+    cg_indent(g);
     sb_append(&g->body, "}\n");
 }
 
 void cg_emit_stmt(Codegen *g, const Stmt *stmt) {
-    indent(g);
+    cg_indent(g);
     sb_appendf(&g->body, "/* line %zu */\n", stmt->pos.line);
     switch (stmt->kind) {
     case STMT_LET:
@@ -349,30 +357,30 @@ void cg_emit_stmt(Codegen *g, const Stmt *stmt) {
         const Expr *value = stmt->as.assign.value;
         if (stmt->kind == STMT_SET && stmt->as.assign.field) {
             const char *code = cg_field_stmt(g, stmt);
-            indent(g);
+            cg_indent(g);
             sb_appendf(&g->body, "%s\n", code);
             break;
         }
         if (stmt->kind == STMT_SET && cg_emit_append(g, stmt)) break;
         if (stmt->kind == STMT_LET) cg_declare_name(g, stmt->as.assign.name.text, stmt->as.assign.type);
-        emit_store(g, stmt->as.assign.name.text, stmt->as.assign.type, expr_code(g, value));
+        cg_emit_store(g, stmt->as.assign.name.text, stmt->as.assign.type, expr_code(g, value));
         break;
     }
     case STMT_CHANGE: emit_change(g, stmt); break;
     case STMT_SAY:
-        indent(g);
+        cg_indent(g);
         sb_appendf(&g->body, "es_say(%s);\n", text_code(g, stmt->as.value));
         break;
     case STMT_ASK:
         cg_declare_name(g, stmt->as.ask.answer.text, TYPE_TEXT);
-        emit_store(g, stmt->as.ask.answer.text, TYPE_TEXT,
+        cg_emit_store(g, stmt->as.ask.answer.text, TYPE_TEXT,
                    arena_sprintf(g->arena, "es_ask(%s)", text_code(g, stmt->as.ask.prompt)));
         break;
     case STMT_WRITE_FILE:
     case STMT_APPEND_FILE: emit_file_write(g, stmt); break;
     case STMT_READ_FILE:
         cg_declare_name(g, stmt->as.read_file.name.text, TYPE_TEXT);
-        emit_store(g, stmt->as.read_file.name.text, TYPE_TEXT,
+        cg_emit_store(g, stmt->as.read_file.name.text, TYPE_TEXT,
                    arena_sprintf(g->arena, "es_read_file(%zu, %s)", cg_site(g, stmt->as.read_file.path->pos),
                                  expr_code(g, stmt->as.read_file.path)));
         break;
@@ -382,18 +390,20 @@ void cg_emit_stmt(Codegen *g, const Stmt *stmt) {
     case STMT_FUNCTION: break;  // generated separately, before main()
     case STMT_CONSTANT: break;  // a static initializer, worked out by the compiler
     case STMT_RECORD: break;    // a C struct, before the functions
+    case STMT_SUM: break;       // a C struct per variant, likewise
+    case STMT_MATCH: cg_emit_match(g, stmt); break;
     case STMT_RETURN: emit_return(g, stmt); break;
     case STMT_CALL: emit_call_statement(g, stmt); break;
     case STMT_LIST: {
         const char *code = cg_list_stmt(g, stmt);
-        indent(g);
+        cg_indent(g);
         sb_appendf(&g->body, "%s;\n", code);
         break;
     }
     case STMT_BREAK:
     case STMT_CONTINUE:
-        emit_drop_scopes(g, vec_last(&g->loops).scope);
-        indent(g);
+        emit_drop_scopes(g, cg_innermost_loop(g)->scope);
+        cg_indent(g);
         sb_append(&g->body, stmt->kind == STMT_BREAK ? "break;\n" : "continue;\n");
         break;
     }
