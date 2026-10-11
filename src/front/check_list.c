@@ -89,7 +89,7 @@ static TypeVar check_list_op(Checker *c, const Expr *expr) {
                                   ? "I can only find the biggest item of a list of numbers or text"
                                   : "I can only find the smallest item of a list of numbers or text";
         TypeVar item = checker_require_list(c, var, operand, message);
-        types_defer_one_of(c, operand, item, var, KIND_NUMBER | KIND_TEXT, message);
+        types_defer_one_of(c, operand, item, var, KIND_NUMBER | KIND_TEXT | KIND_DATE, message);
         return item;
     }
     case LIST_REVERSED: checker_require_list(c, var, operand, "I can only reverse a list"); return var;
@@ -101,7 +101,7 @@ static TypeVar check_list_op(Checker *c, const Expr *expr) {
         const char *message = length ? "I can only sort a list of text or lists by their length"
                                      : "I can only sort a list of numbers or text";
         TypeVar item = checker_require_list(c, var, operand, message);
-        types_defer_one_of(c, operand, item, var, length ? KIND_TEXT | KIND_LIST : KIND_NUMBER | KIND_TEXT, message);
+        types_defer_one_of(c, operand, item, var, length ? KIND_TEXT | KIND_LIST : KIND_NUMBER | KIND_TEXT | KIND_DATE, message);
         return var;
     }
     case LIST_COPY: {  // a record, map or kind with variants when it's known to be one, otherwise a list
@@ -271,7 +271,7 @@ void checker_check_list_stmt(Checker *c, const Stmt *stmt) {
     TypeVar item = checker_require_list(c, list_var, list, message);
     if (types_of(c, item) == TYPE_ERROR) return;
     if (stmt->as.list.op == LIST_SORT) {
-        types_defer_one_of(c, list, item, list_var, stmt->as.list.by_length ? KIND_TEXT | KIND_LIST : KIND_NUMBER | KIND_TEXT,
+        types_defer_one_of(c, list, item, list_var, stmt->as.list.by_length ? KIND_TEXT | KIND_LIST : KIND_NUMBER | KIND_TEXT | KIND_DATE,
                            message);
     } else if (value) {
         require_item(c, list, list_var, item, value, value_var, false);

@@ -229,7 +229,7 @@ static TypeVar finish_value_call(Checker *c, const Expr *expr, TypeVar func, con
     }
     if (as_value && type == TYPE_UNKNOWN) {
         types_defer_one_of(c, expr, result, result, KIND_NUMBER | KIND_TEXT | KIND_YESNO | KIND_LIST | KIND_RECORD |
-                           KIND_MAP | KIND_OTHER, "A function called here has to give back a value");
+                           KIND_MAP | KIND_OTHER | KIND_DATE, "A function called here has to give back a value");
     }
     return result;
 }

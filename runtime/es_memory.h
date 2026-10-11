@@ -116,7 +116,8 @@ typedef struct EsRecord {
 /* What a list holds (or a map's keys or values). Text, lists, records and
  * maps inside a list are counted references that the list owns (a record
  * item can be NULL, for nothing). */
-typedef enum { ES_ITEMS_NUMBER, ES_ITEMS_YESNO, ES_ITEMS_TEXT, ES_ITEMS_LIST, ES_ITEMS_RECORD, ES_ITEMS_MAP } EsItems;
+/* Dates are kept like numbers (seconds, in at.n), but print as dates. */
+typedef enum { ES_ITEMS_NUMBER, ES_ITEMS_YESNO, ES_ITEMS_TEXT, ES_ITEMS_LIST, ES_ITEMS_RECORD, ES_ITEMS_MAP, ES_ITEMS_DATE } EsItems;
 
 struct EsMap;
 
@@ -138,11 +139,13 @@ typedef struct EsList {
 } EsList;
 
 static size_t es_item_size(EsItems items) {
-    return items == ES_ITEMS_NUMBER ? sizeof(double) : items == ES_ITEMS_YESNO ? sizeof(bool) : sizeof(void *);
+    return items == ES_ITEMS_NUMBER || items == ES_ITEMS_DATE ? sizeof(double)
+           : items == ES_ITEMS_YESNO                         ? sizeof(bool)
+                                                             : sizeof(void *);
 }
 
 static bool es_items_counted(EsItems items) {
-    return items != ES_ITEMS_NUMBER && items != ES_ITEMS_YESNO;
+    return items != ES_ITEMS_NUMBER && items != ES_ITEMS_YESNO && items != ES_ITEMS_DATE;
 }
 
 /* Lists and maps belong to what holds them: copying a list or a map copies

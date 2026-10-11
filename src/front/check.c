@@ -550,7 +550,6 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
         }
     }
     types_finish(&c, first_error);
-    if (diag_count(diag) == first_error) checker_reject_dates(&c);
     diag_sort(diag, first_error);
     if (diag_count(diag) == first_error) checker_rename_modules(&c);
 }

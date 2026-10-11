@@ -710,6 +710,7 @@ All of these are **Available**, without `use`. Each is described with its exact 
 | `the number of days between D and E` | a number | `the number of days between today and holiday` |
 | `wait N seconds.` (`second`, `milliseconds`, `millisecond`, `minutes`, `minute`) | (a sentence) | `wait 2 seconds.`, `wait a second.` |
 | `(a date)` | the kind | `to describe with day (a date):` |
+| `dates` (in a list or map kind) | the kind of the items | `an empty list of dates`, `(a map from text to dates)` |
 | `the lines of file F` | a list of text | `the lines of file "todo.txt"` |
 | `make a new file called F.`, `make a folder called F.`, `make a new folder called F.` | (a sentence) | `make a folder called "photos".` |
 | `rename the file F to G.`, `rename the folder F to G.` | (a sentence) | `rename the file "a.txt" to "b.txt".` |
@@ -742,7 +743,7 @@ Every value has a kind, worked out by the compiler before the program runs (**Av
 | number, text or yes/no that can be nothing | `(a number or nothing)`, `(text or nothing)`, `(yes or no or nothing)`, `giving back a number or nothing` | `the position of` (nothing when it isn't there), a field or input of that kind, `nothing` where one goes. It has to be checked (`if X is not nothing:`, `check which kind X is:`) before it's used as a number, text or yes/no. A list or map can't be nothing |
 | map | `(a map from text to numbers)`, `(a map from numbers to lists of text)`, `giving back a map from text to numbers`; in a list or map: `maps from text to numbers` | `a map of ...`, `an empty map from ...`, `a copy of` |
 | interface | `(something that can speak)`, `(a speaker or nothing)`; in a list or map: `things that can speak`, `speakers` | any record or value of a kind with variants that fits it, where one is kept |
-| date | `(a date)`, `giving back a date` | `today`, `the time now`, `3 days ago`, `the last change of file F`. Not in lists, maps or records yet |
+| date | `(a date)`, `giving back a date`; in a list or map: `dates` (`(a list of dates)`, `(a map from text to dates)`) | `today`, `the time now`, `3 days ago`, `the last change of file F`, a field `which is a date` |
 | function | `(a function taking a number and giving back text)`, `(a function taking text)`, `(a function giving back a number)`, `(a function)`; in a list or map: `functions taking text` | `the function double`, `a function taking x ...`, a field or input holding one |
 
 ## Later phases

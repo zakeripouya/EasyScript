@@ -264,10 +264,11 @@ static EsText *es_list_joined(EsList *l, EsText *with) {
     for (size_t i = 0; i < l->len; i++) {
         if (i > 0) es_buf_add(&b, with->chars, with->len);
         EsText *item = l->items == ES_ITEMS_NUMBER  ? es_number_text(l->at.n[i])
+                       : l->items == ES_ITEMS_DATE  ? es_date_text(l->at.n[i])
                        : l->items == ES_ITEMS_YESNO ? es_yesno_text(l->at.b[i])
                                                     : l->at.t[i];
         es_buf_add(&b, item->chars, item->len);
-        if (l->items == ES_ITEMS_NUMBER) es_release(item);
+        if (l->items == ES_ITEMS_NUMBER || l->items == ES_ITEMS_DATE) es_release(item);
     }
     EsText *t = b.len > 0 ? es_text_copy(b.data, b.len) : &es_empty_text;
     free(b.data);

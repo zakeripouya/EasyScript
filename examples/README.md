@@ -40,6 +40,7 @@ Small programs, one per feature. **Every example is checked by `make test`** aga
 | [countdown.es](programs/countdown.es) | `wait 1 second`, `clear the screen` and `the time now` |
 | [tidy_folder.es](programs/tidy_folder.es) | Files and folders: makes a folder of files, sorts them into folders by their endings (`make a folder called`, `move the file ... to the folder`, `the files in`, `the folders in`), renames and copies one, and deletes it all |
 | [sales_report.es](programs/sales_report.es) | CSV files: writes a sales.csv (if there isn't one), reads it (`read csv file ... and call it`), totals each region with a map, and saves a report (`save ... as csv file`) |
+| [orders.es](programs/orders.es) | Dates in records: orders with a day each, this month's orders (`is in this month`), totals per month in a map, the earliest and latest (`the smallest of`, `the biggest of`), and sorting by date (`sort ... by`) |
 | [pets.es](programs/pets.es) | Records: a dog and a cat with methods of the same name (`speak`, `describe`); each call picks the one for its record's kind |
 | [million_lines.es](programs/million_lines.es) | A million lines of text made one at a time, in flat memory (see [memory](../docs/memory.md)) |
 | [ask_name.es](programs/ask_name.es) | `ask … and call the answer …` (input from `ask_name.in`) |

@@ -135,7 +135,9 @@ static TypeVar check_joined(Checker *c, const Expr *expr) {
     const Expr *list = expr->as.text_op.operand;
     TypeVar var = checker_check_expr(c, list);
     TypeVar item = checker_require_list(c, var, list, "I can only join the items of a list");
-    if (types_of(c, item) != TYPE_ERROR) types_defer_one_of(c, list, item, var, KIND_NUMBER | KIND_TEXT | KIND_YESNO, message);
+    if (types_of(c, item) != TYPE_ERROR) {
+        types_defer_one_of(c, list, item, var, KIND_NUMBER | KIND_TEXT | KIND_YESNO | KIND_DATE, message);
+    }
     require_text(c, expr->as.text_op.arg, "The items can only be joined with text", NULL);
     return types_new(c, TYPE_TEXT, expr->pos.line);
 }

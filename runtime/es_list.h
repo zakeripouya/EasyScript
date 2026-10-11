@@ -395,7 +395,8 @@ static bool es_list_equal(const EsList *a, const EsList *b) {
     for (size_t i = 0; i < a->len; i++) {
         bool same = true;
         switch (a->items) {
-        case ES_ITEMS_NUMBER: same = es_close(a->at.n[i], b->at.n[i]); break;
+        case ES_ITEMS_NUMBER:
+        case ES_ITEMS_DATE: same = es_close(a->at.n[i], b->at.n[i]); break;
         case ES_ITEMS_YESNO: same = a->at.b[i] == b->at.b[i]; break;
         case ES_ITEMS_TEXT: same = es_text_equal(a->at.t[i], b->at.t[i]); break;
         case ES_ITEMS_LIST: same = es_list_equal(a->at.l[i], b->at.l[i]); break;
@@ -523,6 +524,16 @@ static void es_buf_add(EsBuf *b, const char *s, size_t n) {
 static void es_record_render(EsBuf *b, const EsRecord *r, int depth); /* es_record.h */
 static void es_map_render(EsBuf *b, const EsMap *m, int depth);       /* es_map.h */
 
+/* A date inside a list, map or record: in parentheses, because it has
+ * commas of its own: "(Sunday, October 11, 2026)". */
+static void es_buf_add_date(EsBuf *b, double date) {
+    EsText *t = es_date_text(date);
+    es_buf_add(b, "(", 1);
+    es_buf_add(b, t->chars, t->len);
+    es_buf_add(b, ")", 1);
+    es_release(t);
+}
+
 /* "72, 95 and 88"; a list inside a list is in parentheses: "(1 and 2) and
  * (3)". `depth` is how many records it's inside (they stop showing their
  * fields after a few levels). */
@@ -536,6 +547,7 @@ static void es_list_render(EsBuf *b, const EsList *l, int depth) {
             es_release(t);
             break;
         }
+        case ES_ITEMS_DATE: es_buf_add_date(b, l->at.n[i]); break;
         case ES_ITEMS_YESNO: es_buf_add(b, l->at.b[i] ? "yes" : "no", l->at.b[i] ? 3 : 2); break;
         case ES_ITEMS_TEXT: es_buf_add(b, l->at.t[i]->chars, l->at.t[i]->len); break;
         case ES_ITEMS_LIST:

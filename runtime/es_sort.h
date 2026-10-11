@@ -283,14 +283,14 @@ static void es_sort_by_length(EsList *l, bool longest_first) {
     free(keyed);
 }
 
-/* "sort L": numbers smallest first (with "not a number" last), text
+/* "sort L": numbers (or dates) smallest first (with "not a number" last), text
  * alphabetically (by bytes), or by length; `how` is one of ES_SORT_*. The
  * list itself changes. */
 static void es_sort(EsList *l, int how) {
     bool down = how == ES_SORT_DOWN || how == ES_SORT_LENGTH_DOWN;
     if (how == ES_SORT_LENGTH_UP || how == ES_SORT_LENGTH_DOWN) {
         es_sort_by_length(l, down);
-    } else if (l->items == ES_ITEMS_NUMBER) {
+    } else if (l->items == ES_ITEMS_NUMBER || l->items == ES_ITEMS_DATE) {
         /* "not a number" isn't smaller or bigger than anything, so it goes last */
         size_t n = 0;
         for (size_t i = 0; i < l->len; i++) {

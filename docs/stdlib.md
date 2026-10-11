@@ -35,7 +35,7 @@ Each run starts with different random numbers, from the clock. When the tests ru
 
 ## Dates and time
 
-A **date** is a day, and sometimes a time of day: `today` is a day; `the time now` has the time too. Dates print readably: `Sunday, October 11, 2026`, and `Sunday, October 11, 2026, 2:05 PM` for one with a time of day. Dates can be compared with `is`, `is before` and `is after`, turned into text (`today as text`, `"Due " followed by tomorrow`), given to functions (`(a date)`) and given back. They can't be kept in lists, maps or records yet: keep their text or their parts instead.
+A **date** is a day, and sometimes a time of day: `today` is a day; `the time now` has the time too. Dates print readably: `Sunday, October 11, 2026`, and `Sunday, October 11, 2026, 2:05 PM` for one with a time of day. Dates can be compared with `is`, `is before` and `is after`, turned into text (`today as text`, `"Due " followed by tomorrow`), given to functions (`(a date)`) and given back, and kept in lists (`a list of dates`), maps (`a map from text to dates`) and records (`day, which is a date.`). Lists of dates can be sorted (earliest first), and `the biggest of` / `the smallest of` give the latest and earliest. Inside a list, map or record a date prints in parentheses, because it has commas of its own: `(Sunday, October 11, 2026) and (Monday, October 12, 2026)`. A date can't be a map's key, and can't be "or nothing".
 
 | Phrase | Gives | Example | Meaning |
 |---|---|---|---|

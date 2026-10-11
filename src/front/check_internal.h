@@ -51,7 +51,7 @@ typedef enum {
 
 // Kinds for DEFER_ONE_OF.
 // KIND_OTHER: a function, an interface's value, or anything that can be nothing (but not nothing itself).
-enum { KIND_NUMBER = 1, KIND_TEXT = 2, KIND_YESNO = 4, KIND_LIST = 8, KIND_RECORD = 16, KIND_MAP = 32, KIND_OTHER = 64 };
+enum { KIND_NUMBER = 1, KIND_TEXT = 2, KIND_YESNO = 4, KIND_LIST = 8, KIND_RECORD = 16, KIND_MAP = 32, KIND_OTHER = 64, KIND_DATE = 128 };
 
 typedef struct {
     DeferKind kind;
@@ -194,7 +194,6 @@ TypeVar checker_date_field(Checker *c, const Expr *expr, TypeVar base);
 // The part of a date a field's name means (DATE_YEAR, ...), or -1.
 int checker_date_part(const char *name);
 // Once kinds are decided: a list, map, record or variant that would hold a date is reported (not yet supported).
-void checker_reject_dates(Checker *c);
 
 // check_module.c: files that use other files
 // Whether the current file can use a definition in `file` (private: only its own file can).

@@ -722,7 +722,8 @@ Line 2: "the square root of" needs a number, but this is text.
 | Problem | Message (summary) |
 |---|---|
 | A part of a date that isn't one | "A date has no "season"." with the parts it has |
-| A date in a list, map or record | "Dates can't be kept in a list yet." with "Keep the date as text instead, ..." ([`library_dates_kept.es`](../tests/errors/library_dates_kept.es)) |
+| A date as a map's key | "A map's keys have to be text or numbers, but this is a date." |
+| A date that can be nothing | "A date can't be "or nothing" yet." with "Keep a yes/no value next to it that says whether there is one, ..." |
 | Saving something that isn't rows | "I can only save a list of maps as csv, but this is a number." / "The values saved in a csv file have to be numbers, text or yes/no values, but this is a list of numbers." |
 | A path that isn't text | "The name of a file has to be text, like "notes.txt", but this is a number." |
 | A library phrase in a constant | "A constant can't use "square root of", because it's worked out while the program runs." |

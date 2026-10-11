@@ -20,7 +20,7 @@ char cg_field_kind(Type type) {
     if (type_is_list(type)) return 'l';
     if (type_is_map(type)) return 'm';
     if (type_is_object(type)) return 'r';
-    return type == TYPE_TEXT ? 't' : type == TYPE_YESNO ? 'b' : 'n';
+    return type == TYPE_TEXT ? 't' : type == TYPE_YESNO ? 'b' : type == TYPE_DATE ? 'd' : 'n';
 }
 
 // The static list a list field starts as: es_k_0d<kind>__<field>.

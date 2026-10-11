@@ -127,7 +127,7 @@ static bool report_kind(Parser *p, const char *kinds, const char *missing) {
 }
 
 // What a list holds, in the plural: "numbers", "text", "yes/no values" (or
-// "yes or no values"), "lists of" ..., a record kind's plural, or "maps from" ... .
+// "yes or no values"), "dates", "lists of" ..., a record kind's plural, or "maps from" ... .
 bool parser_parse_items_kind(Parser *p, Type *type) {
     size_t words = 0;
     if (parser_at_word(p, 0, "numbers")) {
@@ -152,6 +152,7 @@ bool parser_parse_items_kind(Parser *p, Type *type) {
     } else {
         Type kind = parser_match_kind_name(p, 0, true, &words);
         if (words > 0) *type = kind;
+        if (words == 0 && parser_at_word(p, 0, "dates")) *type = TYPE_DATE, words = 1;  // unless a kind is called that
     }
     if (words > 0) {
         parser_consume(p, words);
@@ -174,6 +175,13 @@ static bool parse_or_nothing(Parser *p, Type *type) {
     if (type_is_func(*type)) {
         if (parser_error(p, span, "A function can't be \"or nothing\".")) {
             diag_note(p->diag, "Keep a function that does nothing instead.");
+        }
+        return false;
+    }
+    if (*type == TYPE_DATE) {
+        if (parser_error(p, span, "A date can't be \"or nothing\" yet.")) {
+            diag_note(p->diag, "Keep a yes/no value next to it that says whether there is one, like \"paid, which is "
+                               "yes or no.\"");
         }
         return false;
     }

@@ -47,7 +47,7 @@ static void require_function(Checker *c, const Expr *expr, TypeVar f, const Type
 // What the function gives back has to be a value (not nothing).
 static void require_value(Checker *c, const Expr *expr, TypeVar result) {
     types_defer_one_of(c, expr->as.apply.function, result, result,
-                       KIND_NUMBER | KIND_TEXT | KIND_YESNO | KIND_LIST | KIND_RECORD | KIND_MAP | KIND_OTHER,
+                       KIND_NUMBER | KIND_TEXT | KIND_YESNO | KIND_LIST | KIND_RECORD | KIND_MAP | KIND_OTHER | KIND_DATE,
                        "The function has to give back a value");
 }
 
@@ -76,7 +76,7 @@ TypeVar checker_check_apply(Checker *c, const Expr *expr) {
     case APPLY_SORT: {
         TypeVar key = types_new(c, TYPE_UNKNOWN, 0);
         require_function(c, expr, f, &item, 1, key);
-        types_defer_one_of(c, expr->as.apply.function, key, key, KIND_NUMBER | KIND_TEXT,
+        types_defer_one_of(c, expr->as.apply.function, key, key, KIND_NUMBER | KIND_TEXT | KIND_DATE,
                            "To sort by it, the function has to give back numbers or text");
         return list;
     }

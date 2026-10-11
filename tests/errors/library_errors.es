@@ -27,3 +27,4 @@ keep names as a list of "a" and "b"
 shuffle names
 keep tau at the square root of 4
 keep twice pi at pi times 2
+let date keys be a map of today to 1

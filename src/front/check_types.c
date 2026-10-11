@@ -228,6 +228,7 @@ static unsigned kind_bit(Type type) {
     if (type_is_map(type)) return KIND_MAP;
     if ((type_is_record(type) || type_is_sum(type)) && !type_is_maybe(type)) return KIND_RECORD;
     if (type_is_object(type) || type == TYPE_MAYBE) return KIND_OTHER;
+    if (type == TYPE_DATE) return KIND_DATE;
     return type == TYPE_NUMBER ? KIND_NUMBER : type == TYPE_TEXT ? KIND_TEXT : type == TYPE_YESNO ? KIND_YESNO : 0;
 }
 

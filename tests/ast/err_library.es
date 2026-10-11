@@ -17,3 +17,5 @@ shuffle
 save rows as "out.csv"
 put in file "x"
 put "x" into "y"
+a visit is a kind of thing with:
+    day, which is a date or nothing.

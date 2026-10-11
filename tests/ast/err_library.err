@@ -92,3 +92,8 @@ Line 19: I expected "in file" here, but found "into".
     put "x" into "y"
             ^^^^
 Write it like "put "hello" in file "notes.txt"".
+
+Line 21: A date can't be "or nothing" yet.
+        day, which is a date or nothing.
+                             ^^^^^^^^^^
+Keep a yes/no value next to it that says whether there is one, like "paid, which is yes or no."

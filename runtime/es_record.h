@@ -31,6 +31,7 @@
     }
 
 ES_FIELD_GET(n, double, ES_SAME)
+ES_FIELD_GET(d, double, ES_SAME)
 ES_FIELD_GET(b, bool, ES_SAME)
 ES_FIELD_GET(t, EsText *, es_retain)
 ES_FIELD_GET(l, EsList *, es_list_retain)
@@ -150,6 +151,7 @@ static void es_record_render(EsBuf *b, const EsRecord *r, int depth) {
             es_release(t);
             break;
         }
+        case 'd': es_buf_add_date(b, ES_FIELD(r, double, at)); break;
         case 'b': es_buf_add_text(b, ES_FIELD(r, bool, at) ? "yes" : "no"); break;
         case 't': {
             const EsText *t = ES_FIELD(r, EsText *, at);

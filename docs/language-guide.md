@@ -1773,7 +1773,21 @@ say the number of days between today and (30 days from now).
 wait 2 seconds.
 ```
 
-A date is a kind of its own, written `(a date)` in a definition. Dates compare with `is`, `is before` and `is after`, and become text when printed or joined. They can't be kept in lists, maps or records yet; keep `today as text` or `today's year` instead. `clear the screen.` and `wait` make a countdown: `./easyscript run examples/programs/countdown.es`.
+A date is a kind of its own, written `(a date)` in a definition. Dates compare with `is`, `is before` and `is after`, and become text when printed or joined. They can be kept in lists, maps and records like any other value:
+
+```
+an order is a kind of thing with:
+    item, which is text.
+    day, which is a date.
+
+let orders be a list of (a new order with item "tea", day today) and (a new order with item "jam", day 40 days ago).
+for each sale in orders:
+    if sale's day is in this month, say sale's item.
+let days be a list of today, yesterday and tomorrow.
+say days sorted.
+```
+
+Sorting puts the earliest first. Inside a list, map or record a date prints in parentheses, because it has commas of its own: `(Saturday, October 10, 2026), (Sunday, October 11, 2026) and (Monday, October 12, 2026)`. A date can't be a map's key, and can't be "or nothing". See `examples/programs/orders.es`. `clear the screen.` and `wait` make a countdown: `./easyscript run examples/programs/countdown.es`.
 
 ### Files and folders
 

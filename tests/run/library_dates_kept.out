@@ -1,0 +1,32 @@
+(an order with item "tea", day (Sunday, October 11, 2026) and total 4), (an order with item "cake", day (Saturday, October 10, 2026) and total 6) and (an order with item "jam", day (Tuesday, September 1, 2026) and total 3)
+(Sunday, October 11, 2026), (Thursday, October 8, 2026) and (Monday, October 12, 2026)
+(Thursday, October 8, 2026), (Sunday, October 11, 2026) and (Monday, October 12, 2026)
+(Monday, October 12, 2026), (Sunday, October 11, 2026) and (Thursday, October 8, 2026)
+Monday, October 12, 2026
+Thursday, October 8, 2026
+no
+yes
+3
+(Thursday, October 8, 2026), (Sunday, October 11, 2026) and (Monday, October 12, 2026)
+(Sunday, October 11, 2026), (Thursday, October 8, 2026) and (Monday, October 12, 2026)
+no
+Thursday, October 8, 2026 / Sunday, October 11, 2026 / Monday, October 12, 2026
+no
+(Monday, October 12, 2026)
+Thursday, Sunday and Monday
+tea this month
+cake this month
+10 is 10 and 9 is 3
+"tea" is (Sunday, October 11, 2026) and "cake" is (Saturday, October 10, 2026)
+Sunday, October 11, 2026
+(Sunday, October 11, 2026) and (Saturday, October 10, 2026)
+"work" is ((Sunday, October 11, 2026), (Monday, October 12, 2026) and (Tuesday, October 13, 2026))
+(an order with item "jam", day (Tuesday, September 1, 2026) and total 3), (an order with item "cake", day (Saturday, October 10, 2026) and total 6) and (an order with item "tea", day (Sunday, October 11, 2026) and total 4)
+(Sunday, October 11, 2026)
+yes
+Monday, October 12, 2026
+yes
+no
+an at with moment (Sunday, October 11, 2026)
+(an at with moment (Sunday, October 11, 2026)) and (a never)
+yes

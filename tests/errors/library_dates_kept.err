@@ -1,4 +1,0 @@
-Line 1: Dates can't be kept in a list yet.
-    let holidays be a list of today and tomorrow
-                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Keep the date as text instead, like "today as text", or keep its parts, like "today's year".

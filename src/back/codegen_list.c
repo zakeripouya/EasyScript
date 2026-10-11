@@ -32,7 +32,9 @@ const char *cg_items(Type type) {
     if (type_is_object(type)) return "ES_ITEMS_RECORD";
     if (type_is_map(type)) return "ES_ITEMS_MAP";
     return type_is_list(type) ? "ES_ITEMS_LIST" : type == TYPE_TEXT ? "ES_ITEMS_TEXT"
-                                              : type == TYPE_YESNO ? "ES_ITEMS_YESNO" : "ES_ITEMS_NUMBER";
+                                              : type == TYPE_YESNO ? "ES_ITEMS_YESNO"
+                                              : type == TYPE_DATE  ? "ES_ITEMS_DATE"
+                                                                   : "ES_ITEMS_NUMBER";
 }
 
 // ES_ITEMS_NUMBER, ...: what the runtime calls the kind of a list's items.

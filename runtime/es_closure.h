@@ -119,7 +119,7 @@ ES_DEFINE_SORT(es_sort_by_number_down, EsByKey, ES_BY_NUMBER_DOWN)
 ES_DEFINE_SORT(es_sort_by_text_up, EsByKey, ES_BY_TEXT_UP)
 ES_DEFINE_SORT(es_sort_by_text_down, EsByKey, ES_BY_TEXT_DOWN)
 
-/* Puts l's items in the order of their keys (numbers or text, one per item,
+/* Puts l's items in the order of their keys (numbers, dates or text, one per item,
  * worked out by the function), keeping items with equal keys in the order
  * they were in. "not a number" keys go last. Takes the keys, only looks at l. */
 static void es_sort_by_keys(EsList *l, EsList *keys, bool down) {
@@ -130,9 +130,10 @@ static void es_sort_by_keys(EsList *l, EsList *keys, bool down) {
         if (!by || !moved) es_out_of_memory();
         size_t m = 0, last = n;
         for (size_t i = 0; i < n; i++) { /* "not a number" keys last, in order */
-            bool nan = keys->items == ES_ITEMS_NUMBER && isnan(keys->at.n[i]);
+            bool numeric = keys->items != ES_ITEMS_TEXT;
+            bool nan = numeric && isnan(keys->at.n[i]);
             EsByKey *slot = nan ? &by[--last] : &by[m++];
-            slot->number = keys->items == ES_ITEMS_NUMBER ? keys->at.n[i] : 0;
+            slot->number = numeric ? keys->at.n[i] : 0;
             slot->text = keys->items == ES_ITEMS_TEXT ? keys->at.t[i] : NULL;
             slot->at = i;
         }
