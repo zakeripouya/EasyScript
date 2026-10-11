@@ -10,6 +10,9 @@
 #
 # Languages whose tools aren't installed are skipped.
 #
+# A benchmark that needs input has a setup.sh, run in the folder the programs
+# run in (build/bench) before they're timed.
+#
 # A benchmark that builds a list has a file `items` holding how many items
 # the list gets; its rows add peak memory divided by that ("bytes/item", the
 # whole process's peak, so it includes the program itself).
@@ -67,9 +70,11 @@ failed=0
 printf "%-8s %-11s %9s %11s %10s   %s\n" "program" "language" "time (s)" "memory (MB)" "bytes/item" "result"
 printf "%-8s %-11s %9s %11s %10s   %s\n" "-------" "--------" "--------" "-----------" "----------" "------"
 
+cd "$OUT"  # programs run here, next to any input a benchmark's setup.sh makes
 for dir in "$ROOT"/benchmarks/*/; do
     name=$(basename "$dir")
     expected=""
+    [ -f "${dir}setup.sh" ] && sh "${dir}setup.sh"
     for lang in easyscript c go python; do
         case $lang in
             easyscript) src="$dir$name.es"; bin="$OUT/${name}_es" ;;
