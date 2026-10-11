@@ -97,3 +97,20 @@ say k24
 say v24
 say the number of entries in k24
 say the number of entries in v24
+note: at most 10 significant digits; a number that rounds to a whole one prints as one
+keep k25 as 0.99999999999
+let v25 be 0.99999999999
+say k25
+say v25
+keep k26 as 123456789012.5
+let v26 be 123456789012.5
+say k26
+say v26
+keep k27 as -0.00000000001
+let v27 be -0.00000000001
+say k27
+say v27
+keep k28 as (2 divided by 3) as text
+let v28 be (2 divided by 3) as text
+say k28
+say v28

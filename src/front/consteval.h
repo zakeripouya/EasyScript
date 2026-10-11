@@ -23,5 +23,8 @@ bool const_eval(Arena *arena, Diag *diag, const Records *records, const Expr *ex
 
 // How a number prints: the same rules as the runtime's es_number_text.
 const char *const_number_text(Arena *arena, double x, size_t *len);
+// A number key as the runtime keeps it (es_key_number): whole numbers below
+// 1e15 exactly, others to 12 significant digits. Equal texts, same key.
+const char *const_key_text(Arena *arena, double x);
 
 #endif

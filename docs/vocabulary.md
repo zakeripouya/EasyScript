@@ -38,7 +38,7 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | names of several words | Words separated by spaces, made by `let`, `keep`, `to`, `as`, `call`, `for each` or `every`, and then recognized everywhere (the longest known name wins). They can't contain the operator and value words or `be`, `equal`, `to`, `from`, `by`, `of`, `with`, `in`, `at`, `then`, `that`, `giving` | `late fee`, `hourly rate`, `session number` | Available |
 | `( X )` | Grouping: work this out first | `(price plus tax) times 2` | Available |
 
-**How values print:** whole numbers print without decimals (`7`, not `7.0`), other numbers with up to 15 significant digits (`0.1 plus 0.2` prints `0.3`), yes/no as `yes`/`no`, and lists in English: `72, 95 and 88`.
+**How values print:** whole numbers print without decimals (`7`, not `7.0`), other numbers with at most 10 significant digits (`0.1 plus 0.2` prints `0.3`, `1 divided by 3` prints `0.3333333333`; a number that rounds to a whole one prints as one), yes/no as `yes`/`no`, and lists in English: `72, 95 and 88`.
 
 **Kinds:** every value is a number, text, yes/no, a list, or a record, worked out before the program runs (see [Kinds of values](#kinds-of-values)).
 
@@ -539,7 +539,7 @@ All map words are **Available**. A map finds a value by its key: keys are text o
 | `the value for K in M, or D` | The same, but D (a single value, only worked out when it's needed) when K isn't there | `the value for "Bob" in ages, or 0` |
 | `set the value for K in M to X` / `change ...` | Keep X for key K: changes its value, or adds it at the end | `set the value for "Paris" in ages to 19` |
 
-Number keys are the same key when they print the same (`0.1 plus 0.2` finds `0.3`). A name straight before `in` is the key: `the value for item in prices`. `value`, `keys`, `values`, `entries` and `map` are only special in these forms, so they can still be names.
+Number keys are the same key when they're the same to 12 significant digits, so numbers that differ only by rounding errors are one key (`0.1 plus 0.2` finds `0.3`). A name straight before `in` is the key: `the value for item in prices`. `value`, `keys`, `values`, `entries` and `map` are only special in these forms, so they can still be names.
 
 ### Asking about maps
 

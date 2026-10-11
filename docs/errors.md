@@ -508,7 +508,7 @@ Use parentheses to say which: "(the value for "x" in ages, or 0) plus 1" or "the
 | The value after `, or` of the wrong kind | ""ages" is a map from text to numbers, so the value after ", or" has to be a number, but this is text." |
 | Keys or values of different kinds in `a map of` | "All the keys of a map have to be the same kind: the first is text, but this is a number." (and "All the values ...") |
 | Keys that aren't text or numbers | "A map's keys have to be text or numbers, but this is a yes/no value." |
-| The same key written twice in `a map of` | "The key "tea" is in this map twice." with "Each key has one value, so give each key once." (numbers that print the same are one key) |
+| The same key written twice in `a map of` | "The key "tea" is in this map twice." with "Each key has one value, so give each key once." (numbers that are the same to 12 significant digits are one key) |
 | `length of` or `contains` on a map | "I can only find the length of text or a list, but this is a map from text to numbers." with "To count the entries of a map, write "the number of entries in ages"." / a note to use `has` |
 | `add 5 to` a value that's a list of numbers | "This value is a list of numbers, so this could mean two things." with both ways to say it |
 | Changing a fixed map | ""prices" is a constant, so it can't change." with a `let` suggestion |

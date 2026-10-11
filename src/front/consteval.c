@@ -76,11 +76,22 @@ const char *const_number_text(Arena *arena, double x, size_t *len) {
         *len = strlen(special);
         return special;
     }
+    char *s = NULL;
+    if (x != floor(x) || fabs(x) >= 1e15) {  // at most 10 significant digits
+        s = arena_sprintf(arena, "%.10g", x);
+        x = strtod(s, NULL);
+    }
     if (x == 0) x = 0;  // no "-0"
-    const char *fmt = (x == floor(x) && fabs(x) < 1e15) ? "%.0f" : "%.15g";
-    char *s = arena_sprintf(arena, fmt, x);
+    if (x == floor(x) && fabs(x) < 1e15) s = arena_sprintf(arena, "%.0f", x);
     *len = strlen(s);
     return s;
+}
+
+const char *const_key_text(Arena *arena, double x) {
+    if (isnan(x)) return "not a number";
+    if (isinf(x)) return x > 0 ? "infinity" : "-infinity";
+    if (x == 0) x = 0;
+    return arena_sprintf(arena, (x == floor(x) && fabs(x) < 1e15) ? "%.0f" : "%.12g", x);
 }
 
 static ConstValue to_text(Eval *ev, ConstValue v) {
@@ -208,12 +219,10 @@ static bool reject_map_values(Eval *ev, Span span) {
 }
 
 // Whether two fixed keys are the same key: text with the same characters,
-// or numbers that print the same (as es_key_number).
+// or numbers that are the same to 12 significant digits (as es_key_number).
 static bool same_key(Eval *ev, ConstValue a, ConstValue b) {
     if (a.kind == CONST_TEXT) return a.len == b.len && memcmp(a.text, b.text, a.len) == 0;
-    size_t la, lb;
-    const char *ta = const_number_text(ev->arena, a.number, &la), *tb = const_number_text(ev->arena, b.number, &lb);
-    return la == lb && memcmp(ta, tb, la) == 0;
+    return strcmp(const_key_text(ev->arena, a.number), const_key_text(ev->arena, b.number)) == 0;
 }
 
 static bool map_key(Eval *ev, const Expr *expr, ConstValue *keys, size_t i) {

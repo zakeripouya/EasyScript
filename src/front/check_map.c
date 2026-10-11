@@ -66,9 +66,8 @@ static void require_value(Checker *c, const Expr *map, TypeVar map_var, TypeVar 
 static const char *literal_key(Checker *c, const Expr *key) {
     if (key->kind == EXPR_TEXT) return arena_sprintf(c->arena, "\"%.*s\"", (int)key->as.text.len, key->as.text.value);
     if (key->kind != EXPR_NUMBER) return NULL;
-    size_t len;
-    // numbers that print the same are one key
-    return const_number_text(c->arena, strtod(key->as.number.text, NULL), &len);
+    // numbers that are the same to 12 significant digits are one key
+    return const_key_text(c->arena, strtod(key->as.number.text, NULL));
 }
 
 // The same key written twice in one map ("a map of "tea" to 2, "tea" to 3").

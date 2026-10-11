@@ -110,3 +110,9 @@ say copied is prices
 let reordered be a map of "water" to 0, "coffee!" to 3, "milk!" to 1, "tea!" to 2.
 say reordered is prices
 say reordered is not prices
+note: number keys within rounding of each other (12 significant digits) are one key, like "is"
+let near be a map of 1 to "one"
+set the value for 1.0000000000001 in near to "still one"
+set the value for 1.00000000001 in near to "another"
+say the number of entries in near
+say the value for 1 in near

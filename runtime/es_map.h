@@ -12,8 +12,9 @@
  * its entry is (linear probing; a removed key leaves ES_GONE behind until
  * the index is rebuilt).
  *
- * Number keys are the same key when they print the same (es_key_number), so
- * 0.1 plus 0.2 finds the value kept for 0.3, as "is" says they're equal.
+ * Number keys are the same key when they're the same to 12 significant
+ * digits (es_key_number), so 0.1 plus 0.2 finds the value kept for 0.3, as
+ * "is" (equal within a relative 1e-12) says they're equal.
  *
  * Maps are shared like lists: every name that holds the same map sees its
  * changes. Text and records in a map are shared; lists and maps in a map
@@ -33,15 +34,16 @@
 
 /* --- Keys ------------------------------------------------------------------------ */
 
-/* The number a key is kept as: the number its printed form stands for, so
- * numbers that print the same are the same key. Whole numbers print exactly;
- * others with 15 significant digits (see es_number_text). */
+/* The number a key is kept as: whole numbers exactly, others rounded to 12
+ * significant digits, close to what "is" treats as equal (a relative 1e-12),
+ * so numbers that differ only by rounding errors are the same key. (Printing
+ * rounds further, to 10 digits; see es_number_text.) */
 static double es_key_number(double x) {
     if (isnan(x)) return NAN;
     if (isinf(x)) return x;
     if (x == floor(x) && fabs(x) < 1e15) return x == 0 ? 0.0 : x; /* no -0 */
-    char digits[32]; /* "%.15g" of a double takes at most 23 characters */
-    snprintf(digits, sizeof digits, "%.15g", x);
+    char digits[32]; /* "%.12g" of a double takes at most 19 characters */
+    snprintf(digits, sizeof digits, "%.12g", x);
     return strtod(digits, NULL);
 }
 
