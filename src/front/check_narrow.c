@@ -177,6 +177,7 @@ bool checker_fits(Checker *c, TypeVar target, TypeVar value, const Expr *expr, s
         ((Expr *)expr)->lifted = true;  // codegen puts a number, text or yes/no in a box
         return true;
     }
+    if (checker_iface_fits(c, target, value, expr)) return true;  // a dog where something that can speak goes
     return types_unify(c, target, value);
 }
 

@@ -399,6 +399,7 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
     case STMT_RECORD: checker_check_record(c, (Stmt *)stmt); break;
     case STMT_SUM: checker_check_sum(c, stmt); break;
     case STMT_MATCH: checker_check_match(c, stmt); break;
+    case STMT_INTERFACE: checker_check_interface(c, stmt); break;
     }
 }
 
@@ -526,13 +527,14 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
     size_t first_error = diag_count(diag);
     checker_collect_records(&c, program);
     checker_collect_sums(&c, program);
+    checker_collect_interfaces(&c, program);
     collect_functions(&c, program);
     checker_collect_constants(&c, program);
     collect_names(&c, program);
     for (size_t pass = 0; pass < 4; pass++) {  // constants, kinds of record, functions, then the rest
         for (size_t i = 0; i < program->len; i++) {
             const Stmt *stmt = program->items[i];
-            int kind_pass = stmt->kind == STMT_CONSTANT ? 0 : stmt->kind == STMT_RECORD || stmt->kind == STMT_SUM ? 1
+            int kind_pass = stmt->kind == STMT_CONSTANT ? 0 : stmt->kind == STMT_RECORD || stmt->kind == STMT_SUM || stmt->kind == STMT_INTERFACE ? 1
                             : stmt->kind == STMT_FUNCTION ? 2 : 3;
             if (kind_pass == (int)pass) check_stmt(&c, stmt);
         }

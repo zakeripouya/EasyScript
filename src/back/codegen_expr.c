@@ -427,6 +427,10 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
             cg_emit_value_call(g, expr, out);
             break;
         }
+        if (expr->as.call.dispatch) {
+            cg_emit_dispatch(g, expr, out);
+            break;
+        }
         emit_call(g, expr->as.call.target, expr->as.call.args.items, expr->as.call.args.len, expr->pos, out);
         break;
     case EXPR_FUNCTION_REF: cg_emit_function_ref(g, expr, out); break;

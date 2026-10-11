@@ -25,6 +25,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [13. Maps](#13-maps) | Available |
 | [14. Kinds with variants](#14-kinds-with-variants) | Available |
 | [15. Functions as values](#15-functions-as-values) | Available |
+| [16. Interfaces](#16-interfaces) | Available |
 
 ---
 
@@ -1594,3 +1595,58 @@ Functions are freed when nothing holds them, like records. A function that's kep
 Nothing new: every kind mistake with function values is caught before the program runs. A runtime error inside a function value shows it in the chain of calls, like any function: `while working out "the function made on line 3" (n was 0)`.
 
 Try it: `./easyscript run examples/programs/counter.es`, `./easyscript run examples/programs/event_handlers.es` and `./easyscript run examples/programs/pipeline.es`
+
+## 16. Interfaces
+
+**Available.** An interface says what a value has to be able to do. Any kind of record, or kind with variants, that can do it fits, without saying so:
+
+```
+something that can speak is anything with:
+    a way to speak, giving back text.
+
+a dog is a kind of thing with:
+    name, which is text.
+a cat is a kind of thing with:
+    name, which is text.
+
+to speak, for a dog, giving back text:
+    give back "Woof!".
+to speak, for a cat, giving back text:
+    give back "Meow.".
+
+let zoo be an empty list of things that can speak.
+add (a new dog with name "Rex") to the end of zoo.
+add (a new cat with name "Tom") to the end of zoo.
+for each animal in zoo:
+    say speak animal.
+```
+
+```
+Woof!
+Meow.
+```
+
+### Defining one
+
+`NAME is anything with:` at the start of a line, with its **ways** indented below, one per line. The name is every word before `is anything with`, so it can read as a phrase (`something that can speak`) or a noun (`a speaker`). A way is written like the first line of a method, without the kind of record: `a way to speak.`, `a way to greet with name (text), giving back text.` Each input's kind has to be written, because that's what the methods are compared with.
+
+### What fits
+
+A kind of record (or with variants) fits when it has a method for every way, with the same name, the same kinds of input, and the same result. A way that gives back an interface can be a method that gives back any kind that fits it. Nothing else is needed: the dog above never says it can speak. Giving one that doesn't fit is an error before the program runs:
+
+```
+Line 22: A fish can't be used as something that can speak: it has no way to speak.
+    add (a new fish with name "Nemo") to the end of zoo.
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Give it one, like "to speak, for a fish:".
+```
+
+### Using one
+
+An interface is a kind like any other: `(something that can speak)` for an input, `giving back a speaker`, `an empty list of things that can speak` (the plural of a name that starts with `something` or `anything` is `things ...`), `a map from text to speakers`, `(a speaker or nothing)`. A dog, a cat or a bird goes wherever one is kept.
+
+Its ways are called like methods: `speak animal`, `greet animal with "Ann"`. Which method runs depends on the kind of the value while the program runs. A value of an interface has no fields (`animal's name` is an error), and only its ways can be called on it.
+
+A list written out holds one kind, so `a list of rex and tom` is an error that says which interface both fit; start with an empty list of the interface and add each one instead.
+
+Try it: `./easyscript run examples/programs/zoo.es`

@@ -21,6 +21,7 @@ TypeVar checker_require_list(Checker *c, TypeVar var, const Expr *at, const char
 // "\"scores\" is a list of numbers, so it can't hold text."
 static void require_item(Checker *c, const Expr *list, TypeVar list_var, TypeVar item, const Expr *value,
                          TypeVar value_var, bool contain) {
+    if (!contain && checker_iface_fits(c, item, value_var, value)) return;
     if (types_unify(c, item, value_var)) return;
     const char *subject = list->kind == EXPR_NAME ? arena_sprintf(c->arena, "\"%s\"", list->display) : "This";
     if (contain) {
@@ -51,6 +52,12 @@ static TypeVar check_literal(Checker *c, const Expr *expr) {
             diag_error(c->diag, item->pos.span,
                        "All the items of a list have to be the same kind: the first is %s, but this is %s.",
                        checker_kind(c, first), checker_kind(c, var));
+            Type shared = checker_shared_interface(c, types_of(c, first), types_of(c, var));
+            if (shared != TYPE_UNKNOWN) {
+                diag_note(c->diag, "Both can be used as %s. To keep them in one list, start with \"an empty list of "
+                                   "%s\" and add each one to its end.", checker_type_name(c, shared),
+                          c->records->interfaces.items[type_iface_index(shared)].plural);
+            }
         }
     }
     return types_new_list(c, first, expr->pos.line);

@@ -83,6 +83,11 @@ static TypeVar field_of(Checker *c, const Expr *expr, TypeVar base, Type type) {
     const Expr *record = expr->as.field.record;
     if (type_is_maybe(type)) checker_report_maybe(c, record, base);  // then goes on as if it were checked
     if (type_is_sum(type)) return checker_sum_field(c, expr, base, type);
+    if (type_is_iface(type)) {
+        diag_error(c->diag, record->pos.span, "%s has no fields, only ways.", checker_capitalized(c, type_present(type)));
+        diag_note(c->diag, "Use one of its ways instead, like a method: \"speak pet\".");
+        return error_var(c);
+    }
     if (!type_is_record(type)) {
         diag_error(c->diag, record->pos.span, "Only a record has fields, but this is %s.", checker_kind(c, base));
         diag_note(c->diag, "A field is part of a record, like \"rex's name\" for a dog called rex.");

@@ -328,6 +328,7 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
     case STMT_RECORD: sb_appendf(scratch, "record %s", stmt->as.record.name.text); break;
     case STMT_SUM: sb_appendf(scratch, "kind %s", stmt->as.sum.name.text); break;
     case STMT_MATCH: return "check which kind";
+    case STMT_INTERFACE: sb_appendf(scratch, "interface %s", stmt->as.iface.name.text); break;
     }
     return scratch->data;
 }
@@ -481,6 +482,23 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
         }
         break;
     case STMT_MATCH: dump_match(stmt, depth, d); break;
+    case STMT_INTERFACE:
+        for (size_t i = 0; i < stmt->as.iface.ways.len; i++) {
+            const Way *way = &stmt->as.iface.ways.items[i];
+            StrBuf label;
+            sb_init(&label, d->out->arena);
+            sb_appendf(&label, "way %s (", way->name.text);
+            for (size_t k = 0; k < way->params.len; k++) {
+                sb_appendf(&label, "%s%s: %s", k ? ", " : "", way->params.items[k].text,
+                           ast_type_name(d->out->arena, d->records, way->declared.items[k]));
+            }
+            sb_append_char(&label, ')');
+            if (way->result != TYPE_NOTHING) {
+                sb_appendf(&label, " giving back %s", ast_type_name(d->out->arena, d->records, way->result));
+            }
+            dump_line(&way->pos, depth + 1, d, label.data);
+        }
+        break;
     }
 }
 

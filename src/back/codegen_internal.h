@@ -61,6 +61,7 @@ typedef struct {
     StrBuf head;
     StrBuf code;
     Vec(const Stmt *) refs;
+    Vec(const char *) dispatchers;  // the C functions that call an interface's way (es_way0_speak), once each
 } ClosurePool;
 
 typedef struct {
@@ -221,6 +222,10 @@ void cg_emit_function_refs(Codegen *g, StrBuf *out);
 // codegen_apply.c: built-ins that take a function
 void cg_emit_apply(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_APPLY
 const char *cg_replace_stmt(Codegen *g, const Stmt *stmt);      // apply F to every X in L, keep only, sort L by F
+
+// codegen_iface.c: calling an interface's way, by the kind of the value
+void cg_emit_dispatch(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_CALL with dispatch set
+Type cg_dispatch_result(const Codegen *g, const Expr *expr);       // what the way gives back
 
 // codegen_text.c
 void cg_emit_text_op(Codegen *g, const Expr *expr, StrBuf *out);       // EXPR_TEXT_OP

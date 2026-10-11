@@ -316,6 +316,11 @@ static void report_no_method(Checker *c, const Expr *expr, Type kind) {
 bool checker_settle_method(Checker *c, const Deferred *d) {
     Type kind = types_of(c, d->left);
     if (kind == TYPE_ERROR) return true;
+    TypeVar dispatched;
+    if (type_is_iface(kind) && checker_dispatch(c, d->expr, d->args, d->allowed, &dispatched)) {
+        types_unify(c, d->result, dispatched);
+        return true;
+    }
     if (type_is_maybe(kind)) kind = type_present(kind);
     if (!type_is_record(kind) && !type_is_sum(kind)) {
         if (kind == TYPE_UNKNOWN || kind == TYPE_MAYBE) return false;
@@ -356,6 +361,8 @@ TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value) {
     size_t n = expr->as.call.args.len;
     TypeVar *args = arena_alloc(c->arena, (n + 1) * sizeof(TypeVar));
     for (size_t i = 0; i < n; i++) args[i] = checker_check_value(c, expr->as.call.args.items[i]);
+    TypeVar dispatched;
+    if (checker_dispatch(c, expr, args, as_value, &dispatched)) return dispatched;  // "speak pet": an interface's way
     const Function *f = checker_find_function(c, expr->as.call.name);
     if (!f) {
         report_unknown_function(c, expr->as.call.name, expr->display, expr->pos);

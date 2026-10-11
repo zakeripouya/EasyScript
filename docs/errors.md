@@ -664,6 +664,28 @@ Memory check: 1 value was still alive at the end of the program, because a funct
 A function that uses the name it's kept in (or a record, list or map that holds it) is never freed. Define it with "to" instead, or set that name to something else before the program ends.
 ```
 
+### Interfaces
+
+A kind fits an interface when it has every way, so giving one that doesn't is caught before the program runs: [`iface_errors.es`](../tests/errors/iface_errors.es)
+
+```
+Line 22: A fish can't be used as something that can speak: it has no way to speak.
+    add (a new fish with name "Nemo") to the end of zoo.
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Give it one, like "to speak, for a fish:".
+```
+
+| Problem | Message (summary) |
+|---|---|
+| A method that doesn't match the way | "A cat can't be used as something that can speak: its way to greet doesn't match." with the way and the method's first line |
+| A field of an interface's value | "Something that can speak has no fields, only ways." |
+| A way it doesn't have | "Something that can speak has no way to jump." with the ways it has |
+| A way given the wrong inputs, or used as a value when it gives back nothing | "The way to greet needs text for "name", but this is a number." / "The way to mix takes 2 values after blender, but this gives it 1." / "The way to speak doesn't give back a value, so it can't be used here." |
+| Two kinds in a list written out | "All the items of a list have to be the same kind: ..." with "Both can be used as a speaker. To keep them in one list, start with "an empty list of speakers" and add each one to its end." |
+| Definitions | ""speaker" already has a way to speak, on line 5." / "You already defined "speaker" on line 1." / ""dog" is already the name of a kind of record, on line 5." / "Interfaces can only be defined at the top level, not inside an "if" or a loop." ([`iface_definitions.es`](../tests/errors/iface_definitions.es)) |
+
+Mistakes in how a definition is written are parser errors, like "Say what kind of value "name" is, in parentheses after it.", "Each line of an interface is a way, but this starts with "speak"." and "The ways of "speaker" go on the lines below, indented."; the full set is in [`err_iface.err`](../tests/ast/err_iface.err).
+
 ### While the program runs
 
 Runtime errors look like compile errors: `Line N:` and what went wrong, the line with carets under the part that failed, and sometimes a hint. Anything the program printed before the error stays printed. Only mistakes that kinds can't catch are left for this.

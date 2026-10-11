@@ -25,6 +25,7 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 - **A call uses the same connector as the definition,** or `with`, `of` and `using`, which work for every function: `add tax to 100`, `pause for 2`, `busiest artist from names`, `area with 3 and 4`. Another connector is an error that names the ones it takes.
 - **Inputs are separated by `and`** (and by commas after `using`). Each input is a single value; anything longer goes in parentheses.
 - **A function kept as a value is called the same way,** with `call`: `call handler with "Ann"`, `call item 1 of steps with 3`. In a value, `handler with "Ann"` works too when it's a name, like any call.
+- **An interface asks for what a value can do, not what it says it is:** a kind fits `something that can speak` when it has the methods, and never has to name the interface. Its ways are written like the first lines of methods, so fitting is comparing the two.
 - **The same shape everywhere:** records take their fields the same way (`a new dog with name "Rex" and age 3`), values of kinds with variants too (`a new circle with radius 3`), and methods put the record first (`rename rex with "Max"`).
 - **A connector only introduces inputs where it can't mean anything else.** `for` before a kind of record makes a method (`to bark for a dog:`), and `for` always ends a function's name. `to`, `for`, `from` and `in` only start a call's inputs for a function defined with them, because elsewhere they belong to the sentence around the call (`subtract X from Y`, `the value for K in M`).
 
@@ -88,6 +89,7 @@ Each exception exists because following the rule would cost more than it gives. 
 - **A word ending in `'s` is always a possessive,** so a name can't end in `'s`, and `it's` means "its" (the field of `it`), not "it is", except right after `when` in `check which kind`, where `when it's a circle:` reads as English does ("when it is a circle"); `when it is a circle:` works too. `its radius` (without the apostrophe) is also the field of `it`, but only before a field's name, so `its` stays an ordinary name elsewhere.
 
 - **The words naming the items in `every number in scores` and `the numbers in scores where ...` aren't names.** They're there so the sentence reads as English; inside, the item is `it`. Making them names would mean `the scores in scores` couldn't be written, and a condition like `where it is above 50` already says which item it means.
+- **An interface's name is every word before `is anything with`,** stop words included, so `something that can speak` reads as English. Other names can't contain words like `that`, because there they'd end a name; here the sentence's own words mark where the name ends. Its plural turns `something`/`anything` into `things` (`a list of things that can speak`).
 - **`call F` is a value as well as a sentence** (`let n be call next`), although values don't start with a verb. A name alone is the function itself (`let f be next` keeps it), so a function with no inputs needs a word that calls it, and `call` is the one sentences already use.
 
 ## Open questions

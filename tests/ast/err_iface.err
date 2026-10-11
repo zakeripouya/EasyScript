@@ -1,0 +1,29 @@
+Line 1: The ways of "speaker" go on the lines below, indented.
+    a speaker is anything with: a way to speak.
+                                  ^^^
+Write each one on its own line, like "    a way to speak."
+
+Line 3: Say what kind of value "name" is, in parentheses after it.
+        a way to greet with name.
+                            ^^^^
+A way says the kind of each input, like "name (text)".
+
+Line 4: Each line of an interface is a way, but this starts with "speak".
+        speak loudly.
+        ^^^^^
+Write each way on its own line, like "a way to greet with name (text), giving back text."
+
+Line 5: I expected the way to end here, but found "loudly".
+        a way to greet with name (text) loudly.
+                                        ^^^^^^
+Write each way on its own line, like "a way to greet with name (text), giving back text."
+
+Line 6: This line is indented more than the ways above it.
+            a way to sing.
+    ^^^^^^^^
+Line the ways up with each other.
+
+Line 7: Something is missing after ", giving back".
+        a way to answer, giving back.
+                       ^^^^^^^^^^^^^
+Say which kind of value: "a number", "text", "yes or no", or a list like "a list of numbers".

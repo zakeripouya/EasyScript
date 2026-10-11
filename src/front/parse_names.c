@@ -234,10 +234,77 @@ static size_t find_variants(Parser *p, size_t colon, size_t sum, bool added) {
     return i;
 }
 
+// NAME is anything with: (NAME is every word before "is anything with", so
+// it can be "something that can speak"); its token count, or 0.
+size_t parser_interface_words(const Parser *p, size_t i) {
+    if (!at_line_start(p, i)) return 0;
+    size_t n = 0;
+    while (i + n < p->count && p->tokens[i + n].kind == TOK_WORD) {
+        size_t j = i + n;
+        if (word_at(p, j, "is") && word_at(p, j + 1, "anything") && word_at(p, j + 2, "with") && j + 3 < p->count &&
+            p->tokens[j + 3].kind == TOK_COLON) {
+            return n;
+        }
+        n++;
+    }
+    return 0;
+}
+
+// "something that can speak" -> "things that can speak"; others like a record kind's.
+static const char *interface_plural(Arena *arena, const char *name) {
+    if (strncmp(name, "something ", 10) == 0) return arena_sprintf(arena, "things %s", name + 10);
+    if (strncmp(name, "anything ", 9) == 0) return arena_sprintf(arena, "things %s", name + 9);
+    return plural_of(arena, name);
+}
+
+// One way's line: "way to NAME [with ...]" (the "a" is dropped): its name is
+// a method's name, so calls of it parse like method calls.
+static void find_way(Parser *p, size_t i) {
+    if (!word_at(p, i, "way") || !word_at(p, i + 1, "to")) return;
+    size_t j = i + 2, n = 0;
+    while (j + n < p->count && is_inner_word(&p->tokens[j + n]) && !word_among(&p->tokens[j + n], parser_input_intros) &&
+           !word_at(p, j + n, "giving")) {
+        n++;
+    }
+    if (n == 0 && j < p->count && parser_is_name_word(&p->tokens[j])) n = 1;  // a one-word name that's a stop word
+    if (n == 0) return;
+    const Token *after = j + n < p->count ? &p->tokens[j + n] : NULL;
+    unsigned intro = after && word_among(after, parser_input_intros) ? parser_intro_bit(after->text) : 0;
+    add_known(p, join_words(p, j, n, false, ' '), n, true, intro, true);
+}
+
+// Adds the interface named by tokens [i, i + n) and finds its ways; returns
+// the index after its block.
+static size_t find_interface(Parser *p, size_t i, size_t n) {
+    const char *name = join_words(p, i, n, false, ' ');
+    bool known = false;
+    for (size_t k = 0; k < p->records->interfaces.len; k++) known |= strcmp(p->records->interfaces.items[k].name, name) == 0;
+    if (!known) {
+        RecordKind kind = {name, join_words(p, i, n, true, ' '), interface_plural(p->arena, name), NULL};
+        vec_push(p->arena, &p->records->interfaces, kind);
+    }
+    size_t j = i + n + 4;  // is anything with :
+    if (j + 1 >= p->count || p->tokens[j].kind != TOK_NEWLINE || p->tokens[j + 1].kind != TOK_INDENT) return j;
+    j += 2;
+    for (size_t depth = 1; depth > 0 && j < p->count; j++) {
+        TokenKind kind = p->tokens[j].kind;
+        if (kind == TOK_INDENT) depth++;
+        if (kind == TOK_DEDENT) depth--;
+        if (depth == 1 && kind == TOK_WORD && at_line_start(p, j)) find_way(p, j);
+    }
+    return j;
+}
+
 // Every record kind and kind with variants, in order, every variant, and
-// every field name: "NAME, which is" in a record, "with NAME (KIND)" in a variant.
+// every field name: "NAME, which is" in a record, "with NAME (KIND)" in a
+// variant; and every interface with the names of its ways.
 static void find_records(Parser *p) {
     for (size_t i = 0; i < p->count; i++) {
+        size_t interface = parser_interface_words(p, i);
+        if (interface > 0) {
+            i = find_interface(p, i, interface) - 1;
+            continue;
+        }
         size_t n = record_definition_words(p, i);
         if (n > 0) {
             add_kind(p, i, n, false);

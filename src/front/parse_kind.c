@@ -31,10 +31,27 @@ static int match_sum(const Parser *p, size_t ahead, bool plural, size_t *words) 
     return sum;
 }
 
+// The interface whose name (or plural) the tokens `ahead` spell, or -1.
+static int match_interface(const Parser *p, size_t ahead, bool plural, size_t *words) {
+    int found = -1;
+    *words = 0;
+    for (size_t i = 0; i < p->records->interfaces.len; i++) {
+        const RecordKind *kind = &p->records->interfaces.items[i];
+        size_t n = parser_match_words_at(p, ahead, plural ? kind->plural : kind->name);
+        if (n > *words) *words = n, found = (int)i;
+    }
+    return found;
+}
+
 Type parser_match_kind_name(const Parser *p, size_t ahead, bool plural, size_t *words) {
-    size_t record_words, sum_words;
+    size_t record_words, sum_words, interface_words;
+    int interface = match_interface(p, ahead, plural, &interface_words);
     int record = parser_match_record(p, ahead, plural, &record_words);
     int sum = match_sum(p, ahead, plural, &sum_words);
+    if (interface >= 0 && interface_words > record_words && interface_words > sum_words) {
+        *words = interface_words;
+        return type_iface((size_t)interface);
+    }
     if (sum >= 0 && sum_words > record_words) {
         *words = sum_words;
         return type_sum((size_t)sum);

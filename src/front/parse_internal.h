@@ -250,6 +250,11 @@ int parser_match_variant(const Parser *p, size_t ahead, size_t *words);
 bool parser_at_sum_definition(const Parser *p);
 Stmt *parse_sum(Parser *p);  // a shape is one of: (variants indented below)
 
+// parse_iface.c: interfaces
+// NAME is anything with: starts at token i (pre-scan); the number of words in NAME, or 0.
+size_t parser_interface_words(const Parser *p, size_t i);
+Stmt *parse_interface(Parser *p);  // something that can speak is anything with: (ways indented below)
+
 // parse_match.c
 // After a value: "is a circle", "is not a circle", "isn't a circle" (a
 // variant, written with "a" or "an"); NULL if none is next.

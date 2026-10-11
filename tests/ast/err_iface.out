@@ -1,0 +1,3 @@
+interface talker [2:3]
+say [8:1]
+  text "end" [8:5]

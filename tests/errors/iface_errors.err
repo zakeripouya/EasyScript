@@ -1,0 +1,54 @@
+Line 6: "speaker" already has a way to speak, on line 5.
+        a way to speak.
+                 ^^^^^
+Each way of an interface needs its own name.
+
+Line 22: A fish can't be used as something that can speak: it has no way to speak.
+    add (a new fish with name "Nemo") to the end of zoo.
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Give it one, like "to speak, for a fish:".
+
+Line 23: A cat can't be used as something that can speak: its way to greet doesn't match.
+    add (a new cat with name "Tom") to the end of zoo.
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+It has to be "a way to greet with name (text), giving back text", but it's defined on line 19 as "to greet, for a cat, with name (a number), giving back text".
+
+Line 25: Something that can speak has no fields, only ways.
+    say pet's name.
+        ^^^
+Use one of its ways instead, like a method: "speak pet".
+
+Line 26: Something that can speak has no way to jump.
+    say jump with pet.
+        ^^^^^^^^^^^^^
+Only its ways can be used on it: "speak" and "greet".
+
+Line 27: The way to greet needs text for "name", but this is a number.
+    say greet pet with 5.
+                       ^
+It's "a way to greet with name (text), giving back text".
+
+Line 28: The way to speak doesn't give back a value, so it can't be used here.
+    say speak pet.
+        ^^^^^^^^^
+It's "a way to speak". Use it as a sentence of its own.
+
+Line 29: The way to greet takes 1 value after pet, but this gives it 0.
+    say greet pet.
+        ^^^^^^^^^
+It's "a way to greet with name (text), giving back text".
+
+Line 30: All the items of a list have to be the same kind: the first is a dog, but this is a cat.
+    let mixed be a list of (a new dog with name "Rex") and (a new cat with name "Tom").
+                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Both can be used as a speaker. To keep them in one list, start with "an empty list of speakers" and add each one to its end.
+
+Line 32: Interfaces can only be defined at the top level, not inside an "if" or a loop.
+        a thing is anything with:
+          ^^^^^
+Move it to the start of a line, outside every block.
+
+Line 38: The way to mix takes 2 values after blender, but this gives it 1.
+        say mix blender with "a".
+            ^^^^^^^^^^^^^^^^^^^^
+It's "a way to mix with x (text) and y (text), giving back text".

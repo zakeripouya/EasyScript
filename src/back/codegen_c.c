@@ -331,8 +331,9 @@ static void emit_return(Codegen *g, const Stmt *stmt) {
 // A call written as a sentence: text it gives back is released, other values ignored.
 static void emit_call_statement(Codegen *g, const Stmt *stmt) {
     const Expr *call_expr = stmt->as.call;
-    Type result = call_expr->as.call.callee ? ast_func_kind(g->records, call_expr->as.call.callee->type)->result
-                                            : call_expr->as.call.target->as.function.result;
+    Type result = call_expr->as.call.callee    ? ast_func_kind(g->records, call_expr->as.call.callee->type)->result
+                  : call_expr->as.call.dispatch ? cg_dispatch_result(g, call_expr)
+                                                : call_expr->as.call.target->as.function.result;
     const char *call = expr_code(g, stmt->as.call);
     cg_indent(g);
     if (type_counted(result)) {
@@ -408,6 +409,7 @@ void cg_emit_stmt(Codegen *g, const Stmt *stmt) {
     case STMT_CONSTANT: break;  // a static initializer, worked out by the compiler
     case STMT_RECORD: break;    // a C struct, before the functions
     case STMT_SUM: break;       // a C struct per variant, likewise
+    case STMT_INTERFACE: break; // nothing: a way is called through es_wayN_NAME
     case STMT_MATCH: cg_emit_match(g, stmt); break;
     case STMT_RETURN: emit_return(g, stmt); break;
     case STMT_CALL: emit_call_statement(g, stmt); break;

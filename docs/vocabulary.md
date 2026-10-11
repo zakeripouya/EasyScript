@@ -643,6 +643,24 @@ All of these are **Available**. A kind with variants is a value that's one of se
 
 A kind with variants is written like any other kind: `(a shape)`, `giving back an expression`, `a list of shapes`, `a map from text to shapes`, `(a shape or nothing)`, and methods `to describe, for a shape:`. Fields can't be changed (`set s's radius to 4` is an error): make a new value instead. Every kind, kind of record and variant needs its own name.
 
+## Interfaces
+
+All of these are **Available**. An interface says what a value has to be able to do, as its ways; any kind of record (or kind with variants) whose methods match them fits it, without saying so. See the [language guide](language-guide.md#16-interfaces).
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `NAME is anything with:` + indented ways | Defines an interface. NAME is every word before `is anything with` (so it can be `something that can speak`). Only at the top level | `something that can speak is anything with:`, `a speaker is anything with:` |
+| `a way to NAME.` | A way with no inputs that gives back nothing | `a way to speak.` |
+| `a way to NAME with INPUT (KIND) and INPUT (KIND), giving back KIND.` | A way with inputs (each with its kind, which has to be written) and a result (`of`, `using`, `to`, `for`, `from` and `in` work like `with`) | `a way to greet with name (text), giving back text.` |
+| `(something that can speak)`, `a list of things that can speak`, `(a speaker or nothing)` | The interface as a kind. Its plural is `things that can ...` for a name starting with `something` or `anything`, otherwise like a record kind's | `to introduce with pet (something that can speak):` |
+| `NAME X ...` | Calls the way on a value of the interface: the method of the value's kind runs | `speak pet`, `greet pet with "Ann"` |
+
+Rules:
+
+- **Fitting:** a kind fits when it has a method for every way with the same name, the same kinds of input, and the same result (or, for a way that gives back an interface, any kind that fits it). Giving a value of a kind that doesn't fit is a compile error that names the missing way.
+- **Mixed lists:** `an empty list of things that can speak`, then add dogs, cats and birds. A list written out (`a list of rex and tom`) still holds one kind; the error says which interface both fit.
+- **Only ways:** a value of an interface has no fields, and only its ways can be called on it. It can be compared (`is`: the same record, or equal values of a kind with variants), printed, kept in lists, maps and fields, and be `or nothing`.
+
 ## Kinds of values
 
 Every value has a kind, worked out by the compiler before the program runs (**Available**). Kind mistakes are compile errors with the line and a caret. See the [language guide](language-guide.md#9-types).
@@ -659,6 +677,7 @@ Every value has a kind, worked out by the compiler before the program runs (**Av
 | kind with variants | `(a shape)`, `(a shape or nothing)`, `giving back an expression` | `a new circle ...`, a field holding one, `a copy of` |
 | number, text or yes/no that can be nothing | `(a number or nothing)`, `(text or nothing)`, `(yes or no or nothing)`, `giving back a number or nothing` | `the position of` (nothing when it isn't there), a field or input of that kind, `nothing` where one goes. It has to be checked (`if X is not nothing:`, `check which kind X is:`) before it's used as a number, text or yes/no. A list or map can't be nothing |
 | map | `(a map from text to numbers)`, `(a map from numbers to lists of text)`, `giving back a map from text to numbers`; in a list or map: `maps from text to numbers` | `a map of ...`, `an empty map from ...`, `a copy of` |
+| interface | `(something that can speak)`, `(a speaker or nothing)`; in a list or map: `things that can speak`, `speakers` | any record or value of a kind with variants that fits it, where one is kept |
 | function | `(a function taking a number and giving back text)`, `(a function taking text)`, `(a function giving back a number)`, `(a function)`; in a list or map: `functions taking text` | `the function double`, `a function taking x ...`, a field or input holding one |
 
 ## Later phases

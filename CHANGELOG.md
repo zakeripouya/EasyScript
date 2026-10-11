@@ -12,6 +12,12 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Interfaces** (Phase 2, step 20). See the new [chapter](docs/language-guide.md#16-interfaces).
+  - **Defining one:** `something that can speak is anything with:` (or `a speaker is anything with:`) with ways indented below: `a way to speak.`, `a way to greet with name (text), giving back text.`
+  - **Fitting:** any kind of record or kind with variants with a method of the same name, inputs and result for every way fits, without saying so; a way giving back an interface accepts a method giving back any kind that fits it. Giving one that doesn't is an error naming the missing way ("A fish can't be used as something that can speak: it has no way to speak.").
+  - **Using one:** as an input's kind, `an empty list of things that can speak`, in maps and fields, `or nothing`; `speak animal` picks the method by the value's kind while the program runs (a C function per way that's called, testing the value's type). Values of an interface have no fields; a list written out with two kinds suggests the interface they share.
+  - Example `zoo.es` (dogs, cats and birds in one list).
+  - Inside the compiler: `TYPE_IFACE + n` (`Records.interfaces`), `STMT_INTERFACE` with `Way`s, `EXPR_CALL.dispatch`; record kinds now use 16 to 1023, kinds with variants start at 2048; new files `src/front/parse_iface.c`, `src/front/check_iface.c`, `src/back/codegen_iface.c`.
 - **Functions as values** (Phase 2, step 20). See the new [chapter](docs/language-guide.md#15-functions-as-values).
   - **Making them:** `the function double` (a `to` function, not called); `a function taking x that gives back x times 2` on one line, or `a function taking word (text):` with its sentences indented below (the colon ends the sentence); `a function that gives back 42` and `a function:` with no inputs. Inputs and results are inferred like a `to` function's, or written down (`a function taking x (a number), giving back text:`).
   - **Calling them:** `call f with 3` (a sentence or a value; `of` and `using` too; any single value can be called: `call item 1 of steps with 3`, `call the value for "click" in handlers with "OK"`), `f with 3` in a value, and `call next` for one with no inputs.

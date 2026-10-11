@@ -317,6 +317,7 @@ typedef enum {
     STMT_RECORD,       // a dog is a kind of thing with: (fields indented below; top level only)
     STMT_SUM,          // a shape is one of: (variants indented below; top level only)
     STMT_MATCH,        // check which kind S is: (when it's a circle: ... otherwise: ...)
+    STMT_INTERFACE,    // something that can speak is anything with: (ways indented below; top level only)
 } StmtKind;
 
 // A constant's value, worked out by the compiler (see front/consteval.h).
@@ -398,6 +399,18 @@ typedef struct {
     Vec(Field) fields;  // in order; none have starting values
     SourcePos pos;
 } VariantDef;
+
+// One way of an interface: "a way to greet with name (text), giving back text."
+// A kind of record (or with variants) has it when it has a method with the
+// same name, inputs and result.
+typedef struct {
+    Name name;           // "greet"
+    const char *intro;   // the word before its inputs ("with"), or NULL
+    Vec(Name) params;
+    Vec(Type) declared;  // each input's kind (always written)
+    Type result;         // TYPE_NOTHING when it gives back nothing
+    SourcePos pos;
+} Way;
 
 // One part of "check which kind S is": "when it's a circle or a square:",
 // "when it's nothing:", or a final "otherwise:".
@@ -514,6 +527,11 @@ struct Stmt {
             Expr *subject;
             Vec(MatchBranch) branches;  // the "when"s in order, then an "otherwise" if there is one
         } match;
+        struct {
+            Name name;
+            size_t index;  // in Records.interfaces
+            Vec(Way) ways;
+        } iface;
     } as;
 };
 

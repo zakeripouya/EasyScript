@@ -82,9 +82,8 @@ TypeVar checker_check_function_ref(Checker *c, const Expr *expr) {
     if (checker_shared_method(c, f->name)) {
         diag_error(c->diag, expr->pos.span, "Several kinds of record have a method called \"%s\", so I can't tell "
                    "which one this is.", f->display);
-        diag_note(c->diag, "Make a function that calls the one you mean, like \"a function taking pet (%s):\" with "
-                           "\"%s pet\" indented below it.",
-                  checker_type_name(c, f->definition->as.function.declared.items[0]), f->display);
+        diag_note(c->diag, "Make a function that calls it, like \"a function taking pet:\" with \"%s pet\" indented "
+                           "below it; each call picks the method by the kind of record it's given.", f->display);
         return error_var(c);
     }
     ((Expr *)expr)->as.ref.target = f->definition;

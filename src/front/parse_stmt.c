@@ -410,6 +410,7 @@ Stmt *parse_statement(Parser *p) {
     const Token *verb = parser_peek(p, 0);
     if (parser_at_record_definition(p)) return parse_record(p);
     if (parser_at_sum_definition(p)) return parse_sum(p);
+    if (parser_interface_words(p, p->pos) > 0) return parse_interface(p);
     const StmtForm *form = find_form(verb);
     // A function's name starts a call: one of several words even if its first
     // word starts sentences ("add tax to 100"), a one-word one otherwise.

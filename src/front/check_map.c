@@ -54,7 +54,7 @@ static void require_key(Checker *c, const Expr *map, TypeVar key, const Expr *ex
 
 // A value put into a map has to be the kind it holds.
 static void require_value(Checker *c, const Expr *map, TypeVar map_var, TypeVar value, const Expr *expr, TypeVar var) {
-    if (types_unify(c, value, var)) return;
+    if (checker_iface_fits(c, value, var, expr) || types_unify(c, value, var)) return;
     diag_error(c->diag, expr->pos.span, "%s is %s, so it can't hold %s.", subject(c, map), checker_kind(c, map_var),
                checker_kind(c, var));
     diag_note(c->diag, "A map holds one kind of value. To keep %s too, make a separate map for it.", checker_kind(c, var));

@@ -51,7 +51,7 @@ Make it before, like "let check be a function taking x that gives back ...", and
 Line 36: Several kinds of record have a method called "speak", so I can't tell which one this is.
     let speaker be the function speak.
                        ^^^^^^^^^^^^^^
-Make a function that calls the one you mean, like "a function taking pet (a dog):" with "speak pet" indented below it.
+Make a function that calls it, like "a function taking pet:" with "speak pet" indented below it; each call picks the method by the kind of record it's given.
 
 Line 38: "pair" takes 2 values, but this gives it 1.
     say call pair with 1.

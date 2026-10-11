@@ -1,0 +1,9 @@
+Line 3: You already defined "speaker" on line 1.
+    a speaker is anything with:
+      ^^^^^^^
+Each interface needs its own name.
+
+Line 7: "dog" is already the name of a kind of record, on line 5.
+    a dog is anything with:
+      ^^^
+Give the interface another name, like "something that can bark".

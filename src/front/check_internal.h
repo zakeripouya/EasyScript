@@ -158,6 +158,7 @@ typedef struct {
     LambdaScope *lambda;   // the innermost function made inside a value being checked, if any
     Vec(Function *) lambdas;          // every function made inside a value
     Program *program;                 // its cells (names functions made inside the main program use)
+    Vec(Type) assumed;                // kinds and interfaces being matched (pairs), assumed to fit meanwhile
 } Checker;
 
 // check_types.c
@@ -243,6 +244,20 @@ void checker_write_lambdas(Checker *c);  // the kinds of their inputs, results a
 // check_apply.c: built-ins that take a function
 TypeVar checker_check_apply(Checker *c, const Expr *expr);  // EXPR_APPLY
 void checker_check_replace(Checker *c, const Stmt *stmt);   // apply F to every X in L, keep only ..., sort L by F
+
+// check_iface.c: interfaces
+void checker_collect_interfaces(Checker *c, const Block *program);  // reports interfaces named twice
+void checker_check_interface(Checker *c, const Stmt *stmt);         // STMT_INTERFACE
+// Whether the kind (a record kind or kind with variants) has every way of the interface; if not, the way it's
+// missing (and its method with that name that doesn't match, if there is one).
+bool checker_satisfies(Checker *c, Type kind, Type iface, const Way **missing, const Function **wrong);
+// A record (or value of a kind with variants) where an interface is kept: true if it fits, or if it doesn't
+// and that was reported at expr ("A fish can't be used as something that can speak: ...").
+bool checker_iface_fits(Checker *c, TypeVar target, TypeVar value, const Expr *expr);
+// An interface two kinds of record both fit, for suggestions (TYPE_UNKNOWN if none).
+Type checker_shared_interface(Checker *c, Type a, Type b);
+// A call of a way on a value of an interface ("speak pet"): true (with *result) if it is one.
+bool checker_dispatch(Checker *c, const Expr *expr, const TypeVar *args, bool as_value, TypeVar *result);
 
 // check_list.c
 // The kind of a list's items; if `var` isn't a list, reports "<message>, but this is <kind>."
