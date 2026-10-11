@@ -40,6 +40,9 @@ typedef struct {
     Records *records;            // the record kinds (pre-scan), filled in with their definitions
     Expr *pending_item;     // "every NAME in L": the item's name, the first value of what follows
     bool method_record;     // parsing a method's record: "rename rex with ..." doesn't call rex
+    bool no_call;           // parsing what "call" calls: "call handler with 3" doesn't call handler yet
+    size_t lambdas;         // functions made inside values so far (their C names: 0l1, 0l2, ...)
+    size_t block_end;       // 1 + the token after a block that ended a value ("a function taking x:"), or 0
 } Parser;
 
 // A word or symbol sequence with a meaning, e.g. "is greater than".
@@ -184,10 +187,24 @@ bool parser_at_call_intro(const Parser *p, const char *function);
 extern const char *const parser_input_intros[];
 unsigned parser_intro_bit(const char *word);
 Stmt *parse_function(Parser *p, const Token *verb);   // to NAME ...:
+// "(a number)" after an input's name, at the "(".
+bool parser_parse_param_kind(Parser *p, Type *type);
 Stmt *parse_return(Parser *p, const Token *verb);     // give back / return
 Stmt *parse_constant(Parser *p, const Token *verb);   // keep NAME as E
 // "call NAME ..." (function NULL; at "call") or "NAME ..." (at the function's name).
 Stmt *parse_call_statement(Parser *p, const Token *verb, const KnownName *function);
+
+// parse_func_value.c: functions as values
+// "function" starts a function value here: "the function double" (a known
+// function), or "a function taking x ...", "a function that gives back ...", "a function:".
+bool parser_at_function_value(const Parser *p);
+Expr *parser_parse_function_value(Parser *p);
+// After "call": what's called (a function's name, or any value that holds a
+// function) and its inputs. `call` is the EXPR_CALL to fill in.
+bool parser_parse_called(Parser *p, Expr *call);
+// "call" starts a value here ("let total be call adder with 3").
+bool parser_at_call_value(const Parser *p);
+Expr *parser_parse_call_value(Parser *p);
 
 // parse_names.c
 // Fills p->records and p->fields (every "X is a kind of thing" and every

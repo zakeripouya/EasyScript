@@ -50,6 +50,7 @@ TypeVar checker_narrow(Checker *c, const Expr *expr, TypeVar var) {
     if (expr == c->unnarrowed || !(type == TYPE_MAYBE || type_is_maybe(type))) return var;
     const char *path = checker_path(c, expr);
     if (!path || !is_narrowed(c, path)) return var;
+    if (checker_reject_set_inside(c, expr, path)) return types_new(c, TYPE_ERROR, 0);
     ((Expr *)expr)->narrowed = true;  // codegen still checks it while the program runs
     if (type != TYPE_MAYBE) return types_new(c, type_present(type), expr->pos.line);
     TypeVar present = types_new(c, TYPE_UNKNOWN, 0);

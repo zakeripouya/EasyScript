@@ -37,8 +37,13 @@ void cg_indent(Codegen *g) {
 
 static void emit_drop(Codegen *g, const char *name, Type type) {
     cg_indent(g);
-    sb_appendf(&g->body, "%s(&", cg_drop(type));
-    cg_append_var(&g->body, name, type);
+    if (cg_is_cell(g, name)) {  // the cell, which closures made here may share
+        sb_append(&g->body, "es_record_drop(&");
+        cg_append_cell(&g->body, name, type);
+    } else {
+        sb_appendf(&g->body, "%s(&", cg_drop(type));
+        cg_append_var(g, &g->body, name, type);
+    }
     sb_append(&g->body, ");\n");
 }
 
@@ -68,7 +73,19 @@ void cg_emit_drop_all(Codegen *g) {
     if (g->function) {
         for (size_t i = 0; i < g->function->as.function.params.len; i++) {
             Type type = g->function->as.function.param_types.items[i];
-            if (type_counted(type)) emit_drop(g, g->function->as.function.params.items[i].text, type);
+            const char *param = g->function->as.function.params.items[i].text;
+            if (cg_is_cell(g, param)) {  // its cell, and then the value it was given
+                cg_indent(g);
+                sb_append(&g->body, "es_record_drop(&");
+                cg_append_cell(&g->body, param, type);
+                sb_append(&g->body, ");\n");
+            }
+            if (type_counted(type)) {
+                cg_indent(g);
+                sb_appendf(&g->body, "%s(&", cg_drop(type));
+                cg_append_raw_var(&g->body, param, type);
+                sb_append(&g->body, ");\n");
+            }
             if (type == TYPE_TEXT || type_is_object(type)) {  // the frame's reference to the value it was given
                 cg_indent(g);
                 sb_appendf(&g->body, "%s(es_input(%zu).%c);\n", cg_release(type), i, type == TYPE_TEXT ? 't' : 'r');
@@ -76,7 +93,8 @@ void cg_emit_drop_all(Codegen *g) {
         }
     }
     for (size_t i = 0; i < g->vars.len; i++) {
-        if (type_counted(g->vars.items[i].type)) emit_drop(g, g->vars.items[i].name, g->vars.items[i].type);
+        const VarCode *var = &g->vars.items[i];
+        if (type_counted(var->type) || cg_is_cell(g, var->name)) emit_drop(g, var->name, var->type);
     }
 }
 
@@ -86,14 +104,7 @@ void cg_emit_drop_all(Codegen *g) {
 // for text (es_list_set for lists), which releases what it held.
 void cg_emit_store(Codegen *g, const char *name, Type type, const char *value) {
     cg_indent(g);
-    if (type_counted(type)) {
-        sb_appendf(&g->body, "%s(&", cg_set(type));
-        cg_append_var(&g->body, name, type);
-        sb_appendf(&g->body, ", %s);\n", value);
-    } else {
-        cg_append_var(&g->body, name, type);
-        sb_appendf(&g->body, " = %s;\n", value);
-    }
+    cg_append_assign(g, &g->body, name, type, value, false);
 }
 
 static const char *expr_code(Codegen *g, const Expr *expr) {
@@ -125,13 +136,13 @@ static void emit_change(Codegen *g, const Stmt *stmt) {
         const char *amount = expr_code(g, stmt->as.change.amount);
         cg_indent(g);
         sb_appendf(&g->body, "es_add_%s(es_list_retain(", cg_item_suffix(list));
-        cg_append_var(&g->body, name, list);
+        cg_append_var(g, &g->body, name, list);
         sb_appendf(&g->body, "), %s);\n", amount);
         return;
     }
     StrBuf var;
     sb_init(&var, g->arena);
-    cg_append_var(&var, name, TYPE_NUMBER);
+    cg_append_var(g, &var, name, TYPE_NUMBER);
     const char *amount = expr_code(g, stmt->as.change.amount);
     const char *value;
     switch (stmt->as.change.op) {
@@ -215,8 +226,8 @@ static void emit_loop_head(Codegen *g, const Stmt *stmt, size_t id) {
         sb_appendf(&g->body, "for (long long es_i%zu = 0; es_i%zu <= es_c%zu.last; es_i%zu++) {\n", id, id, id, id);
         cg_indent(g);
         sb_append(&g->body, "    ");
-        cg_append_var(&g->body, stmt->as.loop.var.text, TYPE_NUMBER);
-        sb_appendf(&g->body, " = es_count_value(&es_c%zu, es_i%zu);\n", id, id);
+        cg_append_assign(g, &g->body, stmt->as.loop.var.text, TYPE_NUMBER,
+                         arena_sprintf(g->arena, "es_count_value(&es_c%zu, es_i%zu)", id, id), true);
         break;
     }
     case LOOP_TIMES:
@@ -319,7 +330,9 @@ static void emit_return(Codegen *g, const Stmt *stmt) {
 
 // A call written as a sentence: text it gives back is released, other values ignored.
 static void emit_call_statement(Codegen *g, const Stmt *stmt) {
-    Type result = stmt->as.call->as.call.target->as.function.result;
+    const Expr *call_expr = stmt->as.call;
+    Type result = call_expr->as.call.callee ? ast_func_kind(g->records, call_expr->as.call.callee->type)->result
+                                            : call_expr->as.call.target->as.function.result;
     const char *call = expr_code(g, stmt->as.call);
     cg_indent(g);
     if (type_counted(result)) {
@@ -363,7 +376,9 @@ void cg_emit_stmt(Codegen *g, const Stmt *stmt) {
         }
         if (stmt->kind == STMT_SET && cg_emit_append(g, stmt)) break;
         if (stmt->kind == STMT_LET) cg_declare_name(g, stmt->as.assign.name.text, stmt->as.assign.type);
-        cg_emit_store(g, stmt->as.assign.name.text, stmt->as.assign.type, expr_code(g, value));
+        cg_indent(g);
+        cg_append_assign(g, &g->body, stmt->as.assign.name.text, stmt->as.assign.type, expr_code(g, value),
+                         stmt->kind == STMT_LET);
         break;
     }
     case STMT_CHANGE: emit_change(g, stmt); break;
@@ -373,6 +388,7 @@ void cg_emit_stmt(Codegen *g, const Stmt *stmt) {
         break;
     case STMT_ASK:
         cg_declare_name(g, stmt->as.ask.answer.text, TYPE_TEXT);
+        cg_emit_new_cell(g, stmt->as.ask.answer.text, TYPE_TEXT);
         cg_emit_store(g, stmt->as.ask.answer.text, TYPE_TEXT,
                    arena_sprintf(g->arena, "es_ask(%s)", text_code(g, stmt->as.ask.prompt)));
         break;
@@ -380,6 +396,7 @@ void cg_emit_stmt(Codegen *g, const Stmt *stmt) {
     case STMT_APPEND_FILE: emit_file_write(g, stmt); break;
     case STMT_READ_FILE:
         cg_declare_name(g, stmt->as.read_file.name.text, TYPE_TEXT);
+        cg_emit_new_cell(g, stmt->as.read_file.name.text, TYPE_TEXT);
         cg_emit_store(g, stmt->as.read_file.name.text, TYPE_TEXT,
                    arena_sprintf(g->arena, "es_read_file(%zu, %s)", cg_site(g, stmt->as.read_file.path->pos),
                                  expr_code(g, stmt->as.read_file.path)));

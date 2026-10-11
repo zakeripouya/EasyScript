@@ -593,6 +593,57 @@ Line 12 (a warning): This "otherwise" can never run: the "when"s above it cover 
 Take it out, or the sentences in it will never be used.
 ```
 
+### Functions as values
+
+A function kept as a value has a kind that says what it takes and gives back, so calling one wrongly is caught before the program runs.
+
+**Calling something that isn't a function, or with the wrong inputs**: [`func_value_errors.es`](../tests/errors/func_value_errors.es)
+
+```
+Line 5: "n" is a number, not a function, so it can't be called.
+    say call n with 3.
+        ^
+Only a function can be called. To keep one in a name, write something like "let double be a function taking x that gives back x times 2".
+```
+
+```
+Line 7: "f" needs a number for its first input, but this is text.
+    say call f with "text".
+                    ^^^^^^
+It's a function taking a number and giving back a number.
+```
+
+**A check that a function made earlier can undo**: [`func_value_errors.es`](../tests/errors/func_value_errors.es)
+
+```
+Line 19: "maybe" was checked, but the function made on line 16 can set "maybe" whenever it's called, so the check doesn't last.
+        say maybe plus 1.
+            ^^^^^
+Keep it in a name of its own first, like "let current maybe be maybe", and check that instead.
+```
+
+| Problem | Message (summary) |
+|---|---|
+| The wrong number of inputs | ""f" takes 1 value, but this gives it 2." / ""answer" doesn't take any values, but this gives it 1." with the function's kind |
+| A function that gives back nothing, used as a value | ""quiet" doesn't give back a value, so it can't be used here." / "A function called here has to give back a value, but this is nothing." |
+| An input named like a name around it | "You already made "total" on line 13." with "Give its input another name, like "new total"." |
+| `it` in a function made in a loop | ""it" doesn't refer to anything here." with "A function made inside a loop runs later, when it's called, ..." |
+| A function made inside `every` or `only` | "A function can't be made inside "every" or "only"." |
+| `the function NAME` for methods several kinds share | "Several kinds of record have a method called "speak", so I can't tell which one this is." |
+| In a constant | "A constant can't be a function, because functions are kept as values while the program runs." |
+| Inputs nothing decides | "I can't tell what kind of value "thing" is." with "Say which kind where the function is made, like "a function taking thing (a number)"." ([`func_value_undecided.es`](../tests/errors/func_value_undecided.es)) |
+| A function inside a function with `to` | "Functions can only be defined at the top level, not inside another function." with "To make a function inside another one, write "let inside be a function taking ...:" ..." |
+
+Mistakes in how a function value or its kind is written are parser errors, like "I expected "that gives back" or a colon here, but found "gives".", "Nothing is indented under this function." and "A function can't be "or nothing"." The full set is in [`err_func_values.err`](../tests/ast/err_func_values.err).
+
+**A function that keeps itself alive** is reported by the memory check at the end (`ES_DEBUG_MEMORY=1`, exit 70): [`err_closure_cycle.es`](../tests/memory/err_closure_cycle.es)
+
+```
+Memory check: 1 value was still alive at the end of the program, because a function keeps itself alive through a name it uses:
+    the function made on line 2
+A function that uses the name it's kept in (or a record, list or map that holds it) is never freed. Define it with "to" instead, or set that name to something else before the program ends.
+```
+
 ### While the program runs
 
 Runtime errors look like compile errors: `Line N:` and what went wrong, the line with carets under the part that failed, and sometimes a hint. Anything the program printed before the error stays printed. Only mistakes that kinds can't catch are left for this.

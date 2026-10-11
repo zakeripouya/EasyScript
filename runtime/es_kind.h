@@ -48,11 +48,11 @@ static bool es_is_variant(EsRecord *r, const EsRecordType *type) {
     return is;
 }
 
-/* Records: the same record. Values of kinds with variants: the same variant
- * with equal fields (records in them the same record). Only looks. */
+/* Records and functions: the same one. Values of kinds with variants: the
+ * same variant with equal fields (records in them the same record). Only looks. */
 static bool es_record_equal(const EsRecord *a, const EsRecord *b) {
     if (a == b) return true;
-    if (!a || !b || a->type != b->type || a->type->style == ES_RECORD) return false;
+    if (!a || !b || a->type != b->type || a->type->style == ES_RECORD || a->type->style == ES_CLOSURE) return false;
     const EsRecordType *type = a->type;
     for (int i = 0; i < type->fields; i++) {
         size_t at = type->offsets[i];

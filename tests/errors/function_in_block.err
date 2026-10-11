@@ -12,3 +12,4 @@ Line 8: Functions can only be defined at the top level, not inside another funct
         to inside:
            ^^^^^^
 Move "to inside ...:" to the start of a line, outside every block.
+To make a function inside another one, write "let inside be a function taking ...:" with its sentences indented below.

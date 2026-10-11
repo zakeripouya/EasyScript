@@ -1,0 +1,7 @@
+Clicked OK button (click 1)
+Typed so far: h
+Typed so far: hi
+Nobody handles that (down)
+Clicked Cancel button (click 2)
+  log: window
+Handled: click, key and close

@@ -152,15 +152,9 @@ void cg_emit_fixed_map(Codegen *g, const char *name, const ConstValue *v, StrBuf
 // --- "for each K and V in M" ---------------------------------------------------------
 
 // One line setting a loop name from the entry: "es_vn_age = es_vh0_0each1->entries[es_i1].value.n;".
-static void store_part(StrBuf *body, const char *name, Type type, const char *part) {
-    if (type_counted(type)) {
-        sb_appendf(body, "%s(&", cg_set(type));
-        cg_append_var(body, name, type);
-        sb_appendf(body, ", %s(%s));\n", cg_retain(type), part);
-    } else {
-        cg_append_var(body, name, type);
-        sb_appendf(body, " = %s;\n", part);
-    }
+static void store_part(Codegen *g, StrBuf *body, const char *name, Type type, const char *part) {
+    if (type_counted(type)) part = arena_sprintf(g->arena, "%s(%s)", cg_retain(type), part);
+    cg_append_assign(g, body, name, type, part, true);
 }
 
 // The loop goes through the map as it was when the loop started (kept in a
@@ -172,7 +166,7 @@ void cg_emit_each_map_head(Codegen *g, const Stmt *stmt, size_t id, StrBuf *body
     const char *value = cg_list_operand(g, stmt->as.loop.list);
     StrBuf entries;
     sb_init(&entries, g->arena);
-    cg_append_var(&entries, hidden, map);
+    cg_append_var(g, &entries, hidden, map);
     sb_append_repeat(body, ' ', 4 * (depth + 1));
     sb_appendf(body, "es_map_set(&%s, es_map_snapshot(%s));\n", entries.data, value);
     sb_append_repeat(body, ' ', 4 * (depth + 1));
@@ -183,10 +177,10 @@ void cg_emit_each_map_head(Codegen *g, const Stmt *stmt, size_t id, StrBuf *body
     Type key = key_type(g, map), val = value_type(g, map);
     sb_append_repeat(body, ' ', 4 * (depth + 2));
     const char *key_part = arena_sprintf(g->arena, "%s.key.%c", entry, key == TYPE_TEXT ? 't' : 'n');
-    store_part(body, stmt->as.loop.var.text, key, key_part);
+    store_part(g, body, stmt->as.loop.var.text, key, key_part);
     sb_append_repeat(body, ' ', 4 * (depth + 2));
     const char *value_part = arena_sprintf(g->arena, "%s.value.%s", entry, cg_value_suffix(val));
-    store_part(body, stmt->as.loop.value_name.text, val, value_part);
+    store_part(g, body, stmt->as.loop.value_name.text, val, value_part);
 }
 
 // --- Sentences ------------------------------------------------------------------------

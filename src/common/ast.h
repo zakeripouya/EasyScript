@@ -48,6 +48,8 @@ typedef enum {
     EXPR_MAP_GET,        // the value for K in M [, or D]
     EXPR_MAP_WITHOUT,    // M without K: a new map (as.lookup: key and map, no fallback)
     EXPR_KIND_TEST,      // X is a circle / X is not a circle (a variant of a kind with variants)
+    EXPR_FUNCTION_REF,   // the function double (a function defined with "to", not called)
+    EXPR_LAMBDA,         // a function taking x that gives back x times 2 / a function taking word: (a block)
 } ExprKind;
 
 typedef enum {
@@ -182,6 +184,10 @@ struct Expr {
             const char *name;
             Vec(Expr *) args;
             const struct Stmt *target;  // the definition called (set by the checker)
+            Expr *callee;  // a function kept as a value ("call f with 3", "f with 3"): what's called. Set by
+                           // the parser when it isn't a name ("call item 1 of handlers"), by the checker for a
+                           // name that's a variable; name is then unused. NULL for a function defined with "to".
+            bool dispatch; // set by the checker: a method called on a value of an interface (picked while running)
         } call;
         Expr *operand;  // EXPR_LENGTH, EXPR_FILE_CONTENTS
         struct {
@@ -263,6 +269,11 @@ struct Expr {
             Expr *map;
             Expr *fallback;  // ", or D": the value when the key isn't there (NULL: that's an error)
         } lookup;  // EXPR_MAP_GET, EXPR_MAP_WITHOUT
+        struct {
+            const char *name;
+            const struct Stmt *target;  // the definition (set by the checker)
+        } ref;  // EXPR_FUNCTION_REF
+        struct Stmt *lambda;  // EXPR_LAMBDA: a STMT_FUNCTION (function.lambda set) holding its inputs and body
     } as;
 };
 
@@ -354,6 +365,14 @@ typedef Vec(Stmt *) Block;
 
 // One variant in the definition of a kind with variants: "a rectangle with
 // a width (a number) and a height (a number)".
+// A name a function made inside another uses from around it ("count" in a
+// counter): it's shared, kept in a cell (es_closure.h).
+typedef struct {
+    const char *name;
+    Type type;   // filled in by the checker
+    size_t var;  // the checker's (its type variable)
+} Capture;
+
 typedef struct {
     Name name;
     size_t id;          // in Records.variants
@@ -427,6 +446,9 @@ struct Stmt {
             Vec(Type) param_types; // filled in by the checker
             Type result;           // filled in by the checker (TYPE_NOTHING: gives back no value)
             Block body;
+            bool lambda;           // made inside a value ("a function taking x ..."); name.text is "0lN"
+            Vec(Capture) captures; // a lambda: the names it uses from around it (checker)
+            Vec(const char *) cells;  // the names it makes (or its inputs) that functions made inside use (checker)
         } function;
         Expr *returned;  // STMT_RETURN; NULL for a bare "return"
         Expr *call;      // STMT_CALL: an EXPR_CALL
@@ -478,6 +500,7 @@ struct Stmt {
 typedef struct {
     Block body;
     Records records;
+    Vec(const char *) cells;  // names the main program makes that functions made inside it use (checker)
 } Program;
 
 // --- Helpers ---------------------------------------------------------------

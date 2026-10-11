@@ -287,10 +287,10 @@ static void store_item(StrBuf *out, const char *name, Type type, const char *suf
     sb_append(out, "        ");
     if (type_counted(type)) {
         sb_appendf(out, "%s(&", cg_set(type));
-        cg_append_var(out, name, type);
+        cg_append_raw_var(out, name, type);
         sb_appendf(out, ", %s(es_items->at.%s[es_i]));\n", cg_retain(type), suffix);
     } else {
-        cg_append_var(out, name, type);
+        cg_append_raw_var(out, name, type);
         sb_appendf(out, " = es_items->at.%s[es_i];\n", suffix);
     }
 }
@@ -314,7 +314,7 @@ static void emit_helper(Codegen *g, const Expr *expr, Codegen *helper, size_t id
     for (size_t i = 0; i < helper->captured.len; i++) {
         Type type = helper->captured.items[i].type;
         sb_appendf(out, ", %s%s", cg_ctype(type), type_counted(type) ? "" : " ");
-        cg_append_var(out, helper->captured.items[i].name, type);
+        cg_append_raw_var(out, helper->captured.items[i].name, type);
     }
     sb_append(out, ") {\n");
     cg_emit_declarations(helper, out);
@@ -329,14 +329,14 @@ static void emit_helper(Codegen *g, const Expr *expr, Codegen *helper, size_t id
         sb_appendf(out, "        es_push_%s(es_result, %s);\n", cg_item_suffix(expr->type), value);
     } else {
         sb_appendf(out, "        if (%s) es_push_%s(es_result, ", value, suffix);
-        cg_emit_var(out, item, item_type);
+        cg_emit_var(helper, out, item, item_type);
         sb_append(out, ");\n");
     }
     sb_append(out, "    }\n");
     if (!every) sb_append(out, "    es_list_shrink(es_result); /* exactly the items kept */\n");
     if (type_counted(item_type)) {
         sb_appendf(out, "    %s(&", cg_drop(item_type));
-        cg_append_var(out, item, item_type);
+        cg_append_raw_var(out, item, item_type);
         sb_append(out, ");\n");
     }
     sb_append(out, "    es_list_release(es_items);\n    return es_result;\n}\n\n");
@@ -353,6 +353,7 @@ static void emit_helper_call(Codegen *g, const Expr *expr, StrBuf *out) {
     helper.sites = g->sites;
     helper.functions = g->functions;
     helper.constants = g->constants;
+    helper.closures = g->closures;
     Names bound = {0};
     if (expr->kind == EXPR_EVERY) {
         vec_push(g->arena, &bound, expr->as.every.var.text);
@@ -367,7 +368,7 @@ static void emit_helper_call(Codegen *g, const Expr *expr, StrBuf *out) {
     sb_appendf(out, "es_%s%zu(%s", expr->kind == EXPR_EVERY ? "every" : "only", id, list_code);
     for (size_t i = 0; i < helper.captured.len; i++) {
         sb_append(out, ", ");
-        cg_append_var(out, helper.captured.items[i].name, helper.captured.items[i].type);
+        cg_append_var(g, out, helper.captured.items[i].name, helper.captured.items[i].type);
     }
     sb_append_char(out, ')');
 }
@@ -401,22 +402,16 @@ void cg_emit_each_head(Codegen *g, const Stmt *stmt, size_t id, StrBuf *body, si
     const char *value = cg_list_operand(g, stmt->as.loop.list);
     StrBuf items;
     sb_init(&items, g->arena);
-    cg_append_var(&items, hidden, list);
+    cg_append_var(g, &items, hidden, list);
     sb_append_repeat(body, ' ', 4 * (depth + 1));
     sb_appendf(body, "%s(&%s, es_list_snapshot(%s));\n", cg_set(list), items.data, value);
     sb_append_repeat(body, ' ', 4 * (depth + 1));
     sb_appendf(body, "for (size_t es_i%zu = 0; es_i%zu < %s->len; es_i%zu++) {\n", id, id, items.data, id);
     sb_append_repeat(body, ' ', 4 * (depth + 2));
     Type item = type_item(list);
-    const char *name = stmt->as.loop.var.text;
-    if (type_counted(item)) {
-        sb_appendf(body, "%s(&", cg_set(item));
-        cg_append_var(body, name, item);
-        sb_appendf(body, ", %s(%s->at.%s[es_i%zu]));\n", cg_retain(item), items.data, cg_item_suffix(list), id);
-    } else {
-        cg_append_var(body, name, item);
-        sb_appendf(body, " = %s->at.%s[es_i%zu];\n", items.data, cg_item_suffix(list), id);
-    }
+    const char *value_code = arena_sprintf(g->arena, "%s->at.%s[es_i%zu]", items.data, cg_item_suffix(list), id);
+    if (type_counted(item)) value_code = arena_sprintf(g->arena, "%s(%s)", cg_retain(item), value_code);
+    cg_append_assign(g, body, stmt->as.loop.var.text, item, value_code, true);
 }
 
 // --- Sentences ------------------------------------------------------------------------

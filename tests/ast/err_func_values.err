@@ -1,0 +1,44 @@
+Line 1: Something is missing after "x".
+    let f be a function taking x.
+                               ^
+Write it like "a function taking x that gives back x times 2", or end the line with a colon and write the function's sentences on the indented lines below.
+
+Line 2: I expected "that gives back" or a colon here, but found "gives".
+    let g be a function taking x gives back x.
+                                 ^^^^^
+Write it like "a function taking x that gives back x times 2", or end the line with a colon and write the function's sentences on the indented lines below.
+
+Line 3: This "(" is never closed.
+    let h be an empty list of functions taking (a number giving back text.
+                                               ^
+Add a ")" after the kind of value.
+
+Line 4: Nothing is indented under this function.
+    let m be a function taking x:
+               ^^^^^^^^^^^^^^^^^^
+Put the sentences that belong to it on the next lines, indented (4 spaces is usual).
+
+Line 6: Something is missing after "taking".
+    let n be a function taking:
+                        ^^^^^^
+Add a name there, like "total".
+
+Line 8: Something is missing after "that gives back".
+    let q be a function taking x that gives back.
+                                 ^^^^^^^^^^^^^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 9: Something is missing after "with".
+    call f with.
+           ^^^^
+Add the values to give it, like "call handler with 3", or leave out "with".
+
+Line 11: A function can't be "or nothing".
+        action, which is a function or nothing.
+                                    ^^^^^^^^^^
+Keep a function that does nothing instead.
+
+Line 12: Something is missing after ", giving back".
+    let r be a function taking x, giving back:
+                                ^^^^^^^^^^^^^
+Say which kind of value: "a number", "text", "yes or no", or a list like "a list of numbers".

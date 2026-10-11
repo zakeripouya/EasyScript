@@ -1,0 +1,6 @@
+Line 3: You divided by zero.
+    let inverse be a function taking n that gives back 1 divided by n.
+                                                       ^^^^^^^^^^^^^^
+while working out "the function made on line 3" (n was 0)
+called from "run" on line 2 (f was the function made on line 3, x was 0)
+called from line 5: say run with inverse and 0.

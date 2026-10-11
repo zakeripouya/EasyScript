@@ -521,9 +521,10 @@ static void es_value_render(EsBuf *b, EsItems kind, EsValue v, int depth) {
             es_box_render(b, v.r, true);
             break;
         }
-        if (v.r) es_buf_add(b, "(", 1);
+        bool parenthesized = v.r && v.r->type->style != ES_CLOSURE; /* a function shows as its name */
+        if (parenthesized) es_buf_add(b, "(", 1);
         es_record_render(b, v.r, depth);
-        if (v.r) es_buf_add(b, ")", 1);
+        if (parenthesized) es_buf_add(b, ")", 1);
         break;
     case ES_ITEMS_MAP:
         es_buf_add(b, "(", 1);

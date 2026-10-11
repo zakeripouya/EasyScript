@@ -55,6 +55,48 @@ int parser_match_variant(const Parser *p, size_t ahead, size_t *words) {
 
 // --- Kinds of values ------------------------------------------------------------------
 
+static bool at_giving_back(const Parser *p, size_t ahead) {
+    return parser_at_word(p, ahead, "giving") && parser_at_word(p, ahead + 1, "back");
+}
+
+// An input's kind in a kind of function: a kind, or a kind in parentheses
+// ("taking (a function taking a number) and text").
+static bool parse_input_kind(Parser *p, Type *type) {
+    if (!parser_at(p, 0, TOK_LPAREN)) return parser_parse_kind(p, false, type);
+    const Token *open = parser_advance(p);
+    if (!parser_parse_kind(p, false, type)) return false;
+    if (parser_at(p, 0, TOK_RPAREN)) {
+        parser_advance(p);
+        return true;
+    }
+    if (parser_error(p, open->span, "This \"(\" is never closed.")) {
+        diag_note(p->diag, "Add a \")\" after the kind of value.");
+    }
+    return false;
+}
+
+// After "function" (or "functions"): [taking KIND [and KIND ...]] [[and | ,]
+// giving back KIND]: "a function taking a number and giving back text".
+static bool parse_function_kind(Parser *p, Type *type) {
+    Vec(Type) params = {0};
+    Type result = TYPE_NOTHING;
+    if (parser_at_word(p, 0, "taking")) {
+        parser_advance(p);
+        do {
+            Type param;
+            if (!parse_input_kind(p, &param)) return false;
+            vec_push(p->arena, &params, param);
+        } while (parser_at_word(p, 0, "and") && !at_giving_back(p, 1) && parser_advance(p));
+    }
+    size_t skip = (parser_at_word(p, 0, "and") || parser_at(p, 0, TOK_COMMA)) && at_giving_back(p, 1) ? 1 : 0;
+    if (at_giving_back(p, skip)) {
+        parser_consume(p, skip + 2);
+        if (!parser_parse_kind(p, true, &result)) return false;
+    }
+    *type = ast_func_type(p->arena, p->records, params.items, params.len, result);
+    return true;
+}
+
 static bool report_kind(Parser *p, const char *kinds, const char *missing) {
     const Token *word = parser_peek(p, 0);
     if (word->kind == TOK_COLON || word->kind == TOK_RPAREN || parser_at_sentence_end(p)) {
@@ -87,6 +129,9 @@ bool parser_parse_items_kind(Parser *p, Type *type) {
         return true;
     } else if (parser_at_map_kind(p, true)) {
         return parser_parse_map_kind(p, type);
+    } else if (parser_at_word(p, 0, "functions")) {
+        parser_advance(p);
+        return parse_function_kind(p, type);
     } else {
         Type kind = parser_match_kind_name(p, 0, true, &words);
         if (words > 0) *type = kind;
@@ -109,6 +154,12 @@ static bool parse_or_nothing(Parser *p, Type *type) {
         *type += TYPE_MAYBE;
         return true;
     }
+    if (type_is_func(*type)) {
+        if (parser_error(p, span, "A function can't be \"or nothing\".")) {
+            diag_note(p->diag, "Keep a function that does nothing instead.");
+        }
+        return false;
+    }
     if (parser_error(p, span, "%s can't be \"or nothing\".", type_is_map(*type) ? "A map" : "A list")) {
         diag_note(p->diag, "To say there's nothing in it, use an empty one, like \"%s\".",
                   type_is_map(*type) ? "an empty map from text to numbers" : "an empty list of numbers");
@@ -125,6 +176,10 @@ bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type) {
         return parse_or_nothing(p, type);
     }
     if (parser_at_map_kind(p, false)) return parser_parse_map_kind(p, type) && parse_or_nothing(p, type);
+    if (parser_at_word(p, 0, "function")) {
+        parser_advance(p);
+        return parse_function_kind(p, type) && parse_or_nothing(p, type);
+    }
     if (parser_at_word(p, 0, "number")) {
         *type = TYPE_NUMBER, words = 1;
     } else if (parser_at_word(p, 0, "text")) {

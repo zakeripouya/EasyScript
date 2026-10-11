@@ -87,16 +87,18 @@ static void emit_constant(Codegen *g, const Stmt *stmt, StrBuf *out) {
 }
 
 // static double es_f_area(int es_call, double es_vn_width, double es_vn_height)
-// (es_call is the site of the call, for the call stack)
+// (es_call is the site of the call, for the call stack). A function made
+// inside a value also gets the closure it's called through: es_f_0l1(int
+// es_call, EsRecord *es_self, ...).
 static void append_signature(StrBuf *out, const Stmt *fn) {
     sb_appendf(out, "static %s ", cg_ctype(fn->as.function.result));
     cg_append_function(out, "es_f_", fn);
-    sb_append(out, "(int es_call");
+    sb_append(out, fn->as.function.lambda ? "(int es_call, EsRecord *es_self" : "(int es_call");
     for (size_t i = 0; i < fn->as.function.params.len; i++) {
         Type type = fn->as.function.param_types.items[i];
         sb_appendf(out, ", %s", cg_ctype(type));
         if (!type_counted(type)) sb_append_char(out, ' ');
-        cg_append_var(out, fn->as.function.params.items[i].text, type);
+        cg_append_raw_var(out, fn->as.function.params.items[i].text, type);
     }
     sb_append_char(out, ')');
 }
@@ -115,14 +117,20 @@ void cg_emit_declarations(const Codegen *g, StrBuf *out) {
     }
     for (size_t i = 0; i < g->vars.len; i++) {
         Type type = g->vars.items[i].type;
+        if (cg_is_cell(g, g->vars.items[i].name)) {  // made by its "let" (or loop), each time
+            sb_append(out, "    EsRecord *");
+            cg_append_cell(out, g->vars.items[i].name, type);
+            sb_append(out, " = NULL;\n");
+            continue;
+        }
         sb_appendf(out, "    %s%s", cg_ctype(type), type_counted(type) ? "" : " ");
-        cg_append_var(out, g->vars.items[i].name, type);
+        cg_append_raw_var(out, g->vars.items[i].name, type);
         sb_appendf(out, " = %s;\n", cg_empty(type));
     }
     for (size_t i = 0; i < g->vars.len; i++) {
-        if (type_counted(g->vars.items[i].type)) continue;
+        if (type_counted(g->vars.items[i].type) || cg_is_cell(g, g->vars.items[i].name)) continue;
         sb_append(out, "    (void)");
-        cg_append_var(out, g->vars.items[i].name, g->vars.items[i].type);
+        cg_append_raw_var(out, g->vars.items[i].name, g->vars.items[i].type);
         sb_append(out, ";\n");
     }
 }
@@ -166,7 +174,7 @@ static void append_input(const Stmt *fn, size_t i, StrBuf *out) {
     bool record = type_is_object(type);
     sb_append(out, type_is_list(type) || type_is_map(type) ? "{.list = " : record ? "{.r = es_record_retain("
                    : type == TYPE_TEXT ? "{.t = es_retain(" : type == TYPE_YESNO ? "{.b = " : "{.n = ");
-    cg_append_var(out, fn->as.function.params.items[i].text, type);
+    cg_append_raw_var(out, fn->as.function.params.items[i].text, type);
     sb_append(out, type == TYPE_TEXT || record ? ")}" : "}");
 }
 
@@ -196,10 +204,37 @@ static void emit_frame(const Stmt *fn, StrBuf *out) {
     sb_append(out, "});\n");
 }
 
+// Inputs that functions made inside share go into cells first; a function
+// made inside a value finds the cells it uses in its closure:
+//   EsRecord *es_cvn_x = es_cell_n(es_vn_x);
+//   EsRecord *es_cvn_count = ((es_L1 *)es_self)->c0;
+static void emit_cells(const Codegen *f, const Stmt *fn, StrBuf *out) {
+    for (size_t i = 0; i < fn->as.function.captures.len; i++) {
+        const Capture *capture = &fn->as.function.captures.items[i];
+        sb_append(out, "    EsRecord *");
+        cg_append_cell(out, capture->name, capture->type);
+        sb_append(out, " = ");
+        cg_append_function(out, "((es_L", fn);
+        sb_appendf(out, " *)es_self)->c%zu;\n", i);
+    }
+    if (fn->as.function.lambda) sb_append(out, "    (void)es_self;\n");
+    for (size_t i = 0; i < fn->as.function.params.len; i++) {
+        const char *param = fn->as.function.params.items[i].text;
+        Type type = fn->as.function.param_types.items[i];
+        if (!cg_is_cell(f, param)) continue;
+        sb_append(out, "    EsRecord *");
+        cg_append_cell(out, param, type);
+        sb_appendf(out, " = es_cell_%s(%s", cg_value_suffix(type), type_counted(type) ? cg_retain(type) : "");
+        sb_append_char(out, '(');
+        cg_append_raw_var(out, param, type);
+        sb_append(out, "));\n");
+    }
+}
+
 // The C function for one EasyScript function. Falling off the end releases
 // its text; one that gives back a value stops with an error instead, because
 // it has nothing to give back.
-static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
+void cg_emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     Codegen f = {0};
     f.arena = g->arena;
     f.records = g->records;
@@ -211,6 +246,11 @@ static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     f.constants = g->constants;
     f.function = fn;
     f.loop_ids = g->loop_ids;
+    f.closures = g->closures;
+    for (size_t i = 0; i < fn->as.function.cells.len; i++) vec_push(g->arena, &f.cells, fn->as.function.cells.items[i]);
+    for (size_t i = 0; i < fn->as.function.captures.len; i++) {
+        vec_push(g->arena, &f.borrowed, fn->as.function.captures.items[i].name);
+    }
     sb_init(&f.body, g->arena);
     cg_push_scope(&f);
     for (size_t i = 0; i < fn->as.function.body.len; i++) {
@@ -224,9 +264,10 @@ static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     cg_emit_declarations(&f, out);
     for (size_t i = 0; i < fn->as.function.params.len; i++) {  // inputs it might never use
         sb_append(out, "    (void)");
-        cg_append_var(out, fn->as.function.params.items[i].text, fn->as.function.param_types.items[i]);
+        cg_append_raw_var(out, fn->as.function.params.items[i].text, fn->as.function.param_types.items[i]);
         sb_append(out, ";\n");
     }
+    emit_cells(&f, fn, out);
     emit_frame(fn, out);
     sb_append_n(out, f.body.data, f.body.len);
     f.body.len = 0;
@@ -252,7 +293,12 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     sb_init(&sites.code, arena);
     StrBuf inits;
     sb_init(&inits, arena);
+    ClosurePool closures = {0};
+    sb_init(&closures.head, arena);
+    sb_init(&closures.code, arena);
     Codegen g = {0};
+    g.closures = &closures;
+    for (size_t i = 0; i < whole->cells.len; i++) vec_push(arena, &g.cells, whole->cells.items[i]);
     g.arena = arena;
     g.records = &whole->records;
     g.texts = &texts;
@@ -271,7 +317,7 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     StrBuf functions;
     sb_init(&functions, arena);
     for (size_t i = 0; i < g.functions.len; i++) {
-        emit_function(&g, g.functions.items[i], &functions);
+        cg_emit_function(&g, g.functions.items[i], &functions);
     }
 
     sb_append_n(out, (const char *)es_runtime_source, es_runtime_source_len);
@@ -293,11 +339,14 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
         sb_append(out, ";\n");
     }
     sb_append_char(out, '\n');
+    sb_append_n(out, closures.head.data, closures.head.len);  // functions kept as values
+    cg_emit_function_refs(&g, out);
     sb_append(out, "static const EsSite es_sites[] = {\n    {0, 0, 0},\n");  // where runtime calls come from
     sb_append_n(out, sites.code.data, sites.code.len);
     sb_append(out, "};\n\n");
     sb_append_n(out, helpers.code.data, helpers.code.len);  // "every" and "only", before the functions that use them
     sb_append_n(out, functions.data, functions.len);
+    sb_append_n(out, closures.code.data, closures.code.len);
     sb_append(out, "int main(void) {\n");
     cg_emit_declarations(&g, out);
     for (size_t i = 0; i < g.constants.len; i++) {  // constants nothing uses (costs nothing)

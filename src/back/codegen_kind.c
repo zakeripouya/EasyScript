@@ -132,7 +132,7 @@ void cg_emit_match(Codegen *g, const Stmt *stmt) {
     const char *hidden = arena_sprintf(g->arena, "0match%zu", id);
     StrBuf var;
     sb_init(&var, g->arena);
-    cg_append_var(&var, hidden, type);
+    cg_append_var(g, &var, hidden, type);
     cg_indent(g);
     sb_append(&g->body, "{\n");
     g->depth++;

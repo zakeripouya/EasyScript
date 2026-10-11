@@ -48,7 +48,7 @@ static bool at_giving_back(const Parser *p) {
 }
 
 // "(a number)" after an input's name.
-static bool parse_param_kind(Parser *p, Type *type) {
+bool parser_parse_param_kind(Parser *p, Type *type) {
     parser_advance(p);  // (
     if (!parser_parse_kind(p, false, type)) return false;
     if (parser_at(p, 0, TOK_RPAREN)) {
@@ -147,7 +147,7 @@ static bool parse_params(Parser *p, Stmt *stmt) {
         Name param = {0};
         Type declared = TYPE_UNKNOWN;
         if (!parser_parse_name(p, &param, after_param)) return false;
-        if (parser_at(p, 0, TOK_LPAREN) && !parse_param_kind(p, &declared)) return false;
+        if (parser_at(p, 0, TOK_LPAREN) && !parser_parse_param_kind(p, &declared)) return false;
         vec_push(p->arena, &stmt->as.function.params, param);
         vec_push(p->arena, &stmt->as.function.declared, declared);
         if (!parser_at_word(p, 0, "and") && !parser_at(p, 0, TOK_COMMA)) break;
@@ -236,6 +236,14 @@ static bool reject_wrong_intro(Parser *p, const char *function) {
 Stmt *parse_call_statement(Parser *p, const Token *verb, const KnownName *function) {
     static const char *const after_name[] = {"with", "using", "of", "to", "for", "from", "in", NULL};
     Name name = {0};
+    if (!function && !parser_match_name(p, 0, true) && !parser_at_sentence_end(p)) {
+        // "call handler with 3": a function kept as a value
+        Stmt *stmt = parser_new_stmt(p, STMT_CALL, verb);
+        Expr *call = ast_new_expr(p->arena, EXPR_CALL, parser_token_pos(parser_peek(p, 0)));
+        if (!parser_parse_called(p, call)) return NULL;
+        stmt->as.call = parser_finish_call(p, call);
+        return stmt;
+    }
     if (function) {
         parser_take_name(p, function->words, &name);  // the function's name starts the sentence
     } else if (!parser_parse_name(p, &name, after_name)) {  // after "call"

@@ -26,10 +26,14 @@ typedef size_t TypeVar;
 typedef struct {
     TypeVar parent;
     Type type;     // of the root: TYPE_UNKNOWN until decided, a kind, TYPE_LIST (a list of `item`),
-                   // or TYPE_MAP (a map from `key` to `item`)
+                   // TYPE_MAP (a map from `key` to `item`), or TYPE_FUNC (a function taking
+                   // `params` and giving back `item`)
     size_t line;   // where it was decided
-    TypeVar item;  // the kind of the items when type is TYPE_LIST, of the values when it's TYPE_MAP
+    TypeVar item;  // the kind of the items when type is TYPE_LIST, of the values when it's TYPE_MAP,
+                   // of the result when it's TYPE_FUNC
     TypeVar key;   // the kind of the keys when type is TYPE_MAP
+    const TypeVar *params;  // TYPE_FUNC: the kinds of its inputs
+    size_t count;           // TYPE_FUNC: how many inputs it takes
 } TypeSlot;
 
 typedef enum {
@@ -46,7 +50,8 @@ typedef enum {
 } DeferKind;
 
 // Kinds for DEFER_ONE_OF.
-enum { KIND_NUMBER = 1, KIND_TEXT = 2, KIND_YESNO = 4, KIND_LIST = 8, KIND_RECORD = 16, KIND_MAP = 32 };
+// KIND_OTHER: a function, an interface's value, or anything that can be nothing (but not nothing itself).
+enum { KIND_NUMBER = 1, KIND_TEXT = 2, KIND_YESNO = 4, KIND_LIST = 8, KIND_RECORD = 16, KIND_MAP = 32, KIND_OTHER = 64 };
 
 typedef struct {
     DeferKind kind;
@@ -77,6 +82,8 @@ typedef struct {
     bool loop_number;   // a loop's own number ("count ... as n") or item ("for each x in")
     TypeVar var;        // its kind
     bool loop_item;     // a "for each" loop's item
+    const Stmt *owner;  // the function (or function made inside a value) that made it; NULL: the main program
+    size_t set_inside;  // a function made inside another sets it: the line that function is made on (else 0)
 } Symbol;
 
 // "Not a variant": a narrowing that only says a value isn't nothing.
@@ -87,6 +94,7 @@ typedef struct {
     TypeVar it;   // its kind: a number, or the item's kind
     bool subject;    // not a loop: a "when" of "check which kind S is", where "it" is S
     size_t variant;  // the "when"'s one variant, or NO_VARIANT
+    bool helper;     // "every" or "only": worked out in a C function of its own
 } Loop;
 
 typedef struct {
@@ -96,6 +104,17 @@ typedef struct {
     Vec(TypeVar) params;   // the kind of each input
     TypeVar result;        // what it gives back (decided as nothing if it never gives back a value)
 } Function;
+
+// A function made inside a value ("a function taking x ...") being checked:
+// names made before `scope` (and at or after the floor) are from around it,
+// so using one captures it.
+typedef struct LambdaScope LambdaScope;
+struct LambdaScope {
+    Stmt *definition;
+    size_t scope;
+    LambdaScope *outer;
+    bool in_loop;  // made inside a loop that has an "it" (which it can't use: it runs later)
+};
 
 typedef struct {
     const char *name;
@@ -136,12 +155,19 @@ typedef struct {
     Vec(Deferred) deferred;
     Vec(TypedExpr) typed;  // every expression checked, to receive its kind at the end
     Vec(TypedSlot) slots;  // other kinds to fill in at the end
+    LambdaScope *lambda;   // the innermost function made inside a value being checked, if any
+    Vec(Function *) lambdas;          // every function made inside a value
+    Program *program;                 // its cells (names functions made inside the main program use)
 } Checker;
 
 // check_types.c
 TypeVar types_new(Checker *c, Type type, size_t line);  // a list type gets a variable for its items
 TypeVar types_new_list(Checker *c, TypeVar item, size_t line);
 TypeVar types_new_map(Checker *c, TypeVar key, TypeVar value, size_t line);
+// A function taking `count` inputs (their kinds copied from params) and giving back `result`.
+TypeVar types_new_func(Checker *c, const TypeVar *params, size_t count, TypeVar result, size_t line);
+// A function's inputs and result (it must be a function): returns how many inputs it takes.
+size_t types_func(Checker *c, TypeVar func, const TypeVar **params, TypeVar *result);
 TypeVar types_item(Checker *c, TypeVar list);  // a list's item variable, or a map's value variable
 TypeVar types_key(Checker *c, TypeVar map);    // a map's key variable (it must be a map)
 Type types_of(Checker *c, TypeVar var);  // TYPE_UNKNOWN if not decided
@@ -194,6 +220,25 @@ void checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Sp
 void checker_make_item_name(Checker *c, const Name *name, TypeVar item);
 // A block of statements, a scope of its own: names made in it end with it (`where` on `line`).
 void checker_check_block(Checker *c, const Block *block, size_t line, const char *where);
+
+// check.c, for check_func_value.c
+void checker_check_statements(Checker *c, const Block *block);
+bool checker_gives_value(const Block *block);  // a "give back E" anywhere in it
+// A function's display for messages: "\"double\"" (quoted), or "the function made on line 3".
+const char *checker_function_label(Checker *c, const Function *f);
+const char *checker_capital(Checker *c, const char *text);  // with its first letter a capital
+
+// check_func_value.c: functions as values
+TypeVar checker_check_function_ref(Checker *c, const Expr *expr);  // the function double
+TypeVar checker_check_lambda(Checker *c, const Expr *expr);        // a function taking x ...
+// A call of a function kept as a value ("call f with 3", "f with 3"); `name` is the variable called, if it is one.
+TypeVar checker_check_value_call(Checker *c, const Expr *expr, bool as_value);
+// A name made around a function made inside a value, used (or set) inside it: captured.
+void checker_use(Checker *c, const Symbol *symbol, bool setting);
+// "x" is checked not to be nothing (or to be a variant) but a function made inside sets it: reports and returns true.
+bool checker_reject_set_inside(Checker *c, const Expr *expr, const char *path);
+void checker_report_undecided_lambdas(Checker *c);
+void checker_write_lambdas(Checker *c);  // the kinds of their inputs, results and captures, into the program
 
 // check_list.c
 // The kind of a list's items; if `var` isn't a list, reports "<message>, but this is <kind>."

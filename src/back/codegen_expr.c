@@ -58,9 +58,10 @@ const char *cg_ctype(Type type) {
 // (yes/no), "es_vl1n_scores" (a list of numbers), "es_vl2t_rows" (a list of
 // lists of text), "es_vr0_rex" (record kind 0), "es_vm0_next" (kind 0 or
 // nothing), "es_vl1r0_dogs" (a list of kind 0), "es_vh2_ages" (kind of map 2),
-// "es_vk1_s" (kind with variants 1), "es_vq1_s" (kind 1 or nothing), and
-// "es_von_p" (a number or nothing; "ot", "ob" likewise).
-void cg_append_var(StrBuf *out, const char *name, Type type) {
+// "es_vk1_s" (kind with variants 1), "es_vq1_s" (kind 1 or nothing),
+// "es_von_p" (a number or nothing; "ot", "ob" likewise), "es_vf3_double"
+// (kind of function 3), "es_vi0_pet" (interface 0; "es_vj0_" or nothing).
+void cg_append_raw_var(StrBuf *out, const char *name, Type type) {
     Type base = type_base(type), present = type_present(base);
     bool maybe = type_is_maybe(base);
     char kind = present == TYPE_TEXT ? 't' : present == TYPE_YESNO ? 'b' : 'n';
@@ -72,6 +73,10 @@ void cg_append_var(StrBuf *out, const char *name, Type type) {
         sb_appendf(out, "%c%zu", maybe ? 'q' : 'k', type_sum_index(base));
     } else if (type_is_map(base)) {
         sb_appendf(out, "h%u", base - TYPE_MAP);
+    } else if (type_is_func(base)) {
+        sb_appendf(out, "f%u", base - TYPE_FUNC);
+    } else if (type_is_iface(base)) {
+        sb_appendf(out, "%c%zu", maybe ? 'j' : 'i', type_iface_index(base));
     } else {
         sb_appendf(out, "%s%c", maybe ? "o" : "", kind);
     }
@@ -105,19 +110,22 @@ const char *cg_empty(Type type) {
     return type == TYPE_TEXT ? "&es_empty_text" : type == TYPE_YESNO ? "false" : "0";
 }
 
-void cg_emit_var(StrBuf *out, const char *name, Type type) {
+void cg_emit_var(const Codegen *g, StrBuf *out, const char *name, Type type) {
     if (!type_counted(type)) {
-        cg_append_var(out, name, type);
+        cg_append_var(g, out, name, type);
         return;
     }
     sb_appendf(out, "%s(", cg_retain(type));  // reading text or a list: one more owner
-    cg_append_var(out, name, type);
+    cg_append_var(g, out, name, type);
     sb_append_char(out, ')');
 }
 
 static bool is_param(const Codegen *g, const char *name) {
     for (size_t i = 0; i < g->captured.len; i++) {
         if (strcmp(g->captured.items[i].name, name) == 0) return true;
+    }
+    for (size_t i = 0; i < g->borrowed.len; i++) {  // a cell from around a function made inside a value
+        if (strcmp(g->borrowed.items[i], name) == 0) return true;
     }
     if (!g->function) return false;
     for (size_t i = 0; i < g->function->as.function.params.len; i++) {
@@ -143,7 +151,7 @@ static bool in_scope(const Codegen *g, const char *name, Type type) {
 void cg_declare_name(Codegen *g, const char *name, Type type) {
     if (is_param(g, name)) return;
     VarCode var = {name, type};
-    if (type_counted(type) && !in_scope(g, name, type) && g->scopes.len > 0) {
+    if ((type_counted(type) || cg_is_cell(g, name)) && !in_scope(g, name, type) && g->scopes.len > 0) {
         vec_push(g->arena, &vec_last(&g->scopes).names, var);
     }
     if (!has_var(g->vars.items, g->vars.len, name, type)) vec_push(g->arena, &g->vars, var);
@@ -419,16 +427,16 @@ static void emit_it(Codegen *g, const Expr *expr, StrBuf *out) {
         const LoopCode *loop = &g->loops.items[i - 1];
         if (loop->item && type_is_maybe(loop->item_type) && type_boxed(expr->type)) {
             sb_appendf(out, "es_unbox_%c(%zu, ", box_letter(expr->type), cg_site(g, expr->pos));
-            cg_emit_var(out, loop->item, loop->item_type);
+            cg_emit_var(g, out, loop->item, loop->item_type);
             sb_append_char(out, ')');
             return;
         }
         if (loop->item) {
-            cg_emit_var(out, loop->item, loop->item_type);
+            cg_emit_var(g, out, loop->item, loop->item_type);
             return;
         }
         if (loop->stmt->as.loop.kind == LOOP_COUNT) {
-            cg_append_var(out, loop->stmt->as.loop.var.text, TYPE_NUMBER);
+            cg_append_var(g, out, loop->stmt->as.loop.var.text, TYPE_NUMBER);
             return;
         }
         if (loop->stmt->as.loop.kind == LOOP_TIMES) {
@@ -482,7 +490,7 @@ static void emit_name(Codegen *g, const Expr *expr, StrBuf *out) {
     } else if (cg_find_function(g, name)) {
         emit_call(g, cg_find_function(g, name), NULL, 0, expr->pos, out);  // a function that takes no values
     } else {  // a record or nothing checked not to be nothing is still kept as one
-        cg_emit_var(out, name, expr->narrowed ? expr->type + TYPE_MAYBE : expr->type);
+        cg_emit_var(g, out, name, expr->narrowed ? expr->type + TYPE_MAYBE : expr->type);
     }
 }
 
@@ -531,8 +539,14 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     case EXPR_BOOLEAN: sb_append(out, expr->as.boolean ? "true" : "false"); break;
     case EXPR_NAME: emit_name(g, expr, out); break;
     case EXPR_CALL:
+        if (expr->as.call.callee) {
+            cg_emit_value_call(g, expr, out);
+            break;
+        }
         emit_call(g, expr->as.call.target, expr->as.call.args.items, expr->as.call.args.len, expr->pos, out);
         break;
+    case EXPR_FUNCTION_REF: cg_emit_function_ref(g, expr, out); break;
+    case EXPR_LAMBDA: cg_emit_lambda(g, expr, out); break;
     case EXPR_LENGTH:
         if (type_is_list(expr->as.operand->type)) {
             sb_appendf(out, "es_list_length(%s)", cg_list_operand(g, expr->as.operand));

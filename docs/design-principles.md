@@ -16,12 +16,14 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 - **A statement that changes something in place has a value form that gives a changed copy, where both are useful:** `sort L` and `L sorted`; `remove item N from L` and `L without item N` (also `the first item`/`the last item`); `remove K from M` and `M without K`; `add X to the end of L` and `L followed by M`. The value form uses the past participle (`sorted`, `reversed`, `added together`) or a describing phrase (`without ...`, `with X replaced by Y`).
 - **Text never changes,** so text tools are only values; `set T to T followed by X` is how text grows.
 - **Expressions can't stand alone as sentences,** so a sentence that starts with a value is always an error, never silently dropped.
+- **A block belongs to the sentence whose line ends with its colon,** and ends that sentence. A value can only end with a block (`let shout be a function taking word:`) when it's the last thing in the sentence.
 
 ## 3. Inputs
 
 - **A function's inputs come after a connector word,** the way English introduces what a verb acts on: `with` (the usual one), `of`, `using`, `to`, `for`, `from` and `in`. `to area with width and height:`, `to add tax to amount:`, `to pause for seconds:`, `to busiest artist from names:`, `to count vowels in word:`.
 - **A call uses the same connector as the definition,** or `with`, `of` and `using`, which work for every function: `add tax to 100`, `pause for 2`, `busiest artist from names`, `area with 3 and 4`. Another connector is an error that names the ones it takes.
 - **Inputs are separated by `and`** (and by commas after `using`). Each input is a single value; anything longer goes in parentheses.
+- **A function kept as a value is called the same way,** with `call`: `call handler with "Ann"`, `call item 1 of steps with 3`. In a value, `handler with "Ann"` works too when it's a name, like any call.
 - **The same shape everywhere:** records take their fields the same way (`a new dog with name "Rex" and age 3`), values of kinds with variants too (`a new circle with radius 3`), and methods put the record first (`rename rex with "Max"`).
 - **A connector only introduces inputs where it can't mean anything else.** `for` before a kind of record makes a method (`to bark for a dog:`), and `for` always ends a function's name. `to`, `for`, `from` and `in` only start a call's inputs for a function defined with them, because elsewhere they belong to the sentence around the call (`subtract X from Y`, `the value for K in M`).
 
@@ -55,7 +57,7 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 - **Numbers are equal when they're within a relative 1e-12 of each other,** so `0.1 plus 0.2 is 0.3` is yes. The orderings agree: close numbers are neither above nor below each other. Printing shows at most 10 significant digits, so rounding errors don't show either.
 - **Text is equal when it's the same characters,** exactly (capitals matter).
 - **Lists are equal when their items are, in order. Maps are equal when they have the same keys with equal values, in any order.**
-- **Records are equal only when they're the same record:** two dogs with the same fields are still two dogs.
+- **Records are equal only when they're the same record:** two dogs with the same fields are still two dogs. **Functions** likewise: two function values are equal only when they're the same one.
 - **Values of kinds with variants are equal when they're the same variant with equal fields:** `s is a new point`. They never change, so they have no identity to compare.
 - **Everything that searches uses the same equality:** `contains`, `the position of`, `has` and map keys, with the exception for map number keys below.
 
@@ -64,6 +66,7 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 - **Lists, maps and records are shared:** `let b be a` gives the same thing another name, and a function given one can change it.
 - **`a copy of X` copies X and the lists and maps inside it, but shares the records and text inside it.** Lists and maps in a list or map belong to it (they can't be shared by two places in a way you could see without records), so copying them keeps the copy independent. Records have an identity (`is` asks whether two are the same record) and can point to each other, so a copy keeps pointing to the same records. Text never changes, so sharing it can't be seen.
 - **Fixed values (`keep`) never change,** and wherever one could be changed it's copied first.
+- **A function made inside a value shares the names it uses from around it,** never a copy: a change made inside it is seen outside, and the other way round, even after the function around it has ended. Each `let` makes a new name, so functions made in different rounds of a loop don't share one.
 - **Values of kinds with variants never change** once made: a different value is made instead (`set s to a new circle with radius 4`). Like text, they're shared, and sharing them can't be seen, except through a list or map in a field (which can change); `a copy of s` gives the copy its own lists and maps.
 
 ## Known exceptions
@@ -82,6 +85,8 @@ Each exception exists because following the rule would cost more than it gives. 
 - **`a copy of R` is shallow for records** (the records inside are shared) while lists and maps inside a list or map are copied. Records have an identity and can point to each other, so copying them silently would change what `is` says and could copy a whole web of records; a separate deep copy phrase is an [idea](ideas.md#a-deep-copy).
 - **Maps have `M without K` but no `M with K as X`** yet: setting a value as a value form waits until its wording is settled. Copy the map and `set the value for K in ...` the copy.
 - **A word ending in `'s` is always a possessive,** so a name can't end in `'s`, and `it's` means "its" (the field of `it`), not "it is", except right after `when` in `check which kind`, where `when it's a circle:` reads as English does ("when it is a circle"); `when it is a circle:` works too. `its radius` (without the apostrophe) is also the field of `it`, but only before a field's name, so `its` stays an ordinary name elsewhere.
+
+- **`call F` is a value as well as a sentence** (`let n be call next`), although values don't start with a verb. A name alone is the function itself (`let f be next` keeps it), so a function with no inputs needs a word that calls it, and `call` is the one sentences already use.
 
 ## Open questions
 

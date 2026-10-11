@@ -42,6 +42,7 @@ SourcePos parser_token_pos(const Token *token) {
 }
 
 bool parser_at_sentence_end(const Parser *p) {
+    if (p->block_end == p->pos + 1) return true;  // a value ended with a block ("a function taking x:")
     TokenKind kind = parser_peek(p, 0)->kind;
     return kind == TOK_PERIOD || kind == TOK_NEWLINE || kind == TOK_EOF || kind == TOK_DEDENT ||
            kind == TOK_INDENT;

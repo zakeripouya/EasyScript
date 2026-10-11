@@ -2,7 +2,7 @@
  *
  * The runtime is nine files, embedded into the compiler at build time (in
  * this order: es_memory.h, es_program.h, es_runtime.h, es_list.h, es_sort.h,
- * es_text.h, es_record.h, es_map.h, es_kind.h) and copied to the top of every generated C program, so
+ * es_text.h, es_record.h, es_map.h, es_kind.h, es_closure.h) and copied to the top of every generated C program, so
  * programs need nothing else to build.
  * Everything is static; generated code calls it.
  *
@@ -89,13 +89,16 @@ typedef struct {
     const char *kinds;
     const size_t *offsets;
     size_t size;
-    char style; /* ES_RECORD, ES_VARIANT, or ES_BOX (es_kind.h) */
+    char style; /* ES_RECORD, ES_VARIANT, ES_BOX (es_kind.h), ES_CLOSURE or ES_CELL (es_closure.h) */
 } EsRecordType;
 
 /* A box holds a number, text or yes/no that can be nothing ("a number or
  * nothing"): NULL is nothing, like a record that can be nothing. It never
- * changes, and is equal to another box holding an equal value. */
-enum { ES_RECORD, ES_VARIANT, ES_BOX };
+ * changes, and is equal to another box holding an equal value. A function
+ * kept as a value is a closure, and a variable that functions made inside
+ * share is kept in a cell (es_closure.h); both are records too, so the
+ * cycle check sees them. */
+enum { ES_RECORD, ES_VARIANT, ES_BOX, ES_CLOSURE, ES_CELL };
 
 /* A record. Its fields come after this header and own the text, lists and
  * records in them. `prev` and `next` link every record alive while
@@ -410,9 +413,10 @@ static inline void es_map_drop(EsMap **slot) {
     es_map_set(slot, &es_no_map);
 }
 
-/* Records: like text and lists, except that a record can be NULL (nothing). */
+/* Records: like text and lists, except that a record can be NULL (nothing).
+ * A function defined with "to" is an immortal closure (es_closure.h). */
 static inline EsRecord *es_record_retain(EsRecord *r) {
-    if (r) r->header.refs++;
+    if (r && r->header.refs != ES_IMMORTAL) r->header.refs++;
     return r;
 }
 

@@ -9,7 +9,7 @@
 // --- Variables -------------------------------------------------------------------
 
 static TypeVar new_slot(Checker *c, Type type, size_t line, TypeVar item, TypeVar key) {
-    TypeSlot slot = {c->types.len, type, line, item, key};
+    TypeSlot slot = {c->types.len, type, line, item, key, NULL, 0};
     vec_push(c->arena, &c->types, slot);
     return c->types.len - 1;
 }
@@ -24,8 +24,23 @@ TypeVar types_new(Checker *c, Type type, size_t line) {
         TypeVar key = new_part(c, ast_map_key(c->records, type), line);
         return new_slot(c, TYPE_MAP, line, new_part(c, ast_map_value(c->records, type), line), key);
     }
+    const FuncKind *kind = type_is_func(type) ? ast_func_kind(c->records, type) : NULL;
+    if (kind) {
+        TypeVar *params = arena_alloc(c->arena, (kind->count + 1) * sizeof(TypeVar));
+        for (size_t i = 0; i < kind->count; i++) params[i] = new_part(c, kind->params[i], line);
+        return types_new_func(c, params, kind->count, new_part(c, kind->result, line), line);
+    }
     if (!type_is_list(type)) return new_slot(c, type, line, 0, 0);
     return new_slot(c, TYPE_LIST, line, new_part(c, type_item(type), line), 0);
+}
+
+TypeVar types_new_func(Checker *c, const TypeVar *params, size_t count, TypeVar result, size_t line) {
+    TypeVar *copy = arena_alloc(c->arena, (count + 1) * sizeof(TypeVar));
+    for (size_t i = 0; i < count; i++) copy[i] = params[i];
+    TypeVar func = new_slot(c, TYPE_FUNC, line, result, 0);
+    c->types.items[func].params = copy;
+    c->types.items[func].count = count;
+    return func;
 }
 
 TypeVar types_new_list(Checker *c, TypeVar item, size_t line) {
@@ -53,12 +68,29 @@ TypeVar types_key(Checker *c, TypeVar map) {
     return c->types.items[root(c, map)].key;
 }
 
+size_t types_func(Checker *c, TypeVar func, const TypeVar **params, TypeVar *result) {
+    const TypeSlot *slot = &c->types.items[root(c, func)];
+    *params = slot->params;
+    *result = slot->item;
+    return slot->count;
+}
+
 Type types_of(Checker *c, TypeVar var) {
     TypeSlot slot = c->types.items[root(c, var)];  // a copy: making a kind of map can't move it
     if (slot.type == TYPE_MAP) {
         Type key = types_of(c, slot.key), value = types_of(c, slot.item);
         if (key == TYPE_ERROR || value == TYPE_ERROR) return TYPE_ERROR;
         return ast_map_type(c->arena, c->records, key, value);
+    }
+    if (slot.type == TYPE_FUNC) {
+        Type *params = arena_alloc(c->arena, (slot.count + 1) * sizeof(Type));
+        for (size_t i = 0; i < slot.count; i++) {
+            params[i] = types_of(c, slot.params[i]);
+            if (params[i] == TYPE_ERROR) return TYPE_ERROR;
+        }
+        Type result = types_of(c, slot.item);
+        if (result == TYPE_ERROR) return TYPE_ERROR;
+        return ast_func_type(c->arena, c->records, params, slot.count, result);
     }
     if (slot.type != TYPE_LIST) return slot.type;
     Type item = types_of(c, slot.item);
@@ -76,7 +108,12 @@ static bool occurs(Checker *c, TypeVar var, TypeVar in) {
     if (r == var) return true;
     Type type = c->types.items[r].type;
     if (type == TYPE_MAP && occurs(c, var, c->types.items[r].key)) return true;
-    return (type == TYPE_LIST || type == TYPE_MAP) && occurs(c, var, c->types.items[r].item);
+    if (type == TYPE_FUNC) {
+        for (size_t i = 0; i < c->types.items[r].count; i++) {
+            if (occurs(c, var, c->types.items[r].params[i])) return true;
+        }
+    }
+    return (type == TYPE_LIST || type == TYPE_MAP || type == TYPE_FUNC) && occurs(c, var, c->types.items[r].item);
 }
 
 static bool compatible(Checker *c, TypeVar a, TypeVar b) {
@@ -90,6 +127,14 @@ static bool compatible(Checker *c, TypeVar a, TypeVar b) {
     if (ta == TYPE_MAP && tb == TYPE_MAP) {
         return compatible(c, c->types.items[ra].key, c->types.items[rb].key) &&
                compatible(c, c->types.items[ra].item, c->types.items[rb].item);
+    }
+    if (ta == TYPE_FUNC && tb == TYPE_FUNC) {
+        const TypeSlot *a_slot = &c->types.items[ra], *b_slot = &c->types.items[rb];
+        if (a_slot->count != b_slot->count) return false;
+        for (size_t i = 0; i < a_slot->count; i++) {
+            if (!compatible(c, a_slot->params[i], b_slot->params[i])) return false;
+        }
+        return compatible(c, a_slot->item, b_slot->item);
     }
     // A record or nothing, kind not decided yet, goes with any record or nothing.
     if (ta == TYPE_MAYBE) return tb == TYPE_MAYBE || type_is_maybe(tb);
@@ -109,8 +154,13 @@ static void join(Checker *c, TypeVar a, TypeVar b) {
     } else if (tb == TYPE_ERROR || ta == TYPE_UNKNOWN || ta == TYPE_MAYBE) {
         c->types.items[ra].parent = rb;
     } else {
-        if (ta == TYPE_LIST || ta == TYPE_MAP) join(c, c->types.items[ra].item, c->types.items[rb].item);
+        if (ta == TYPE_LIST || ta == TYPE_MAP || ta == TYPE_FUNC) {
+            join(c, c->types.items[ra].item, c->types.items[rb].item);
+        }
         if (ta == TYPE_MAP) join(c, c->types.items[ra].key, c->types.items[rb].key);
+        for (size_t i = 0; ta == TYPE_FUNC && i < c->types.items[ra].count; i++) {
+            join(c, c->types.items[ra].params[i], c->types.items[rb].params[i]);
+        }
         c->types.items[rb].parent = ra;
     }
 }
@@ -177,6 +227,7 @@ static unsigned kind_bit(Type type) {
     if (type_is_list(type)) return KIND_LIST;
     if (type_is_map(type)) return KIND_MAP;
     if ((type_is_record(type) || type_is_sum(type)) && !type_is_maybe(type)) return KIND_RECORD;
+    if (type_is_object(type) || type == TYPE_MAYBE) return KIND_OTHER;
     return type == TYPE_NUMBER ? KIND_NUMBER : type == TYPE_TEXT ? KIND_TEXT : type == TYPE_YESNO ? KIND_YESNO : 0;
 }
 
@@ -360,6 +411,7 @@ void types_finish(Checker *c, size_t first_error) {
     for (size_t i = 0; diag_count(c->diag) == first_error && i < c->functions.len; i++) {
         report_undecided(c, &c->functions.items[i]);
     }
+    if (diag_count(c->diag) == first_error) checker_report_undecided_lambdas(c);
     for (size_t i = 0; i < c->typed.len; i++) {
         c->typed.items[i].expr->type = types_of(c, c->typed.items[i].var);
     }
@@ -375,4 +427,5 @@ void types_finish(Checker *c, size_t first_error) {
         }
         def->as.function.result = types_of(c, f->result);
     }
+    checker_write_lambdas(c);
 }

@@ -129,6 +129,10 @@ static void es_record_render(EsBuf *b, const EsRecord *r, int depth) {
         return;
     }
     const EsRecordType *type = r->type;
+    if (type->style == ES_CLOSURE) { /* "the function double", "the function made on line 3" */
+        es_buf_add_text(b, type->name);
+        return;
+    }
     es_buf_add_text(b, type->name);
     if (depth >= ES_RECORD_DEPTH && type->fields > 0) {
         es_buf_add_text(b, " with ...");
@@ -172,7 +176,7 @@ static void es_record_render(EsBuf *b, const EsRecord *r, int depth) {
         }
         default: {
             const EsRecord *inner = ES_FIELD(r, EsRecord *, at);
-            bool parenthesized = inner && inner->type->style != ES_BOX;
+            bool parenthesized = inner && inner->type->style != ES_BOX && inner->type->style != ES_CLOSURE;
             if (parenthesized) es_buf_add(b, "(", 1);
             es_record_render(b, inner, depth + 1);
             if (parenthesized) es_buf_add(b, ")", 1);
@@ -269,6 +273,10 @@ static void es_reach(EsRecord *r, EsRecordStack *stack) {
     stack->items[stack->len++] = r;
 }
 
+/* A circle with a function in it: the function uses a name that holds it
+ * (or holds something that holds it). Explained in es_closure.h. */
+static bool es_report_function_cycle(size_t circled, EsRecord *oldest);
+
 static bool es_report_cycles(void) {
     size_t live = 0;
     for (EsRecord *r = es_memory.records; r; r = r->next) {
@@ -287,15 +295,19 @@ static bool es_report_cycles(void) {
     size_t circled = 0;
     EsRecord *oldest = NULL;
     bool variants = false; /* values of kinds with variants in it: the circle goes through a list or map */
+    bool functions = false; /* a function in it: it keeps itself alive through a name it uses */
     for (EsRecord *r = es_memory.records; r; r = r->next) {
-        if (r->mark != ES_REACHED) circled++, oldest = r, variants |= r->type->style == ES_VARIANT;
+        if (r->mark == ES_REACHED || r->type->style == ES_CELL) continue; /* cells are the names, not values */
+        circled++, oldest = r, variants |= r->type->style == ES_VARIANT;
+        functions |= r->type->style == ES_CLOSURE;
     }
     if (circled == 0) return false;
+    if (functions) return es_report_function_cycle(circled, oldest);
     fprintf(stderr, "Memory check: %zu %s%s still alive at the end of the program, because they point to each "
                     "other in a circle:\n", circled, variants ? "value" : "record", circled == 1 ? " was" : "s were");
     size_t shown = 0;
     for (EsRecord *r = oldest; r && shown < 3; r = r->prev) {
-        if (r->mark == ES_REACHED) continue;
+        if (r->mark == ES_REACHED || r->type->style == ES_CELL) continue;
         EsText *t = es_record_short_text(r);
         fputs("    ", stderr);
         es_print_cut(t, 70, false);

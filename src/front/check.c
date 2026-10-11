@@ -27,6 +27,7 @@ static const Symbol *check_target(Checker *c, const Name *name) {
     }
     const Symbol *symbol = checker_find_made(c, name->text);
     if (!symbol) checker_report_unknown(c, name->text, name->display, name->pos);
+    if (symbol) checker_use(c, symbol, true);
     return symbol;
 }
 
@@ -112,6 +113,7 @@ static void make_text(Checker *c, const Name *name) {
     TypeVar text = types_new(c, TYPE_TEXT, name->pos.line);
     const Symbol *existing = checker_find_made(c, name->text);
     if (existing) {
+        checker_use(c, existing, true);
         store(c, existing, text, NULL, name->pos.span);
     } else {
         checker_make(c, name, text);
@@ -148,15 +150,17 @@ static void check_return(Checker *c, const Stmt *stmt) {
     if (nothing && result == TYPE_NOTHING) return;  // "give back nothing" is "return"
     if (!stmt->as.returned) {
         if (result == TYPE_NOTHING || result == TYPE_ERROR) return;
-        diag_error(c->diag, stmt->pos.span, "\"%s\" gives back a value, so it can't give back nothing here.", f->display);
+        diag_error(c->diag, stmt->pos.span, "%s gives back a value, so it can't give back nothing here.",
+                   checker_capital(c, checker_function_label(c, f)));
         diag_note(c->diag, "Give back a value here too, like \"give back 0\".");
     } else if (result == TYPE_NOTHING) {
-        diag_error(c->diag, stmt->as.returned->pos.span, "\"%s\" gives back nothing, so it can't give back a value.",
-                   f->display);
+        diag_error(c->diag, stmt->as.returned->pos.span, "%s gives back nothing, so it can't give back a value.",
+                   checker_capital(c, checker_function_label(c, f)));
         diag_note(c->diag, "It's defined on line %zu: \"%s\".", f->definition->pos.line, checker_function_header(c, f));
     } else if (!checker_fits(c, f->result, value, stmt->as.returned, stmt->pos.line)) {
-        diag_error(c->diag, stmt->as.returned->pos.span, "\"%s\" gives back %s (since line %zu), but this is %s.",
-                   f->display, checker_type_name(c, result), types_line(c, f->result), checker_kind(c, value));
+        diag_error(c->diag, stmt->as.returned->pos.span, "%s gives back %s (since line %zu), but this is %s.",
+                   checker_capital(c, checker_function_label(c, f)), checker_type_name(c, result),
+                   types_line(c, f->result), checker_kind(c, value));
         if (types_of(c, value) == TYPE_NOTHING && type_can_be_nothing(result)) {
             diag_note(c->diag, "To give back nothing too, say so in the definition, like \"giving back %s or "
                                "nothing\".", checker_type_name(c, result));
@@ -173,7 +177,7 @@ static void check_stmt(Checker *c, const Stmt *stmt);
 static void end_scope(Checker *c, size_t outer, size_t line, const char *where) {
     for (size_t i = outer; where && i < c->made.len; i++) {
         Symbol ended = {c->made.items[i].name, c->made.items[i].display, line, where, c->made.items[i].loop_number, 0,
-                        c->made.items[i].loop_item};
+                        c->made.items[i].loop_item, NULL, 0};
         vec_push(c->arena, &c->ended, ended);
     }
     c->made.len = outer;
@@ -188,7 +192,7 @@ static bool always_leaves(const Block *block) {
 
 // After "if node is nothing, give back 0." the rest of the block knows
 // node isn't nothing.
-static void check_statements(Checker *c, const Block *block) {
+void checker_check_statements(Checker *c, const Block *block) {
     for (size_t i = 0; i < block->len; i++) {
         const Stmt *stmt = block->items[i];
         check_stmt(c, stmt);
@@ -202,7 +206,7 @@ static void check_statements(Checker *c, const Block *block) {
 void checker_check_block(Checker *c, const Block *block, size_t line, const char *where) {
     size_t outer = c->made.len, checked = c->present.len;
     c->blocks++;
-    check_statements(c, block);
+    checker_check_statements(c, block);
     c->blocks--;
     end_scope(c, outer, line, where);
     c->present.len = checked;
@@ -230,6 +234,10 @@ static void check_function(Checker *c, const Stmt *stmt) {
                    c->function ? "another function" : "an \"if\" or a loop");
         diag_note(c->diag, "Move \"to %s ...:\" to the start of a line, outside every block.",
                   stmt->as.function.name.display);
+        if (c->function) {
+            diag_note(c->diag, "To make a function inside another one, write \"let %s be a function taking ...:\" "
+                               "with its sentences indented below.", stmt->as.function.name.display);
+        }
         return;
     }
     const Function *f = NULL;
@@ -243,7 +251,7 @@ static void check_function(Checker *c, const Stmt *stmt) {
     c->loops.len = 0;
     c->function = f;
     check_params(c, f);
-    check_statements(c, &stmt->as.function.body);
+    checker_check_statements(c, &stmt->as.function.body);
     end_scope(c, c->floor, stmt->pos.line, NULL);
     c->function = NULL;
     c->floor = saved_floor;
@@ -277,7 +285,8 @@ void checker_make_item_name(Checker *c, const Name *name, TypeVar item) {
         return;
     }
     if (checker_clashes(c, name)) return;
-    Symbol symbol = {name->text, name->display, name->pos.line, NULL, true, item, true};
+    Symbol symbol = {name->text, name->display, name->pos.line, NULL, true, item, true,
+                     c->function ? c->function->definition : NULL, 0};
     vec_push(c->arena, &c->made, symbol);
 }
 
@@ -288,7 +297,8 @@ static TypeVar check_loop_variable(Checker *c, const Stmt *stmt) {
     const Symbol *existing = checker_find_made(c, var->text);
     if (!existing && checker_clashes(c, var)) return number;
     if (!existing) {
-        Symbol symbol = {var->text, var->display, var->pos.line, NULL, true, number, false};
+        Symbol symbol = {var->text, var->display, var->pos.line, NULL, true, number, false,
+                         c->function ? c->function->definition : NULL, 0};
         vec_push(c->arena, &c->made, symbol);
         return number;
     }
@@ -323,7 +333,7 @@ static void check_loop(Checker *c, const Stmt *stmt) {
     TypeVar item = 0, value = 0;
     if (stmt->as.loop.list) item = checker_check_each(c, stmt, &value);
     size_t outer = c->made.len;
-    Loop loop = {stmt->as.loop.kind == LOOP_COUNT || stmt->as.loop.kind == LOOP_TIMES, 0, false, NO_VARIANT};
+    Loop loop = {stmt->as.loop.kind == LOOP_COUNT || stmt->as.loop.kind == LOOP_TIMES, 0, false, NO_VARIANT, false};
     if (stmt->as.loop.kind == LOOP_COUNT) loop.it = check_loop_variable(c, stmt);
     if (stmt->as.loop.kind == LOOP_TIMES) loop.it = types_new(c, TYPE_NUMBER, stmt->pos.line);
     if (stmt->as.loop.kind == LOOP_EACH) {
@@ -335,7 +345,7 @@ static void check_loop(Checker *c, const Stmt *stmt) {
     vec_push(c->arena, &c->loops, loop);
     if (stmt->as.loop.condition) checker_narrow_condition(c, stmt->as.loop.condition, stmt->as.loop.kind == LOOP_WHILE);
     c->blocks++;
-    check_statements(c, &stmt->as.loop.body);
+    checker_check_statements(c, &stmt->as.loop.body);
     c->blocks--;
     c->loops.len--;
     c->present.len = checked;
@@ -415,23 +425,23 @@ static void collect_names(Checker *c, const Block *program) {
                            : stmt->kind == STMT_READ_FILE ? &stmt->as.read_file.name
                                                           : NULL;
         if (name && !checker_find_later(c, name->text)) {
-            Symbol symbol = {name->text, name->display, name->pos.line, NULL, false, 0, false};
+            Symbol symbol = {name->text, name->display, name->pos.line, NULL, false, 0, false, NULL, 0};
             vec_push(c->arena, &c->later, symbol);
         }
     }
 }
 
 // Whether a function's body gives back a value anywhere ("give back E").
-static bool gives_value(const Block *block) {
+bool checker_gives_value(const Block *block) {
     for (size_t i = 0; i < block->len; i++) {
         const Stmt *stmt = block->items[i];
         if (stmt->kind == STMT_RETURN && stmt->as.returned && stmt->as.returned->kind != EXPR_NOTHING) return true;
-        if (stmt->kind == STMT_LOOP && gives_value(&stmt->as.loop.body)) return true;
+        if (stmt->kind == STMT_LOOP && checker_gives_value(&stmt->as.loop.body)) return true;
         for (size_t b = 0; stmt->kind == STMT_IF && b < stmt->as.if_stmt.branches.len; b++) {
-            if (gives_value(&stmt->as.if_stmt.branches.items[b].body)) return true;
+            if (checker_gives_value(&stmt->as.if_stmt.branches.items[b].body)) return true;
         }
         for (size_t b = 0; stmt->kind == STMT_MATCH && b < stmt->as.match.branches.len; b++) {
-            if (gives_value(&stmt->as.match.branches.items[b].body)) return true;
+            if (checker_gives_value(&stmt->as.match.branches.items[b].body)) return true;
         }
     }
     return false;
@@ -447,7 +457,7 @@ static void function_types(Checker *c, Function *f) {
         vec_push(c->arena, &f->params, types_new(c, declared, declared ? line : 0));
     }
     Type result = def->as.function.declared_result;
-    if (result == TYPE_UNKNOWN && !gives_value(&def->as.function.body)) result = TYPE_NOTHING;
+    if (result == TYPE_UNKNOWN && !checker_gives_value(&def->as.function.body)) result = TYPE_NOTHING;
     f->result = types_new(c, result, result ? line : 0);
 }
 
@@ -512,6 +522,7 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
     c.arena = arena;
     c.diag = diag;
     c.records = &whole->records;
+    c.program = whole;
     size_t first_error = diag_count(diag);
     checker_collect_records(&c, program);
     checker_collect_sums(&c, program);

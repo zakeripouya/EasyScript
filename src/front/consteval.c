@@ -533,6 +533,10 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
     case EXPR_KIND_TEST:
         return fail(ev, span, fixed_note, "A constant can't check which kind a value is, because those values are "
                                           "made while the program runs.");
+    case EXPR_FUNCTION_REF:
+    case EXPR_LAMBDA:
+        return fail(ev, span, fixed_note, "A constant can't be a function, because functions are kept as values while "
+                                          "the program runs.");
     case EXPR_ERROR: return false;
     }
     return false;

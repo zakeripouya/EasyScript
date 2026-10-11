@@ -450,7 +450,7 @@ static void check_complete(Checker *c, const Stmt *stmt, Type type, const size_t
 static void check_branch(Checker *c, const Stmt *stmt, const MatchBranch *branch, TypeVar subject, Type type) {
     const char *path = checker_path(c, stmt->as.match.subject);
     size_t checked = c->present.len;
-    Loop loop = {true, subject, true, NO_VARIANT};
+    Loop loop = {true, subject, true, NO_VARIANT, false};
     bool present = !branch->nothing && type_is_maybe(type);  // a variant, or "otherwise" after "when it's nothing"
     if (branch->otherwise) {
         present = false;

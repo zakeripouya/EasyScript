@@ -291,6 +291,31 @@ Rules:
 - **Checks before running:** calling a function that doesn't exist suggests the closest one; giving it the wrong number of inputs says how many it needs and where it's defined.
 - **Deep recursion** stops with "Functions are calling each other too deeply (more than 10000 calls inside each other)." instead of crashing.
 
+## Functions as values
+
+All of these are **Available**. A function can be kept in a name, a list, a map or a field, given to another function and given back, like any other value. See the [language guide](language-guide.md#15-functions-as-values).
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `the function NAME` | A function defined with `to`, as a value (not called). `function` means this only before a function's name | `let twice be the function double` |
+| `a function taking X [(KIND)] and Y that gives back E` | A function made where it's used, whose result is E. E is the rest of the value (use parentheses to end it sooner) | `a function taking x that gives back x times 2` |
+| `a function that gives back E` | The same with no inputs | `a function that gives back 42` |
+| `a function taking X [and Y] [, giving back KIND]:` + indented sentences | A function with a block below it. The colon ends the sentence it's in, so it's always last | `let shout be a function taking word:` |
+| `a function:` / `a function, giving back KIND:` | The same with no inputs | `a function giving back a number:` |
+| `call F with X and Y` | Calls the function kept in F, as a sentence or a value (`of` and `using` work too). F is a name or any single value (`item 1 of handlers`, `the value for "click" in handlers`) | `call handler with "Ann".` |
+| `call F` | Calls a function that takes no inputs | `let n be call next.` |
+| `F with X and Y` / `F of X` / `F using X` | The same, in a value, when F is a name | `say twice with 4` |
+| `F is G` | Yes if both are the same function value | `if action is the function save` |
+
+Rules:
+
+- **Kinds:** a function's kind is `a function taking KIND and KIND and giving back KIND` (or `a function giving back KIND`, `a function taking KIND`, or just `a function` for one with no inputs and no result). An input that is a function itself goes in parentheses: `a function taking (a function taking a number) and text`. In a list or map: `functions taking text`. Inputs and results are worked out like a `to` function's; when nothing decides one, write it (`a function taking x (a number) ...`).
+- **Names from around it:** a function made inside a value sees every name made before it (in the main program, or in the function around it) and can change them. They're **shared, not copied**: a change made by either side is seen by both, even after the function around it has ended. Each `let` makes a new name, so functions made in different rounds of a loop each keep their own. Inside, `it` doesn't mean the loop's number (use the loop's name), and `stop the loop` doesn't leave a loop around it.
+- **Not inside `every` or `only`:** make the function first and use its name there.
+- **Its inputs** need names that aren't taken around it.
+- **Equal:** two function values are equal only when they're the same one (like records).
+- **Memory:** a function that's kept in a name it uses (or in a list, record or map that name holds) keeps itself alive; the memory check explains it at the end of the program. A `to` function never does: use one for recursion.
+
 ## Lists
 
 All list words are **Available**. A list holds values of one kind, in order; positions start at 1. See the [language guide](language-guide.md#10-lists).
@@ -618,6 +643,7 @@ Every value has a kind, worked out by the compiler before the program runs (**Av
 | kind with variants | `(a shape)`, `(a shape or nothing)`, `giving back an expression` | `a new circle ...`, a field holding one, `a copy of` |
 | number, text or yes/no that can be nothing | `(a number or nothing)`, `(text or nothing)`, `(yes or no or nothing)`, `giving back a number or nothing` | `the position of` (nothing when it isn't there), a field or input of that kind, `nothing` where one goes. It has to be checked (`if X is not nothing:`, `check which kind X is:`) before it's used as a number, text or yes/no. A list or map can't be nothing |
 | map | `(a map from text to numbers)`, `(a map from numbers to lists of text)`, `giving back a map from text to numbers`; in a list or map: `maps from text to numbers` | `a map of ...`, `an empty map from ...`, `a copy of` |
+| function | `(a function taking a number and giving back text)`, `(a function taking text)`, `(a function giving back a number)`, `(a function)`; in a list or map: `functions taking text` | `the function double`, `a function taking x ...`, a field or input holding one |
 
 ## Later phases
 

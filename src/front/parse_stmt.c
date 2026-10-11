@@ -389,6 +389,7 @@ static void report_unknown_start(Parser *p) {
 
 Stmt *parse_statement(Parser *p) {
     p->ended_with_block = false;
+    p->block_end = 0;
     p->ends_with_name = false;
     if (parser_at_word(p, 0, "please")) {
         parser_advance(p);
@@ -459,9 +460,18 @@ static void end_statement(Parser *p) {
         }
     }
     skip_sentence(p);
+    // A broken sentence ending in a colon ("let f be a function taking x:"):
+    // its block belongs to it, so it's skipped too.
+    bool block = p->sentence_failed && p->pos > 0 && p->tokens[p->pos - 1].kind == TOK_COLON &&
+                 parser_at(p, 0, TOK_NEWLINE) && parser_at(p, 1, TOK_INDENT);
     if (parser_at(p, 0, TOK_PERIOD)) parser_advance(p);
     if (parser_at(p, 0, TOK_NEWLINE)) parser_advance(p);
     p->sentence_failed = false;
+    if (block) {
+        parser_advance(p);
+        Block discarded = {0};
+        parse_statements(p, &discarded, true);
+    }
 }
 
 // An indented block that nothing opened: report it, then parse and discard

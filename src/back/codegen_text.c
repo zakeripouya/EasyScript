@@ -160,12 +160,18 @@ void cg_emit_text_op(Codegen *g, const Expr *expr, StrBuf *out) {
 // --- Building text -------------------------------------------------------------------
 
 // Whether the expression reads the variable `name`. (Only a name can: a
-// function can't see the caller's variables, and text never changes.)
+// function can't see the caller's variables, and text never changes. A
+// function made inside one can, but then the name is kept in a cell, which
+// is never built in place.)
 static bool reads(const Expr *expr, const char *name) {
     if (!expr) return false;
     switch (expr->kind) {
     case EXPR_NAME: return strcmp(expr->as.name, name) == 0;
+    case EXPR_FUNCTION_REF: return false;
+    case EXPR_LAMBDA: return true;  // it could use the name (in place building isn't worth working that out)
     case EXPR_CALL:
+        if (reads(expr->as.call.callee, name)) return true;
+        // fall through
     case EXPR_LIST:
     case EXPR_MAP: {
         Expr *const *items = expr->kind == EXPR_CALL ? expr->as.call.args.items : expr->as.items.items;
@@ -227,7 +233,7 @@ bool cg_emit_append(Codegen *g, const Stmt *stmt) {
     }
     if (parts.len == 0 || value->kind != EXPR_NAME || strcmp(value->as.name, name) != 0 || value->type != TYPE_TEXT ||
         value->narrowed || stmt->as.assign.type != TYPE_TEXT ||
-        cg_is_constant(g, name) || cg_find_function(g, name)) {
+        cg_is_constant(g, name) || cg_find_function(g, name) || cg_is_cell(g, name)) {
         return false;
     }
     for (size_t i = parts.len; i > 0; i--) {
@@ -236,7 +242,7 @@ bool cg_emit_append(Codegen *g, const Stmt *stmt) {
         cg_emit_text(g, parts.items[i - 1], &part);
         sb_append_repeat(&g->body, ' ', 4 * (g->depth + 1));
         sb_append(&g->body, "es_append(&");
-        cg_append_var(&g->body, name, TYPE_TEXT);
+        cg_append_var(g, &g->body, name, TYPE_TEXT);
         sb_appendf(&g->body, ", %s);\n", part.data);
     }
     return true;

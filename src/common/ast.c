@@ -66,6 +66,22 @@ typedef struct {
 } Dump;
 
 static void dump_expr(const Expr *expr, size_t depth, Dump *d);
+static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d);
+static void dump_label(size_t depth, Dump *d, const char *label);
+
+// "(x, word: text) giving back text": a function's inputs and result, as written.
+static void append_inputs(StrBuf *scratch, const Stmt *stmt, const Records *records) {
+    sb_append_char(scratch, '(');
+    for (size_t i = 0; i < stmt->as.function.params.len; i++) {
+        sb_appendf(scratch, "%s%s", i ? ", " : "", stmt->as.function.params.items[i].text);
+        Type declared = stmt->as.function.declared.items[i];
+        if (declared != TYPE_UNKNOWN) sb_appendf(scratch, ": %s", ast_type_name(scratch->arena, records, declared));
+    }
+    sb_append_char(scratch, ')');
+    if (stmt->as.function.declared_result != TYPE_UNKNOWN) {
+        sb_appendf(scratch, " giving back %s", ast_type_name(scratch->arena, records, stmt->as.function.declared_result));
+    }
+}
 
 static void dump_line(const SourcePos *pos, size_t depth, Dump *d, const char *label) {
     sb_append_repeat(d->out, ' ', depth * 2);
@@ -91,7 +107,15 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
     case EXPR_NOTHING: return "nothing";
     case EXPR_IT: return "it";
     case EXPR_NAME: sb_appendf(scratch, "name %s", expr->as.name); break;
-    case EXPR_CALL: sb_appendf(scratch, "call %s", expr->as.call.name); break;
+    case EXPR_CALL:
+        if (expr->as.call.callee) return "call value";
+        sb_appendf(scratch, "call %s", expr->as.call.name);
+        break;
+    case EXPR_FUNCTION_REF: sb_appendf(scratch, "function %s", expr->as.ref.name); break;
+    case EXPR_LAMBDA:
+        sb_append(scratch, "function ");
+        append_inputs(scratch, expr->as.lambda, records);
+        break;
     case EXPR_LENGTH: return "length of";
     case EXPR_FILE_CONTENTS: return "contents of file";
     case EXPR_UNARY: return ast_unary_op_name(expr->as.unary.op);
@@ -160,7 +184,14 @@ static void dump_expr(const Expr *expr, size_t depth, Dump *d) {
     sb_init(&label, d->out->arena);
     dump_line(&expr->pos, depth, d, expr_label(expr, &label, d->records));
     switch (expr->kind) {
+    case EXPR_LAMBDA:
+        dump_label(depth + 1, d, "do");
+        for (size_t i = 0; i < expr->as.lambda->as.function.body.len; i++) {
+            dump_stmt(expr->as.lambda->as.function.body.items[i], depth + 2, d);
+        }
+        break;
     case EXPR_CALL:
+        if (expr->as.call.callee) dump_expr(expr->as.call.callee, depth + 1, d);
         for (size_t i = 0; i < expr->as.call.args.len; i++) {
             dump_expr(expr->as.call.args.items[i], depth + 1, d);
         }
@@ -274,16 +305,8 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
     case STMT_BREAK: return "stop the loop";
     case STMT_CONTINUE: return "skip this one";
     case STMT_FUNCTION:
-        sb_appendf(scratch, "define %s (", stmt->as.function.name.text);
-        for (size_t i = 0; i < stmt->as.function.params.len; i++) {
-            sb_appendf(scratch, "%s%s", i ? ", " : "", stmt->as.function.params.items[i].text);
-            Type declared = stmt->as.function.declared.items[i];
-            if (declared != TYPE_UNKNOWN) sb_appendf(scratch, ": %s", ast_type_name(scratch->arena, records, declared));
-        }
-        sb_append_char(scratch, ')');
-        if (stmt->as.function.declared_result != TYPE_UNKNOWN) {
-            sb_appendf(scratch, " giving back %s", ast_type_name(scratch->arena, records, stmt->as.function.declared_result));
-        }
+        sb_appendf(scratch, "define %s ", stmt->as.function.name.text);
+        append_inputs(scratch, stmt, records);
         break;
     case STMT_RETURN: return "give back";
     case STMT_CALL: return "call";

@@ -61,7 +61,8 @@ bool checker_clashes(Checker *c, const Name *name) {
 
 void checker_make(Checker *c, const Name *name, TypeVar var) {
     if (checker_find_made(c, name->text) || checker_clashes(c, name)) return;
-    Symbol symbol = {name->text, name->display, name->pos.line, NULL, false, var, false};
+    Symbol symbol = {name->text, name->display, name->pos.line, NULL, false, var, false,
+                     c->function ? c->function->definition : NULL, 0};
     vec_push(c->arena, &c->made, symbol);
 }
 
@@ -108,7 +109,8 @@ void checker_report_unknown(Checker *c, const char *name, const char *display, S
     const Symbol *near = closest(c, name, &count);
     const Symbol *later = find(c->later.items, c->later.len, name);
     const Symbol *ended = find(c->ended.items, c->ended.len, name);
-    const Symbol *outside = c->function ? find(c->later.items, c->later.len, name) : NULL;
+    bool in_function = c->function && !c->function->definition->as.function.lambda;
+    const Symbol *outside = in_function ? find(c->later.items, c->later.len, name) : NULL;
     const Constant *near_constant = checker_closest_constant(c, name);
     size_t fn_len = c->function ? strlen(c->function->name) : 0, len = strlen(name);
     bool ends_function_name = fn_len > len && c->function->name[fn_len - len - 1] == ' ' &&

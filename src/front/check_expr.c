@@ -194,7 +194,10 @@ static TypeVar check_it(Checker *c, const Expr *expr) {
         if (c->loops.items[i - 1].has_it) return c->loops.items[i - 1].it;
     }
     diag_error(c->diag, expr->pos.span, "\"it\" doesn't refer to anything here.");
-    if (c->loops.len > 0) {
+    if (c->lambda && c->lambda->in_loop) {
+        diag_note(c->diag, "A function made inside a loop runs later, when it's called, so \"it\" can't mean the "
+                           "loop's number or item there. Use the loop's name for it instead.");
+    } else if (c->loops.len > 0) {
         diag_note(c->diag, "\"it\" means the number of a counting loop or a \"repeat ... times\" loop, or the item "
                            "of a \"for each\" loop, but this loop has neither. Use a variable instead.");
     } else {
@@ -208,12 +211,6 @@ static void report_unknown_function(Checker *c, const char *name, const char *di
     if (k) {
         diag_error(c->diag, pos.span, "\"%s\" is a constant, not a function.", k->display);
         diag_note(c->diag, "A constant is a fixed value: use it by its name alone, like \"say %s\".", k->display);
-        return;
-    }
-    const Symbol *symbol = checker_find_made(c, name);
-    if (symbol) {
-        diag_error(c->diag, pos.span, "\"%s\" is a variable, not a function.", symbol->display);
-        diag_note(c->diag, "Only functions made with \"to %s ...:\" can be called.", symbol->display);
         return;
     }
     diag_error(c->diag, pos.span, "I don't know a function called \"%s\".", display);
@@ -347,6 +344,15 @@ void checker_report_unsettled_method(Checker *c, const Deferred *d) {
 }
 
 TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value) {
+    if (!expr->as.call.callee && !checker_find_function(c, expr->as.call.name) &&
+        checker_find_made(c, expr->as.call.name)) {  // "f with 3": f holds a function
+        Expr *name = ast_new_expr(c->arena, EXPR_NAME, expr->pos);
+        name->pos.span.length = strlen(expr->display);  // the name is written first
+        name->as.name = expr->as.call.name;
+        name->display = expr->display;
+        ((Expr *)expr)->as.call.callee = name;
+    }
+    if (expr->as.call.callee) return checker_check_value_call(c, expr, as_value);
     size_t n = expr->as.call.args.len;
     TypeVar *args = arena_alloc(c->arena, (n + 1) * sizeof(TypeVar));
     for (size_t i = 0; i < n; i++) args[i] = checker_check_value(c, expr->as.call.args.items[i]);
@@ -366,7 +372,10 @@ TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value) {
 // A bare name: a variable, a constant, or a function that takes no values.
 static TypeVar check_name(Checker *c, const Expr *expr) {
     const Symbol *symbol = checker_find_made(c, expr->as.name);
-    if (symbol) return checker_narrow(c, expr, symbol->var);
+    if (symbol) {
+        checker_use(c, symbol, false);
+        return checker_narrow(c, expr, symbol->var);
+    }
     const Constant *k = checker_find_constant(c, expr->as.name);
     if (k) {
         if (!k->ok) return error_var(c);
@@ -437,6 +446,8 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_EMPTY_MAP:
     case EXPR_MAP_GET:
     case EXPR_MAP_WITHOUT: return checker_check_map_expr(c, expr);
+    case EXPR_FUNCTION_REF: return checker_check_function_ref(c, expr);
+    case EXPR_LAMBDA: return checker_check_lambda(c, expr);
     case EXPR_ERROR: return error_var(c);
     }
     return error_var(c);

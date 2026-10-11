@@ -544,7 +544,8 @@ static void es_list_render(EsBuf *b, const EsList *l, int depth) {
             es_buf_add(b, ")", 1);
             break;
         case ES_ITEMS_RECORD: { /* "(a dog with name "Rex" and age 3) and (...)"; boxes as what they hold */
-            bool parenthesized = l->at.r[i] && l->at.r[i]->type->style != ES_BOX;
+            const EsRecord *r = l->at.r[i];
+            bool parenthesized = r && r->type->style != ES_BOX && r->type->style != ES_CLOSURE;
             if (parenthesized) es_buf_add(b, "(", 1);
             es_record_render(b, l->at.r[i], depth);
             if (parenthesized) es_buf_add(b, ")", 1);

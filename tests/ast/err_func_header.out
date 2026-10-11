@@ -1,3 +1,6 @@
+call [16:1]
+  call value [16:6]
+    number 5 [16:6]
 define area (width, height) [20:1]
   do
     give back [21:5]

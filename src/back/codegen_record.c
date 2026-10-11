@@ -146,7 +146,7 @@ void cg_emit_field(Codegen *g, const Expr *expr, StrBuf *out) {
     if (is_plain_variable(g, record)) {
         if (type_counted(type)) sb_appendf(out, "%s(", cg_retain(type));
         sb_appendf(out, "((es_R%zu *)", kind);
-        cg_append_var(out, record->as.name, record->type);
+        cg_append_var(g, out, record->as.name, record->type);
         sb_appendf(out, ")->f%zu", index);
         if (type_counted(type)) sb_append_char(out, ')');
         return;

@@ -1,4 +1,4 @@
-Line 2: "total" is a variable, not a function.
+Line 2: "total" is a number, not a function, so it can't be called.
     say total of 3
-        ^^^^^^^^^^
-Only functions made with "to total ...:" can be called.
+        ^^^^^
+Only a function can be called. To keep one in a name, write something like "let double be a function taking x that gives back x times 2".

@@ -60,7 +60,7 @@ static TypeVar check_literal(Checker *c, const Expr *expr) {
 static TypeVar check_for_each_item(Checker *c, const Name *name, TypeVar item, const Expr *body) {
     size_t outer = c->made.len;
     if (name) checker_make_item_name(c, name, item);
-    Loop loop = {true, item, false, NO_VARIANT};
+    Loop loop = {true, item, false, NO_VARIANT, true};
     vec_push(c->arena, &c->loops, loop);
     TypeVar result = checker_check_expr(c, body);
     c->loops.len--;

@@ -4,17 +4,23 @@
 #include <string.h>
 #include "common/ast.h"
 
-// "a dog", "an apple": the article that goes before a word.
+// "a dog", "an apple": the article that goes before a word. An interface
+// called "something that can speak" (or "anything ...") takes none.
 static const char *article(const char *word) {
-    return strchr("aeiouAEIOU", word[0]) ? "an" : "a";
+    if (strncmp(word, "something ", 10) == 0 || strncmp(word, "anything ", 9) == 0) return "";
+    return strchr("aeiouAEIOU", word[0]) ? "an " : "a ";
 }
 
-// The record kind or kind with variants a type is (or is "or nothing" of).
+// The record kind, kind with variants or interface a type is (or is "or nothing" of).
 static const RecordKind *record_kind(const Records *records, Type type) {
     if (!records) return NULL;
     if (type_is_sum(type)) {
         size_t index = type_sum_index(type);
         return index < records->sums.len ? &records->sums.items[index] : NULL;
+    }
+    if (type_is_iface(type)) {
+        size_t index = type_iface_index(type);
+        return index < records->interfaces.len ? &records->interfaces.items[index] : NULL;
     }
     size_t index = type_record_index(type);
     return type_is_record(type) && index < records->len ? &records->items[index] : NULL;
@@ -48,16 +54,49 @@ Type ast_map_value(const Records *records, Type map) {
     return kind ? kind->value : TYPE_UNKNOWN;
 }
 
+Type ast_func_type(Arena *arena, Records *records, const Type *params, size_t count, Type result) {
+    if (records->funcs.len == 0) {  // funcs[0]: a function whose inputs aren't decided
+        FuncKind undecided = {NULL, 0, TYPE_UNKNOWN};
+        vec_push(arena, &records->funcs, undecided);
+    }
+    for (size_t i = 1; i < records->funcs.len; i++) {
+        const FuncKind *kind = &records->funcs.items[i];
+        if (kind->count == count && kind->result == result &&
+            (count == 0 || memcmp(kind->params, params, count * sizeof(Type)) == 0)) {
+            return TYPE_FUNC + (Type)i;
+        }
+    }
+    Type *copy = arena_alloc(arena, (count + 1) * sizeof(Type));
+    if (count > 0) memcpy(copy, params, count * sizeof(Type));
+    FuncKind kind = {copy, count, result};
+    vec_push(arena, &records->funcs, kind);
+    return TYPE_FUNC + (Type)(records->funcs.len - 1);
+}
+
+const FuncKind *ast_func_kind(const Records *records, Type func) {
+    size_t index = func - TYPE_FUNC;
+    return records && index > 0 && index < records->funcs.len ? &records->funcs.items[index] : NULL;
+}
+
 bool ast_type_undecided(const Records *records, Type type) {
     Type base = type_base(type);
     if (type_is_map(base)) {
         return ast_type_undecided(records, ast_map_key(records, base)) ||
                ast_type_undecided(records, ast_map_value(records, base));
     }
+    if (type_is_func(base)) {
+        const FuncKind *kind = ast_func_kind(records, base);
+        if (!kind) return true;
+        for (size_t i = 0; i < kind->count; i++) {
+            if (ast_type_undecided(records, kind->params[i])) return true;
+        }
+        return ast_type_undecided(records, kind->result);
+    }
     return base == TYPE_UNKNOWN || base == TYPE_MAYBE;
 }
 
 static const char *map_name(Arena *arena, const Records *records, Type type);
+static const char *func_name(Arena *arena, const Records *records, Type type);
 
 // What a list or map holds, in the plural: "numbers", "lists of text",
 // "dogs", "maps from text to numbers"; NULL when the innermost kind isn't decided.
@@ -75,6 +114,10 @@ static const char *plural_name(Arena *arena, const Records *records, Type type) 
     const RecordKind *kind = record_kind(records, base);
     if (kind) {
         sb_appendf(&sb, "%s%s", kind->plural, type_is_maybe(base) ? " or nothing" : "");
+        return sb.data;
+    }
+    if (type_is_func(base)) {
+        sb_appendf(&sb, "functions%s", func_name(arena, records, base) + 10);  // without "a function"
         return sb.data;
     }
     if (!type_is_map(base)) return NULL;
@@ -103,8 +146,41 @@ static const char *map_name(Arena *arena, const Records *records, Type type) {
     return arena_sprintf(arena, "a map from %s to %s", key == TYPE_TEXT ? "text" : "numbers", values);
 }
 
+// Whether a kind's name ends in a function's kind ("a function taking a
+// number", "a list of functions giving back text"), so after it the "and"
+// of another input would be ambiguous.
+static bool ends_in_function(const Records *records, Type type) {
+    Type base = type_base(type);
+    if (type_is_map(base)) return ends_in_function(records, ast_map_value(records, base));
+    return type_is_func(base);
+}
+
+// "a function taking a number and text and giving back a yes/no value", "a
+// function giving back a number", "a function taking text"; an input that
+// is a function itself goes in parentheses. "a function" when its inputs
+// aren't decided (or when it takes none and gives back nothing).
+static const char *func_name(Arena *arena, const Records *records, Type type) {
+    const FuncKind *kind = ast_func_kind(records, type);
+    if (!kind) return "a function";
+    StrBuf sb;
+    sb_init(&sb, arena);
+    sb_append(&sb, "a function");
+    for (size_t i = 0; i < kind->count; i++) {
+        const char *name = ast_type_name(arena, records, kind->params[i]);
+        bool parenthesized = ends_in_function(records, kind->params[i]);
+        sb_appendf(&sb, "%s%s%s%s", i == 0 ? " taking " : " and ", parenthesized ? "(" : "", name,
+                   parenthesized ? ")" : "");
+    }
+    if (kind->result != TYPE_NOTHING) {
+        sb_appendf(&sb, "%sgiving back %s", kind->count > 0 ? " and " : " ",
+                   ast_type_name(arena, records, kind->result));
+    }
+    return sb.data;
+}
+
 const char *ast_type_name(Arena *arena, const Records *records, Type type) {
     if (type_is_list(type)) return list_name(arena, records, type);
+    if (type_is_func(type)) return func_name(arena, records, type);
     if (type_is_map(type)) return map_name(arena, records, type);
     if (type == TYPE_MAYBE) return "something or nothing";
     if (type_is_maybe(type) && type_boxed(type_present(type))) {
@@ -112,7 +188,7 @@ const char *ast_type_name(Arena *arena, const Records *records, Type type) {
     }
     const RecordKind *kind = record_kind(records, type);
     if (kind) {
-        return arena_sprintf(arena, "%s %s%s", article(kind->display), kind->display,
+        return arena_sprintf(arena, "%s%s%s", article(kind->display), kind->display,
                              type_is_maybe(type) ? " or nothing" : "");
     }
     switch (type) {

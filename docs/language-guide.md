@@ -24,6 +24,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [12. Records](#12-records) | Available |
 | [13. Maps](#13-maps) | Available |
 | [14. Kinds with variants](#14-kinds-with-variants) | Available |
+| [15. Functions as values](#15-functions-as-values) | Available |
 
 ---
 
@@ -1417,3 +1418,136 @@ A value is freed as soon as nothing holds it, like a record. A value can't chang
 Only a value reached through a record's field, checked to be a variant, and then set to another one through another name for the record before it was used. Every other mistake (a missing `when`, an unchecked field, a field a variant doesn't have) is caught before the program runs.
 
 Try it: `./easyscript run examples/programs/shapes.es`, `./easyscript run examples/programs/calculator.es` and `./easyscript run examples/programs/lambda.es`
+
+## 15. Functions as values
+
+**Available.** A function is a value too: it can be kept in a name, a list, a map or a record's field, given to another function, and given back by one.
+
+```
+to double with x:
+    give back x times 2.
+
+to apply twice with f and start:
+    give back call f with (call f with start).
+
+say apply twice with the function double and 5.
+say apply twice with (a function taking n that gives back n plus 3) and 1.
+```
+
+```
+20
+7
+```
+
+### Functions as values
+
+`the function double` is the function defined with `to double ...`, as a value: it isn't called. (Without `the function`, `double` alone calls a function that takes no inputs.)
+
+A function can also be made right where it's needed. On one line:
+
+```
+let shout be a function taking word that gives back word followed by "!".
+```
+
+Or with a block, like a `to` function. The colon ends the sentence it's in:
+
+```
+let introduce be a function taking name (text) and age:
+    say name followed by " is " followed by age.
+```
+
+`a function that gives back 42` and `a function:` take no inputs. As with `to`, the kinds of the inputs and the result are worked out from how the function is used; when nothing decides one, write it after the input (`a function taking x (a number) ...`), or after the inputs: `a function taking x, giving back a number:`.
+
+### Calling one
+
+`call F with X and Y` calls the function kept in F, as a sentence or as a value (`of` and `using` work like `with`). F can be a name or any single value:
+
+```
+call introduce with "Ann" and 7.
+say call shout with "hello".
+call the value for "click" in handlers with "OK button".
+call item 1 of steps with 3.
+```
+
+When F is a name, `call` can be left out in a value: `say shout with "hello"`. A function with no inputs is called with `call F` alone (`let n be call next`), because `next` on its own is the function itself.
+
+### Kinds of functions
+
+A function's kind says what it takes and what it gives back: `a function taking a number and giving back text`, `a function taking text` (it gives back nothing), `a function giving back a number` (no inputs), or `a function`. They're written like any other kind:
+
+```
+to apply with f (a function taking a number and giving back a number) and x (a number):
+    give back call f with x.
+
+let handlers be an empty map from text to functions taking text.
+
+a button is a kind of thing with:
+    label, which is text.
+    action, which is a function taking text and giving back text.
+```
+
+An input that is a function itself goes in parentheses: `a function taking (a function taking a number) and text`. Calling a function with the wrong number of inputs, or the wrong kinds, is an error before the program runs:
+
+```
+Line 6: "f" takes 1 value, but this gives it 2.
+    say call f with 1 and 2.
+        ^^^^^^^^^^^^^^^^^^^
+It's a function taking a number and giving back a number.
+```
+
+### Names from around it
+
+A function made inside a value can use the names made before it, in the main program or in the function around it, and change them. They're **shared, not copied**: the function and the code around it see the same name, even after the function around it has ended. This makes a counter:
+
+```
+to make counter, giving back a function giving back a number:
+    let count be 0.
+    give back a function giving back a number:
+        add 1 to count.
+        give back count.
+
+let next be call make counter.
+let other be call make counter.
+say call next.
+say call next.
+say call other.
+```
+
+```
+1
+2
+1
+```
+
+Each call of `make counter` makes a new `count`, so `next` and `other` count separately. In the same way, each round of a loop makes its own names (`let`, the loop's number, a `for each` item), so a function made in each round keeps that round's:
+
+```
+let greetings be an empty list of functions giving back text.
+for each name in a list of "Ann", "Bo" and "Cy":
+    add (a function that gives back "Hello, " followed by name) to the end of greetings.
+```
+
+Inside such a function, `it` doesn't mean the loop's number or item (the function runs later, when it's called): use the loop's name. `stop the loop` doesn't leave a loop around it either. A function can't be made inside `every` or `only`; make it first and use its name there.
+
+A check that a name isn't nothing doesn't last if a function made earlier can set the name whenever it's called, so that's an error:
+
+```
+Line 19: "maybe" was checked, but the function made on line 16 can set "maybe" whenever it's called, so the check doesn't last.
+        say maybe plus 1.
+            ^^^^^
+Keep it in a name of its own first, like "let current maybe be maybe", and check that instead.
+```
+
+### Equality and printing
+
+Two function values are equal (`is`) only when they're the same one, like records. A function prints as its name: `the function double`, or `the function made on line 9` for one made inside a value.
+
+### Memory
+
+Functions are freed when nothing holds them, like records. A function that's kept in a name it uses (directly, or in a list, record or map that name holds) keeps itself alive, and the memory check reports it at the end of the program. A `to` function never does, so use one when a function needs to call itself.
+
+### What's checked while the program runs
+
+Nothing new: every kind mistake with function values is caught before the program runs. A runtime error inside a function value shows it in the chain of calls, like any function: `while working out "the function made on line 3" (n was 0)`.
+
+Try it: `./easyscript run examples/programs/counter.es` and `./easyscript run examples/programs/event_handlers.es`
