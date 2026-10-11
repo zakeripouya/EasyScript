@@ -144,6 +144,7 @@ make              # builds ./easyscript
 make test         # runs the full test suite, including every example
 make debug        # builds a copy with AddressSanitizer and UBSan in build/debug/
 make test-debug   # runs the full suite against the sanitizer build
+make test-gcc     # builds with GCC (-Werror) and runs the full suite with it
 make bench        # times the benchmarks against C, Go, and Python
 ```
 

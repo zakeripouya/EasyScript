@@ -11,12 +11,15 @@ make              # build ./easyscript and the unit tests (must produce no warni
 make test         # run the whole suite
 make debug        # build with AddressSanitizer and UBSan into build/debug/
 make test-debug   # run the whole suite against the sanitizer build
+make test-gcc     # build with GCC and -Werror, then run the whole suite (strict C with GCC too)
 make bench        # time the benchmarks (see docs/performance.md)
 make bless        # rewrite expected output files from the current output (see below)
 make clean
 ```
 
-**Both `make test` and `make test-debug` must pass before every commit.** Never commit with a failing test.
+**Both `make test` and `make test-debug` must pass before every commit,** and `make test-gcc` before every push. Never commit with a failing test.
+
+`make test-gcc` needs GCC: on macOS, `brew install gcc` (the Makefile picks the newest `gcc-N` from Homebrew; override it with `make test-gcc GCC=gcc-15`). It catches GCC-only warnings, in the compiler and in generated programs, before CI's Linux run does. On macOS GCC uses Apple's headers, which include each other more than Linux's do, so a missing `#include` (like `<stdint.h>` for `SIZE_MAX`) still compiles there; `make test`'s `audit/includes` (`tests/tools/includes.py`) catches that instead.
 
 ### Continuous integration
 

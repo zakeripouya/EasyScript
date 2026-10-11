@@ -165,7 +165,7 @@ These are the rules every module follows (the full list is in [CONTRIBUTING.md](
 | Strict C | end of `tests/run.sh` | Every generated program compiles with `-Werror` under the system compiler |
 | CLI checks | end of `tests/run.sh` | Commands, usage errors, temp-file cleanup |
 
-`make test` also compiles every generated program with `-Wall -Wextra -Wpedantic -Werror`. `make test-debug` runs the same suite against a build with AddressSanitizer and UndefinedBehaviorSanitizer. GitHub Actions (`.github/workflows/ci.yml`) runs `make`, `make test` and `make test-debug` on every push, on Ubuntu with GCC and on macOS with Clang. `make bless` rewrites the expected files from the current output, for intended changes only (see [CONTRIBUTING.md](../CONTRIBUTING.md)).
+`make test` also compiles every generated program with `-Wall -Wextra -Wpedantic -Werror`. `make test-debug` runs the same suite against a build with AddressSanitizer and UndefinedBehaviorSanitizer. `make test-gcc` builds the compiler with GCC and `-Werror` (Homebrew's `gcc-N` on macOS) and runs the suite against it, with the strict-C check also compiling with GCC. GitHub Actions (`.github/workflows/ci.yml`) runs `make`, `make test` and `make test-debug` on every push, on Ubuntu with GCC and on macOS with Clang. `make bless` rewrites the expected files from the current output, for intended changes only (see [CONTRIBUTING.md](../CONTRIBUTING.md)).
 
 ## Memory in generated programs
 

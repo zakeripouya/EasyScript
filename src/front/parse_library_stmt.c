@@ -67,8 +67,9 @@ static Stmt *parse_make(Parser *p, const Token *verb) {
 static Stmt *parse_two_paths(Parser *p, const Token *verb, LibraryAction op) {
     bool folder = parser_at_word(p, 0, "folder");
     parser_advance(p);
-    static const char *const examples[] = {"rename the file \"a.txt\" to \"b.txt\"", "copy the file \"a.txt\" to "
-                                           "\"b.txt\"", "move the file \"a.txt\" to the folder \"Old\""};
+    static const char *const examples[] = {"rename the file \"a.txt\" to \"b.txt\"",
+                                           "copy the file \"a.txt\" to \"b.txt\"",
+                                           "move the file \"a.txt\" to the folder \"Old\""};
     const char *example = examples[op == DO_RENAME ? 0 : op == DO_COPY ? 1 : 2];
     Stmt *stmt = new_action(p, op, verb);
     stmt->as.library.folder = folder;

@@ -18,9 +18,15 @@ UNIT_SRC = $(wildcard tests/unit/*.c) $(FRONT_SRC) $(COMMON_SRC)
 
 RELEASE_DIR = build/release
 DEBUG_DIR = build/debug
+GCC_DIR = build/gcc
 
 release_objs = $(patsubst %.c,$(RELEASE_DIR)/%.o,$(1))
 debug_objs = $(patsubst %.c,$(DEBUG_DIR)/%.o,$(1))
+gcc_objs = $(patsubst %.c,$(GCC_DIR)/%.o,$(1))
+
+# GCC for `make test-gcc`: the newest Homebrew gcc-N on macOS (where `cc` is
+# Clang), plain gcc elsewhere. Override with `make test-gcc GCC=gcc-15`.
+GCC ?= $(or $(shell ls /opt/homebrew/bin/gcc-[0-9]* /usr/local/bin/gcc-[0-9]* 2>/dev/null | sort -t- -k2 -n | tail -1),gcc)
 
 all: easyscript $(RELEASE_DIR)/unit_tests
 
@@ -58,6 +64,23 @@ $(DEBUG_DIR)/%.o: %.c
 test: all
 	sh tests/run.sh
 
+# The compiler built with GCC and -Werror (in build/gcc/), then the full suite
+# against it, with the strict-C check on generated programs also using GCC.
+# Catches GCC-only warnings before CI's Linux run does. (On macOS, GCC uses
+# Apple's headers, so a missing #include is caught by audit/includes instead.)
+$(GCC_DIR)/easyscript: $(call gcc_objs,$(COMPILER_SRC))
+	$(GCC) $(CFLAGS) $(RELEASE_FLAGS) -Werror -o $@ $^ $(LDLIBS)
+
+$(GCC_DIR)/unit_tests: $(call gcc_objs,$(UNIT_SRC))
+	$(GCC) $(CFLAGS) $(RELEASE_FLAGS) -Werror -o $@ $^ $(LDLIBS)
+
+$(GCC_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(GCC) $(CFLAGS) $(RELEASE_FLAGS) -Werror -MMD -MP -c $< -o $@
+
+test-gcc: all $(GCC_DIR)/easyscript $(GCC_DIR)/unit_tests
+	STRICT_CC=$(GCC) ES=$(CURDIR)/$(GCC_DIR)/easyscript UNIT=$(CURDIR)/$(GCC_DIR)/unit_tests sh tests/run.sh
+
 # Full suite against the sanitizer build, with every generated program also
 # built with sanitizers (ES_SANITIZE=1), then a leak check. On Linux,
 # LeakSanitizer (on by default) checks every process in the suite, compiler
@@ -81,4 +104,4 @@ clean:
 
 -include $(shell find build -name '*.d' 2>/dev/null)
 
-.PHONY: all debug test test-debug bless bench clean
+.PHONY: all debug test test-debug test-gcc bless bench clean

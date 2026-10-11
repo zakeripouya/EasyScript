@@ -27,7 +27,8 @@
 #   strict C              every generated program compiles with -Werror
 #
 # Programs run in a scratch directory, so nothing is written into the repo.
-# ES and UNIT override the binaries under test (make test-debug uses this).
+# ES and UNIT override the binaries under test (make test-debug uses this),
+# and STRICT_CC the C compiler of the strict-C check (make test-gcc uses this).
 
 set -u
 
@@ -42,6 +43,7 @@ export ES_NOW="2026-10-11 14:05:00"
 export ES_RANDOM_SEED=7
 ES=${ES:-$ROOT/easyscript}
 UNIT=${UNIT:-$ROOT/build/release/unit_tests}
+STRICT_CC=${STRICT_CC:-cc}
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/easyscript-test-XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
 
@@ -484,7 +486,7 @@ fi
 #
 # Every program that compiles (tests/run, tests/memory, examples/programs,
 # benchmarks) must give C that the system compiler (clang on macOS, gcc on
-# Linux) accepts with all warnings as errors, at -O2 (some warnings, like
+# Linux; STRICT_CC, which make test-gcc sets to GCC on macOS) accepts with all warnings as errors, at -O2 (some warnings, like
 # gcc's -Wfree-nonheap-object, only appear with optimization). The generated C
 # is the same under ES_SANITIZE=1, so make test-debug skips this.
 
@@ -496,7 +498,7 @@ else
         "$ROOT"/tests/modules/*/main.es "$ROOT"/examples/programs/*/main.es "$ROOT"/benchmarks/*/*.es; do
         [ -e "$src" ] || continue
         "$ES" emit "$src" >"$WORK/strict.c" 2>/dev/null || continue
-        if ! out=$(cc -std=c11 -Wall -Wextra -Wpedantic -Werror -O2 -c "$WORK/strict.c" \
+        if ! out=$("$STRICT_CC" -std=c11 -Wall -Wextra -Wpedantic -Werror -O2 -c "$WORK/strict.c" \
             -o "$WORK/strict.o" 2>&1); then
             strict_failed="$strict_failed
 ${src#"$ROOT"/}:
@@ -536,8 +538,9 @@ check_readme_block "## A bigger example" "$ROOT/examples/programs/taste.es" "doc
 
 # --- Audits ---------------------------------------------------------------------
 #
-# Every error message in the source must be produced by some test, and every
-# phrase the parser accepts must be in docs/vocabulary.md (see tests/tools/).
+# Every error message in the source must be produced by some test, every
+# phrase the parser accepts must be in docs/vocabulary.md, and every C file
+# must include the headers of the standard names it uses (see tests/tools/).
 
 audit() {
     if ! command -v python3 >/dev/null 2>&1; then
@@ -569,6 +572,7 @@ check_no_underscore_suggestions() {
 }
 check_no_underscore_suggestions
 audit "audit/every-phrase-documented" vocab_coverage.py
+audit "audit/includes" includes.py
 
 # --- Summary ----------------------------------------------------------------
 
