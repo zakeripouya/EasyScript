@@ -3,7 +3,7 @@
 
 // Shared by the parser's source files (parse_util.c, parse_expr.c,
 // parse_value.c, parse_stmt.c, parse_if.c, parse_loop.c, parse_func.c,
-// parse_list.c, parse_text.c, parse_record.c, parse_map.c, parse_names.c).
+// parse_list.c, parse_kind.c, parse_text.c, parse_record.c, parse_map.c, parse_names.c).
 // Not for use outside src/front/.
 
 #include <stdbool.h>
@@ -205,12 +205,14 @@ bool parser_is_name_word(const Token *token);
 // Consumes the next `words` tokens as a name.
 void parser_take_name(Parser *p, size_t words, Name *name);
 
-// parse_list.c
+// parse_kind.c
 // A kind of value: "number" (after the dropped "a"), "text", "yes or no" (or
 // "yes/no"), "list of" what it holds, and, when nothing_ok, "nothing".
 bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type);
 // What a list or map holds, in the plural: "numbers", "lists of text", "dogs", ...
 bool parser_parse_items_kind(Parser *p, Type *type);
+
+// parse_list.c
 // "every second item", "every 3rd item", "every other item": a slice.
 bool parser_at_every_nth(const Parser *p);
 // How many tokens a simple value at `ahead` takes (a number, text, a name,
