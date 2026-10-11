@@ -216,6 +216,8 @@ static Expr *parse_word(Parser *p) {
     if (parser_at_selection(p)) return parser_parse_selection(p);  // "the numbers in scores where ..."
     const KnownName *known = parser_match_name(p, 0, false);
     if (known && known->words > 1) return parse_name_or_call(p);  // "late fee", before any other meaning
+    Expr *library = parser_parse_library_word(p);  // "the square root of X", "file F exists", ...
+    if (library) return library;
     if (parser_at_function_value(p)) return parser_parse_function_value(p);
     if (parser_at_call_value(p)) return parser_parse_call_value(p);
     Expr *map = parser_parse_map_word(p);

@@ -418,6 +418,8 @@ static TypeVar check_bare_name(Checker *c, const Expr *expr) {
         return types_new(c, checker_const_type(c, &k->definition->as.constant.folded), k->definition->pos.line);
     }
     const Function *f = checker_find_function(c, expr->as.name);
+    TypeVar library;
+    if (!f && checker_library_name(c, expr, &library)) return library;  // pi, today, ...
     if (!f) {
         checker_report_unknown(c, expr->as.name, expr->display, expr->pos);
         return error_var(c);
@@ -486,6 +488,7 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_FUNCTION_REF: return checker_check_function_ref(c, expr);
     case EXPR_LAMBDA: return checker_check_lambda(c, expr);
     case EXPR_APPLY: return checker_check_apply(c, expr);
+    case EXPR_LIBRARY: return checker_check_library(c, expr);
     case EXPR_ERROR: return error_var(c);
     }
     return error_var(c);

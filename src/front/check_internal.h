@@ -181,6 +181,21 @@ typedef struct {
     size_t floor;
 } NameContext;
 
+// "ask ... and call the answer X", "read csv file ... and call it X": makes X, or (if it exists) sets it.
+void checker_make_or_store(Checker *c, const Name *name, TypeVar value);
+
+// check_library.c: the standard library
+TypeVar checker_check_library(Checker *c, const Expr *expr);  // EXPR_LIBRARY
+void checker_check_library_stmt(Checker *c, const Stmt *stmt);  // STMT_LIBRARY
+// pi, today, tomorrow, yesterday where the program hasn't made the name: turns expr into its EXPR_LIBRARY.
+bool checker_library_name(Checker *c, const Expr *expr, TypeVar *result);
+// D's year (a field of a date): turns expr into LIB_DATE_PART. `base` is D, a date.
+TypeVar checker_date_field(Checker *c, const Expr *expr, TypeVar base);
+// The part of a date a field's name means (DATE_YEAR, ...), or -1.
+int checker_date_part(const char *name);
+// Once kinds are decided: a list, map, record or variant that would hold a date is reported (not yet supported).
+void checker_reject_dates(Checker *c);
+
 // check_module.c: files that use other files
 // Whether the current file can use a definition in `file` (private: only its own file can).
 bool checker_visible(const Checker *c, unsigned file, bool private);

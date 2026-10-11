@@ -1,0 +1,3 @@
+Line 2: I couldn't write to the file "no/out.csv": the folder it should go in doesn't exist.
+    save rows as csv file "no/out.csv"
+         ^^^^

@@ -60,6 +60,10 @@ static bool lookup_constant(void *context, const Expr *expr, ConstValue *out) {
         diag_error(c->diag, expr->pos.span, "A constant can't call a function, because functions only run while the "
                                             "program runs.");
         diag_note(c->diag, "%s", keep_note);
+    } else if (strcmp(name, "pi") == 0 && !checker_find_later(c, name)) {
+        out->kind = CONST_NUMBER;
+        out->number = 3.14159265358979323846;
+        return true;
     } else if (checker_find_later(c, name)) {
         diag_error(c->diag, expr->pos.span, "\"%s\" is a variable, so its value isn't known before the program runs.",
                    checker_find_later(c, name)->display);

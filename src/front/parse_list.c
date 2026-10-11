@@ -392,6 +392,14 @@ Expr *parser_parse_list_word(Parser *p) {
 
 Stmt *parser_finish_add_end(Parser *p, Stmt *stmt, Expr *value) {
     parser_consume(p, 2);  // end of
+    if (parser_at_word(p, 0, "file") && parser_starts_operand(parser_peek(p, 1))) {  // add X to the end of file F
+        parser_advance(p);
+        stmt->kind = STMT_APPEND_FILE;
+        memset(&stmt->as, 0, sizeof stmt->as);
+        stmt->as.file_write.text = value;
+        stmt->as.file_write.path = parse_expression(p);
+        return stmt;
+    }
     stmt->kind = STMT_LIST;
     memset(&stmt->as, 0, sizeof stmt->as);
     stmt->as.list.op = LIST_ADD_END;

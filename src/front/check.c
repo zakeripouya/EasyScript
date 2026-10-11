@@ -109,15 +109,18 @@ static void check_change(Checker *c, const Stmt *stmt) {
 
 // "ask ... and call the answer X" and "read file ... and call it X" make X as
 // text, or store text in it.
-static void make_text(Checker *c, const Name *name) {
-    TypeVar text = types_new(c, TYPE_TEXT, name->pos.line);
+void checker_make_or_store(Checker *c, const Name *name, TypeVar value) {
     const Symbol *existing = checker_find_made(c, name->text);
     if (existing) {
         checker_use(c, existing, true);
-        store(c, existing, text, NULL, name->pos.span);
+        store(c, existing, value, NULL, name->pos.span);
     } else {
-        checker_make(c, name, text);
+        checker_make(c, name, value);
     }
+}
+
+static void make_text(Checker *c, const Name *name) {
+    checker_make_or_store(c, name, types_new(c, TYPE_TEXT, name->pos.line));
 }
 
 static void check_let(Checker *c, const Stmt *stmt) {
@@ -372,6 +375,7 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
     case STMT_CHANGE: check_change(c, stmt); break;
     case STMT_SAY: checker_check_expr(c, stmt->as.value); break;
     case STMT_USE: checker_check_use(c, stmt); break;
+    case STMT_LIBRARY: checker_check_library_stmt(c, stmt); break;
     case STMT_ASK:
         checker_check_expr(c, stmt->as.ask.prompt);
         make_text(c, &stmt->as.ask.answer);
@@ -425,6 +429,7 @@ static void collect_names(Checker *c, const Block *program) {
         const Name *name = stmt->kind == STMT_LET    ? &stmt->as.assign.name
                            : stmt->kind == STMT_ASK  ? &stmt->as.ask.answer
                            : stmt->kind == STMT_READ_FILE ? &stmt->as.read_file.name
+                           : stmt->kind == STMT_LIBRARY && stmt->as.library.op == DO_READ_CSV ? &stmt->as.library.name
                                                           : NULL;
         if (name && !checker_find_later(c, name->text)) {
             Symbol symbol = {name->text, name->display, name->pos.line, NULL, false, 0, false, NULL, 0};
@@ -545,6 +550,7 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
         }
     }
     types_finish(&c, first_error);
+    if (diag_count(diag) == first_error) checker_reject_dates(&c);
     diag_sort(diag, first_error);
     if (diag_count(diag) == first_error) checker_rename_modules(&c);
 }

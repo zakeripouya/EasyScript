@@ -36,7 +36,8 @@ const char *cg_ctype(Type type) {
     if (type_is_map(type)) return "EsMap *";
     if (type_is_object(type)) return "EsRecord *";
     switch (type) {
-    case TYPE_NUMBER: return "double";
+    case TYPE_NUMBER:
+    case TYPE_DATE: return "double";
     case TYPE_YESNO: return "bool";
     case TYPE_TEXT: return "EsText *";
     case TYPE_NOTHING: return "void";
@@ -54,7 +55,7 @@ const char *cg_ctype(Type type) {
 void cg_append_raw_var(StrBuf *out, const char *name, Type type) {
     Type base = type_base(type), present = type_present(base);
     bool maybe = type_is_maybe(base);
-    char kind = present == TYPE_TEXT ? 't' : present == TYPE_YESNO ? 'b' : 'n';
+    char kind = present == TYPE_TEXT ? 't' : present == TYPE_YESNO ? 'b' : present == TYPE_DATE ? 'd' : 'n';
     if (type_is_list(type)) sb_appendf(out, "es_vl%u", type / TYPE_LIST);
     sb_append(out, type_is_list(type) ? "" : "es_v");
     if (type_is_record(base)) {

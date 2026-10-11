@@ -5,6 +5,13 @@ The EasyScript compiler is written in C11 and has no dependencies beyond the C s
 ## The pipeline
 
 ```
+main.es + used files → modules → lexer → parser → checker → C codegen → cc -O2 → program
+                        joined     tokens   AST      symbols   generated C
+```
+
+Before lexing, `src/modules.c` finds every file the program uses (`use helpers.` reads `helpers.es` from the same folder, and so on through the files those use), each once, and joins them into one source, used files first and the file that's run last. The lexer restarts its line numbers at each file (`lex_files`), every position records its file (`SourcePos.file`), and `Diag` names the file in errors. From then on it's one program: the checker sees which file each definition is in, decides what each file can see, and renames other files' functions and constants so the C names stay apart.
+
+```
 source.es → lexer → parser → checker → C codegen → cc -O2 → program
             tokens   AST      symbols   generated C
             \_______ front end _______/  \_ back end _/
@@ -19,7 +26,8 @@ Every stage reports errors to one `Diag` context, and the driver prints them all
 | **Checker** | AST → diagnostics, kinds | Resolves names (made before use, made once, in scope) with "did you mean" suggestions, checks functions and constants, and infers the kind (type) of every value, writing it into the AST for codegen (see [Types](#types)). It runs only when parsing succeeded. |
 | **Middle end** | (added later) | An intermediate representation and optimizations. |
 | **C codegen** | checked AST → C source | Writes a self-contained C program: the embedded runtime, a static object per text literal, the functions, and `main()`, whose variables are C locals. It inserts every retain and release (see [Memory](#memory-in-generated-programs)). It never looks at source text and reports no errors. |
-| **Runtime** | (inside the generated program) | `runtime/es_memory.h`, `runtime/es_program.h`, `runtime/es_runtime.h`, `runtime/es_list.h`, `runtime/es_sort.h`, `runtime/es_text.h`, `runtime/es_record.h`, `runtime/es_map.h`, `runtime/es_kind.h` and `runtime/es_closure.h`: reference-counted text, lists, records, maps, values of kinds with variants and functions kept as values, the operations on numbers (`double`), yes/no (`bool`), text and lists, the call stack, and friendly runtime errors for what kinds can't catch: `Line N: ...`, the source line with carets, and the chain of calls. There's no tagged value. |
+| **Runtime** | (inside the generated program) | `runtime/es_memory.h`, `runtime/es_program.h`, `runtime/es_runtime.h`, `runtime/es_list.h`, `runtime/es_sort.h`, `runtime/es_text.h`, `runtime/es_record.h`, `runtime/es_map.h`, `runtime/es_kind.h`, `runtime/es_closure.h`, and the standard library's `runtime/es_math.h`, `es_time.h`, `es_files.h` and `es_csv.h`: reference-counted text, lists, records, maps, values of kinds with variants and functions kept as values, the operations on numbers (`double`), yes/no (`bool`), text and lists, the call stack, and friendly runtime errors for what kinds can't catch: `Line N: ...`, the source line with carets, and the chain of calls. There's no tagged value. |
+| **Modules** | files → one source | `src/modules.c`: finds the files `use` names, reports missing files and circles, and joins them. |
 | **Driver** | | `src/main.c`: runs the passes in order, prints diagnostics, invokes `cc`, and cleans up temp files. |
 
 **Boundaries:** each stage only talks to the next through shared data structures (tokens, the AST, and the symbol table). The parser never emits C, and codegen never reads source text. Every stage reports problems through one `Diag` context, and the driver prints them all at the end.

@@ -210,6 +210,7 @@ bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type) {
     } else {
         Type kind = parser_match_kind_name(p, 0, false, &words);
         if (words > 0) *type = kind;
+        if (words == 0 && parser_at_word(p, 0, "date")) *type = TYPE_DATE, words = 1;  // unless a kind is called that
     }
     if (words > 0) {
         parser_consume(p, words);

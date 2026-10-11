@@ -163,7 +163,7 @@ static void emit_function_info(const Stmt *fn, StrBuf *out) {
     for (size_t i = 0; i < n; i++) {
         Type type = fn->as.function.param_types.items[i];
         sb_append_char(out, type_is_list(type) ? 'l' : type_is_object(type) ? 'r' : type_is_map(type) ? 'm'
-                            : type == TYPE_TEXT ? 't' : type == TYPE_YESNO ? 'b' : 'n');
+                            : type == TYPE_TEXT ? 't' : type == TYPE_YESNO ? 'b' : type == TYPE_DATE ? 'd' : 'n');
     }
     sb_append(out, "\"};\n");
 }

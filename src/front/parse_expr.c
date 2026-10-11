@@ -357,6 +357,7 @@ static Expr *parse_comparison(Parser *p) {
     Expr *empty = parse_empty_test(p, left, 0, 3);
     if (!empty) empty = parser_parse_char_test(p, left);
     if (!empty) empty = parser_parse_kind_test(p, left);
+    if (!empty) empty = parser_parse_library_test(p, left);
     if (empty && parser_match_phrase(p, comparison_ops, COUNT(comparison_ops), &len)) {
         Span op = parser_consume(p, len);
         if (parser_error(p, op, "Comparisons can't be chained like this.")) {
@@ -418,6 +419,11 @@ static Expr *parse_postfix(Parser *p) {
         if (parser_at_word(p, 0, "without") && (parser_at_word(p, 1, "item") || parser_at_word(p, 1, "character"))) {
             expr = parser_parse_without_at(p, expr);  // L without item N / T without character N
             if (p->sentence_failed) return expr;
+            continue;
+        }
+        Expr *library = p->sentence_failed ? NULL : parser_parse_library_postfix(p, expr);
+        if (library) {
+            expr = library;
             continue;
         }
         Expr *applied = p->sentence_failed ? NULL : parser_parse_apply_postfix(p, expr);

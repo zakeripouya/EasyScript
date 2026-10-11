@@ -54,7 +54,7 @@ typedef struct {
 } EsSourceFile;
 
 /* The call stack. Every EasyScript function call pushes a frame holding the
- * function (its name and its inputs' names and kinds: 'n' number, 'b'
+ * function (its name and its inputs' names and kinds: 'n' number, 'd' date, 'b'
  * yes/no, 't' text, 'l' list, 'r' record, 'm' map), the values it was given, and the site of the
  * call. Errors print the chain. The frames are an array as deep as the
  * recursion limit, so pushing is a few stores and popping is the depth
@@ -209,6 +209,7 @@ static void es_print_count(long n) {
  * nothing if there are none of those. */
 static EsText *es_number_text(double x);
 static EsText *es_record_short_text(const EsRecord *r); /* es_record.h */
+static EsText *es_date_text(double date);               /* es_time.h */
 
 static void es_print_cut(const EsText *t, size_t most, bool quoted) {
     size_t shown = 0, chars = 0;
@@ -226,8 +227,8 @@ static void es_print_inputs(const EsFrame *frame) {
         if (kind == 'l' || kind == 'm') continue;
         fprintf(stderr, "%s%s was ", open ? ", " : " (", frame->fn->input_names[i]);
         open = true;
-        if (kind == 'n') {
-            EsText *t = es_number_text(es_frame_input(frame, i).n);
+        if (kind == 'n' || kind == 'd') {
+            EsText *t = (kind == 'd' ? es_date_text : es_number_text)(es_frame_input(frame, i).n);
             fputs(t->chars, stderr);
             es_release(t);
         } else if (kind == 'b') {

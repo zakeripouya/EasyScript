@@ -1,0 +1,4 @@
+Line 2: In a.csv, line 2 has more after a closing quote.
+    read csv file "a.csv" and call it rows
+                  ^^^^^^^
+A quoted field ends with its quote, then a comma or the end of the line.

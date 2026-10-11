@@ -190,7 +190,11 @@ The words that start statements are only special at the start of a sentence, so 
 | `write X to file F` | Replace a file's contents with `X` and a new line | `write "hello" to file "notes.txt"` | Available |
 | `append X to file F` | Add `X` and a new line to the end of a file | `append "more" to file "notes.txt"` | Available |
 | `read file F and call it NAME` / `read file F and call the answer NAME` | Read a whole file into a variable (without its final new line) | `read file "notes.txt" and call it notes` | Available |
-| `file X exists` | A condition: does the file exist? | `if file "notes.txt" exists:` | Coming soon (Phase 2) |
+| `file X exists` / `folder X exists` | A condition: is there a file (a folder)? | `if file "notes.txt" exists:` | Available |
+| `put X in file F` / `write X in file F` | Like `write X to file F` | `put "hello" in file "notes.txt"` | Available |
+| `add X to the end of file F` | Like `append X to file F` | `add "more" to the end of file "notes.txt"` | Available |
+
+More file and folder sentences are in [the standard library](#the-standard-library).
 
 Reading a file inside an expression also works: `contents of file X` ([Built-in values](#built-in-values)).
 
@@ -678,6 +682,49 @@ Rules:
 - **Kinds share one set of names:** kinds of record, kinds with variants, their variants and interfaces are named once across the whole program, and every file sees them.
 - **Errors** name the file as well as the line (`Line 4 of helpers.es: ...`), both before and while the program runs.
 
+## The standard library
+
+All of these are **Available**, without `use`. Each is described with its exact meaning in [stdlib.md](stdlib.md).
+
+| Pattern | Gives | Example |
+|---|---|---|
+| `the square root of X` | a number | `the square root of 16` |
+| `X to the power of Y` | a number | `2 to the power of 10` |
+| `the absolute value of X` | a number | `the absolute value of -3` |
+| `X rounded`, `X rounded up`, `X rounded down` | a number | `2.5 rounded` |
+| `X rounded to N decimal places` (`1 decimal place`) | a number | `price rounded to 2 decimal places` |
+| `the bigger of X and Y`, `the smaller of X and Y` | a number | `the bigger of 3 and 4` |
+| `pi` | a number | `pi times 2` |
+| `a random number from A to B` | a whole number | `a random number from 1 to 6` |
+| `a random decimal between A and B` | a number | `a random decimal between 0 and 1` |
+| `pick one of L`, `a random item of L`, `a random item in L` | an item | `pick one of cards` |
+| `L shuffled` | a list | `cards shuffled` |
+| `shuffle L.` | (a sentence) | `shuffle cards.` |
+| `roll a die` | a whole number | `say roll a die` |
+| `use the same random numbers every time.` | (a sentence) | `use the same random numbers every time.` |
+| `the time now`, `today`, `tomorrow`, `yesterday` | a date | `say the time now` |
+| `N days ago`, `N days from now` (`1 day ago`, `1 day from now`) | a date | `3 days ago` |
+| `the year of D` (`month`, `day`, `weekday`, `hour`, `minute`), `D's year` | a number (weekday: text) | `today's weekday` |
+| `D is before E`, `D is after E` | yes/no | `yesterday is before today` |
+| `D is in this month` (`last month`, `next month`, `this year`, `last year`, `next year`) | yes/no | `paid is in last month` |
+| `the number of days between D and E` | a number | `the number of days between today and holiday` |
+| `wait N seconds.` (`second`, `milliseconds`, `millisecond`, `minutes`, `minute`) | (a sentence) | `wait 2 seconds.`, `wait a second.` |
+| `(a date)` | the kind | `to describe with day (a date):` |
+| `the lines of file F` | a list of text | `the lines of file "todo.txt"` |
+| `make a new file called F.`, `make a folder called F.`, `make a new folder called F.` | (a sentence) | `make a folder called "photos".` |
+| `rename the file F to G.`, `rename the folder F to G.` | (a sentence) | `rename the file "a.txt" to "b.txt".` |
+| `copy the file F to G.` | (a sentence) | `copy the file "a.txt" to "b.txt".` |
+| `move the file F to the folder D.`, `move the folder F to the folder D.` | (a sentence) | `move the file "a.txt" to the folder "old".` |
+| `delete the file F.`, `delete the folder D.`, `delete the folder D and everything in it.` | (a sentence) | `delete the folder "scratch" and everything in it.` |
+| `the files in D`, `the folders in D`, `the files in the folder D` | a list of text | `the files in "photos"` |
+| `the size of file F` | a number (bytes) | `the size of file "notes.txt"` |
+| `the last change of file F` | a date | `the last change of file "log.txt"` |
+| `read csv file F and call it NAME.` | (a sentence): a list of maps from text to text | `read csv file "sales.csv" and call it rows.` |
+| `save L as csv file F.` | (a sentence) | `save report as csv file "report.csv".` |
+| `clear the screen.` | (a sentence) | `clear the screen.` |
+
+`wait`, `shuffle`, `save` and `put` start sentences, so they can't be the one-word name of a function. `make`, `rename`, `copy`, `move`, `delete`, `clear` and `read` only mean these sentences with the words after them (`delete the file`, `clear the screen`), so `to rename, for a dog:` still works. `pi`, `today`, `tomorrow` and `yesterday` are the library's only where the program hasn't made those names.
+
 ## Kinds of values
 
 Every value has a kind, worked out by the compiler before the program runs (**Available**). Kind mistakes are compile errors with the line and a caret. See the [language guide](language-guide.md#9-types).
@@ -695,6 +742,7 @@ Every value has a kind, worked out by the compiler before the program runs (**Av
 | number, text or yes/no that can be nothing | `(a number or nothing)`, `(text or nothing)`, `(yes or no or nothing)`, `giving back a number or nothing` | `the position of` (nothing when it isn't there), a field or input of that kind, `nothing` where one goes. It has to be checked (`if X is not nothing:`, `check which kind X is:`) before it's used as a number, text or yes/no. A list or map can't be nothing |
 | map | `(a map from text to numbers)`, `(a map from numbers to lists of text)`, `giving back a map from text to numbers`; in a list or map: `maps from text to numbers` | `a map of ...`, `an empty map from ...`, `a copy of` |
 | interface | `(something that can speak)`, `(a speaker or nothing)`; in a list or map: `things that can speak`, `speakers` | any record or value of a kind with variants that fits it, where one is kept |
+| date | `(a date)`, `giving back a date` | `today`, `the time now`, `3 days ago`, `the last change of file F`. Not in lists, maps or records yet |
 | function | `(a function taking a number and giving back text)`, `(a function taking text)`, `(a function giving back a number)`, `(a function)`; in a list or map: `functions taking text` | `the function double`, `a function taking x ...`, a field or input holding one |
 
 ## Later phases

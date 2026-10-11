@@ -1,0 +1,4 @@
+Line 2: I can't take the square root of -4, because it's below zero.
+    say the square root of (2 minus 6)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Only numbers from 0 up have a square root.

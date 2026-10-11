@@ -1,0 +1,3 @@
+Line 1: I can't raise 0 to the power of -1, because that divides by zero.
+    say 0 to the power of -1
+        ^^^^^^^^^^^^^^^^^^^^

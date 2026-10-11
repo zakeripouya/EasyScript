@@ -126,6 +126,11 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
         sb_append(scratch, "function ");
         append_inputs(scratch, expr->as.lambda, records);
         break;
+    case EXPR_LIBRARY:
+        sb_append(scratch, ast_library_op_name(expr->as.library.op));
+        if (expr->as.library.op == LIB_DATE_PART) sb_appendf(scratch, " %s", ast_date_part_name(expr->as.library.part));
+        if (expr->as.library.op == LIB_IN_PERIOD) sb_appendf(scratch, " %s", ast_period_name(expr->as.library.part));
+        break;
     case EXPR_LENGTH: return "length of";
     case EXPR_FILE_CONTENTS: return "contents of file";
     case EXPR_UNARY: return ast_unary_op_name(expr->as.unary.op);
@@ -212,6 +217,7 @@ static void dump_expr(const Expr *expr, size_t depth, Dump *d) {
         break;
     case EXPR_LENGTH:
     case EXPR_FILE_CONTENTS: dump_children(expr->as.operand, NULL, depth, d); break;
+    case EXPR_LIBRARY: dump_children(expr->as.library.a, expr->as.library.b, depth, d); break;
     case EXPR_UNARY: dump_children(expr->as.unary.operand, NULL, depth, d); break;
     case EXPR_BINARY: dump_children(expr->as.binary.left, expr->as.binary.right, depth, d); break;
     case EXPR_CONVERT: dump_children(expr->as.convert.operand, NULL, depth, d); break;
@@ -331,6 +337,14 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
         sb_appendf(scratch, "keep %s%s", stmt->as.constant.private ? "privately " : "", stmt->as.constant.name.text);
         break;
     case STMT_USE: sb_appendf(scratch, "use %s", stmt->as.module.text); break;
+    case STMT_LIBRARY:
+        sb_append(scratch, ast_library_action_name(stmt->as.library.op));
+        if (stmt->as.library.op == DO_READ_CSV) sb_appendf(scratch, ", call it %s", stmt->as.library.name.text);
+        if (stmt->as.library.everything) sb_append(scratch, " and everything in it");
+        if (stmt->as.library.op == DO_WAIT && stmt->as.library.scale != 1) {
+            sb_appendf(scratch, " (%s)", stmt->as.library.scale > 1 ? "minutes" : "milliseconds");
+        }
+        break;
     case STMT_LIST: return list_label(stmt, scratch);
     case STMT_RECORD: sb_appendf(scratch, "record %s", stmt->as.record.name.text); break;
     case STMT_SUM: sb_appendf(scratch, "kind %s", stmt->as.sum.name.text); break;
@@ -462,6 +476,9 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
         break;
     case STMT_CALL: dump_expr(stmt->as.call, depth + 1, d); break;
     case STMT_USE: break;
+    case STMT_LIBRARY:
+        dump_children(stmt->as.library.a, stmt->as.library.b, depth, d);
+        break;
     case STMT_CONSTANT: dump_expr(stmt->as.constant.value, depth + 1, d); break;
     case STMT_LIST:
         if (stmt->as.list.op == LIST_APPLY || stmt->as.list.op == LIST_KEEP || stmt->as.list.op == LIST_SORT_BY) {

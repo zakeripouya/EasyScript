@@ -1,0 +1,104 @@
+Line 2: "the square root of" needs a number, but this is text.
+    say the square root of "nine"
+                           ^^^^^^
+
+Line 3: "to the power of" needs a number, but this is text.
+    say 2 to the power of "two"
+                          ^^^^^
+
+Line 4: "rounded" needs a number, but this is text.
+    say "a" rounded
+        ^^^
+
+Line 5: I can only pick one of the items of a list, but this is a number.
+    say pick one of 5
+                    ^
+
+Line 6: I can only shuffle a list, but this is text.
+    say "abc" shuffled
+        ^^^^^
+
+Line 7: "the year of" needs a date, but this is a number.
+    say the year of 2026
+                    ^^^^
+
+Line 8: A date has no "season".
+    say today's season
+                ^^^^^^
+A date has a year, a month, a day, a weekday, an hour and a minute, like "today's year".
+
+Line 9: "is before" needs a date, but this is a number.
+    say today is before 5
+                        ^
+
+Line 10: I can't add text to a number.
+    say (3 days ago)'s month plus "x"
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "and" or "followed by".
+
+Line 11: "file ... exists" needs text (a path, like "notes.txt"), but this is a number.
+    say file 5 exists
+             ^
+
+Line 12: "the files in" needs text (a path, like "notes.txt"), but this is a yes/no value.
+    say the files in yes
+                     ^^^
+
+Line 13: How long to wait has to be a number, but this is text.
+    wait "a while" seconds
+         ^^^^^^^^^
+
+Line 14: I can only shuffle a list, but this is a number.
+    shuffle 7
+            ^
+
+Line 15: The name of a folder has to be text, like "notes.txt", but this is a number.
+    make a folder called 3
+                         ^
+
+Line 16: The new name has to be text, like "notes.txt", but this is a number.
+    rename the file "a" to 4
+                           ^
+
+Line 17: The name of a folder has to be text, like "notes.txt", but this is a number.
+    move the file "a" to the folder 9
+                                    ^
+
+Line 18: The name of a file has to be text, like "notes.txt", but this is a number.
+    read csv file 5 and call it rows
+                  ^
+
+Line 20: "text" is text (made on line 19), but this is a list of maps from text to text.
+    read csv file "a.csv" and call it text
+                                      ^^^^
+A variable keeps the kind of value it was made with. To keep a list of maps from text to text, make a new variable for it.
+
+Line 21: I can only save a list of maps as csv, but this is a number.
+    save 5 as csv file "out.csv"
+         ^
+
+Line 22: Each row saved as csv has to be a map from column names to values, but this is a number.
+    save (a list of 1 and 2) as csv file "out.csv"
+         ^^^^^^^^^^^^^^^^^^^
+
+Line 23: The column names of a csv file have to be text, but this is a number.
+    save (a list of (a map of 1 to 2)) as csv file "out.csv"
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 24: The values saved in a csv file have to be numbers, text or yes/no values, but this is a list of numbers.
+    save (a list of (a map of "a" to (a list of 1))) as csv file "out.csv"
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 25: The name of a file has to be text, like "notes.txt", but this is a number.
+    save (an empty list of maps from text to text) as csv file 5
+                                                               ^
+
+Line 27: "names" is a constant, so it can't change.
+    shuffle names
+            ^^^^^
+It's kept on line 26. If it needs to change, make it with "let names be ..." instead of "keep".
+
+Line 28: A constant can't use "square root of", because it's worked out while the program runs.
+    keep tau at the square root of 4
+                    ^^^^^^^^^^^^^^^^
+A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".

@@ -1,0 +1,4 @@
+Line 2: There's already a folder called "box".
+    make a new file called "box"
+                           ^^^^^
+Nothing is ever replaced this way. Delete it first, or pick another name.

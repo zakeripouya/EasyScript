@@ -1,0 +1,4 @@
+Line 1: I won't delete "." and everything in it, because that's more than one folder of yours.
+    delete the folder "." and everything in it
+                      ^^^
+Name the folder itself, like "delete the folder "old photos" and everything in it".

@@ -107,12 +107,17 @@ TypeVar checker_check_field(Checker *c, const Expr *expr) {
     TypeVar base = checker_check_expr(c, expr->as.field.record);
     Type type = types_of(c, base);
     if (type == TYPE_ERROR) return error_var(c);
+    if (type == TYPE_DATE) return checker_date_field(c, expr, base);  // today's year
     if (type == TYPE_UNKNOWN || type == TYPE_MAYBE) {  // the only kind of record with this field, if there's one
         size_t owners = 0, index;
         Type owner = checker_sum_with_field(c, expr->as.field.name.text);
         owners += owner == TYPE_ERROR ? 2 : owner != TYPE_UNKNOWN;
         for (size_t i = 0; i < c->records->len; i++) {
             if (find_field(c, type_record(i), expr->as.field.name.text, &index)) owners++, owner = type_record(i);
+        }
+        if (owners == 0 && type == TYPE_UNKNOWN && checker_date_part(expr->as.field.name.text) >= 0) {
+            types_require(c, base, TYPE_DATE, expr->pos.line);  // "d's year": d is a date
+            return checker_date_field(c, expr, base);
         }
         if (owners == 0) {
             report_no_field(c, &expr->as.field.name, 0);

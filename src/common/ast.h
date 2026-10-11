@@ -52,7 +52,53 @@ typedef enum {
     EXPR_FUNCTION_REF,   // the function double (a function defined with "to", not called)
     EXPR_LAMBDA,         // a function taking x that gives back x times 2 / a function taking word: (a block)
     EXPR_APPLY,          // F applied to every X in L, the Xs in L that pass F, L combined using F, L sorted by F
+    EXPR_LIBRARY,        // the standard library's values: the square root of X, a random number from A to B, today, ...
 } ExprKind;
+
+// What a value of the standard library is (EXPR_LIBRARY), with its parts in a, b and c.
+typedef enum {
+    LIB_SQUARE_ROOT,     // the square root of A
+    LIB_POWER,           // A to the power of B
+    LIB_ABSOLUTE,        // the absolute value of A
+    LIB_ROUNDED,         // A rounded
+    LIB_ROUNDED_UP,      // A rounded up
+    LIB_ROUNDED_DOWN,    // A rounded down
+    LIB_ROUNDED_PLACES,  // A rounded to B decimal places
+    LIB_BIGGER,          // the bigger of A and B
+    LIB_SMALLER,         // the smaller of A and B
+    LIB_PI,              // pi (a name the program doesn't make itself)
+    LIB_RANDOM_WHOLE,    // a random number from A to B (whole numbers, both included)
+    LIB_RANDOM_DECIMAL,  // a random decimal between A and B
+    LIB_PICK,            // pick one of A / a random item of A
+    LIB_SHUFFLED,        // A shuffled
+    LIB_DIE,             // roll a die
+    LIB_NOW,             // the time now
+    LIB_TODAY,           // today (a name the program doesn't make itself), and tomorrow, yesterday
+    LIB_TOMORROW,
+    LIB_YESTERDAY,
+    LIB_DAYS_AGO,        // A days ago
+    LIB_DAYS_FROM_NOW,   // A days from now
+    LIB_DATE_PART,       // A's year (or month, day, weekday, hour, minute), or the year of A: `part`
+    LIB_IN_PERIOD,       // A is in this month (or last month, next month, this year, ...): `part`
+    LIB_DAYS_BETWEEN,    // the number of days between A and B
+    LIB_BEFORE,          // A is before B
+    LIB_AFTER,           // A is after B
+    LIB_FILE_EXISTS,     // file A exists
+    LIB_FOLDER_EXISTS,   // folder A exists
+    LIB_FILE_LINES,      // the lines of file A
+    LIB_FILES_IN,        // the files in A
+    LIB_FOLDERS_IN,      // the folders in A
+    LIB_FILE_SIZE,       // the size of file A
+    LIB_FILE_CHANGED,    // the last change of file A
+} LibraryOp;
+
+// Which part of a date (LIB_DATE_PART), or which stretch of time (LIB_IN_PERIOD).
+typedef enum {
+    DATE_YEAR, DATE_MONTH, DATE_DAY, DATE_WEEKDAY, DATE_HOUR, DATE_MINUTE,
+} DatePart;
+typedef enum {
+    PERIOD_THIS_MONTH, PERIOD_LAST_MONTH, PERIOD_NEXT_MONTH, PERIOD_THIS_YEAR, PERIOD_LAST_YEAR, PERIOD_NEXT_YEAR,
+} Period;
 
 typedef enum {
     UNARY_NEGATE,
@@ -286,6 +332,12 @@ struct Expr {
         } ref;  // EXPR_FUNCTION_REF
         struct Stmt *lambda;  // EXPR_LAMBDA: a STMT_FUNCTION (function.lambda set) holding its inputs and body
         struct {
+            LibraryOp op;
+            Span op_span;  // the phrase as written ("rounded up", "is before")
+            Expr *a, *b;   // its parts, in the order they're written (NULL when it has fewer)
+            int part;      // LIB_DATE_PART: a DatePart; LIB_IN_PERIOD: a Period
+        } library;
+        struct {
             ApplyKind kind;
             Expr *function;   // a value holding a function (a function's name means the function itself)
             Expr *list;
@@ -321,7 +373,25 @@ typedef enum {
     STMT_MATCH,        // check which kind S is: (when it's a circle: ... otherwise: ...)
     STMT_INTERFACE,    // something that can speak is anything with: (ways indented below; top level only)
     STMT_USE,          // use helpers (another file's definitions; loaded before parsing)
+    STMT_LIBRARY,      // the standard library's sentences: wait 2 seconds, shuffle L, delete the file F, ...
 } StmtKind;
+
+// What a sentence of the standard library does (STMT_LIBRARY), with its parts in a and b.
+typedef enum {
+    DO_WAIT,           // wait A seconds (a is in seconds: the parser scales minutes and milliseconds)
+    DO_SAME_RANDOM,    // use the same random numbers every time
+    DO_SHUFFLE,        // shuffle A
+    DO_CLEAR_SCREEN,   // clear the screen
+    DO_MAKE_FILE,      // make a new file called A
+    DO_MAKE_FOLDER,    // make a folder called A
+    DO_RENAME,         // rename the file (or folder) A to B
+    DO_COPY,           // copy the file A to B
+    DO_MOVE,           // move the file (or folder) A to the folder B
+    DO_DELETE_FILE,    // delete the file A
+    DO_DELETE_FOLDER,  // delete the folder A [and everything in it: `everything`]
+    DO_READ_CSV,       // read csv file A and call it NAME
+    DO_SAVE_CSV,       // save A as csv file B
+} LibraryAction;
 
 // A constant's value, worked out by the compiler (see front/consteval.h).
 typedef enum {
@@ -500,6 +570,15 @@ struct Stmt {
         } constant;
         Name module;  // STMT_USE: the file's name without ".es"
         struct {
+            LibraryAction op;
+            Expr *a, *b;
+            double scale;     // DO_WAIT: seconds per unit written (60 for minutes, 0.001 for milliseconds)
+            bool everything;  // DO_DELETE_FOLDER: "and everything in it"
+            bool folder;      // DO_RENAME, DO_MOVE: "the folder A" rather than "the file A"
+            Name name;        // DO_READ_CSV: the name the rows get
+            Type type;        // DO_SAVE_CSV: filled in by the checker: the list's kind
+        } library;
+        struct {
             LoopKind kind;
             Expr *from, *to, *step;  // LOOP_COUNT (step NULL: 1)
             bool down;               // "count down": never counts up
@@ -578,6 +657,11 @@ const char *ast_unary_op_name(UnaryOp op);
 const char *ast_change_op_name(ChangeOp op);
 const char *ast_list_op_name(ListOp op);
 const char *ast_text_op_name(TextOp op);
+// common/library.c
+const char *ast_library_op_name(LibraryOp op);
+const char *ast_library_action_name(LibraryAction op);
+const char *ast_date_part_name(int part);  // "year", ...
+const char *ast_period_name(int period);   // "this month", ...
 
 // Indented outline, one node per line: "label [line:column]", children
 // indented two spaces. Statement children come in source order (for files:

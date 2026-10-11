@@ -108,6 +108,11 @@ Each exception exists because following the rule would cost more than it gives. 
 - **Kinds of record, kinds with variants and interfaces share one set of names across files,** unlike functions and constants. A kind's name is used inside other phrases (`a new circle`, `a list of dogs`, `for a dog`) where `helpers's` couldn't go, so two kinds with one name couldn't be told apart.
 - **`FILE's NAME` uses the possessive for a file,** so a file's name (one word) is special before `'s` in every file of the program, even where it's also a name: the file wins.
 
+- **`pick one of L` and `roll a die` are values that start with a verb,** because that's how people say them; `a random item of L` and `a random number from 1 to 6` are the noun forms, and work too.
+- **`pi`, `today`, `tomorrow` and `yesterday` are names, not reserved words:** they mean the library's value only where the program hasn't made the name itself, so programs written before the library still work. Every other library phrase starts with its own words (`the square root of`, `a random number from`, `file F exists`).
+- **File and folder sentences say `file` or `folder`:** `delete the file F`, `the lines of file F`, `add X to the end of file F`. Without the word, `the lines of F` and `add X to the end of F` would mean the text tool or the list sentence, depending on what F is.
+- **Dates can't be kept in lists, maps or records yet:** printing, comparing and copying them inside those would need a kind of item of their own in the runtime. The error suggests keeping the date's text or its parts.
+
 ## Open questions
 
 None at the moment. Phrasings that may not follow these rules go here until they're decided.

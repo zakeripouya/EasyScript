@@ -1,0 +1,3 @@
+Line 1: I can only wait from 0 seconds to a year, but this is -2 seconds.
+    wait -2 seconds
+         ^^

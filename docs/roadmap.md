@@ -5,7 +5,7 @@ EasyScript grows in five phases. Each phase ends with working, tested, documente
 | Phase | Focus | Status |
 |---|---|---|
 | [1](#phase-1-core-language) | Core language | **Complete** (v0.1.0, 2026-10-10) |
-| [2](#phase-2-data-and-structure) | Memory, static types, records, lists, maps, kinds with variants, functions as values, interfaces, a standard library start, the English pass | **In progress** (memory, static types, lists, text tools, records, maps, kinds with variants, functions as values and interfaces done) |
+| [2](#phase-2-data-and-structure) | Memory, static types, records, lists, maps, kinds with variants, functions as values, interfaces, a standard library start, the English pass | **In progress** (memory, static types, lists, text tools, records, maps, kinds with variants, functions as values, interfaces, modules and the standard library start done) |
 | [3](#phase-3-self-hosting) | Self-hosting | Coming soon |
 | [4](#phase-4-real-world-programs) | Standard library, C interop, concurrency, servers | Coming soon |
 | [5](#phase-5-systems-mode) | Systems mode and an operating system | Coming soon |
@@ -59,7 +59,7 @@ The goal is to write small, real programs in the new sentence syntax and compile
 - [x] Loops: `count from ... to ...` (up or down, `by`/`in steps of`, `as`), `count down`, `go from`, `for each`, `do this N times`/`repeat N times`, `while`/`as long as`/`repeat while`, `keep doing this until`/`repeat until`, `forever`; `stop the loop` and `skip this one`; `it`
 - [x] Constants: `keep NAME as X`, worked out by the compiler, visible everywhere, never changed
 - [x] Functions: `to NAME [with] A and B:`, `give back`/`return`, `greet "Paris".` / `call greet with ...`, `area of 3 and 4`; each function sees only its own names
-- `file ... exists` (moved to Phase 2)
+- [x] `file ... exists` (moved to Phase 2, done in step 21)
 
 The proposed wording for each planned feature is in the [vocabulary](vocabulary.md).
 
@@ -71,7 +71,6 @@ Planned. Each will be added with its expected output in the same commit as its f
 
 | Example | Feature |
 |---|---|
-| `file_exists.es` | `file ... exists` |
 | `err_ambiguous.es` | an ambiguous block sentence and its suggestions |
 
 ## Phase 2: Data and structure
@@ -81,15 +80,15 @@ Planned. Each will be added with its expected output in the same commit as its f
 - [x] **Text tools:** characters taken with the list forms (`character 3 of word`, `the first 3 characters of word`, `every other character of word`, `the characters of word`), counted as Unicode characters; `contains`, `starts with`, `ends with`, `the position of`; `the words of`, `the lines of`, `split by`, `joined with`; `in uppercase`, `in lowercase`, `without extra spaces`, `with ... replaced by`; `is a letter`/`is a digit`/`is a space`, `the code of`, `the character with code`; text built piece by piece grows in place (a million pieces: 130 s before, about 5 ms after). See [Text](language-guide.md#11-text).
 - [x] **Static types:** the compiler works out whether every value is a number, text, or yes/no, inferring function inputs and results from how they're used and called, with optional kinds in definitions (`to area with width (a number), giving back a number:`). Kind mistakes are compile errors with the runtime's old wording plus carets; generated code uses plain C `double`/`bool` and only text is reference counted. See [Types](language-guide.md#9-types).
 - [x] **From Phase 1: runtime errors with the source line,** shown like compile errors, plus an English stack trace: the function being worked out with the values it was given, and each call back to the main program (repeated calls collapsed).
-- **From Phase 1:** `file ... exists`
+- [x] **From Phase 1:** `file ... exists` (step 21)
 - [x] **Records:** kinds of record with named fields (`a dog is a kind of thing with:`), `a new dog with name "Rex" and age 3` (missing fields are compile errors unless they have a starting value), fields with `'s` (`the order's customer's name`), fields that can be nothing and have to be checked before use, sharing by reference with shallow `a copy of`, methods (`to bark, for a dog:`), records in lists and lists in records, and readable printing. Linked list and binary tree examples. See [Records](language-guide.md#12-records).
 - [x] **Lists:** ordered collections of one kind, shared by reference (`a copy of` makes a separate one), with 1-based positions, `for each score in scores:`, `every`/`only`, totals, a stable sort, nested lists, and friendly errors for positions that aren't there. Reference counted like text; a list can't hold itself, so there are no cycles. See [Lists](language-guide.md#10-lists).
 - [x] **Maps:** lookup tables from text or number keys to values of any kind (`a map of "coffee" to 3, "tea" to 2`, `an empty map from text to numbers`), `the value for "tea" in prices` (a missing key is a friendly runtime error naming it) and `, or 0` for a default, `has`, `the number of entries in`, `the keys of`, `the values of`, `remove ... from`, `add 1 to the value for ...`, `for each name and age in ages:` in the order keys were added, fixed maps with `keep`, maps of lists and records and lists and records of maps, sharing with `a copy of`, and readable printing. A hash table with reference-counted keys and values; a `words` benchmark against Python and Go. Word counter and graph (shortest path) examples. See [Maps](language-guide.md#13-maps).
 - [x] **Kinds with variants:** `a shape is one of:` with variants and their fields (`a circle with a radius (a number).`), recursive kinds, `a new circle with radius 3`, `check which kind s is:` with `when it's a circle:` (every variant covered, or a compile error; an `otherwise` that can never run is a warning), `s is a circle`, fields usable only once the variant is checked, values that never change and compare by value, and kinds in lists, maps, records, functions and methods. Shapes, calculator and lambda calculus examples. See [Kinds with variants](language-guide.md#14-kinds-with-variants).
 - [x] **Functions as values:** `the function double`, functions made inside values (`a function taking x that gives back x times 2`, or with a block), `call f with 3`, kinds of functions, functions in lists, maps, records and variants, and functions that share the names they use from around them (closures), and built-ins that take a function (`applied to every`, `where`, `that pass`, `combined using`, `sorted by`, with `apply`, `keep only` and `sort ... by` sentences). Counter, event handler and pipeline examples; a `pipeline` benchmark. See [Functions as values](language-guide.md#15-functions-as-values).
 - [x] **Interfaces:** `something that can speak is anything with:` and its ways; any kind with matching methods fits, without saying so; interfaces as kinds of inputs, lists, maps and fields; ways called on them pick the method by the value's kind. Zoo example. See [Interfaces](language-guide.md#16-interfaces).
-- **Modules:** split programs across files and reuse code
-- **Planned, step 21:** a csv module (`read csv file F and call it NAME`, quoted fields, each row a map from column name to value), dates and times, files and folders, random numbers, and clearing the screen.
+- [x] **Modules (step 21):** `use helpers.` splits a program across files; used files only define things, `privately` keeps a definition to its file, `helpers's double` says which file's, circles of use are errors, and errors name the file. Multi-file example. See [Programs in several files](language-guide.md#17-programs-in-several-files).
+- [x] **The standard library (step 21):** math, random numbers, dates and waiting, files and folders, csv files (`read csv file F and call it NAME`, quoted fields, each row a map from column name to value) and clearing the screen, all without `use`. Dice, countdown, tidy folder and sales report examples; a csv benchmark against Python. See [stdlib.md](stdlib.md).
 - **Planned, step 22:** raw keyboard input (a key at a time, without Enter), with a terminal Snake example.
 - **Planned, the English pass** (after step 22): questions and totals, choices without `if`, plain words, and the rough spots. See [english-pass.md](english-pass.md).
 - **Planned:** the first non-coder test (3 to 5 people), then **v0.2.0**, which freezes the core grammar: after it, only additions.

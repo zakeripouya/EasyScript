@@ -167,7 +167,7 @@ static Stmt *parse_write(Parser *p, const Token *verb, const StmtForm *form) {
     if (reject_missing_value(p, "to file")) return NULL;
     Expr *value = parse_expression(p);
     if (p->sentence_failed) return NULL;
-    if (parser_match_words(p, "to file")) {
+    if (parser_match_words(p, "to file") || parser_match_words(p, "in file")) {  // "in file": like "put X in file F"
         parser_consume(p, 2);
         Stmt *stmt = parser_new_stmt(p, STMT_WRITE_FILE, verb);
         stmt->as.file_write.text = value;
@@ -285,6 +285,26 @@ static Stmt *parse_apply_form(Parser *p, const Token *verb, const StmtForm *form
     return parser_parse_apply(p, verb);
 }
 
+static Stmt *parse_wait_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parser_parse_wait(p, verb);
+}
+
+static Stmt *parse_shuffle_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parser_parse_shuffle(p, verb);
+}
+
+static Stmt *parse_save_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parser_parse_save(p, verb);
+}
+
+static Stmt *parse_put_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parser_parse_put(p, verb);
+}
+
 static Stmt *parse_use_form(Parser *p, const Token *verb, const StmtForm *form) {
     (void)form;
     return parser_parse_use(p, verb);
@@ -339,6 +359,10 @@ static const StmtForm forms[] = {
     {"apply", parse_apply_form, false, 0, NULL, "apply double to every number in scores"},
     {"use", parse_use_form, true, 0, NULL, "use helpers"},
     {"privately", parse_privately_form, false, 0, NULL, "privately to tidy with text:"},
+    {"wait", parse_wait_form, false, 0, NULL, "wait 2 seconds"},
+    {"shuffle", parse_shuffle_form, false, 0, NULL, "shuffle cards"},
+    {"save", parse_save_form, false, 0, NULL, "save rows as csv file \"sales.csv\""},
+    {"put", parse_put_form, false, 0, NULL, "put \"hello\" in file \"notes.txt\""},
 };
 
 // --- Sentences ---------------------------------------------------------------
@@ -423,6 +447,11 @@ Stmt *parse_statement(Parser *p) {
     if (parser_at_record_definition(p)) return parse_record(p);
     if (parser_at_sum_definition(p)) return parse_sum(p);
     if (parser_interface_words(p, p->pos) > 0) return parse_interface(p);
+    if (parser_at_library_sentence(p)) {  // "delete the file F", "clear the screen", ...
+        Stmt *stmt = parser_parse_library_sentence(p);
+        if (stmt) stmt->pos = ast_pos_join(stmt->pos, (SourcePos){p->prev_span, 0, 0, 0});
+        return stmt;
+    }
     if (parser_at_module(p, 0)) {  // helpers's greet with "Ann"
         Stmt *call = parser_parse_module_call(p);
         if (call) call->pos = ast_pos_join(call->pos, (SourcePos){p->prev_span, 0, 0, 0});

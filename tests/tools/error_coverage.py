@@ -21,6 +21,13 @@ EXEMPT = {
     "I couldn't run %s: %s.": 'needs exec to fail (no cc, or a deleted compiler)',
     "The C compiler couldn't build the program. This is a bug in EasyScript; please report it.": 'generated C always compiles (checked by fuzzing with -Werror)',
     "I couldn't set up the shell's answers file: %s.": 'needs the temp directory to fail',
+    'I couldn\'t look in the folder "%s": %s.': 'needs a folder that exists but can\'t be read (permissions are ignored when tests run as root)',
+    'I couldn\'t rename "%s" to "%s": %s.': 'the paths are checked first, so it needs the system to refuse',
+    'I couldn\'t copy "%s" to "%s".': 'needs a read or write to fail partway (a full disk)',
+    'I couldn\'t move "%s" to the folder "%s": %s.': 'the paths are checked first, so it needs the system to refuse (another disk)',
+    'I couldn\'t delete "%s": %s.': 'needs the system to refuse (permissions)',
+    'I couldn\'t delete the folder "%s": %s.': 'needs the system to refuse (permissions)',
+    'I couldn\'t delete the file "%s": %s.': 'needs the system to refuse (permissions)',
 }
 
 def pattern(fmt):

@@ -1,0 +1,4 @@
+Line 2: The header of a.csv has the column "name" twice.
+    read csv file "a.csv" and call it rows
+                  ^^^^^^^
+Each column needs its own name.

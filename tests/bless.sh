@@ -13,6 +13,11 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 # Programs read ES_DEBUG_MEMORY and the other test variables only when
 # "easyscript run" builds them with the hooks (see SECURITY.md).
 export ES_HOOKS=1
+# With the hooks, these fix the clock (waiting moves it on instead of
+# sleeping) and the random numbers, so programs that use them give the same
+# output every run.
+export ES_NOW="2026-10-11 14:05:00"
+export ES_RANDOM_SEED=7
 ES=${ES:-$ROOT/easyscript}
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/easyscript-bless-XXXXXX")
 trap 'rm -rf "$WORK"' EXIT

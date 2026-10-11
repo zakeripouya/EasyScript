@@ -341,6 +341,23 @@ Stmt *parser_parse_module_call(Parser *p);                  // "helpers's greet 
 Stmt *parser_parse_use(Parser *p, const Token *verb);        // use helpers
 Stmt *parser_parse_privately(Parser *p, const Token *verb);  // privately to ... / privately keep ...
 
+// parse_library.c: the standard library's values
+// A value starting with its words ("the square root of", "a random number from", "file F exists", ...); NULL if none.
+Expr *parser_parse_library_word(Parser *p);
+// After a value: "rounded", "to the power of Y", "shuffled", "days ago", ...; NULL if none is next.
+Expr *parser_parse_library_postfix(Parser *p, Expr *expr);
+// After a value: "is before E", "is after E", "is in this month", ...; NULL if none is next.
+Expr *parser_parse_library_test(Parser *p, Expr *left);
+// parse_library_stmt.c: the standard library's sentences
+// "make a new file", "rename the file", "copy the file", "move the file", "delete the file", "clear the
+// screen", "read csv file", "use the same random numbers": a sentence of the library starts here.
+bool parser_at_library_sentence(const Parser *p);
+Stmt *parser_parse_library_sentence(Parser *p);
+Stmt *parser_parse_wait(Parser *p, const Token *verb);     // wait 2 seconds
+Stmt *parser_parse_shuffle(Parser *p, const Token *verb);  // shuffle L
+Stmt *parser_parse_save(Parser *p, const Token *verb);     // save L as csv file F
+Stmt *parser_parse_put(Parser *p, const Token *verb);      // put X in file F
+
 // parse_loop.c: a loop starting with `verb` (count, go, for, do, repeat,
 // while, as, keep, forever), and stop/break/skip/continue/move on.
 Stmt *parse_loop(Parser *p, const Token *verb);
