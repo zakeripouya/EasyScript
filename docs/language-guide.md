@@ -183,7 +183,7 @@ minutes mod 60
 -temperature
 ```
 
-`plus`/`+`, `minus`/`-`, `times`/`multiplied by`/`*`, `divided by`/`/`, and `mod`/`%` (the remainder). They work on numbers; `say 7 divided by 2` prints `3.5`, and whole numbers print without decimals. Other numbers print with at most 10 significant digits, so tiny rounding errors never show: `0.1 plus 0.2` prints `0.3`, and `1 divided by 3` prints `0.3333333333`. A number that rounds to a whole number prints as one (`0.99999999999` prints `1`). Only the printing rounds: the number itself keeps its full precision. Using text in arithmetic is caught before the program runs:
+`plus`/`+`, `minus`/`-`, `times`/`multiplied by`/`*`, `divided by`/`/`, and `mod`/`%` (the remainder). They work on numbers; `say 7 divided by 2` prints `3.5`, and whole numbers print exactly, without decimals, up to 9007199254740992 (the biggest a computer number holds every whole number up to), so `1000000 times 1000000 times 1000` prints `1000000000000000`. Bigger ones print like other numbers. Other numbers print with at most 10 significant digits, so tiny rounding errors never show: `0.1 plus 0.2` prints `0.3`, and `1 divided by 3` prints `0.3333333333`. A number that rounds to a whole number prints as one (`0.99999999999` prints `1`). Only the printing rounds: the number itself keeps its full precision. Using text in arithmetic is caught before the program runs:
 
 ```
 Line 1: I can't add text to a number.

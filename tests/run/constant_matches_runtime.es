@@ -114,3 +114,11 @@ keep k28 as (2 divided by 3) as text
 let v28 be (2 divided by 3) as text
 say k28
 say v28
+keep k29 as 1000000 times 1000000 times 1000
+let v29 be 1000000 times 1000000 times 1000
+say k29
+say v29
+keep k30 as 9007199254740992 times 2
+let v30 be 9007199254740992 times 2
+say k30
+say v30

@@ -39,6 +39,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- **Whole numbers print exactly up to 2^53** (9007199254740992), without an exponent: `1000000 times 1000000 times 1000` prints `1000000000000000` (it printed `1e+15`). Map keys keep whole numbers up to 2^53 exactly too.
 - **Generated temporaries are always initialized,** so GCC 13 at `-O2` no longer warns "may be used uninitialized" for map lookups' temporaries (the Linux CI failure), and `consteval.c` initializes its comparison result.
 - **Numbers print with at most 10 significant digits** (it was 15), so rounding errors never show: `1 divided by 3` prints `0.3333333333`, and a number that rounds to a whole one prints as one (`0.99999999999` prints `1`). Whole numbers still print without decimals. Only printing rounds; numbers keep their full precision. **Map number keys** are now the same key when they're the same to 12 significant digits (it was 15), closer to `is`, which treats numbers within a relative 1e-12 as equal: `1` and `1.0000000000001` are one key.
 - **Programs made with `easyscript build` no longer read the runtime's test variables** (`ES_SKIP_OUTPUT`, `ES_ANSWERS`, `ES_DEBUG_MEMORY`, `ES_MEMORY_LIMIT`). They're compiled in only for `easyscript run` with `ES_HOOKS=1`, which the test suite and the interactive shell set. New [SECURITY.md](SECURITY.md): how to report a problem and what the compiler guarantees (no shell, escaped output, private temporary directories).

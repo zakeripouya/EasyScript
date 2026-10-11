@@ -14,3 +14,9 @@ say 123456789012345678
 say 2 minus 5
 say (1 plus 2) times 3
 say 19.99
+note: whole numbers print exactly up to 2^53, without an exponent
+say 1000000 times 1000000 times 1000
+say 9007199254740992
+say -9007199254740992
+say 9007199254740992 times 2
+say 1000000000000000.5

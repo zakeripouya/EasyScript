@@ -38,7 +38,7 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | names of several words | Words separated by spaces, made by `let`, `keep`, `to`, `as`, `call`, `for each` or `every`, and then recognized everywhere (the longest known name wins). They can't contain the operator and value words or `be`, `equal`, `to`, `from`, `by`, `of`, `with`, `in`, `at`, `then`, `that`, `giving` | `late fee`, `hourly rate`, `session number` | Available |
 | `( X )` | Grouping: work this out first | `(price plus tax) times 2` | Available |
 
-**How values print:** whole numbers print without decimals (`7`, not `7.0`), other numbers with at most 10 significant digits (`0.1 plus 0.2` prints `0.3`, `1 divided by 3` prints `0.3333333333`; a number that rounds to a whole one prints as one), yes/no as `yes`/`no`, and lists in English: `72, 95 and 88`.
+**How values print:** whole numbers print exactly, without decimals or an exponent, up to 9007199254740992 (2^53; `7`, not `7.0`, and `1000000 times 1000000 times 1000` prints `1000000000000000`), other numbers with at most 10 significant digits (`0.1 plus 0.2` prints `0.3`, `1 divided by 3` prints `0.3333333333`; a number that rounds to a whole one prints as one), yes/no as `yes`/`no`, and lists in English: `72, 95 and 88`.
 
 **Kinds:** every value is a number, text, yes/no, a list, or a record, worked out before the program runs (see [Kinds of values](#kinds-of-values)).
 

@@ -41,7 +41,7 @@
 static double es_key_number(double x) {
     if (isnan(x)) return NAN;
     if (isinf(x)) return x;
-    if (x == floor(x) && fabs(x) < 1e15) return x == 0 ? 0.0 : x; /* no -0 */
+    if (x == floor(x) && fabs(x) <= ES_EXACT_WHOLE) return x == 0 ? 0.0 : x; /* no -0 */
     char digits[32]; /* "%.12g" of a double takes at most 19 characters */
     snprintf(digits, sizeof digits, "%.12g", x);
     return strtod(digits, NULL);

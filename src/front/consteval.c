@@ -70,6 +70,9 @@ static ConstValue text(const char *s, size_t len) {
 
 // --- Text (as es_number_text / es_to_text / es_join) --------------------------
 
+// Whole numbers up to 2^53 print exactly (es_runtime.h's ES_EXACT_WHOLE).
+#define EXACT_WHOLE 9007199254740992.0
+
 const char *const_number_text(Arena *arena, double x, size_t *len) {
     const char *special = isnan(x) ? "not a number" : isinf(x) ? (x > 0 ? "infinity" : "-infinity") : NULL;
     if (special) {
@@ -77,12 +80,12 @@ const char *const_number_text(Arena *arena, double x, size_t *len) {
         return special;
     }
     char *s = NULL;
-    if (x != floor(x) || fabs(x) >= 1e15) {  // at most 10 significant digits
+    if (x != floor(x) || fabs(x) > EXACT_WHOLE) {  // at most 10 significant digits
         s = arena_sprintf(arena, "%.10g", x);
         x = strtod(s, NULL);
     }
     if (x == 0) x = 0;  // no "-0"
-    if (x == floor(x) && fabs(x) < 1e15) s = arena_sprintf(arena, "%.0f", x);
+    if (x == floor(x) && fabs(x) <= EXACT_WHOLE) s = arena_sprintf(arena, "%.0f", x);
     *len = strlen(s);
     return s;
 }
@@ -91,7 +94,7 @@ const char *const_key_text(Arena *arena, double x) {
     if (isnan(x)) return "not a number";
     if (isinf(x)) return x > 0 ? "infinity" : "-infinity";
     if (x == 0) x = 0;
-    return arena_sprintf(arena, (x == floor(x) && fabs(x) < 1e15) ? "%.0f" : "%.12g", x);
+    return arena_sprintf(arena, (x == floor(x) && fabs(x) <= EXACT_WHOLE) ? "%.0f" : "%.12g", x);
 }
 
 static ConstValue to_text(Eval *ev, ConstValue v) {

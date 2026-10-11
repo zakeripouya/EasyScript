@@ -22,6 +22,10 @@ static EsText es_lit_minus_infinity = ES_STATIC_TEXT("-infinity");
 static EsText es_lit_yes = ES_STATIC_TEXT("yes");
 static EsText es_lit_no = ES_STATIC_TEXT("no");
 
+/* Whole numbers up to 2^53 (where a double still holds every whole number)
+ * print exactly, without decimals or an exponent. */
+#define ES_EXACT_WHOLE 9007199254740992.0
+
 /* Whole numbers print without decimals; others with at most 10 significant
  * digits, so tiny rounding errors don't show (0.1 plus 0.2 prints 0.3). A
  * number that rounds to a whole number prints as one (0.99999999999 is 1).
@@ -29,13 +33,13 @@ static EsText es_lit_no = ES_STATIC_TEXT("no");
 static EsText *es_number_text(double x) {
     if (isnan(x)) return &es_lit_nan;
     if (isinf(x)) return x > 0 ? &es_lit_infinity : &es_lit_minus_infinity;
-    char digits[32]; /* "%.10g" takes at most 17 characters, "%.0f" below 1e15 at most 16 */
-    if (x != floor(x) || fabs(x) >= 1e15) {
+    char digits[32]; /* "%.10g" takes at most 17 characters, "%.0f" up to 2^53 at most 17 */
+    if (x != floor(x) || fabs(x) > ES_EXACT_WHOLE) {
         snprintf(digits, sizeof digits, "%.10g", x);
         x = strtod(digits, NULL);
     }
     if (x == 0) x = 0; /* no "-0" */
-    if (x == floor(x) && fabs(x) < 1e15) snprintf(digits, sizeof digits, "%.0f", x);
+    if (x == floor(x) && fabs(x) <= ES_EXACT_WHOLE) snprintf(digits, sizeof digits, "%.0f", x);
     return es_text_copy(digits, strlen(digits));
 }
 
