@@ -107,7 +107,11 @@ static void append_signature(StrBuf *out, const Stmt *fn) {
 void cg_emit_declarations(const Codegen *g, StrBuf *out) {
     for (size_t t = 0; t < g->temps.len; t++) {
         Type type = g->temps.items[t];
-        sb_appendf(out, "    %s%ses_t%zu;\n", cg_ctype(type), type_counted(type) ? "" : " ", t + 1);
+        // Initialized, so GCC can't think one is read before it's set (a map
+        // lookup's temporary is only set when the key is there).
+        const char *ctype = cg_ctype(type);
+        const char *zero = ctype[strlen(ctype) - 1] == '*' ? "NULL" : type == TYPE_YESNO ? "false" : "0.0";
+        sb_appendf(out, "    %s%ses_t%zu = %s;\n", ctype, type_counted(type) ? "" : " ", t + 1, zero);
     }
     for (size_t i = 0; i < g->vars.len; i++) {
         Type type = g->vars.items[i].type;

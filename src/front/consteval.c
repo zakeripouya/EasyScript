@@ -380,7 +380,7 @@ static bool binary(Eval *ev, const Expr *expr, ConstValue *out) {
     ConstValue a, b;
     if (!eval(ev, expr->as.binary.left, &a) || !eval(ev, expr->as.binary.right, &b)) return false;
     if (reject_list_operand(ev, expr->pos.span, a, b)) return false;
-    int c;
+    int c = 0;
     switch (op) {
     case BINARY_JOIN: *out = join(ev, a, b); return true;
     case BINARY_EQUAL: *out = yesno(same(a, b)); return true;
