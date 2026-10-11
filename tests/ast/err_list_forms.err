@@ -37,9 +37,9 @@ Line 8: "longest first" sorts by length, so it needs "by their length".
                 ^^^^^^^^^^^^^
 Write it like "sort names by their length, longest first".
 
-Line 9: I expected "item" here, but found "95".
-    remove 95 from scores
-           ^^
+Line 9: I expected "from" here, but found "scores".
+    remove the first item scores
+                          ^^^^^^
 Write it like "remove item 2 from scores".
 
 Line 10: Something is missing after "insert".
@@ -55,7 +55,7 @@ Compare one pair at a time and join them with "and".
 Line 12: I don't know the kind of value "number".
     let kinds be an empty list of number
                                   ^^^^^^
-A list holds "numbers", "text", "yes/no values", or "lists of" something, like "a list of numbers".
+Lists and maps hold "numbers", "text", "yes/no values", "lists of" something, or "maps from" something, like "a list of numbers".
 
 Line 13: EasyScript doesn't have "are not above".
     say only the scores that are not above 3
@@ -70,7 +70,7 @@ Did you mean "are at least"?
 Line 15: I don't know the kind of value "banana".
     to f with x (a list of banana):
                            ^^^^^^
-A list holds "numbers", "text", "yes/no values", or "lists of" something, like "a list of numbers".
+Lists and maps hold "numbers", "text", "yes/no values", "lists of" something, or "maps from" something, like "a list of numbers".
 
 Line 17: Something is missing after "list of".
     to g with y (a list of):

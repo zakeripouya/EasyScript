@@ -163,10 +163,12 @@ The words that start statements are only special at the start of a sentence, so 
 | `keep NAME as X` | Make a constant: a name whose value never changes | `keep tax rate as 0.2` | Available |
 | `keep NAME at X` | Same as `as` | `keep speed_limit at 50` | Available |
 | `keep NAME as a list of X, Y and Z` | A fixed list: a list that can't change | `keep weekdays as a list of "Mon", "Tue" and "Wed"` | Available |
+| `keep NAME as a map of K to V, ...` | A fixed map: a map that can't change | `keep prices as a map of "coffee" to 3, "tea" to 2` | Available |
 
 - **Fixed before the program starts:** X may use numbers, text, yes and no, arithmetic, joining (`followed by`, `and`), comparisons, `and`/`or`/`not`, `as text`, `as a number`, `length of`, and constants made above it. Variables, function calls, `it`, `nothing`, and `contents of file` are errors, because their values are only known while the program runs. The compiler works the value out, so a constant costs nothing while the program runs.
 - **Visible everywhere,** including inside functions (which can't see variables), and even above the line that makes it.
 - **Fixed lists:** a constant can be a list written out (`a list of ...`, `an empty list of ...`) of fixed numbers, text or yes/no values, but not of lists; `length of` a fixed list is fixed too. Anything else worked out from a list is an error. `add`, `insert`, `remove`, `set item ... to`, and `sort` on a fixed list are errors that suggest `let`. Storing it in a variable or giving it to a function gives that variable or function its own copy, which can change; reading it (items, `contains`, loops, `every`, slices) uses the fixed list itself.
+- **Fixed maps:** a constant can be a map written out (`a map of ...`, `an empty map from ...`) with fixed text or number keys (each once) and fixed number, text or yes/no values, but not lists or maps; `the number of entries in` a fixed map is fixed too. Anything else worked out from a map is an error. Setting, changing or removing a value is an error that suggests `let`. Storing it in a variable or giving it to a function gives that variable or function its own copy; reading it (lookups, `has`, loops) uses the fixed map itself.
 - **Never changes:** `set`, `change`, `add`, `subtract`, `increase`, `decrease`, `multiply`, and `divide` on a constant are errors that suggest `let` instead. A variable, input, loop number, or function can't have a constant's name.
 - **Top level only:** not inside an `if`, a loop, or a function.
 
@@ -513,6 +515,64 @@ A method is a function, so `call bark with rex`, `bark of rex` and `describe for
 
 Records are freed when nothing holds them, like text and lists, including what their fields hold. Records that point to each other in a circle (two people who are each other's friend) keep each other alive and are never freed; the memory check (`ES_DEBUG_MEMORY=1`) reports them. See [memory](memory.md#circles).
 
+## Maps
+
+All map words are **Available**. A map finds a value by its key: keys are text or numbers (one kind per map), values any kind (one kind per map), kept in the order keys were first added. See the [language guide](language-guide.md#13-maps).
+
+### Making maps
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `a map of K to V, K to V and K to V` | A map with these keys and values. Commas separate entries until the first `and`; after that only `and` does. Each key and value is a value up to `to`, the next comma or `and` | `a map of "coffee" to 3, "tea" to 2` |
+| `a map of K to (L)` | A list or map as a value: in parentheses (without them it's an error) | `a map of "odd" to (a list of 1 and 3)` |
+| `an empty map from KEYS to VALUES` | A map with nothing in it yet; KEYS is `text` or `numbers`, VALUES is in the plural like a list's items (`numbers`, `text`, `yes/no values`, `lists of text`, `maps from text to numbers`, `dogs`) | `an empty map from text to numbers` |
+| `a copy of M` | A separate map with the same keys and values (and copies of the lists and maps in it) | `a copy of prices` |
+
+### Looking up and setting
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `the value for K in M` | The value kept for key K. A key that isn't there stops the program with an error naming it | `the value for "tea" in prices` |
+| `the value for K in M, or D` | The same, but D (a single value, only worked out when it's needed) when K isn't there | `the value for "Bob" in ages, or 0` |
+| `set the value for K in M to X` / `change ...` | Keep X for key K: changes its value, or adds it at the end | `set the value for "Paris" in ages to 19` |
+
+Number keys are the same key when they print the same (`0.1 plus 0.2` finds `0.3`). A name straight before `in` is the key: `the value for item in prices`. `value`, `keys`, `values`, `entries` and `map` are only special in these forms, so they can still be names.
+
+### Asking about maps
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `M has K` | Yes if K is one of its keys | `if ages has "Paris":` |
+| `M does not have K` / `M doesn't have K` | The opposite | `if counts doesn't have word, ...` |
+| `the number of entries in M` | How many keys | `the number of entries in ages` |
+| `M is empty` / `M is not empty` / `M isn't empty` | Whether it has no keys | `while queue isn't empty:` |
+| `the keys of M` | A new list of its keys, in the map's order | `the keys of ages` |
+| `the values of M` | A new list of its values, in the map's order | `the values of ages` |
+
+`has` is a comparison, like `contains`. Two maps are equal (`is`) when they have the same keys with equal values, in any order.
+
+### Changing maps
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `add X to the value for K in M` (also `subtract ... from`, `increase`/`decrease`/`multiply`/`divide ... by`) | Change a value in place; K has to be there | `add 1 to the value for word in counts` |
+| `add X to the end of the value for K in M` | Add to a list kept in a map | `add "Elm" to the end of the value for "Ash" in graph` |
+| `remove K from M` | Take key K (and its value) out; K has to be there | `remove "Paris" from ages` |
+
+`remove item from M` reads as a list's item with its position missing (an error); write the key another way, like `remove (item) from M`.
+
+### Going through maps
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `for each K and V in M:` + indented lines | Run the lines once for each entry, in order, with K (and `it`) the key and V its value. Goes through the entries the map had when it started | `for each name and age in ages:` |
+
+A map needs both names; `for each name in ages:` is an error that suggests `for each name in the keys of ages:`.
+
+### Sharing
+
+A map is **shared** like a list: `let same be ages` gives the same map another name, and a function given a map can change it. Lists and maps in a map belong to it (`a copy of` copies them); text and records in it are shared. A map kept with `keep` is fixed (see [Constants](#constants)).
+
 ## Kinds of values
 
 Every value has a kind, worked out by the compiler before the program runs (**Available**). Kind mistakes are compile errors with the line and a caret. See the [language guide](language-guide.md#9-types).
@@ -526,7 +586,8 @@ Every value has a kind, worked out by the compiler before the program runs (**Av
 | list | `(a list of numbers)`, `(a list of text)`, `(a list of yes/no values)` or `(a list of yes or no values)`, `(a list of lists of numbers)`, `(a list of dogs)`, `giving back a list of text` | `a list of ...`, `an empty list of ...`, `every`, `only`, `reversed`, `a copy of` |
 | record | `(a dog)`, `giving back a dog` | `a new dog`, a field holding one, `a copy of` |
 | record or nothing | `(a dog or nothing)`, `giving back a dog or nothing` | a field `which is a dog or nothing`, `nothing` where one goes |
+| map | `(a map from text to numbers)`, `(a map from numbers to lists of text)`, `giving back a map from text to numbers`; in a list or map: `maps from text to numbers` | `a map of ...`, `an empty map from ...`, `a copy of` |
 
 ## Later phases
 
-Maps and modules (Phase 2), and everything after, will be added here as their designs settle. See the [roadmap](roadmap.md).
+Modules (Phase 2), and everything after, will be added here as their designs settle. See the [roadmap](roadmap.md).

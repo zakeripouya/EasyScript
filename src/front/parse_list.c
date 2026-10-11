@@ -16,7 +16,7 @@
 // make EXPR_ITEM and EXPR_SLICE nodes marked `characters`.
 //
 //   add 5 to the end of scores           insert 7 at position 1 of scores
-//   remove item 2 from scores            set item 2 of scores to 100
+//   remove item 2 from scores            set item 2 of scores to 100   (remove K from M: a map)
 //   sort scores                          sort names by their length, longest first
 //
 // The forms that depend on precedence ("every", "only", "contains", "is
@@ -63,8 +63,8 @@ static bool report_kind(Parser *p, const char *kinds, const char *missing) {
 }
 
 // What a list holds, in the plural: "numbers", "text", "yes/no values" (or
-// "yes or no values"), or "lists of" ... .
-static bool parse_items_kind(Parser *p, Type *type) {
+// "yes or no values"), "lists of" ..., a record kind's plural, or "maps from" ... .
+bool parser_parse_items_kind(Parser *p, Type *type) {
     size_t words = 0;
     if (parser_at_word(p, 0, "numbers")) {
         *type = TYPE_NUMBER, words = 1;
@@ -77,9 +77,11 @@ static bool parse_items_kind(Parser *p, Type *type) {
         *type = TYPE_YESNO, words = 4;
     } else if (parser_match_words(p, "lists of")) {
         parser_consume(p, 2);
-        if (!parse_items_kind(p, type)) return false;
+        if (!parser_parse_items_kind(p, type)) return false;
         *type = type_list_of(*type);
         return true;
+    } else if (parser_at_map_kind(p, true)) {
+        return parser_parse_map_kind(p, type);
     } else {
         int record = parser_match_record(p, 0, true, &words);
         if (record >= 0) *type = type_record((size_t)record);
@@ -88,8 +90,8 @@ static bool parse_items_kind(Parser *p, Type *type) {
         parser_consume(p, words);
         return true;
     }
-    return report_kind(p, "A list holds \"numbers\", \"text\", \"yes/no values\", or \"lists of\" something, "
-                          "like \"a list of numbers\".",
+    return report_kind(p, "Lists and maps hold \"numbers\", \"text\", \"yes/no values\", \"lists of\" something, or "
+                          "\"maps from\" something, like \"a list of numbers\".",
                        "Say what the list holds, like \"a list of numbers\".");
 }
 
@@ -113,10 +115,11 @@ bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type) {
     size_t words = 0;
     if (parser_match_words(p, "list of")) {
         parser_consume(p, 2);
-        if (!parse_items_kind(p, type)) return false;
+        if (!parser_parse_items_kind(p, type)) return false;
         *type = type_list_of(*type);
         return true;
     }
+    if (parser_at_map_kind(p, false)) return parser_parse_map_kind(p, type) && parse_or_nothing(p, type);
     if (parser_at_word(p, 0, "number")) {
         *type = TYPE_NUMBER, words = 1;
     } else if (parser_at_word(p, 0, "text")) {
@@ -136,10 +139,11 @@ bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type) {
         return parse_or_nothing(p, type);
     }
     return report_kind(p,
-                       nothing_ok ? "The kinds are \"a number\", \"text\", \"yes or no\", and lists like \"a list of "
-                                    "numbers\" (and \"nothing\" for a function that gives back no value)."
-                                  : "The kinds are \"a number\", \"text\", \"yes or no\", and lists like \"a list of "
-                                    "numbers\".",
+                       nothing_ok ? "The kinds are \"a number\", \"text\", \"yes or no\", lists like \"a list of "
+                                    "numbers\", and maps like \"a map from text to numbers\" (and \"nothing\" for a "
+                                    "function that gives back no value)."
+                                  : "The kinds are \"a number\", \"text\", \"yes or no\", lists like \"a list of "
+                                    "numbers\", and maps like \"a map from text to numbers\".",
                        "Say which kind of value: \"a number\", \"text\", \"yes or no\", or a list like \"a list of "
                        "numbers\".");
 }
@@ -420,7 +424,7 @@ static Expr *parse_empty_list(Parser *p) {
     Expr *list = ast_new_expr(p->arena, EXPR_EMPTY_LIST, parser_token_pos(parser_peek(p, 0)));
     parser_consume(p, 3);  // empty list of
     Type item;
-    if (!parse_items_kind(p, &item)) return parser_error_expr(p);
+    if (!parser_parse_items_kind(p, &item)) return parser_error_expr(p);
     list->as.list_type = type_list_of(item);
     list->pos = ast_pos_join(list->pos, (SourcePos){p->prev_span, 0, 0});
     return list;
@@ -493,18 +497,33 @@ Stmt *parser_parse_set_item(Parser *p, const Token *verb) {
     return stmt;
 }
 
-// remove item P from L / remove the first item from L / remove the last item from L
+// remove K from M (M a map): K is a value up to "from".
+static Stmt *parse_remove_key(Parser *p, Stmt *stmt) {
+    static const char *const from[] = {"from", NULL};
+    stmt->as.list.op = LIST_REMOVE_KEY;
+    if (parser_at_word(p, 0, "from") || parser_at_sentence_end(p)) {
+        if (parser_error(p, p->prev_span, "Something is missing after \"remove\".")) {
+            diag_note(p->diag, "Say what to remove, like \"remove item 2 from scores\" for a list or \"remove \"tea\" "
+                               "from prices\" for a map.");
+        }
+        return NULL;
+    }
+    stmt->as.list.value = parse_join(p);
+    if (p->sentence_failed || !parser_expect_word(p, from, "remove \"tea\" from prices")) return NULL;
+    stmt->as.list.list = parse_primary(p);
+    return stmt;
+}
+
+// remove item P from L / remove the first item from L / remove the last item from L,
+// or remove K from M for a map ("item" followed by "from" is a missing position).
 Stmt *parser_parse_remove(Parser *p, const Token *verb) {
     static const char *const from[] = {"from", NULL};
-    static const char *const item[] = {"item", NULL};
     static const char *const example = "remove item 2 from scores";
     Stmt *stmt = parser_new_stmt(p, STMT_LIST, verb);
     stmt->as.list.op = LIST_REMOVE;
     bool first_last = (parser_at_word(p, 0, "first") || parser_at_word(p, 0, "last")) && parser_at_word(p, 1, "item");
-    if (!first_last && !parser_at_word(p, 0, "item")) {
-        parser_expect_word(p, item, example);
-        return NULL;
-    }
+    bool item = parser_at_word(p, 0, "item") && (parser_at_word(p, 1, "from") || parser_at_item(p, from));
+    if (!first_last && !item) return parse_remove_key(p, stmt);
     if (!parse_item_ref(p, &item_noun, from, &stmt->as.list.where, &stmt->as.list.position) ||
         !parser_expect_word(p, from, example)) {
         return NULL;

@@ -370,10 +370,10 @@ Write it like "a list of (a list of 1 and 2) and (a list of 3 and 4)".
 | `added together` on something other than numbers | "I can only add together a list of numbers, but this is a list of text." |
 | `biggest of` / `smallest of` / `sort` on yes/no values or lists | "I can only sort a list of numbers or text, but this is a list of yes/no values." |
 | `sort ... by their length` on numbers | "I can only sort a list of text or lists by their length, but this is a list of numbers." |
-| `is empty` on something other than text or a list | "I can only check whether text or a list is empty, but this is a number." |
+| `is empty` on something other than text, a list or a map | "I can only check whether text, a list or a map is empty, but this is a number." |
 | Working something out from a list in a constant | "A constant can't work things out from a list." (a fixed list written out, and its length, are fine) |
 | Joining lists of different kinds with `followed by` | "I can't join a list of numbers with a list of text." with a hint to use `as text` |
-| A fixed list holding lists | "A fixed list can't hold lists, because those could change." |
+| A fixed list holding lists | "A fixed list can't hold lists or maps, because those could change." |
 | Changing a fixed list (`add`, `remove`, `set item`, `insert`, `sort`) | ""weekdays" is a constant, so it can't change." with a `let` suggestion |
 | A loop's item named like something that exists | "You already made "score" on line 1." with a name that isn't taken |
 | A loop's item used after the loop | "I don't know anything called "mark"." with "it only exists inside that loop" |
@@ -463,6 +463,65 @@ Give it after "with", like "with name ...", or give the field a starting value w
 
 Mistakes in how a definition or a field is written are parser errors, like "I expected "," here, but found "which"." (a field without its comma), "Only a record can be "or nothing", not a number.", "A new record inside another one needs parentheses.", ""let" makes a new name, so it can't change a field." and "A method is for a kind of record, but this is a number.". The full set is in [`err_records.err`](../tests/ast/err_records.err) and the `record_*.err` files in [`tests/errors/`](../tests/errors/).
 
+### Maps
+
+A map has one kind of key (text or numbers) and one kind of value, so a key or value of another kind is a compile error, and so is using something that isn't a map where one goes.
+
+**A key of the wrong kind**: [`map_type_errors.es`](../tests/errors/map_type_errors.es)
+
+```
+Line 4: The keys of "ages" are text, but this is a number.
+    say the value for 3 in ages
+                      ^
+```
+
+**Putting the wrong kind of value in a map**: [`map_type_errors.es`](../tests/errors/map_type_errors.es)
+
+```
+Line 6: "ages" is a map from text to numbers, so it can't hold text.
+    set the value for "Ada" in ages to "old"
+                                       ^^^^^
+A map holds one kind of value. To keep text too, make a separate map for it.
+```
+
+**Going through a map with one name**: [`map_type_errors.es`](../tests/errors/map_type_errors.es)
+
+```
+Line 20: A map has a key and a value in each entry, so going through it takes two names.
+    for each name in ages:
+                     ^^^^
+Name both, like "for each name and age in ages:". To go through only the keys, write "for each name in the keys of ages:".
+```
+
+**Arithmetic straight after `, or`**: [`err_map_forms.es`](../tests/ast/err_map_forms.es)
+
+```
+Line 12: "the value for "x" in ages, or 0 plus 1" could mean two things.
+    say the value for "x" in ages, or 0 plus 1
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Use parentheses to say which: "(the value for "x" in ages, or 0) plus 1" or "the value for "x" in ages, or (0 plus 1)".
+```
+
+| Problem | Message (summary) |
+|---|---|
+| A map form on something that isn't a map | "I can only look up a value in a map, but this is a list of numbers." with a note showing the list form (and likewise for `has`, setting, removing, `the number of entries in`, `the keys of`, `the values of`, and `for each` with two names) |
+| The value after `, or` of the wrong kind | ""ages" is a map from text to numbers, so the value after ", or" has to be a number, but this is text." |
+| Keys or values of different kinds in `a map of` | "All the keys of a map have to be the same kind: the first is text, but this is a number." (and "All the values ...") |
+| Keys that aren't text or numbers | "A map's keys have to be text or numbers, but this is a yes/no value." |
+| The same key written twice in `a map of` | "The key "tea" is in this map twice." with "Each key has one value, so give each key once." (numbers that print the same are one key) |
+| `length of` or `contains` on a map | "I can only find the length of text or a list, but this is a map from text to numbers." with "To count the entries of a map, write "the number of entries in ages"." / a note to use `has` |
+| `add 5 to` a value that's a list of numbers | "This value is a list of numbers, so this could mean two things." with both ways to say it |
+| Changing a fixed map | ""prices" is a constant, so it can't change." with a `let` suggestion |
+| Working something out from a map in a constant | "A constant can't work things out from a map." (a fixed map written out, and its number of entries, are fine) |
+| A fixed map holding lists or maps | "A fixed map can't hold lists or maps, because those could change." |
+| A map whose kinds nothing decides | "I can't tell what kind of value "m" is." with a suggestion like `(a map from text to numbers)` |
+| `an empty map of numbers`, `a map from number to text` | "I expected "from" here, but found "of"." / "I expected "text" or "numbers" here, but found "number"." |
+| `a map of "x" to a list of 1 and 2` | "A list inside a map needs parentheses." |
+| `set the value for "x" in ages, or 0 to 5` | "A value that changes can't have ", or"." |
+| `remove from ages` | "Something is missing after "remove"." with both kinds of `remove` |
+
+The full, tested set is the `map_*.err` files in [`tests/errors/`](../tests/errors/) and [`err_map_forms.err`](../tests/ast/err_map_forms.err).
+
 ### While the program runs
 
 Runtime errors look like compile errors: `Line N:` and what went wrong, the line with carets under the part that failed, and sometimes a hint. Anything the program printed before the error stays printed. Only mistakes that kinds can't catch are left for this.
@@ -499,6 +558,15 @@ called from "countdown" on line 4 (n was 1)
 called from line 5: countdown with 4999
 ```
 
+**A map key that isn't there**: [`err_map_missing_key.es`](../tests/run/err_map_missing_key.es)
+
+```
+Line 3: There's no value for "Bob" in the map.
+    say the value for "Bob" in ages
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To check first, use "has". To use another value when it's missing, add ", or" and that value after it.
+```
+
 **A list item that isn't there**: [`err_list_position_zero.es`](../tests/run/err_list_position_zero.es)
 
 ```
@@ -532,6 +600,8 @@ Positions start at 1: the first item is item 1.
 | Replacing empty text | "I can't replace empty text: there's nothing to look for." |
 | The code of anything but one character | "The code of a character needs exactly one character, but this text has 2." (or "... but this text is empty.") |
 | A character code that isn't one | "There's no character with code 55296." with the hint "Character codes are whole numbers from 1 to 1114111, like 65 for "A"." |
+| A map key that isn't there | "There's no value for "Bob" in the map." (keys cut short after 60 characters); changing its value adds "It has to be in the map before it can change. To put it there, write "set the value for ... to ..."." |
+| Removing a key that isn't there | "I can't remove "Bob": the map has no value for it." with "To check first, use "has"." |
 | A record checked not to be nothing, then set to nothing through another name before it's used | "This was checked not to be nothing, but something has set it to nothing since then." with the hint "Another name for the same record can change it. Check it again just before using it." |
 
 Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).

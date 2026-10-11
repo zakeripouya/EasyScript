@@ -13,6 +13,7 @@
 typedef struct {
     Arena *arena;
     Diag *diag;
+    const Records *records;
     ConstLookup lookup;
     void *context;
 } Eval;
@@ -43,7 +44,13 @@ static Type kind_type(ConstValue v) {
 }
 
 static const char *kind_name(const Eval *ev, ConstValue v) {
-    return ast_type_name(ev->arena, NULL, kind_type(v));
+    if (v.kind == CONST_MAP) {  // its kind isn't kept as a Type yet (the checker does that)
+        static const char *const plural[] = {NULL, "numbers", "text", "yes/no values"};
+        if (v.value_type > TYPE_YESNO) return "a map";
+        return arena_sprintf(ev->arena, "a map from %s to %s", v.key_type == TYPE_TEXT ? "text" : "numbers",
+                             plural[v.value_type]);
+    }
+    return ast_type_name(ev->arena, ev->records, kind_type(v));
 }
 
 static ConstValue number(double x) {
@@ -140,8 +147,18 @@ static bool reject_list(Eval *ev, Span span) {
     return fail(ev, span, list_note, "A constant can't work things out from a list.");
 }
 
-// An operator was given a fixed list: only "length of" can use one.
+static const char *const map_note =
+    "A constant can be a map written out, like \"keep prices as a map of \"tea\" to 2\" (and its number of "
+    "entries). To work something out from a map, use \"let\" instead of \"keep\".";
+
+static bool reject_map(Eval *ev, Span span) {
+    return fail(ev, span, map_note, "A constant can't work things out from a map.");
+}
+
+// An operator was given a fixed list or map: only "length of" (or "the
+// number of entries in") can use one.
 static bool reject_list_operand(Eval *ev, Span span, ConstValue a, ConstValue b) {
+    if (a.kind == CONST_MAP || b.kind == CONST_MAP) return !reject_map(ev, span);
     if (a.kind != CONST_LIST && b.kind != CONST_LIST) return false;
     reject_list(ev, span);
     return true;
@@ -153,17 +170,17 @@ static bool reject_text_tool(Eval *ev, Span span) {
 
 static bool reject_nested(Eval *ev, Span span) {
     return fail(ev, span, "Make it with \"let\" instead of \"keep\".",
-                "A fixed list can't hold lists, because those could change.");
+                "A fixed list can't hold lists or maps, because those could change.");
 }
 
-// a list of A, B and C: every item fixed, of one kind, and not a list.
+// a list of A, B and C: every item fixed, of one kind, and not a list or map.
 static bool list(Eval *ev, const Expr *expr, ConstValue *out) {
     size_t n = expr->as.items.len;
     ConstValue *items = arena_alloc(ev->arena, n * sizeof *items);
     for (size_t i = 0; i < n; i++) {
         const Expr *item = expr->as.items.items[i];
         if (!eval(ev, item, &items[i])) return false;
-        if (items[i].kind == CONST_LIST) return reject_nested(ev, item->pos.span);
+        if (items[i].kind == CONST_LIST || items[i].kind == CONST_MAP) return reject_nested(ev, item->pos.span);
         if (items[i].kind != items[0].kind) {
             return fail(ev, item->pos.span, NULL,
                         "All the items of a list have to be the same kind: the first is %s, but this is %s.",
@@ -176,9 +193,91 @@ static bool list(Eval *ev, const Expr *expr, ConstValue *out) {
 }
 
 static bool empty_list(Eval *ev, const Expr *expr, ConstValue *out) {
-    if (type_is_list(type_item(expr->as.list_type))) return reject_nested(ev, expr->pos.span);
+    Type item = type_item(expr->as.list_type);
+    if (type_is_list(item) || type_is_map(item)) return reject_nested(ev, expr->pos.span);
     ConstValue v = {.kind = CONST_LIST, .text = "", .len = 0, .list_type = expr->as.list_type};
     *out = v;
+    return true;
+}
+
+// --- Fixed maps --------------------------------------------------------------------
+
+static bool reject_map_values(Eval *ev, Span span) {
+    return fail(ev, span, "Make it with \"let\" instead of \"keep\".",
+                "A fixed map can't hold lists or maps, because those could change.");
+}
+
+// Whether two fixed keys are the same key: text with the same characters,
+// or numbers that print the same (as es_key_number).
+static bool same_key(Eval *ev, ConstValue a, ConstValue b) {
+    if (a.kind == CONST_TEXT) return a.len == b.len && memcmp(a.text, b.text, a.len) == 0;
+    size_t la, lb;
+    const char *ta = const_number_text(ev->arena, a.number, &la), *tb = const_number_text(ev->arena, b.number, &lb);
+    return la == lb && memcmp(ta, tb, la) == 0;
+}
+
+static bool map_key(Eval *ev, const Expr *expr, ConstValue *keys, size_t i) {
+    if (!eval(ev, expr, &keys[i])) return false;
+    if (keys[i].kind != CONST_TEXT && keys[i].kind != CONST_NUMBER) {
+        return fail(ev, expr->pos.span, NULL, "A map's keys have to be text or numbers, but this is %s.",
+                    kind_name(ev, keys[i]));
+    }
+    if (keys[i].kind != keys[0].kind) {
+        return fail(ev, expr->pos.span, NULL, "All the keys of a map have to be the same kind: the first is %s, but "
+                                              "this is %s.", kind_name(ev, keys[0]), kind_name(ev, keys[i]));
+    }
+    for (size_t j = 0; j < i; j++) {
+        if (!same_key(ev, keys[j], keys[i])) continue;
+        size_t len;
+        const char *shown = keys[i].kind == CONST_TEXT ? arena_sprintf(ev->arena, "\"%s\"", keys[i].text)
+                                                       : const_number_text(ev->arena, keys[i].number, &len);
+        return fail(ev, expr->pos.span, "Each key has one value, so give each key once.",
+                    "The key %s is in this map twice.", shown);
+    }
+    return true;
+}
+
+// a map of K to V, ...: every key and value fixed, keys text or numbers of
+// one kind (each once), values of one kind and not lists or maps.
+static bool map(Eval *ev, const Expr *expr, ConstValue *out) {
+    size_t n = expr->as.items.len / 2;
+    ConstValue *keys = arena_alloc(ev->arena, n * sizeof *keys), *values = arena_alloc(ev->arena, n * sizeof *values);
+    for (size_t i = 0; i < n; i++) {
+        const Expr *value = expr->as.items.items[2 * i + 1];
+        if (!map_key(ev, expr->as.items.items[2 * i], keys, i) || !eval(ev, value, &values[i])) return false;
+        if (values[i].kind == CONST_LIST || values[i].kind == CONST_MAP) return reject_map_values(ev, value->pos.span);
+        if (values[i].kind != values[0].kind) {
+            return fail(ev, value->pos.span, NULL, "All the values of a map have to be the same kind: the first is %s, "
+                                                   "but this is %s.", kind_name(ev, values[0]), kind_name(ev, values[i]));
+        }
+    }
+    ConstValue v = {.kind = CONST_MAP, .text = "", .len = n, .items = values, .keys = keys,
+                    .key_type = kind_type(keys[0]), .value_type = kind_type(values[0])};
+    *out = v;
+    return true;
+}
+
+static bool empty_map(Eval *ev, const Expr *expr, ConstValue *out) {
+    Type value = ast_map_value(ev->records, expr->as.list_type);
+    if (type_is_list(value) || type_is_map(value)) return reject_map_values(ev, expr->pos.span);
+    ConstValue v = {.kind = CONST_MAP, .text = "", .key_type = ast_map_key(ev->records, expr->as.list_type),
+                    .value_type = value};
+    *out = v;
+    return true;
+}
+
+// "the number of entries in M" for a fixed map; anything else worked out from a map is an error.
+static bool map_op(Eval *ev, const Expr *expr, ConstValue *out) {
+    if (expr->as.list_op.op != LIST_ENTRIES) {
+        return expr->as.list_op.op == LIST_KEYS || expr->as.list_op.op == LIST_VALUES ? reject_map(ev, expr->pos.span)
+                                                                                       : reject_list(ev, expr->pos.span);
+    }
+    ConstValue a;
+    if (!eval(ev, expr->as.list_op.operand, &a)) return false;
+    if (a.kind != CONST_MAP) {
+        return fail(ev, expr->pos.span, NULL, "I can only count the entries of a map, but this is %s.", kind_name(ev, a));
+    }
+    *out = number((double)a.len);
     return true;
 }
 
@@ -258,7 +357,15 @@ static bool binary(Eval *ev, const Expr *expr, ConstValue *out) {
     if (op == BINARY_CONTAINS || op == BINARY_NOT_CONTAINS) {
         ConstValue in;
         if (!eval(ev, expr->as.binary.left, &in)) return false;
+        if (in.kind == CONST_MAP) return reject_map(ev, expr->pos.span);
         return in.kind == CONST_LIST ? reject_list(ev, expr->pos.span) : reject_text_tool(ev, expr->pos.span);
+    }
+    if (op == BINARY_HAS || op == BINARY_NOT_HAS) {
+        ConstValue in;
+        if (!eval(ev, expr->as.binary.left, &in)) return false;
+        if (in.kind == CONST_MAP) return reject_map(ev, expr->pos.span);
+        return fail(ev, expr->pos.span, NULL, "I can only check whether a map has a key, but this is %s.",
+                    kind_name(ev, in));
     }
     if (op == BINARY_AND || op == BINARY_OR) return logic(ev, expr, out);
     ConstValue a, b;
@@ -391,9 +498,12 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
         return expr->as.item.characters ? reject_text_tool(ev, span) : reject_list(ev, span);
     case EXPR_SLICE:
         return expr->as.slice.characters ? reject_text_tool(ev, span) : reject_list(ev, span);
-    case EXPR_LIST_OP:
+    case EXPR_LIST_OP: return map_op(ev, expr, out);
     case EXPR_EVERY:
     case EXPR_ONLY: return reject_list(ev, span);
+    case EXPR_MAP: return map(ev, expr, out);
+    case EXPR_EMPTY_MAP: return empty_map(ev, expr, out);
+    case EXPR_MAP_GET: return reject_map(ev, span);
     case EXPR_TEXT_OP: return reject_text_tool(ev, span);
     case EXPR_FILE_CONTENTS:
         return fail(ev, span, fixed_note, "A constant can't read a file, because files are read while the program runs.");
@@ -408,7 +518,8 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
     return false;
 }
 
-bool const_eval(Arena *arena, Diag *diag, const Expr *expr, ConstLookup lookup, void *context, ConstValue *out) {
-    Eval ev = {arena, diag, lookup, context};
+bool const_eval(Arena *arena, Diag *diag, const Records *records, const Expr *expr, ConstLookup lookup, void *context,
+                ConstValue *out) {
+    Eval ev = {arena, diag, records, lookup, context};
     return eval(&ev, expr, out);
 }

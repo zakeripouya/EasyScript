@@ -1,0 +1,84 @@
+Line 2: I expected "to" here, but found "3".
+    let a1 be a map of "coffee" 3
+                                ^
+Write it like "a map of "coffee" to 3, "tea" to 2".
+
+Line 3: A list inside a map needs parentheses.
+    let a2 be a map of "x" to a list of 1 and 2
+                                ^^^^^^^
+Write it like "a map of "odd" to (a list of 1 and 3)".
+
+Line 4: A map inside a map needs parentheses.
+    let a3 be a map of "x" to a map of 1 to 2
+                                ^^^^^^
+Write it like "a map of "Ada" to (a map of "age" to 36)".
+
+Line 5: I expected "from" here, but found "of".
+    let a4 be an empty map of numbers
+                           ^^
+Write it like "an empty map from text to numbers".
+
+Line 6: I expected "text" or "numbers" here, but found "number".
+    let a5 be an empty map from number to text
+                                ^^^^^^
+A map's keys are text or numbers, like "a map from text to numbers".
+
+Line 7: I expected "to" here, but found "numbers".
+    let a6 be an empty map from text numbers
+                                     ^^^^^^^
+Write it like "a map from text to numbers".
+
+Line 8: Something is missing after "to".
+    let a7 be an empty map from text to
+                                     ^^
+Say what the map holds, like "a map from text to numbers".
+
+Line 9: Something is missing after "from".
+    let a8 be an empty map from
+                       ^^^^^^^^
+A map's keys are text or numbers, like "a map from text to numbers".
+
+Line 10: Something is missing after "for".
+    say the value for in ages
+            ^^^^^^^^^
+Say which key, like "the value for "tea" in prices".
+
+Line 11: I expected "in" here, but found "ages".
+    say the value for "x" ages
+                          ^^^^
+Write it like "the value for "tea" in prices".
+
+Line 12: "the value for "x" in ages, or 0 plus 1" could mean two things.
+    say the value for "x" in ages, or 0 plus 1
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Use parentheses to say which: "(the value for "x" in ages, or 0) plus 1" or "the value for "x" in ages, or (0 plus 1)".
+
+Line 13: A value that changes can't have ", or".
+    set the value for "x" in ages, or 0 to 5
+                                      ^
+", or" gives another value when the key is missing; to change the value, the key has to be there. Check first with "has".
+
+Line 14: Something is missing after "remove".
+    remove from ages
+    ^^^^^^
+Say what to remove, like "remove item 2 from scores" for a list or "remove "tea" from prices" for a map.
+
+Line 15: I expected "from" here, but found "ages".
+    remove "x" ages
+               ^^^^
+Write it like "remove "tea" from prices".
+
+Line 16: Something is missing after "and".
+    for each name and in ages:
+                  ^^^
+Add a name there, like "total".
+
+Line 18: "of" can't be part of a name, because it already means something in EasyScript.
+    for each name and age of ages:
+                          ^^
+Try a name without it, like "age_of_ages".
+
+Line 20: I expected "to" here, but found ")".
+    to f with m (a map from text):
+                                ^
+Write it like "a map from text to numbers".

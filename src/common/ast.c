@@ -32,23 +32,91 @@ static const RecordKind *record_kind(const Records *records, Type type) {
     return records && index < records->len ? &records->items[index] : NULL;
 }
 
-// "a list of numbers", "a list of lists of text", "a list of dogs"; "a list"
-// (or "a list of lists") when the innermost kind isn't decided.
-static const char *list_name(Arena *arena, const Records *records, Type type) {
+Type ast_map_type(Arena *arena, Records *records, Type key, Type value) {
+    if (records->maps.len == 0) {  // maps[0]: a map whose kinds aren't decided
+        MapKind undecided = {TYPE_UNKNOWN, TYPE_UNKNOWN};
+        vec_push(arena, &records->maps, undecided);
+    }
+    for (size_t i = 0; i < records->maps.len; i++) {
+        if (records->maps.items[i].key == key && records->maps.items[i].value == value) return TYPE_MAP + (Type)i;
+    }
+    MapKind kind = {key, value};
+    vec_push(arena, &records->maps, kind);
+    return TYPE_MAP + (Type)(records->maps.len - 1);
+}
+
+static const MapKind *map_kind(const Records *records, Type map) {
+    size_t index = map - TYPE_MAP;
+    return records && index < records->maps.len ? &records->maps.items[index] : NULL;
+}
+
+Type ast_map_key(const Records *records, Type map) {
+    const MapKind *kind = map_kind(records, map);
+    return kind ? kind->key : TYPE_UNKNOWN;
+}
+
+Type ast_map_value(const Records *records, Type map) {
+    const MapKind *kind = map_kind(records, map);
+    return kind ? kind->value : TYPE_UNKNOWN;
+}
+
+bool ast_type_undecided(const Records *records, Type type) {
+    Type base = type_base(type);
+    if (type_is_map(base)) {
+        return ast_type_undecided(records, ast_map_key(records, base)) ||
+               ast_type_undecided(records, ast_map_value(records, base));
+    }
+    return base == TYPE_UNKNOWN || base == TYPE_MAYBE;
+}
+
+static const char *map_name(Arena *arena, const Records *records, Type type);
+
+// What a list or map holds, in the plural: "numbers", "lists of text",
+// "dogs", "maps from text to numbers"; NULL when the innermost kind isn't decided.
+static const char *plural_name(Arena *arena, const Records *records, Type type) {
     static const char *const plural[] = {NULL, "numbers", "text", "yes/no values"};
     StrBuf sb;
     sb_init(&sb, arena);
-    sb_append(&sb, "a list");
+    for (Type t = type; type_is_list(t); t = type_item(t)) sb_append(&sb, "lists of ");
     Type base = type_base(type);
-    for (Type t = type_item(type); type_is_list(t); t = type_item(t)) sb_append(&sb, " of lists");
-    if (base == TYPE_NUMBER || base == TYPE_TEXT || base == TYPE_YESNO) sb_appendf(&sb, " of %s", plural[base]);
+    if (base == TYPE_NUMBER || base == TYPE_TEXT || base == TYPE_YESNO) {
+        sb_append(&sb, plural[base]);
+        return sb.data;
+    }
     const RecordKind *kind = type_is_record(base) ? record_kind(records, base) : NULL;
-    if (kind) sb_appendf(&sb, " of %s%s", kind->plural, type_is_maybe(base) ? " or nothing" : "");
+    if (kind) {
+        sb_appendf(&sb, "%s%s", kind->plural, type_is_maybe(base) ? " or nothing" : "");
+        return sb.data;
+    }
+    if (!type_is_map(base)) return NULL;
+    sb_appendf(&sb, "maps%s", map_name(arena, records, base) + 5);  // "a map from ..." without "a map"
     return sb.data;
+}
+
+// "a list of numbers", "a list of lists of text", "a list of dogs"; "a list"
+// (or "a list of lists") when the innermost kind isn't decided.
+static const char *list_name(Arena *arena, const Records *records, Type type) {
+    const char *items = plural_name(arena, records, type_item(type));
+    if (items) return arena_sprintf(arena, "a list of %s", items);
+    StrBuf sb;
+    sb_init(&sb, arena);
+    sb_append(&sb, "a list");
+    for (Type t = type_item(type); type_is_list(t); t = type_item(t)) sb_append(&sb, " of lists");
+    return sb.data;
+}
+
+// "a map from text to numbers", "a map from numbers to lists of text"; "a
+// map" when its keys or values aren't decided.
+static const char *map_name(Arena *arena, const Records *records, Type type) {
+    Type key = ast_map_key(records, type);
+    const char *values = plural_name(arena, records, ast_map_value(records, type));
+    if ((key != TYPE_TEXT && key != TYPE_NUMBER) || !values) return "a map";
+    return arena_sprintf(arena, "a map from %s to %s", key == TYPE_TEXT ? "text" : "numbers", values);
 }
 
 const char *ast_type_name(Arena *arena, const Records *records, Type type) {
     if (type_is_list(type)) return list_name(arena, records, type);
+    if (type_is_map(type)) return map_name(arena, records, type);
     if (type == TYPE_MAYBE) return "a record or nothing";
     const RecordKind *kind = type_is_record(type) ? record_kind(records, type) : NULL;
     if (kind) {
@@ -69,6 +137,7 @@ const char *ast_binary_op_name(BinaryOp op) {
         "or", "and", "equal", "not equal", "less", "less or equal", "greater",
         "greater or equal", "add", "subtract", "join", "multiply", "divide", "modulo",
         "contains", "does not contain", "starts with", "does not start with", "ends with", "does not end with",
+        "has", "does not have",
     };
     return names[op];
 }
@@ -85,6 +154,7 @@ const char *ast_change_op_name(ChangeOp op) {
 const char *ast_list_op_name(ListOp op) {
     static const char *const names[] = {
         "added together", "biggest of", "smallest of", "reversed", "copy of", "is empty", "is not empty",
+        "number of entries in", "keys of", "values of",
     };
     return names[op];
 }
@@ -172,6 +242,11 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
         return ast_text_op_name(expr->as.text_op.op);
     case EXPR_FIELD: sb_appendf(scratch, "field %s", expr->as.field.name.text); break;
     case EXPR_NEW: sb_appendf(scratch, "new %s", ast_type_name(scratch->arena, records, expr->as.new_record.type) + 2); break;
+    case EXPR_MAP: return "map of";
+    case EXPR_EMPTY_MAP:
+        sb_appendf(scratch, "empty %s", ast_type_name(scratch->arena, records, expr->as.list_type) + 2);  // without "a "
+        break;
+    case EXPR_MAP_GET: return expr->as.lookup.fallback ? "value for, or" : "value for";
     }
     return scratch->data;
 }
@@ -192,7 +267,12 @@ static void dump_expr(const Expr *expr, size_t depth, Dump *d) {
     case EXPR_BINARY: dump_children(expr->as.binary.left, expr->as.binary.right, depth, d); break;
     case EXPR_CONVERT: dump_children(expr->as.convert.operand, NULL, depth, d); break;
     case EXPR_LIST:
+    case EXPR_MAP:  // a map: each key, then its value
         for (size_t i = 0; i < expr->as.items.len; i++) dump_expr(expr->as.items.items[i], depth + 1, d);
+        break;
+    case EXPR_MAP_GET:
+        dump_children(expr->as.lookup.key, expr->as.lookup.map, depth, d);
+        dump_children(expr->as.lookup.fallback, NULL, depth, d);
         break;
     case EXPR_ITEM: dump_children(expr->as.item.position, expr->as.item.list, depth, d); break;
     case EXPR_LIST_OP: dump_children(expr->as.list_op.operand, NULL, depth, d); break;
@@ -234,7 +314,11 @@ static const char *loop_label(const Stmt *stmt, StrBuf *scratch) {
     case LOOP_WHILE: return "repeat while";
     case LOOP_UNTIL: return "repeat until";
     case LOOP_FOREVER: return "repeat forever";
-    case LOOP_EACH: sb_appendf(scratch, "for each %s in", stmt->as.loop.var.text); return scratch->data;
+    case LOOP_EACH:
+        sb_appendf(scratch, "for each %s", stmt->as.loop.var.text);
+        if (stmt->as.loop.pair) sb_appendf(scratch, " and %s", stmt->as.loop.value_name.text);
+        sb_append(scratch, " in");
+        return scratch->data;
     }
     return "loop";
 }
@@ -250,6 +334,7 @@ static const char *list_label(const Stmt *stmt, StrBuf *scratch) {
         sb_append(scratch, stmt->as.list.by_length ? "sort by length" : "sort");
         if (stmt->as.list.descending) sb_append(scratch, stmt->as.list.by_length ? ", longest first" : ", biggest first");
         break;
+    case LIST_REMOVE_KEY: return "remove from map";
     }
     return scratch->data;
 }
@@ -259,13 +344,15 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
     switch (stmt->kind) {
     case STMT_LET: sb_appendf(scratch, "let %s", stmt->as.assign.name.text); break;
     case STMT_SET:
-        if (stmt->as.assign.field) return "set field";
+        if (stmt->as.assign.field) return stmt->as.assign.field->kind == EXPR_MAP_GET ? "set value in map" : "set field";
         sb_appendf(scratch, "set %s", stmt->as.assign.name.text);
         break;
-    case STMT_CHANGE:
+    case STMT_CHANGE: {
+        const Expr *field = stmt->as.change.field;
         sb_appendf(scratch, "%s %s", ast_change_op_name(stmt->as.change.op),
-                   stmt->as.change.field ? "field" : stmt->as.change.target.text);
+                   !field ? stmt->as.change.target.text : field->kind == EXPR_MAP_GET ? "value in map" : "field");
         break;
+    }
     case STMT_SAY: return "say";
     case STMT_ASK: sb_appendf(scratch, "ask, call the answer %s", stmt->as.ask.answer.text); break;
     case STMT_WRITE_FILE: return "write to file";
@@ -343,6 +430,11 @@ static void dump_loop(const Stmt *stmt, size_t depth, Dump *d) {
     }
 }
 
+// The section a sentence's target goes in: a record's "field", or "target" for a value in a map.
+static const char *target_label(const Expr *target) {
+    return target && target->kind == EXPR_MAP_GET ? "target" : "field";
+}
+
 static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
     StrBuf label;
     sb_init(&label, d->out->arena);
@@ -350,18 +442,20 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
     switch (stmt->kind) {
     case STMT_LET:
     case STMT_SET:
-        dump_section("field", stmt->as.assign.field, depth + 1, d);
+        dump_section(target_label(stmt->as.assign.field), stmt->as.assign.field, depth + 1, d);
         dump_expr(stmt->as.assign.value, depth + 1, d);
         break;
-    case STMT_CHANGE:  // in the order they're written
-        if (stmt->as.change.field && stmt->as.change.amount->pos.span.offset < stmt->as.change.field->pos.span.offset) {
+    case STMT_CHANGE: {  // in the order they're written
+        const Expr *field = stmt->as.change.field;
+        if (field && stmt->as.change.amount->pos.span.offset < field->pos.span.offset) {
             dump_expr(stmt->as.change.amount, depth + 1, d);
-            dump_section("field", stmt->as.change.field, depth + 1, d);
+            dump_section(target_label(field), field, depth + 1, d);
         } else {
-            dump_section("field", stmt->as.change.field, depth + 1, d);
+            dump_section(target_label(field), field, depth + 1, d);
             dump_expr(stmt->as.change.amount, depth + 1, d);
         }
         break;
+    }
     case STMT_SAY: dump_expr(stmt->as.value, depth + 1, d); break;
     case STMT_ASK: dump_expr(stmt->as.ask.prompt, depth + 1, d); break;
     case STMT_WRITE_FILE:
@@ -388,9 +482,11 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
     case STMT_LIST:
         // In the order they're written: "set item P of L to V" ends with its
         // value, the others start with it.
-        if (stmt->as.list.op != LIST_SET_ITEM) dump_section("value", stmt->as.list.value, depth + 1, d);
+        if (stmt->as.list.op != LIST_SET_ITEM) {
+            dump_section(stmt->as.list.op == LIST_REMOVE_KEY ? "key" : "value", stmt->as.list.value, depth + 1, d);
+        }
         dump_section("position", stmt->as.list.position, depth + 1, d);
-        dump_section("list", stmt->as.list.list, depth + 1, d);
+        dump_section(stmt->as.list.op == LIST_REMOVE_KEY ? "map" : "list", stmt->as.list.list, depth + 1, d);
         if (stmt->as.list.op == LIST_SET_ITEM) dump_section("value", stmt->as.list.value, depth + 1, d);
         break;
     case STMT_RECORD:

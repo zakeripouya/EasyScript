@@ -18,6 +18,7 @@
 
 static char field_kind(Type type) {
     if (type_is_list(type)) return 'l';
+    if (type_is_map(type)) return 'm';
     if (type_is_record(type)) return 'r';
     return type == TYPE_TEXT ? 't' : type == TYPE_YESNO ? 'b' : 'n';
 }
@@ -65,6 +66,9 @@ static void emit_kind(Codegen *g, size_t index, const RecordKind *kind, StrBuf *
         if (field->initial && field->folded.kind == CONST_LIST) {
             cg_emit_fixed_list(g, default_list_name(g, index, i), &field->folded, out);
         }
+        if (field->initial && field->folded.kind == CONST_MAP) {
+            cg_emit_fixed_map(g, default_list_name(g, index, i), &field->folded, out);
+        }
     }
 }
 
@@ -88,6 +92,10 @@ static const char *starting_value(Codegen *g, size_t kind, size_t index, const F
     case CONST_TEXT: sb_appendf(&sb, "&es_s%zu", cg_static_text(g, v->text, v->len)); break;
     case CONST_LIST:  // each record gets its own copy
         cg_append_prefixed(&sb, "es_list_copy(&es_k_", default_list_name(g, kind, index));
+        sb_append_char(&sb, ')');
+        break;
+    case CONST_MAP:
+        cg_append_prefixed(&sb, "es_map_copy(es_k_", default_list_name(g, kind, index));
         sb_append_char(&sb, ')');
         break;
     }
@@ -146,6 +154,7 @@ void cg_emit_field(Codegen *g, const Expr *expr, StrBuf *out) {
 const char *cg_field_stmt(Codegen *g, const Stmt *stmt) {
     bool set = stmt->kind == STMT_SET;
     const Expr *field = set ? stmt->as.assign.field : stmt->as.change.field;
+    if (field->kind == EXPR_MAP_GET) return cg_map_stmt(g, stmt);  // "the value for K in M"
     const Expr *value = set ? stmt->as.assign.value : stmt->as.change.amount;
     Type type = field->type;
     size_t kind = type_record_index(field->as.field.record->type);

@@ -391,15 +391,6 @@ static bool lookup_default(void *context, const Expr *expr, ConstValue *out) {
     return false;
 }
 
-static Type folded_type(const ConstValue *v) {
-    switch (v->kind) {
-    case CONST_NUMBER: return TYPE_NUMBER;
-    case CONST_TEXT: return TYPE_TEXT;
-    case CONST_YESNO: return TYPE_YESNO;
-    default: return v->list_type;
-    }
-}
-
 static void check_default(Checker *c, Field *field) {
     const Expr *initial = field->initial;
     if (initial->kind == EXPR_NOTHING) {
@@ -418,17 +409,22 @@ static void check_default(Checker *c, Field *field) {
         field->folded.kind = CONST_LIST;
         field->folded.list_type = initial->as.list_type;
         field->folded.text = "";
+    } else if (initial->kind == EXPR_EMPTY_MAP) {  // any empty map too
+        field->folded.kind = CONST_MAP;
+        field->folded.key_type = ast_map_key(c->records, initial->as.list_type);
+        field->folded.value_type = ast_map_value(c->records, initial->as.list_type);
+        field->folded.text = "";
     } else {
         size_t before = diag_count(c->diag);
         c->explained_default = false;
-        if (!const_eval(c->arena, c->diag, initial, lookup_default, c, &field->folded)) {
+        if (!const_eval(c->arena, c->diag, c->records, initial, lookup_default, c, &field->folded)) {
             if (diag_count(c->diag) > before && !c->explained_default) {
                 diag_note(c->diag, "A field's starting value is worked out the same way.");
             }
             return;
         }
     }
-    Type type = folded_type(&field->folded);
+    Type type = checker_const_type(c, &field->folded);
     if (type == field->type || (type_is_list(field->type) && type == type_list_of(TYPE_UNKNOWN))) return;
     diag_error(c->diag, initial->pos.span, "The field \"%s\" is %s, but its starting value is %s.", field->name.display,
                checker_type_name(c, field->type), checker_type_name(c, type));

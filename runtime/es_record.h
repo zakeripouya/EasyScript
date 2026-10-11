@@ -35,6 +35,7 @@ ES_FIELD_GET(b, bool, ES_SAME)
 ES_FIELD_GET(t, EsText *, es_retain)
 ES_FIELD_GET(l, EsList *, es_list_retain)
 ES_FIELD_GET(r, EsRecord *, es_record_retain)
+ES_FIELD_GET(m, EsMap *, es_map_retain)
 
 /* A record or nothing that the compiler saw checked ("if the node's next is
  * not nothing:"). Another name for the same record can still have changed it
@@ -64,7 +65,7 @@ static bool es_record_same(EsRecord *a, EsRecord *b) {
 }
 
 /* "a copy of R": a new record of the same kind whose fields hold the same
- * values. The text, lists and records in them are shared, not copied. A
+ * values. The text, lists, records and maps in them are shared, not copied. A
  * record nobody else holds is already a copy, so it's given back as it is. */
 static EsRecord *es_record_copy(EsRecord *r) {
     if (r->header.refs == 1) return r;
@@ -73,7 +74,8 @@ static EsRecord *es_record_copy(EsRecord *r) {
     memcpy((char *)copy + sizeof(EsRecord), (const char *)r + sizeof(EsRecord), type->size - sizeof(EsRecord));
     for (int i = 0; i < type->fields; i++) {
         char kind = type->kinds[i];
-        EsObject *field = kind == 't' || kind == 'l' || kind == 'r' ? ES_FIELD(copy, EsObject *, type->offsets[i]) : NULL;
+        bool counted = kind == 't' || kind == 'l' || kind == 'r' || kind == 'm';
+        EsObject *field = counted ? ES_FIELD(copy, EsObject *, type->offsets[i]) : NULL;
         if (field && field->refs != ES_IMMORTAL) field->refs++;
     }
     es_record_release(r);
@@ -91,7 +93,7 @@ static void es_buf_add_text(EsBuf *b, const char *s) {
     es_buf_add(b, s, strlen(s));
 }
 
-/* `a dog with name "Rex" and age 3`; a record or list in a field is in
+/* `a dog with name "Rex" and age 3`; a record, list or map in a field is in
  * parentheses, text in quotes, nothing as "nothing". Only looks. */
 static void es_record_render(EsBuf *b, const EsRecord *r, int depth) {
     if (!r) {
@@ -132,6 +134,14 @@ static void es_record_render(EsBuf *b, const EsRecord *r, int depth) {
             es_buf_add(b, ")", 1);
             break;
         }
+        case 'm': {
+            const EsMap *m = ES_FIELD(r, EsMap *, at);
+            es_buf_add(b, "(", 1);
+            if (m->len == 0) es_buf_add_text(b, "an empty map");
+            es_map_render(b, m, depth + 1);
+            es_buf_add(b, ")", 1);
+            break;
+        }
         default: {
             const EsRecord *inner = ES_FIELD(r, EsRecord *, at);
             if (inner) es_buf_add(b, "(", 1);
@@ -169,7 +179,7 @@ static EsText *es_record_short_text(const EsRecord *r) {
  * At the end of the program everything should have been freed. Records that
  * are still alive only because records among them point to each other are a
  * circle. Finding them: every live record's count, minus the references from
- * other live records (directly, or through lists only they hold), is how
+ * other live records (directly, or through lists and maps only they hold), is how
  * many references come from anywhere else. Records with some, and everything
  * they lead to, are kept alive from outside; the rest keep each other alive. */
 
@@ -180,23 +190,42 @@ typedef struct {
     size_t len;
 } EsRecordStack;
 
-/* Calls visit for every record a record holds, directly or in its lists
- * (only lists nobody else holds, when `own_lists`). */
-static void es_each_inner_list(const EsList *l, bool own_lists, void (*visit)(EsRecord *, EsRecordStack *),
-                               EsRecordStack *stack) {
+typedef void (*EsVisit)(EsRecord *, EsRecordStack *);
+
+static void es_each_inner_value(EsItems kind, EsValue v, bool own_lists, EsVisit visit, EsRecordStack *stack);
+
+/* Calls visit for every record a list or map holds, directly or in the lists
+ * and maps inside it (only ones nobody else holds, when `own_lists`). */
+static void es_each_inner_list(const EsList *l, bool own_lists, EsVisit visit, EsRecordStack *stack) {
     if (own_lists && l->header.refs != 1) return;
-    for (size_t i = 0; i < l->len; i++) {
-        if (l->items == ES_ITEMS_RECORD && l->at.r[i]) visit(l->at.r[i], stack);
-        if (l->items == ES_ITEMS_LIST) es_each_inner_list(l->at.l[i], own_lists, visit, stack);
+    for (size_t i = 0; i < l->len && es_items_counted(l->items) && l->items != ES_ITEMS_TEXT; i++) {
+        EsValue v = {.o = l->at.o[i]};
+        es_each_inner_value(l->items, v, own_lists, visit, stack);
     }
 }
 
-static void es_each_inner(const EsRecord *r, bool own_lists, void (*visit)(EsRecord *, EsRecordStack *),
-                          EsRecordStack *stack) {
+static void es_each_inner_map(const EsMap *m, bool own_lists, EsVisit visit, EsRecordStack *stack) {
+    if (own_lists && m->header.refs != 1) return;
+    for (size_t i = 0; i < m->used; i++) {
+        if (m->entries[i].hash != 0) es_each_inner_value(m->values, m->entries[i].value, own_lists, visit, stack);
+    }
+}
+
+static void es_each_inner_value(EsItems kind, EsValue v, bool own_lists, EsVisit visit, EsRecordStack *stack) {
+    if (kind == ES_ITEMS_RECORD && v.r) visit(v.r, stack);
+    if (kind == ES_ITEMS_LIST) es_each_inner_list(v.l, own_lists, visit, stack);
+    if (kind == ES_ITEMS_MAP) es_each_inner_map(v.m, own_lists, visit, stack);
+}
+
+/* Calls visit for every record a record holds, directly or in its lists and maps. */
+static void es_each_inner(const EsRecord *r, bool own_lists, EsVisit visit, EsRecordStack *stack) {
     for (int i = 0; i < r->type->fields; i++) {
         size_t at = r->type->offsets[i];
-        if (r->type->kinds[i] == 'r' && ES_FIELD(r, EsRecord *, at)) visit(ES_FIELD(r, EsRecord *, at), stack);
-        if (r->type->kinds[i] == 'l') es_each_inner_list(ES_FIELD(r, EsList *, at), own_lists, visit, stack);
+        char kind = r->type->kinds[i];
+        if (kind != 'r' && kind != 'l' && kind != 'm') continue;
+        EsValue v = {.o = ES_FIELD(r, EsObject *, at)};
+        es_each_inner_value(kind == 'r' ? ES_ITEMS_RECORD : kind == 'l' ? ES_ITEMS_LIST : ES_ITEMS_MAP, v, own_lists,
+                            visit, stack);
     }
 }
 
@@ -246,7 +275,7 @@ static bool es_report_cycles(void) {
     }
     if (circled > shown) fprintf(stderr, "    ...and %zu more\n", circled - shown);
     fputs("Records in a circle are never freed, because each one keeps the next alive. Before the program ends, "
-          "set a field in the circle to nothing.\n", stderr);
+          "set a field in the circle to nothing, or take a record out of the list or map that holds it.\n", stderr);
     return true;
 }
 

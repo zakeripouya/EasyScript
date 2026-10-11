@@ -1,8 +1,8 @@
 // Values: the tightest level of the expression grammar. Literals, names,
 // calls (NAME of A and B), groups in parentheses, the prefix forms ("length
-// of X", "contents of file X"), and the list forms that start with a word
-// (parse_list.c, and "only" in parse_expr.c). The operators around them are
-// in parse_expr.c.
+// of X", "contents of file X"), and the list and map forms that start with a
+// word (parse_list.c, parse_map.c, and "only" in parse_expr.c). The
+// operators around them are in parse_expr.c.
 
 #include <string.h>
 #include "front/parse_internal.h"
@@ -194,6 +194,8 @@ static Expr *parse_word(Parser *p) {
     if (parser_at_new(p)) return parser_parse_new(p);
     const KnownName *known = parser_match_name(p, 0, false);
     if (known && known->words > 1) return parse_name_or_call(p);  // "late fee", before any other meaning
+    Expr *map = parser_parse_map_word(p);
+    if (map) return map;
     Expr *list = parser_parse_list_word(p);
     if (list) return list;
     Expr *text = parser_parse_text_word(p);

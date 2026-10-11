@@ -156,7 +156,8 @@ static bool reads(const Expr *expr, const char *name) {
     switch (expr->kind) {
     case EXPR_NAME: return strcmp(expr->as.name, name) == 0;
     case EXPR_CALL:
-    case EXPR_LIST: {
+    case EXPR_LIST:
+    case EXPR_MAP: {
         Expr *const *items = expr->kind == EXPR_CALL ? expr->as.call.args.items : expr->as.items.items;
         size_t n = expr->kind == EXPR_CALL ? expr->as.call.args.len : expr->as.items.len;
         for (size_t i = 0; i < n; i++) {
@@ -179,6 +180,9 @@ static bool reads(const Expr *expr, const char *name) {
         return reads(expr->as.text_op.operand, name) || reads(expr->as.text_op.arg, name) ||
                reads(expr->as.text_op.arg2, name);
     case EXPR_FIELD: return reads(expr->as.field.record, name);
+    case EXPR_MAP_GET:
+        return reads(expr->as.lookup.key, name) || reads(expr->as.lookup.map, name) ||
+               reads(expr->as.lookup.fallback, name);
     case EXPR_NEW:
         for (size_t i = 0; i < expr->as.new_record.values.len; i++) {
             if (reads(expr->as.new_record.values.items[i].value, name)) return true;
@@ -190,7 +194,8 @@ static bool reads(const Expr *expr, const char *name) {
     case EXPR_BOOLEAN:
     case EXPR_NOTHING:
     case EXPR_IT:
-    case EXPR_EMPTY_LIST: return false;
+    case EXPR_EMPTY_LIST:
+    case EXPR_EMPTY_MAP: return false;
     }
     return true;
 }

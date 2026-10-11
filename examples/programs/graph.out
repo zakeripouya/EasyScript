@@ -1,0 +1,15 @@
+Ash: Birch, Cedar
+Birch: Ash, Dogwood
+Cedar: Ash, Dogwood, Hazel
+Dogwood: Birch, Cedar, Elm
+Elm: Dogwood, Fig
+Fig: Elm, Hazel
+Hazel: Cedar, Fig
+Gum: no stations next to it
+
+Ash -> Cedar -> Hazel -> Fig (3 stops)
+Ash -> Birch -> Dogwood -> Elm (3 stops)
+There's no way from Ash to Gum.
+
+Stops from Ash: "Ash" is 0, "Birch" is 1, "Cedar" is 1, "Dogwood" is 2, "Hazel" is 2, "Elm" is 3 and "Fig" is 3
+Gum can't be reached from Ash.

@@ -13,7 +13,7 @@ repeat 1000000 times:
 say last
 ```
 
-Only the latest text is kept; every earlier one is freed the moment `last` stops holding it. Lists and records work the same way: a list or record is freed, with everything in it, when nothing (no variable, list or record) holds it any more. Numbers, yes and no, and `nothing` don't take extra memory at all, and text written in your program (like `"item "`) is part of the program itself.
+Only the latest text is kept; every earlier one is freed the moment `last` stops holding it. Lists, records and maps work the same way: a list, record or map is freed, with everything in it, when nothing (no variable, list, record or map) holds it any more. Numbers, yes and no, and `nothing` don't take extra memory at all, and text written in your program (like `"item "`) is part of the program itself.
 
 Two things to know:
 
@@ -25,7 +25,7 @@ Two things to know:
 
 ### Reference counting
 
-The compiler knows the kind of every value ([types](language-guide.md#9-types)), so generated code uses plain C types: a number is a `double`, yes/no is a `bool`, text is an `EsText *`, and a list is an `EsList *` (`runtime/es_memory.h`). Numbers and yes/no values own nothing, so **only text and lists are reference counted**; no retain or release is ever generated for anything else.
+The compiler knows the kind of every value ([types](language-guide.md#9-types)), so generated code uses plain C types: a number is a `double`, yes/no is a `bool`, text is an `EsText *`, a list is an `EsList *`, a record is an `EsRecord *` and a map is an `EsMap *` (`runtime/es_memory.h`). Numbers and yes/no values own nothing, so **only text, lists, records and maps are reference counted**; no retain or release is ever generated for anything else.
 
 Every heap object starts with the same small header, a kind and a reference count, so text, lists, and the records and closures planned for later share the same machinery (`es_object_release`, `es_free_object`, with typed wrappers `es_retain`/`es_release` for text and `es_list_retain`/`es_list_release` for lists):
 
@@ -80,11 +80,15 @@ A record (`EsRecord`, `runtime/es_record.h`) is a header (kind, count, its `EsRe
 
 **Freeing doesn't recurse.** Releasing the first node of a million-node chain frees a million records. `es_free_object` frees text at once, but a list or record whose count reaches zero while another is being freed is put on `es_dying`, a growing array, and freed in a loop, so the C stack never grows with the chain (`tests/run/records_long_chain.es`).
 
+### Maps
+
+A map (`EsMap`, `runtime/es_map.h`) holds its entries in an array in the order they were added (`EsEntry`: the key's hash, the key and the value, as an untagged `EsValue`; the map knows its key kind, `ES_ITEMS_TEXT` or `ES_ITEMS_NUMBER`, and its value kind), plus an index of `uint32_t` places once it has more than 8 entries. Both grow by doubling and are counted against `ES_MEMORY_LIMIT` before they grow. A removed entry stays in place with hash 0 until the entries are packed (when they're full and a quarter or more are removed, or the index is rebuilt). Text keys and counted values are references the map owns, released when the entry is removed or replaced or the map is freed; setting an existing key releases the new key and keeps the old one. Maps follow the same ownership rules as lists: map expressions are owned, runtime functions consume the map and the key (`es_map_get_n`, `es_map_put_t`, `es_map_has`, `es_map_remove`), `es_map_at` (for `add 1 to the value for K in M`) only looks at the map, and `for each K and V in M` holds `es_map_snapshot(M)` in a hidden variable. `a copy of M` copies the lists and maps in it (`es_copy_inner`), like a list's copy; text and records are shared. A fixed map (`keep`) is made when `main()` starts and marked immortal (`es_map_fix`), which takes it out of the live counts; the only static map is `es_no_map`.
+
 ### Cycles
 
-A reference count can't free objects that refer to each other in a loop. Text and lists can't: a list of some kind can never hold a list of its own kind, so no list can contain itself (the checker enforces it). **Records can:** two people who are each other's friend, or a node whose `next` leads back to it. Such a circle is never freed while the program runs.
+A reference count can't free objects that refer to each other in a loop. Text, lists and maps can't: a list or map of some kind can never hold a list or map of its own kind, so none can contain itself (the checker enforces it). **Records can:** two people who are each other's friend, or a node whose `next` leads back to it. Such a circle is never freed while the program runs.
 
-For now, EasyScript finds them instead of freeing them. With `ES_DEBUG_MEMORY=1`, every record is linked into a list of live records (`es_memory.records`, using `EsRecord.prev` and `next`). If anything is alive at the end, `es_report_cycles` takes each live record's count, subtracts the references from other live records (directly, or through lists only they hold), and treats records with references left over as held from outside. Everything those lead to is alive for a reason; the rest only keep each other alive. It prints up to three of them and how to break the circle, and exits 70:
+For now, EasyScript finds them instead of freeing them. With `ES_DEBUG_MEMORY=1`, every record is linked into a list of live records (`es_memory.records`, using `EsRecord.prev` and `next`). If anything is alive at the end, `es_report_cycles` takes each live record's count, subtracts the references from other live records (directly, or through lists and maps only they hold), and treats records with references left over as held from outside. Everything those lead to is alive for a reason; the rest only keep each other alive. It prints up to three of them and how to break the circle, and exits 70:
 
 ```
 Memory check: 4 records were still alive at the end of the program, because they point to each other in a circle:
@@ -92,7 +96,7 @@ Memory check: 4 records were still alive at the end of the program, because they
     a person with name "Bo" and friend (a person with ...)
     a person with name "Cy" and friend (a person with ...)
     ...and 1 more
-Records in a circle are never freed, because each one keeps the next alive. Before the program ends, set a field in the circle to nothing.
+Records in a circle are never freed, because each one keeps the next alive. Before the program ends, set a field in the circle to nothing, or take a record out of the list or map that holds it.
 ```
 
 **Plan:** weak references come later: a field written as weak (the wording isn't decided) wouldn't count, so a back-link (a child's parent, a doubly linked list's `previous`) wouldn't keep anything alive. A cycle collector (finding circles while the program runs, as the check above does at the end) is the alternative if weak references turn out too hard to explain. See the [roadmap](roadmap.md).
@@ -100,7 +104,7 @@ Records in a circle are never freed, because each one keeps the next alive. Befo
 ### Checking it
 
 - **`ES_DEBUG_MEMORY=1`**: every generated program counts its live heap objects. With this set, the program fails at the end (exit 70) if any are still alive: `Memory check: 1 value was still alive at the end of the program (39 bytes).` `make test` runs every program this way, and a control test in `tests/run.sh` checks that the check really catches a missing release.
-- **`ES_MEMORY_LIMIT=N`**: fail (exit 70) as soon as live text and lists would take more than N bytes (it's checked before allocating, including when a list grows). `tests/memory/` runs loops of up to a million rounds under a 100,000-byte limit, and also checks that the program's peak memory stays under 16 MB where `/usr/bin/time` can measure it.
+- **`ES_MEMORY_LIMIT=N`**: fail (exit 70) as soon as live text, lists, records and maps would take more than N bytes (it's checked before allocating, including when a list or map grows). `tests/memory/` runs loops of up to a million rounds under a 100,000-byte limit, and also checks that the program's peak memory stays under 16 MB where `/usr/bin/time` can measure it.
 - **`ES_SANITIZE=1`**: the compiler builds programs with AddressSanitizer and UBSan, so a use after free or a double free stops with a report. `make test-debug` sets it for the whole suite.
 - **`make test-debug`** also checks for leaks: LeakSanitizer on Linux, and on macOS `tests/leaks.sh` runs every test program (and the compiler) under the system `leaks` tool. Programs that stop with a runtime error are left out of the macOS sweep: they exit without releasing anything by design, so `leaks` only finds their variables if the C compiler happened to keep a pointer around.
 

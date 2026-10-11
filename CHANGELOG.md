@@ -6,6 +6,20 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Maps** (Phase 2, step 18). See the new [Maps chapter](docs/language-guide.md#13-maps).
+  - **Making them:** `a map of "coffee" to 3, "tea" to 2` and `an empty map from text to numbers`. Keys are text or numbers; values any kind (lists, records and other maps too), one kind each per map. A key written out twice is a compile error.
+  - **Looking up and setting:** `the value for "Paris" in ages`; a missing key stops the program with an error naming it ("There's no value for "Bob" in the map."). `the value for "Bob" in ages, or 0` gives another value instead, worked out only when it's needed (arithmetic straight after it is an ambiguity error). `set the value for "Paris" in ages to 19` adds or changes a key.
+  - **Asking:** `ages has "Paris"` (and `does not have` / `doesn't have`), `the number of entries in ages`, `ages is empty`, `the keys of ages`, `the values of ages`; two maps are equal (`is`) with the same keys and equal values, in any order.
+  - **Changing:** `remove "Paris" from ages`, `add 1 to the value for "Paris" in ages` and the other change sentences, and `add X to the end of the value for K in M` for lists in a map. Changing or removing a missing key is a runtime error.
+  - **Going through:** `for each name and age in ages:`, always in the order keys were first added, over the entries the map had when the loop started; `it` is the key.
+  - **Fixed maps:** `keep prices as a map of "coffee" to 3, "tea" to 2.` Changing one is a compile error that suggests `let`; `the number of entries in` one is worked out by the compiler. Fields can start at a fixed or empty map.
+  - **Kinds:** `(a map from text to numbers)`, `giving back a map from numbers to lists of text`, and `maps from text to numbers` inside list and map kinds, or worked out from use.
+  - **Sharing:** maps are shared by reference; `a copy of M` copies the lists and maps inside it too (records and text are shared).
+  - **Printing:** `say ages` shows `"Paris" is 19 and "Junie" is 24` (text in quotes; lists, maps and records in parentheses).
+  - **The hash table** (`runtime/es_map.h`, the runtime's seventh part): entries in the order they were added plus an index of 32-bit places, a power of two kept at most two thirds full (linear probing); maps of up to 8 entries look through their entries instead. Number keys are the same key when they print the same (`0.1 plus 0.2` finds `0.3`). Keys and values are reference counted like list items, and the memory check follows maps to find records in a circle.
+  - Examples: `word_counter.es` now counts with a map, and the new `graph.es` finds shortest paths with breadth-first search. A new `words` benchmark counts two million words against Python dicts and Go maps. Tests for every form, every compile and runtime error, ordering, number keys, fixed maps, maps of lists and records, 20,000 entries, and maps in a 200,000-round loop under the memory limit.
+  - Inside the compiler: `Type` gained kinds of map (`TYPE_MAP + n`, each kind of map kept once in `Records.maps`), the type inference engine got map variables (a key and a value), `const_eval` takes the program's kinds; new files `src/front/parse_map.c`, `src/front/check_map.c` and `src/back/codegen_map.c`.
+
 - **Records** (Phase 2, step 17). See the new [Records chapter](docs/language-guide.md#12-records).
   - **Kinds of record:** `a dog is a kind of thing with:` and indented fields, `a name, which is text.`, of any kind (lists and other records too), with names of several words (`a start time, which is a number.`) and optional starting values (`an age, which is a number, starting at 0.`; fixed values, or an empty list, copied for each record).
   - **Making them:** `a new dog with name "Rex" and age 3`. A missing field is a compile error unless it has a starting value or can be nothing.
@@ -21,7 +35,11 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Changed
 
-- `a copy of` works on records too, so its message is now "I can only copy a list or a record, but this is text."
+- `a copy of` works on records and maps too, so its message is now "I can only copy a list, a map or a record, but this is text."; `is empty` works on maps, so its message is now "I can only check whether text, a list or a map is empty, but this is a number."
+- `remove 95 from scores` is now read as removing a key from a map (a compile error for a list, which suggests `remove item 2 from scores`) instead of the parse error "I expected "item" here".
+- The notes for unknown kinds mention maps ("... lists like "a list of numbers", and maps like "a map from text to numbers"."; "Lists and maps hold ...").
+- The memory check's advice for records in a circle now also says "or take a record out of the list or map that holds it".
+- A fixed list can't hold maps either: "A fixed list can't hold lists or maps, because those could change."
 
 - **Text tools** (Phase 2, step 16). See the new [Text chapter](docs/language-guide.md#11-text).
   - **A character is a Unicode character** (a code point, stored as UTF-8), so `"café"` has 4 characters. Text keeps its character count once it's been worked out (literals carry it from the compiler); text whose count equals its length is plain ASCII and is worked on byte by byte, and a single ASCII character is a static text, so taking ASCII text apart allocates nothing but the list.

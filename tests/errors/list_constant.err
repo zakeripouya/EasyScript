@@ -3,12 +3,12 @@ Line 4: A constant can't work things out from a list.
                     ^^^^^^^^^^^^^^^^^
 A constant can be a list written out, like "keep weekdays as a list of "Mon" and "Tue"" (and its length). To work something out from a list, use "let" instead of "keep".
 
-Line 5: A fixed list can't hold lists, because those could change.
+Line 5: A fixed list can't hold lists or maps, because those could change.
     keep grid as a list of (a list of 1) and (a list of 2)
                            ^^^^^^^^^^^^^
 Make it with "let" instead of "keep".
 
-Line 6: A fixed list can't hold lists, because those could change.
+Line 6: A fixed list can't hold lists or maps, because those could change.
     keep no_rows as an empty list of lists of numbers
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Make it with "let" instead of "keep".

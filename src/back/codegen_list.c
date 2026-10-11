@@ -19,17 +19,25 @@
 #include <string.h>
 #include "back/codegen_internal.h"
 
+const char *cg_value_suffix(Type type) {
+    if (type_is_map(type)) return "m";
+    return type_is_list(type) ? "l" : type_is_record(type) ? "r" : type == TYPE_TEXT ? "t" : type == TYPE_YESNO ? "b" : "n";
+}
+
 const char *cg_item_suffix(Type list) {
-    Type item = type_item(list);
-    return type_is_list(item) ? "l" : type_is_record(item) ? "r" : item == TYPE_TEXT ? "t" : item == TYPE_YESNO ? "b" : "n";
+    return cg_value_suffix(type_item(list));
+}
+
+const char *cg_items(Type type) {
+    if (type_is_record(type)) return "ES_ITEMS_RECORD";
+    if (type_is_map(type)) return "ES_ITEMS_MAP";
+    return type_is_list(type) ? "ES_ITEMS_LIST" : type == TYPE_TEXT ? "ES_ITEMS_TEXT"
+                                              : type == TYPE_YESNO ? "ES_ITEMS_YESNO" : "ES_ITEMS_NUMBER";
 }
 
 // ES_ITEMS_NUMBER, ...: what the runtime calls the kind of a list's items.
 static const char *items_kind(Type list) {
-    Type item = type_item(list);
-    if (type_is_record(item)) return "ES_ITEMS_RECORD";
-    return type_is_list(item) ? "ES_ITEMS_LIST" : item == TYPE_TEXT ? "ES_ITEMS_TEXT"
-                                              : item == TYPE_YESNO ? "ES_ITEMS_YESNO" : "ES_ITEMS_NUMBER";
+    return cg_items(type_item(list));
 }
 
 static const char *where_code(ItemWhere where) {
@@ -63,6 +71,10 @@ static void emit_item(Codegen *g, const Expr *expr, StrBuf *out) {
 
 static void emit_list_op(Codegen *g, const Expr *expr, StrBuf *out) {
     const Expr *operand = expr->as.list_op.operand;
+    if (type_is_map(operand->type)) {
+        cg_emit_map_op(g, expr, out);
+        return;
+    }
     const char *code = type_is_list(operand->type) ? cg_list_operand(g, operand) : cg_operand(g, operand, false);
     switch (expr->as.list_op.op) {
     case LIST_SUM: sb_appendf(out, "es_list_sum(%s)", code); break;
@@ -78,6 +90,9 @@ static void emit_list_op(Codegen *g, const Expr *expr, StrBuf *out) {
         sb_appendf(out, "%s%s(%s)", expr->as.list_op.op == LIST_NOT_EMPTY ? "!" : "",
                    type_is_list(operand->type) ? "es_list_is_empty" : "es_text_is_empty", code);
         break;
+    case LIST_ENTRIES:
+    case LIST_KEYS:
+    case LIST_VALUES: break;  // maps, above
     }
 }
 
@@ -158,7 +173,13 @@ static void collect(Codegen *g, const Expr *expr, Names *bound, Codegen *helper)
         return;
     }
     case EXPR_CONVERT: collect(g, expr->as.convert.operand, bound, helper); return;
-    case EXPR_LIST: collect_all(g, expr->as.items.items, expr->as.items.len, bound, helper); return;
+    case EXPR_LIST:
+    case EXPR_MAP: collect_all(g, expr->as.items.items, expr->as.items.len, bound, helper); return;
+    case EXPR_MAP_GET: {
+        Expr *parts[] = {expr->as.lookup.key, expr->as.lookup.map, expr->as.lookup.fallback};
+        collect_all(g, parts, 3, bound, helper);
+        return;
+    }
     case EXPR_ITEM: {
         Expr *parts[] = {expr->as.item.position, expr->as.item.list};
         collect_all(g, parts, 2, bound, helper);
@@ -202,10 +223,14 @@ static bool calls_function(const Codegen *g, const Expr *expr) {
     case EXPR_BINARY: return calls_function(g, expr->as.binary.left) || calls_function(g, expr->as.binary.right);
     case EXPR_CONVERT: return calls_function(g, expr->as.convert.operand);
     case EXPR_LIST:
+    case EXPR_MAP:
         for (size_t i = 0; i < expr->as.items.len; i++) {
             if (calls_function(g, expr->as.items.items[i])) return true;
         }
         return false;
+    case EXPR_MAP_GET:
+        return calls_function(g, expr->as.lookup.key) || calls_function(g, expr->as.lookup.map) ||
+               (expr->as.lookup.fallback && calls_function(g, expr->as.lookup.fallback));
     case EXPR_ITEM:
         return (expr->as.item.position && calls_function(g, expr->as.item.position)) ||
                calls_function(g, expr->as.item.list);
@@ -288,7 +313,9 @@ static void emit_helper(Codegen *g, const Expr *expr, Codegen *helper, size_t id
 static void emit_helper_call(Codegen *g, const Expr *expr, StrBuf *out) {
     Codegen helper = {0};
     helper.arena = g->arena;
+    helper.records = g->records;
     helper.texts = g->texts;
+    helper.inits = g->inits;
     helper.helpers = g->helpers;
     helper.sites = g->sites;
     helper.functions = g->functions;
@@ -364,6 +391,7 @@ void cg_emit_each_head(Codegen *g, const Stmt *stmt, size_t id, StrBuf *body, si
 // A list sentence as one C expression statement, its parts worked out in the
 // order they're written.
 const char *cg_list_stmt(Codegen *g, const Stmt *stmt) {
+    if (stmt->as.list.op == LIST_REMOVE_KEY) return cg_remove_key(g, stmt);
     StrBuf out;
     sb_init(&out, g->arena);
     Type list = stmt->as.list.list->type;
@@ -400,6 +428,7 @@ const char *cg_list_stmt(Codegen *g, const Stmt *stmt) {
         sb_appendf(&out, "es_put_%s(%zu, %s, %s, %s, %s)", suffix, site, v[1], where, v[0], v[2]);
         break;
     }
+    case LIST_REMOVE_KEY: break;  // above
     case LIST_SORT: {
         static const char *const how[] = {"ES_SORT_UP", "ES_SORT_DOWN", "ES_SORT_LENGTH_UP", "ES_SORT_LENGTH_DOWN"};
         sb_appendf(&out, "es_sort(%s, %s)", cg_operand(g, stmt->as.list.list, false),

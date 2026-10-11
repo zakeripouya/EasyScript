@@ -193,6 +193,16 @@ Expr *parser_parse_field(Parser *p, Expr *record) {
 
 bool parser_parse_target(Parser *p, Name *name, Expr **field, const char *const *next) {
     *field = NULL;
+    if (parser_at_lookup(p)) {  // "set the value for "tea" in prices to 3"
+        *field = parser_parse_lookup(p);
+        if ((*field)->kind == EXPR_MAP_GET && !(*field)->as.lookup.fallback) return !p->sentence_failed;
+        if ((*field)->kind == EXPR_MAP_GET &&
+            parser_error(p, (*field)->as.lookup.fallback->pos.span, "A value that changes can't have \", or\".")) {
+            diag_note(p->diag, "\", or\" gives another value when the key is missing; to change the value, the key "
+                               "has to be there. Check first with \"has\".");
+        }
+        return false;
+    }
     Expr *base;
     if (parser_at(p, 0, TOK_LPAREN)) {  // "set (item 2 of players)'s name to ..."
         const Token *open = parser_peek(p, 0);

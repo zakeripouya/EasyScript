@@ -240,7 +240,13 @@ static void emit_loop_head(Codegen *g, const Stmt *stmt, size_t id) {
         indent(g);
         sb_append(&g->body, "for (;;) {\n");
         break;
-    case LOOP_EACH: cg_emit_each_head(g, stmt, id, &g->body, g->depth); break;
+    case LOOP_EACH:
+        if (stmt->as.loop.pair) {
+            cg_emit_each_map_head(g, stmt, id, &g->body, g->depth);
+        } else {
+            cg_emit_each_head(g, stmt, id, &g->body, g->depth);
+        }
+        break;
     }
 }
 
@@ -253,7 +259,13 @@ static void emit_loop(Codegen *g, const Stmt *stmt) {
     push_scope(g);
     if (stmt->as.loop.kind == LOOP_COUNT) cg_declare_name(g, stmt->as.loop.var.text, TYPE_NUMBER);
     LoopCode loop = {stmt, id, 0, NULL, TYPE_UNKNOWN};
-    if (stmt->as.loop.kind == LOOP_EACH) {
+    if (stmt->as.loop.kind == LOOP_EACH && stmt->as.loop.pair) {  // a map: "it" is the key
+        Type map = stmt->as.loop.list->type;
+        loop.item = stmt->as.loop.var.text;
+        loop.item_type = ast_map_key(g->records, map);
+        cg_declare_name(g, loop.item, loop.item_type);
+        cg_declare_name(g, stmt->as.loop.value_name.text, ast_map_value(g->records, map));
+    } else if (stmt->as.loop.kind == LOOP_EACH) {
         loop.item = stmt->as.loop.var.text;
         loop.item_type = type_item(stmt->as.loop.list->type);
         cg_declare_name(g, loop.item, loop.item_type);
@@ -434,9 +446,7 @@ void cg_emit_fixed_list(Codegen *g, const char *name, const ConstValue *v, StrBu
     }
     sb_append(out, "static EsList ");
     cg_append_prefixed(out, "es_k_", name);
-    const char *items = type_is_record(item) ? "ES_ITEMS_RECORD" : type_is_list(item) ? "ES_ITEMS_LIST"
-                        : item == TYPE_TEXT ? "ES_ITEMS_TEXT" : item == TYPE_YESNO ? "ES_ITEMS_YESNO" : "ES_ITEMS_NUMBER";
-    sb_appendf(out, " = {{ES_OBJ_LIST, ES_IMMORTAL}, %s, %zu, %zu, {", items, v->len, v->len);
+    sb_appendf(out, " = {{ES_OBJ_LIST, ES_IMMORTAL}, %s, %zu, %zu, {", cg_items(item), v->len, v->len);
     if (v->len > 0) {
         sb_appendf(out, ".%s = ", field);
         cg_append_prefixed(out, "es_ki_", name);
@@ -458,6 +468,7 @@ static void emit_constant(Codegen *g, const Stmt *stmt, StrBuf *out) {
         sb_append(out, ";\n");
         break;
     case CONST_LIST: cg_emit_fixed_list(g, name, v, out); break;
+    case CONST_MAP: cg_emit_fixed_map(g, name, v, out); break;
     case CONST_TEXT:
         sb_append(out, "static EsText *const ");
         cg_append_prefixed(out, "es_k_", name);
@@ -535,8 +546,8 @@ static void emit_function_info(const Stmt *fn, StrBuf *out) {
     sb_append(out, ", \"");
     for (size_t i = 0; i < n; i++) {
         Type type = fn->as.function.param_types.items[i];
-        sb_append_char(out, type_is_list(type) ? 'l' : type_is_record(type) ? 'r' : type == TYPE_TEXT ? 't'
-                            : type == TYPE_YESNO ? 'b' : 'n');
+        sb_append_char(out, type_is_list(type) ? 'l' : type_is_record(type) ? 'r' : type_is_map(type) ? 'm'
+                            : type == TYPE_TEXT ? 't' : type == TYPE_YESNO ? 'b' : 'n');
     }
     sb_append(out, "\"};\n");
 }
@@ -545,8 +556,8 @@ static void emit_function_info(const Stmt *fn, StrBuf *out) {
 static void append_input(const Stmt *fn, size_t i, StrBuf *out) {
     Type type = fn->as.function.param_types.items[i];
     bool record = type_is_record(type);
-    sb_append(out, type_is_list(type) ? "{.list = " : record ? "{.r = es_record_retain(" : type == TYPE_TEXT ? "{.t = es_retain("
-                   : type == TYPE_YESNO ? "{.b = " : "{.n = ");
+    sb_append(out, type_is_list(type) || type_is_map(type) ? "{.list = " : record ? "{.r = es_record_retain("
+                   : type == TYPE_TEXT ? "{.t = es_retain(" : type == TYPE_YESNO ? "{.b = " : "{.n = ");
     cg_append_var(out, fn->as.function.params.items[i].text, type);
     sb_append(out, type == TYPE_TEXT || record ? ")}" : "}");
 }
@@ -585,6 +596,7 @@ static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     f.arena = g->arena;
     f.records = g->records;
     f.texts = g->texts;
+    f.inits = g->inits;
     f.helpers = g->helpers;
     f.sites = g->sites;
     f.functions = g->functions;
@@ -630,10 +642,13 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     sb_init(&helpers.code, arena);
     SitePool sites = {0};
     sb_init(&sites.code, arena);
+    StrBuf inits;
+    sb_init(&inits, arena);
     Codegen g = {0};
     g.arena = arena;
     g.records = &whole->records;
     g.texts = &texts;
+    g.inits = &inits;
     g.helpers = &helpers;
     g.sites = &sites;
     sb_init(&g.body, arena);
@@ -682,6 +697,7 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
         sb_append(out, ";\n");
     }
     sb_append(out, "    es_init(es_sites, es_source, es_source_line_count);\n");
+    sb_append_n(out, inits.data, inits.len);  // the fixed maps
     sb_append_n(out, g.body.data, g.body.len);
     if (g.stops) sb_append(out, "es_end:\n");
     g.depth = 0;

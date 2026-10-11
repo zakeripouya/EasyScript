@@ -23,8 +23,10 @@ typedef struct {
 // TYPE_LIST for each level of list: TYPE_LIST + TYPE_NUMBER is a list of
 // numbers, 2 * TYPE_LIST + TYPE_TEXT a list of lists of text. A record kind
 // the program defines is TYPE_RECORD + its index in the program's Records;
-// with TYPE_MAYBE added it's "a dog or nothing". Two types are the same
-// exactly when they're equal numbers.
+// with TYPE_MAYBE added it's "a dog or nothing". A kind of map is TYPE_MAP +
+// its index in Records.maps, where every kind of map the program uses is
+// kept once (a map's key and value kinds don't fit in one number). Two types
+// are the same exactly when they're equal numbers.
 typedef unsigned Type;
 
 enum {
@@ -35,6 +37,7 @@ enum {
     TYPE_NOTHING,  // only what a function gives back when it gives back no value
     TYPE_ERROR,    // stands in after a type error, so one mistake gives one message
     TYPE_RECORD = 16,       // TYPE_RECORD + n: the program's record kind n
+    TYPE_MAP = 1u << 13,    // TYPE_MAP + n: kind of map n (Records.maps); TYPE_MAP alone: a map, kinds not decided
     TYPE_MAYBE = 1u << 14,  // added to a record kind: "or nothing"; alone: a record or nothing, kind not decided
     TYPE_LIST = 1u << 15,
 };
@@ -44,13 +47,16 @@ static inline bool type_is_list(Type type) { return type >= TYPE_LIST; }
 static inline Type type_item(Type list) { return list - TYPE_LIST; }
 static inline Type type_base(Type type) { return type % TYPE_LIST; }  // the innermost kind
 static inline Type type_present(Type type) { return type_is_list(type) ? type : type & ~(Type)TYPE_MAYBE; }
-static inline bool type_is_record(Type type) { return !type_is_list(type) && type_present(type) >= TYPE_RECORD; }
+static inline bool type_is_map(Type type) { return !type_is_list(type) && type >= TYPE_MAP && type < TYPE_MAYBE; }
+static inline bool type_is_record(Type type) {
+    return !type_is_list(type) && type_present(type) >= TYPE_RECORD && type_present(type) < TYPE_MAP;
+}
 // "a dog or nothing" (not TYPE_MAYBE alone, whose kind of record isn't decided)
 static inline bool type_is_maybe(Type type) { return type_is_record(type) && (type & TYPE_MAYBE); }
 static inline Type type_record(size_t index) { return TYPE_RECORD + (Type)index; }
 static inline size_t type_record_index(Type type) { return type_present(type) - TYPE_RECORD; }
 static inline bool type_counted(Type type) {  // reference counted
-    return type == TYPE_TEXT || type_is_list(type) || type_is_record(type);
+    return type == TYPE_TEXT || type_is_list(type) || type_is_record(type) || type_is_map(type);
 }
 
 typedef struct Stmt Stmt;
@@ -64,13 +70,38 @@ typedef struct {
     Stmt *definition;     // STMT_RECORD (the first one, if it's defined twice)
 } RecordKind;
 
-typedef Vec(RecordKind) Records;
+// A kind of map: what its keys are (text or numbers) and what its values are.
+typedef struct {
+    Type key;
+    Type value;
+} MapKind;
+
+// The kinds the program defines and uses: its record kinds (items, len and
+// cap, as in a Vec, so vec_push works on it), and every kind of map, each
+// kept once so that a map's Type is a single number. maps[0] is "a map"
+// whose key and value kinds aren't decided (TYPE_MAP itself).
+typedef struct {
+    RecordKind *items;
+    size_t len;
+    size_t cap;
+    Vec(MapKind) maps;
+} Records;
 
 // "a number", "text", "a yes/no value", "nothing", "a list of numbers",
 // "a list of lists of text", "a list" (items not decided), "a dog", "a dog
-// or nothing", "a list of dogs". `records` names the record kinds (NULL if
+// or nothing", "a list of dogs", "a map from text to numbers", "a map"
+// (kinds not decided). `records` names the record kinds and maps (NULL if
 // there are none).
 const char *ast_type_name(Arena *arena, const Records *records, Type type);
+
+// The Type of a map from `key` to `value`, adding the kind to records->maps
+// the first time it's used.
+Type ast_map_type(Arena *arena, Records *records, Type key, Type value);
+Type ast_map_key(const Records *records, Type map);    // TYPE_UNKNOWN if not decided
+Type ast_map_value(const Records *records, Type map);  // TYPE_UNKNOWN if not decided
+// Whether some part of the kind isn't decided: its innermost kind, or a
+// map's keys or values (or a record or nothing whose kind of record isn't).
+bool ast_type_undecided(const Records *records, Type type);
 
 // --- Expressions -----------------------------------------------------------
 
@@ -98,6 +129,9 @@ typedef enum {
     EXPR_TEXT_OP,        // the words of T, T in uppercase, T split by ",", the position of X in T, ...
     EXPR_FIELD,          // R's NAME (a field of a record)
     EXPR_NEW,            // a new dog with name "Rex" and age 3
+    EXPR_MAP,            // a map of "coffee" to 3, "tea" to 2
+    EXPR_EMPTY_MAP,      // an empty map from text to numbers
+    EXPR_MAP_GET,        // the value for K in M [, or D]
 } ExprKind;
 
 typedef enum {
@@ -126,6 +160,8 @@ typedef enum {
     BINARY_NOT_STARTS_WITH,  // T does not start with X
     BINARY_ENDS_WITH,        // T ends with X
     BINARY_NOT_ENDS_WITH,    // T does not end with X
+    BINARY_HAS,              // M has K (M a map)
+    BINARY_NOT_HAS,          // M does not have K
 } BinaryOp;
 
 typedef enum {
@@ -148,6 +184,9 @@ typedef enum {
     LIST_COPY,       // a copy of L
     LIST_IS_EMPTY,   // L is empty (lists and text)
     LIST_NOT_EMPTY,  // L is not empty / isn't empty
+    LIST_ENTRIES,    // the number of entries in M (a map)
+    LIST_KEYS,       // the keys of M (a list)
+    LIST_VALUES,     // the values of M (a list)
 } ListOp;
 
 // Which part of a list a slice takes. Every slice is a new list.
@@ -238,8 +277,8 @@ struct Expr {
             Span op_span;
             Expr *operand;
         } convert;
-        Vec(Expr *) items;  // EXPR_LIST, in order (at least one)
-        Type list_type;     // EXPR_EMPTY_LIST: the list's type, e.g. a list of numbers
+        Vec(Expr *) items;  // EXPR_LIST, in order (at least one); EXPR_MAP: key, value, key, value, ...
+        Type list_type;     // EXPR_EMPTY_LIST, EXPR_EMPTY_MAP: its type, e.g. a list of numbers
         struct {
             ItemWhere where;
             Expr *position;   // ITEM_AT; NULL for the first and last item
@@ -287,6 +326,11 @@ struct Expr {
             Type type;               // the record kind
             Vec(FieldValue) values;  // as written, in order
         } new_record;
+        struct {
+            Expr *key;
+            Expr *map;
+            Expr *fallback;  // ", or D": the value when the key isn't there (NULL: that's an error)
+        } lookup;  // EXPR_MAP_GET
     } as;
 };
 
@@ -320,6 +364,7 @@ typedef enum {
     CONST_TEXT,
     CONST_YESNO,
     CONST_LIST,  // a fixed list ("keep weekdays as a list of ..."): numbers, text or yes/no, never lists
+    CONST_MAP,   // a fixed map ("keep prices as a map of ..."): text or number keys; numbers, text or yes/no values
 } ConstKind;
 
 typedef struct ConstValue ConstValue;
@@ -328,9 +373,12 @@ struct ConstValue {
     double number;
     bool yes;
     const char *text;  // NUL-terminated
-    size_t len;        // CONST_TEXT: bytes; CONST_LIST: items
+    size_t len;        // CONST_TEXT: bytes; CONST_LIST: items; CONST_MAP: entries
     Type list_type;    // CONST_LIST: e.g. a list of text
-    ConstValue *items; // CONST_LIST
+    ConstValue *items; // CONST_LIST; CONST_MAP: the values
+    ConstValue *keys;  // CONST_MAP, in order
+    Type key_type;     // CONST_MAP: TYPE_TEXT or TYPE_NUMBER
+    Type value_type;   // CONST_MAP: TYPE_NUMBER, TYPE_TEXT or TYPE_YESNO
 };
 
 // One field of a record kind: "an age, which is a number, starting at 0."
@@ -364,6 +412,7 @@ typedef enum {
     LIST_REMOVE,    // remove item N from L (or the first or last item)
     LIST_SET_ITEM,  // set item N of L to E (or the first or last item)
     LIST_SORT,      // sort L [by their length] [, biggest/smallest/longest/shortest first]
+    LIST_REMOVE_KEY,  // remove K from M (M a map; K is `value`, M is `list`)
 } ListChange;
 
 // A block is a list of statements, in order. A program is a block.
@@ -385,14 +434,16 @@ struct Stmt {
         struct {
             Name name;
             Expr *value;
-            Expr *field;  // STMT_SET of a field ("set rex's age to 4"): an EXPR_FIELD; name is then unused
+            Expr *field;  // STMT_SET of a field ("set rex's age to 4"): an EXPR_FIELD; name is then unused.
+                          // Or a map's value ("set the value for K in M to 4"): an EXPR_MAP_GET
             Type type;    // filled in by the checker: the variable's kind
         } assign;  // STMT_LET, STMT_SET
         struct {
             ChangeOp op;
             Name target;
             Expr *amount;
-            Expr *field;  // a field ("add 1 to rex's age"): an EXPR_FIELD; target is then unused
+            Expr *field;  // a field ("add 1 to rex's age"): an EXPR_FIELD (or a map's value: an
+                          // EXPR_MAP_GET); target is then unused
             bool append;  // filled in by the checker: "add E to L" where L is a list
         } change;
         Expr *value;  // STMT_SAY
@@ -434,11 +485,13 @@ struct Stmt {
             LoopKind kind;
             Expr *from, *to, *step;  // LOOP_COUNT (step NULL: 1)
             bool down;               // "count down": never counts up
-            Name var;                // LOOP_COUNT: "number" unless named; LOOP_EACH: each item
+            Name var;                // LOOP_COUNT: "number" unless named; LOOP_EACH: each item (a map's key)
             bool var_named;          // the program chose the name (otherwise it's "number")
+            Name value_name;         // LOOP_EACH over a map: each value ("for each name and age in ages")
+            bool pair;               // LOOP_EACH with two names (value_name is set)
             Expr *times;             // LOOP_TIMES
             Expr *condition;         // LOOP_WHILE, LOOP_UNTIL
-            Expr *list;              // LOOP_EACH
+            Expr *list;              // LOOP_EACH: the list (or map)
             Block body;
         } loop;
         struct {

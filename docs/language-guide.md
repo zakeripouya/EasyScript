@@ -22,6 +22,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [10. Lists](#10-lists) | Available |
 | [11. Text](#11-text) | Available |
 | [12. Records](#12-records) | Available |
+| [13. Maps](#13-maps) | Available |
 
 ---
 
@@ -640,7 +641,7 @@ The kinds are `a number`, `text`, `yes or no` (or `yes/no`), and lists like `a l
 
 ### What's still checked while the program runs
 
-Kinds can't tell you everything. These are still found while the program runs, with the line they happened on: asking for a list item that isn't there, dividing by zero, counting with a step that isn't more than zero, a number of times that isn't a whole number, text that isn't a number in `as a number`, files that can't be read or written, a function that gives back a value but reaches its end without `give back`, and functions calling each other too deeply.
+Kinds can't tell you everything. These are still found while the program runs, with the line they happened on: asking for a list item or a map key that isn't there, dividing by zero, counting with a step that isn't more than zero, a number of times that isn't a whole number, text that isn't a number in `as a number`, files that can't be read or written, a function that gives back a value but reaches its end without `give back`, and functions calling each other too deeply.
 
 Try it: `./easyscript run examples/programs/kinds.es`
 ---
@@ -1058,7 +1059,7 @@ A list can hold records (`a list of dogs`), and a field can hold a list (`the to
 
 ### Memory
 
-A record is freed as soon as nothing holds it, with what its fields hold. Records that point to each other in a circle (two people who are each other's friend) keep each other alive, so they're never freed while the program runs. The memory check (`ES_DEBUG_MEMORY=1`) reports them at the end. Before the program ends, break the circle by setting one of its fields to nothing. See [memory](memory.md#cycles).
+A record is freed as soon as nothing holds it, with what its fields hold. Records that point to each other in a circle (two people who are each other's friend) keep each other alive, so they're never freed while the program runs. The memory check (`ES_DEBUG_MEMORY=1`) reports them at the end, following lists and maps too. Before the program ends, break the circle by setting one of its fields to nothing, or by taking a record out of the list or map that holds it. See [memory](memory.md#cycles).
 
 ### Things to watch
 
@@ -1072,3 +1073,139 @@ A record is freed as soon as nothing holds it, with what its fields hold. Record
 Only a record that was checked not to be nothing, and then set to nothing through another name before it was used. Every other mistake (a missing field, a wrong kind, a field that could be nothing) is caught before the program runs.
 
 Try it: `./easyscript run examples/programs/linked_list.es` and `./easyscript run examples/programs/binary_tree.es`
+
+---
+
+## 13. Maps
+
+**Status: Available.**
+
+A map is a lookup table: it finds a value by its **key**, like a person's age by their name or a price by the name of a drink. Write one out with `a map of`, each key followed by `to` and its value:
+
+```
+let prices be a map of "coffee" to 3, "tea" to 2 and "milk" to 1.
+say prices.
+say the value for "tea" in prices.
+```
+
+```
+"coffee" is 3, "tea" is 2 and "milk" is 1
+2
+```
+
+Keys are **text or numbers**, all of one kind; values can be any kind, all of one kind too. To start with nothing in it, say which kinds it will hold: `let ages be an empty map from text to numbers.` (or `an empty map from numbers to text`, `an empty map from text to lists of text`, ...). A map keeps its keys **in the order they were first added**, so printing it, going through it, or taking its keys always gives the same order.
+
+### Looking up and setting
+
+```
+let ages be an empty map from text to numbers.
+set the value for "Paris" in ages to 19.
+set the value for "Junie" in ages to 24.
+say the value for "Paris" in ages.          # 19
+set the value for "Paris" in ages to 20.    # changes it, in the same place
+```
+
+Setting a key that isn't there adds it; setting one that's there changes its value. Asking for a key that isn't there stops the program, naming the key:
+
+```
+Line 3: There's no value for "Bob" in the map.
+    say the value for "Bob" in ages
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To check first, use "has". To use another value when it's missing, add ", or" and that value after it.
+```
+
+To use another value when the key is missing, add `, or` and that value. It's only worked out when it's needed:
+
+```
+say the value for "Bob" in ages, or 0.      # 0
+set the value for word in counts to (the value for word in counts, or 0) plus 1.
+```
+
+The value after `, or` is a single value: `the value for "Bob" in ages, or 0 plus 1` could mean adding 1 to the whole thing or only to the 0, so it's an error that shows both ways with parentheses.
+
+Number keys are the same key when they print the same: `0.1 plus 0.2` finds the value kept for `0.3`.
+
+### Asking about a map
+
+- `ages has "Paris"`, `ages does not have "Bob"` (or `doesn't have`): yes or no
+- `the number of entries in ages`: how many keys it has
+- `ages is empty`, `ages is not empty` (or `isn't empty`)
+- `the keys of ages`, `the values of ages`: new lists, in the map's order
+- `ages is other ages`: two maps are equal when they have the same keys with equal values, in any order
+
+### Changing a map
+
+```
+add 1 to the value for "Paris" in ages.
+increase the value for "Junie" in ages by 2.
+remove "Paris" from ages.
+```
+
+`add`, `subtract`, `increase`, `decrease`, `multiply` and `divide` change a value in place; the key has to be there already (otherwise the program stops: "There's no value for "Bob" in the map."). `remove K from M` takes a key out; it has to be there too ("I can't remove "Bob": the map has no value for it."). Removing a key and adding it again puts it at the end.
+
+### Going through a map
+
+```
+for each name and age in ages:
+    say name followed by " is " followed by age.
+```
+
+The loop names each key and its value, in the map's order. Inside it, `it` is the key. Like a list's loop, it goes through the entries the map had when it started, so changing the map inside the loop doesn't change what it visits. A map always needs both names; to go through only the keys, write `for each name in the keys of ages:`.
+
+### Sharing and copying
+
+A map is **shared**, like a list: `let same be ages` gives the same map a second name, and a function you give a map to gets that same map, so it can change it. `a copy of ages` makes a separate map. Lists and maps inside a map belong to it, so the copy gets copies of them too; text and records inside are shared.
+
+### Maps of lists, lists of maps
+
+A map's values can be lists, maps or records, and lists and records can hold maps:
+
+```
+let graph be an empty map from text to lists of text.
+set the value for "Ash" in graph to a list of "Birch" and "Cedar".
+add "Elm" to the end of the value for "Ash" in graph.
+
+let rows be a list of (a map of "a" to 1) and (a map of "b" to 2).
+
+a student is a kind of thing with:
+    a name, which is text.
+    a scores, which is a map from text to numbers, starting at an empty map from text to numbers.
+```
+
+A list or map written inside `a map of` needs parentheses, because its own commas and `and`s would otherwise be ambiguous: `a map of "odd" to (a list of 1 and 3)`. `the value for K in M` gives the value itself (shared), so changing a list you got from a map changes the one in the map.
+
+### Maps and kinds
+
+A map's kind is "a map from KEYS to VALUES", worked out like any other ([Types](#9-types)): a key or value of the wrong kind is an error before the program runs:
+
+```
+Line 4: The keys of "ages" are text, but this is a number.
+    say the value for 3 in ages
+                      ^
+```
+
+Write map kinds in definitions as `(a map from text to numbers)`, `(a map from numbers to lists of text)`, and in lists and maps in the plural: `a list of maps from text to numbers`, `a map from text to maps from text to numbers`.
+
+### Fixed maps
+
+A map kept with `keep` is fixed, like a fixed list:
+
+```
+keep prices as a map of "coffee" to 3, "tea" to 2.
+say the value for "tea" in prices, or 0.
+```
+
+Its keys are fixed text or numbers and its values fixed numbers, text or yes/no values (not lists or maps). Setting, changing or removing a value is an error that suggests `let`, and `the number of entries in prices` is worked out by the compiler too. `let mine be prices` gives `mine` its own copy, which can change.
+
+### Things to watch
+
+- **`the value for K in M` reads the map as a single value**, so `the value for "a" in ages plus 1` is `(the value for "a" in ages) plus 1`. A name straight before `in` is the key, even `item`: `the value for item in prices`.
+- **`remove item from M`** reads as a list's item with its position missing. Name the key something else, or put it in parentheses: `remove (item) from prices`.
+- **`, or` only goes after a value being read**: `set the value for "x" in ages, or 0 to 5` is an error.
+- **Keys given twice in `a map of`** are an error when they're written out ("The key "tea" is in this map twice."); a key worked out while the program runs that's already there keeps its first place and its last value.
+
+### What's checked while the program runs
+
+Asking for, changing or removing a key that isn't there. Every kind mistake is caught before the program runs.
+
+Try it: `./easyscript run examples/programs/word_counter.es` and `./easyscript run examples/programs/graph.es`

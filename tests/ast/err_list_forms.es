@@ -6,7 +6,7 @@ say 2 plus every n in scores
 say only the scores that 70
 sort names by their length, biggest first
 sort names, longest first
-remove 95 from scores
+remove the first item scores
 insert at position 1 of scores
 say scores is empty is yes
 let kinds be an empty list of number

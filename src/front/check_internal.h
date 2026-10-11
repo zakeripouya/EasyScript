@@ -2,7 +2,8 @@
 #define FRONT_CHECK_INTERNAL_H
 
 // Shared by the checker's source files (check.c, check_expr.c, check_types.c,
-// check_const.c, check_list.c, check_text.c, check_record.c). Not for use outside src/front/.
+// check_const.c, check_list.c, check_text.c, check_record.c, check_map.c).
+// Not for use outside src/front/.
 
 #include <stdbool.h>
 #include "common/ast.h"
@@ -20,12 +21,15 @@
 typedef size_t TypeVar;
 
 // A list's type is a variable too: "a list of" its item's variable, so
-// "item 1 of xs" can have a kind before anything decides what xs holds.
+// "item 1 of xs" can have a kind before anything decides what xs holds. A
+// map's is "a map from" its key's variable "to" its value's.
 typedef struct {
     TypeVar parent;
-    Type type;     // of the root: TYPE_UNKNOWN until decided, a kind, or TYPE_LIST (a list of `item`)
+    Type type;     // of the root: TYPE_UNKNOWN until decided, a kind, TYPE_LIST (a list of `item`),
+                   // or TYPE_MAP (a map from `key` to `item`)
     size_t line;   // where it was decided
-    TypeVar item;  // the kind of the items when type is TYPE_LIST
+    TypeVar item;  // the kind of the items when type is TYPE_LIST, of the values when it's TYPE_MAP
+    TypeVar key;   // the kind of the keys when type is TYPE_MAP
 } TypeSlot;
 
 typedef enum {
@@ -40,7 +44,7 @@ typedef enum {
 } DeferKind;
 
 // Kinds for DEFER_ONE_OF.
-enum { KIND_NUMBER = 1, KIND_TEXT = 2, KIND_YESNO = 4, KIND_LIST = 8, KIND_RECORD = 16 };
+enum { KIND_NUMBER = 1, KIND_TEXT = 2, KIND_YESNO = 4, KIND_LIST = 8, KIND_RECORD = 16, KIND_MAP = 32 };
 
 typedef struct {
     DeferKind kind;
@@ -104,7 +108,7 @@ typedef struct {
 typedef struct {
     Arena *arena;
     Diag *diag;
-    const Records *records;           // the program's kinds of record
+    Records *records;                 // the program's kinds of record and of map (new kinds of map are added)
     Vec(Narrowing) present;           // values checked not to be nothing, innermost last
     const Expr *unnarrowed;           // checked as written even if it was checked ("x is nothing", "set x's f to")
     bool explained_default;           // a field's starting value used a name, and that was explained
@@ -127,7 +131,9 @@ typedef struct {
 // check_types.c
 TypeVar types_new(Checker *c, Type type, size_t line);  // a list type gets a variable for its items
 TypeVar types_new_list(Checker *c, TypeVar item, size_t line);
-TypeVar types_item(Checker *c, TypeVar list);  // a list's item variable (it must be a list)
+TypeVar types_new_map(Checker *c, TypeVar key, TypeVar value, size_t line);
+TypeVar types_item(Checker *c, TypeVar list);  // a list's item variable, or a map's value variable
+TypeVar types_key(Checker *c, TypeVar map);    // a map's key variable (it must be a map)
 Type types_of(Checker *c, TypeVar var);  // TYPE_UNKNOWN if not decided
 // Joins two variables. False (and nothing changes) if they have different kinds.
 bool types_unify(Checker *c, TypeVar a, TypeVar b);
@@ -178,6 +184,8 @@ TypeVar checker_check_list_expr(Checker *c, const Expr *expr);  // EXPR_LIST ...
 // What's looked for in a list ("contains", "the position of") has to be the kind it holds.
 void checker_require_item(Checker *c, const Expr *list, TypeVar list_var, const Expr *value, TypeVar value_var);
 void checker_check_list_stmt(Checker *c, const Stmt *stmt);
+// A fixed list or map (a constant's name) can't change: reports and returns true.
+bool checker_reject_fixed(Checker *c, const Expr *list);
 // "add E to X" where X is a list: adds to its end when that's the only meaning.
 void checker_add_to_list(Checker *c, Stmt *stmt, TypeVar list, TypeVar amount);
 
@@ -253,7 +261,27 @@ bool checker_settle_present(Checker *c, const Deferred *d);
 // A kind of record that has a field called `name`, for suggestions (NULL if none).
 const RecordKind *checker_field_owner(const Checker *c, const char *name);
 
+// check_map.c
+// The kinds of a map's keys and values; if `var` isn't a map, reports
+// "<message>, but this is <kind>." (and `list_note`, if it's a list).
+bool checker_require_map(Checker *c, TypeVar var, const Expr *at, const char *message, const char *list_note,
+                         TypeVar *key, TypeVar *value);
+TypeVar checker_check_map_expr(Checker *c, const Expr *expr);  // EXPR_MAP, EXPR_EMPTY_MAP, EXPR_MAP_GET
+TypeVar checker_check_has(Checker *c, const Expr *expr, TypeVar left, TypeVar right);  // M has K
+// "the number of entries in M", "the keys of M", "the values of M" (M checked as var).
+TypeVar checker_check_map_op(Checker *c, const Expr *expr, TypeVar var);
+// What a "for each" loop goes through: a list's items, or a map's keys
+// (with their values in *value, for "for each K and V in M").
+TypeVar checker_check_each(Checker *c, const Stmt *stmt, TypeVar *value);
+void checker_check_remove_key(Checker *c, const Stmt *stmt);  // remove K from M
+// "set the value for K in M to V" (V already checked as value_var).
+void checker_check_map_set(Checker *c, const Expr *target, const Expr *value_expr, TypeVar value_var);
+// "add V to the value for K in M" and the other changes: the kind of the value that changes.
+TypeVar checker_check_map_change(Checker *c, const Expr *target);
+
 // check_const.c
+// The kind of a worked-out constant: a number, text, yes/no, a list or a map.
+Type checker_const_type(Checker *c, const ConstValue *v);
 void checker_collect_constants(Checker *c, const Block *program);
 void checker_check_constant(Checker *c, const Stmt *stmt);
 const Constant *checker_closest_constant(const Checker *c, const char *name);

@@ -2,7 +2,8 @@
 #define BACK_CODEGEN_INTERNAL_H
 
 // Shared by the C code generator's files (codegen_c.c, codegen_expr.c,
-// codegen_list.c). Not for use outside src/back/.
+// codegen_list.c, codegen_text.c, codegen_record.c, codegen_map.c). Not for
+// use outside src/back/.
 
 #include <stdbool.h>
 #include "back/codegen_c.h"
@@ -53,8 +54,9 @@ typedef struct {
 
 typedef struct {
     Arena *arena;
-    const Records *records;      // the program's kinds of record
+    const Records *records;      // the program's kinds of record and of map
     TextPool *texts;
+    StrBuf *inits;               // statements that start main(): making the fixed maps
     HelperPool *helpers;
     SitePool *sites;
     StrBuf body;                 // statements of main() or of the function
@@ -80,7 +82,7 @@ void cg_emit_text(Codegen *g, const Expr *expr, StrBuf *out);
 // dividing, "as a number" on text). Two such values keep their order through
 // a temporary, because C doesn't fix the order of operands.
 bool cg_has_effects(const Codegen *g, const Expr *expr);
-const char *cg_ctype(Type type);  // "double", "bool", "EsText *", "EsList *", "void"
+const char *cg_ctype(Type type);  // "double", "bool", "EsText *", "EsList *", "EsMap *", "void"
 // For text and lists (type_counted): the runtime functions that retain,
 // release, store into and drop a variable, and what an empty variable holds.
 const char *cg_retain(Type type);   // "es_retain", "es_list_retain"
@@ -94,8 +96,9 @@ const char *cg_operand(Codegen *g, const Expr *expr, bool as_text);
 // more have effects, each goes into a temporary first, and "(es_t1 = A, "...
 // is appended to out; then it returns true and the caller adds a ")".
 bool cg_ordered(Codegen *g, Expr *const *exprs, size_t n, const char **values, StrBuf *out);
-// A list that's only looked at (an item, contains, length, a slice, a loop,
-// every/only, as text): a fixed list is used directly instead of copied.
+// A list or map that's only looked at (an item, contains, length, a slice,
+// a loop, every/only, as text, a lookup): a fixed list or map is used
+// directly instead of copied.
 const char *cg_list_operand(Codegen *g, const Expr *expr);
 bool cg_is_constant(const Codegen *g, const char *name);
 // The site of a node, for a runtime call that can fail: its index in es_sites.
@@ -132,11 +135,26 @@ const char *cg_field_stmt(Codegen *g, const Stmt *stmt);
 
 // codegen_list.c
 const char *cg_item_suffix(Type list);  // the runtime's suffix for its items: "n", "b", "t", "l"
+const char *cg_value_suffix(Type type); // the same for a value of that kind: "n", "b", "t", "l", "r", "m"
+const char *cg_items(Type type);        // what the runtime calls a kind of item: "ES_ITEMS_NUMBER", ...
 void cg_emit_list_expr(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_LIST ... EXPR_ONLY
 void cg_emit_contains(Codegen *g, const Expr *expr, StrBuf *out);   // L contains X
 // The C loop header of "for each N in L" (after its variables are declared).
 void cg_emit_each_head(Codegen *g, const Stmt *stmt, size_t id, StrBuf *body, size_t depth);
 const char *cg_list_stmt(Codegen *g, const Stmt *stmt);  // a list sentence as one C statement (no ";")
+
+// codegen_map.c
+void cg_emit_map_expr(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_MAP, EXPR_EMPTY_MAP, EXPR_MAP_GET
+void cg_emit_has(Codegen *g, const Expr *expr, StrBuf *out);       // M has K
+// The number of entries in M, the keys and values of M, M is empty, a copy of M.
+void cg_emit_map_op(Codegen *g, const Expr *expr, StrBuf *out);
+// A fixed map (a constant, or a field's starting value): a static es_k_NAME made when main() starts (g->inits).
+void cg_emit_fixed_map(Codegen *g, const char *name, const ConstValue *v, StrBuf *out);
+// The C loop header of "for each K and V in M" (after its variables are declared).
+void cg_emit_each_map_head(Codegen *g, const Stmt *stmt, size_t id, StrBuf *body, size_t depth);
+const char *cg_remove_key(Codegen *g, const Stmt *stmt);  // remove K from M, as one C expression (no ";")
+// "set the value for K in M to V" or "add V to the value for K in M" (and the other changes) as one C statement.
+const char *cg_map_stmt(Codegen *g, const Stmt *stmt);
 
 // codegen_text.c
 void cg_emit_text_op(Codegen *g, const Expr *expr, StrBuf *out);       // EXPR_TEXT_OP

@@ -1,0 +1,4 @@
+Line 2: There's no value for "cat" in the map.
+    add 1 to the value for "cat" in counts.
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+It has to be in the map before it can change. To put it there, write "set the value for ... to ...".

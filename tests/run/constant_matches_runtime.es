@@ -91,3 +91,9 @@ keep k23 as 10 is at most 10.000000000001
 let v23 be 10 is at most 10.000000000001
 say k23
 say v23
+keep k24 as a map of 0.1 plus 0.2 to "a", 7 divided by 2 to "b" and 2 to "c"
+let v24 be a map of 0.1 plus 0.2 to "a", 7 divided by 2 to "b" and 2 to "c"
+say k24
+say v24
+say the number of entries in k24
+say the number of entries in v24

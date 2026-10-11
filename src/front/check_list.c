@@ -86,14 +86,20 @@ static TypeVar check_list_op(Checker *c, const Expr *expr) {
         return item;
     }
     case LIST_REVERSED: checker_require_list(c, var, operand, "I can only reverse a list"); return var;
-    case LIST_COPY:  // a record when it's known to be one, otherwise a list
-        if (type_is_record(types_of(c, var)) && !type_is_maybe(types_of(c, var))) return var;
-        checker_require_list(c, var, operand, "I can only copy a list or a record");
+    case LIST_COPY:  // a record or map when it's known to be one, otherwise a list
+        if (type_is_map(types_of(c, var)) || (type_is_record(types_of(c, var)) && !type_is_maybe(types_of(c, var)))) {
+            return var;
+        }
+        checker_require_list(c, var, operand, "I can only copy a list, a map or a record");
         return var;
     case LIST_IS_EMPTY:
     case LIST_NOT_EMPTY:
-        types_defer_one_of(c, operand, var, var, KIND_TEXT | KIND_LIST, "I can only check whether text or a list is empty");
+        types_defer_one_of(c, operand, var, var, KIND_TEXT | KIND_LIST | KIND_MAP,
+                           "I can only check whether text, a list or a map is empty");
         return types_new(c, TYPE_YESNO, line);
+    case LIST_ENTRIES:
+    case LIST_KEYS:
+    case LIST_VALUES: return checker_check_map_op(c, expr, var);
     }
     return error_var(c);
 }
@@ -164,6 +170,17 @@ void checker_add_to_list(Checker *c, Stmt *stmt, TypeVar list, TypeVar amount) {
     Type kind = types_of(c, item);
     if (kind == TYPE_ERROR) return;
     const Expr *field = stmt->as.change.field;
+    if (field && field->kind == EXPR_MAP_GET) {  // "add 5 to the value for K in M", the value a list
+        if (kind == TYPE_NUMBER || kind == TYPE_UNKNOWN) {
+            diag_error(c->diag, stmt->pos.span, "This value is %s, so this could mean two things.", checker_kind(c, list));
+            diag_note(c->diag, "To put it at the end of the list, write \"add ... to the end of the value for ...\". To "
+                               "add it to every item, set the value to \"every n in ... plus ...\".");
+            return;
+        }
+        stmt->as.change.append = true;
+        require_item(c, field, list, item, stmt->as.change.amount, amount, false);
+        return;
+    }
     const char *name = field ? arena_sprintf(c->arena, "%s's %s", checker_path(c, field->as.field.record)
                                                                      ? checker_path(c, field->as.field.record) : "...",
                                              field->as.field.name.display)
@@ -182,8 +199,8 @@ void checker_add_to_list(Checker *c, Stmt *stmt, TypeVar list, TypeVar amount) {
     require_item(c, &target, list, item, stmt->as.change.amount, amount, false);
 }
 
-// A fixed list ("keep weekdays as a list of ...") can't change.
-static bool reject_fixed_list(Checker *c, const Expr *list) {
+// A fixed list or map ("keep weekdays as a list of ...") can't change.
+bool checker_reject_fixed(Checker *c, const Expr *list) {
     if (list->kind != EXPR_NAME || checker_find_made(c, list->as.name)) return false;
     const Constant *k = checker_find_constant(c, list->as.name);
     if (!k) return false;
@@ -194,8 +211,12 @@ static bool reject_fixed_list(Checker *c, const Expr *list) {
 }
 
 void checker_check_list_stmt(Checker *c, const Stmt *stmt) {
+    if (stmt->as.list.op == LIST_REMOVE_KEY) {
+        checker_check_remove_key(c, stmt);
+        return;
+    }
     const Expr *list = stmt->as.list.list;
-    if (reject_fixed_list(c, list)) return;
+    if (checker_reject_fixed(c, list)) return;
     const Expr *value = stmt->as.list.value;
     TypeVar value_var = 0;
     if (value && stmt->as.list.op != LIST_SET_ITEM) value_var = checker_check_expr(c, value);  // written first
@@ -212,6 +233,7 @@ void checker_check_list_stmt(Checker *c, const Stmt *stmt) {
         message = stmt->as.list.by_length ? "I can only sort a list of text or lists by their length"
                                           : "I can only sort a list of numbers or text";
         break;
+    case LIST_REMOVE_KEY: break;  // checked above
     }
     TypeVar item = checker_require_list(c, list_var, list, message);
     if (types_of(c, item) == TYPE_ERROR) return;

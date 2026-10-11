@@ -8,20 +8,32 @@
 
 // --- Variables -------------------------------------------------------------------
 
-static TypeVar new_slot(Checker *c, Type type, size_t line, TypeVar item) {
-    TypeSlot slot = {c->types.len, type, line, item};
+static TypeVar new_slot(Checker *c, Type type, size_t line, TypeVar item, TypeVar key) {
+    TypeSlot slot = {c->types.len, type, line, item, key};
     vec_push(c->arena, &c->types, slot);
     return c->types.len - 1;
 }
 
+// A variable for a part (a list's items, a map's keys or values), decided where the whole is if it's known.
+static TypeVar new_part(Checker *c, Type type, size_t line) {
+    return types_new(c, type, type == TYPE_UNKNOWN ? 0 : line);
+}
+
 TypeVar types_new(Checker *c, Type type, size_t line) {
-    if (!type_is_list(type)) return new_slot(c, type, line, 0);
-    TypeVar item = types_new(c, type_item(type), type_item(type) == TYPE_UNKNOWN ? 0 : line);
-    return new_slot(c, TYPE_LIST, line, item);
+    if (type_is_map(type)) {
+        TypeVar key = new_part(c, ast_map_key(c->records, type), line);
+        return new_slot(c, TYPE_MAP, line, new_part(c, ast_map_value(c->records, type), line), key);
+    }
+    if (!type_is_list(type)) return new_slot(c, type, line, 0, 0);
+    return new_slot(c, TYPE_LIST, line, new_part(c, type_item(type), line), 0);
 }
 
 TypeVar types_new_list(Checker *c, TypeVar item, size_t line) {
-    return new_slot(c, TYPE_LIST, line, item);
+    return new_slot(c, TYPE_LIST, line, item, 0);
+}
+
+TypeVar types_new_map(Checker *c, TypeVar key, TypeVar value, size_t line) {
+    return new_slot(c, TYPE_MAP, line, value, key);
 }
 
 static TypeVar root(Checker *c, TypeVar var) {
@@ -37,10 +49,19 @@ TypeVar types_item(Checker *c, TypeVar list) {
     return c->types.items[root(c, list)].item;
 }
 
+TypeVar types_key(Checker *c, TypeVar map) {
+    return c->types.items[root(c, map)].key;
+}
+
 Type types_of(Checker *c, TypeVar var) {
-    const TypeSlot *slot = &c->types.items[root(c, var)];
-    if (slot->type != TYPE_LIST) return slot->type;
-    Type item = types_of(c, slot->item);
+    TypeSlot slot = c->types.items[root(c, var)];  // a copy: making a kind of map can't move it
+    if (slot.type == TYPE_MAP) {
+        Type key = types_of(c, slot.key), value = types_of(c, slot.item);
+        if (key == TYPE_ERROR || value == TYPE_ERROR) return TYPE_ERROR;
+        return ast_map_type(c->arena, c->records, key, value);
+    }
+    if (slot.type != TYPE_LIST) return slot.type;
+    Type item = types_of(c, slot.item);
     return item == TYPE_ERROR ? TYPE_ERROR : type_list_of(item);
 }
 
@@ -48,12 +69,14 @@ size_t types_line(Checker *c, TypeVar var) {
     return c->types.items[root(c, var)].line;
 }
 
-// Whether `var` appears in `in` (so joining them would make a list that
-// holds itself).
+// Whether `var` appears in `in` (so joining them would make a list or map
+// that holds itself).
 static bool occurs(Checker *c, TypeVar var, TypeVar in) {
     TypeVar r = root(c, in);
     if (r == var) return true;
-    return c->types.items[r].type == TYPE_LIST && occurs(c, var, c->types.items[r].item);
+    Type type = c->types.items[r].type;
+    if (type == TYPE_MAP && occurs(c, var, c->types.items[r].key)) return true;
+    return (type == TYPE_LIST || type == TYPE_MAP) && occurs(c, var, c->types.items[r].item);
 }
 
 static bool compatible(Checker *c, TypeVar a, TypeVar b) {
@@ -64,6 +87,10 @@ static bool compatible(Checker *c, TypeVar a, TypeVar b) {
     if (ta == TYPE_UNKNOWN) return !occurs(c, ra, rb);
     if (tb == TYPE_UNKNOWN) return !occurs(c, rb, ra);
     if (ta == TYPE_LIST && tb == TYPE_LIST) return compatible(c, c->types.items[ra].item, c->types.items[rb].item);
+    if (ta == TYPE_MAP && tb == TYPE_MAP) {
+        return compatible(c, c->types.items[ra].key, c->types.items[rb].key) &&
+               compatible(c, c->types.items[ra].item, c->types.items[rb].item);
+    }
     // A record or nothing, kind not decided yet, goes with any record or nothing.
     if (ta == TYPE_MAYBE) return tb == TYPE_MAYBE || type_is_maybe(tb);
     if (tb == TYPE_MAYBE) return type_is_maybe(ta);
@@ -82,7 +109,8 @@ static void join(Checker *c, TypeVar a, TypeVar b) {
     } else if (tb == TYPE_ERROR || ta == TYPE_UNKNOWN || ta == TYPE_MAYBE) {
         c->types.items[ra].parent = rb;
     } else {
-        if (ta == TYPE_LIST) join(c, c->types.items[ra].item, c->types.items[rb].item);
+        if (ta == TYPE_LIST || ta == TYPE_MAP) join(c, c->types.items[ra].item, c->types.items[rb].item);
+        if (ta == TYPE_MAP) join(c, c->types.items[ra].key, c->types.items[rb].key);
         c->types.items[rb].parent = ra;
     }
 }
@@ -116,7 +144,8 @@ static bool settle_and(Checker *c, const Deferred *d) {
     Type left = types_of(c, d->left), right = types_of(c, d->right);
     size_t line = d->expr->pos.line;
     if (left == TYPE_ERROR || right == TYPE_ERROR) return types_require(c, d->result, TYPE_ERROR, line);
-    if (type_is_list(left) || type_is_list(right)) {  // a list joins text (as "72, 95 and 88"), nothing else
+    // A list or map joins text (as "72, 95 and 88"), nothing else.
+    if (type_is_list(left) || type_is_list(right) || type_is_map(left) || type_is_map(right)) {
         if (left == TYPE_UNKNOWN || right == TYPE_UNKNOWN) return false;
         if (left == TYPE_TEXT || right == TYPE_TEXT) return types_require(c, d->result, TYPE_TEXT, line);
         report(c, d->expr, NULL, arena_sprintf(c->arena, "I can't use \"and\" between %s and %s.",
@@ -146,6 +175,7 @@ static bool settle_and(Checker *c, const Deferred *d) {
 
 static unsigned kind_bit(Type type) {
     if (type_is_list(type)) return KIND_LIST;
+    if (type_is_map(type)) return KIND_MAP;
     if (type_is_record(type) && !type_is_maybe(type)) return KIND_RECORD;
     return type == TYPE_NUMBER ? KIND_NUMBER : type == TYPE_TEXT ? KIND_TEXT : type == TYPE_YESNO ? KIND_YESNO : 0;
 }
@@ -191,7 +221,8 @@ static bool settle(Checker *c, Deferred *d) {
     Type type = types_of(c, d->left);
     if (type == TYPE_UNKNOWN) return false;
     const char *name = checker_type_name(c, type);
-    bool other = type == TYPE_YESNO || type_is_list(type) || type_is_record(type) || type == TYPE_MAYBE;
+    bool other = type == TYPE_YESNO || type_is_list(type) || type_is_record(type) || type_is_map(type) ||
+                 type == TYPE_MAYBE;
     if (other && d->kind == DEFER_ORDER) {
         report(c, d->expr, NULL, arena_sprintf(c->arena, "I can't compare %s with %s.", name, name));
     } else if (other) {
@@ -254,22 +285,32 @@ static const RecordKind *field_owner(Checker *c, TypeVar var) {
     return NULL;
 }
 
+// A kind with its undecided parts filled in, to suggest: numbers, and text
+// for a map's keys ("a list of numbers", "a map from text to numbers").
+static Type filled_in(Checker *c, Type type, Type unknown) {
+    if (type_is_list(type)) return type_list_of(filled_in(c, type_item(type), TYPE_NUMBER));
+    if (type_is_map(type)) {
+        return ast_map_type(c->arena, c->records, filled_in(c, ast_map_key(c->records, type), TYPE_TEXT),
+                            filled_in(c, ast_map_value(c->records, type), TYPE_NUMBER));
+    }
+    return type == TYPE_UNKNOWN ? unknown : type;
+}
+
 // What to suggest writing for a kind nothing decided: "a number", "text"
-// for what's searched, "a list of numbers" when it's known to be a list, or
-// a kind of record that has the field it's asked for ("a dog", or "a dog or
-// nothing" if it can be nothing).
+// for what's searched, "a list of numbers" when it's known to be a list (a
+// map likewise), or a kind of record that has the field it's asked for ("a
+// dog", or "a dog or nothing" if it can be nothing).
 static const char *suggested_kind(Checker *c, TypeVar var) {
     if (searched(c, var)) return "text";
     Type type = types_of(c, var);
     const RecordKind *owner = field_owner(c, var);
     if (!owner && type == TYPE_MAYBE && c->records->len > 0) owner = &c->records->items[0];
     if (owner) return arena_sprintf(c->arena, "a %s%s", owner->display, type == TYPE_MAYBE ? " or nothing" : "");
-    return type_is_list(type) ? checker_type_name(c, type - TYPE_UNKNOWN + TYPE_NUMBER) : "a number";
+    return checker_type_name(c, filled_in(c, type, TYPE_NUMBER));
 }
 
 static bool undecided(Checker *c, TypeVar var) {
-    Type base = type_base(types_of(c, var));
-    return base == TYPE_UNKNOWN || base == TYPE_MAYBE;
+    return ast_type_undecided(c->records, types_of(c, var));
 }
 
 // "to show with x (a number)", with the given input marked.

@@ -1,0 +1,134 @@
+Line 4: The keys of "ages" are text, but this is a number.
+    say the value for 3 in ages
+                      ^
+
+Line 5: I can only look up a value in a map, but this is a list of numbers.
+    say the value for "Ada" in scores
+                               ^^^^^^
+To take an item from a list, write "item 2 of scores".
+
+Line 6: "ages" is a map from text to numbers, so it can't hold text.
+    set the value for "Ada" in ages to "old"
+                                       ^^^^^
+A map holds one kind of value. To keep text too, make a separate map for it.
+
+Line 7: "ages" is a map from text to numbers, so the value after ", or" has to be a number, but this is text.
+    say the value for "Ada" in ages, or "none"
+                                        ^^^^^^
+
+Line 8: I can only check whether a map has a key, but this is a list of numbers.
+    if scores has 72, say "yes"
+       ^^^^^^
+To check whether a list holds something, use "contains".
+
+Line 9: The keys of "ages" are text, but this is a yes/no value.
+    if ages has yes, say "yes"
+                ^^^
+
+Line 10: I can only count the entries of a map, but this is a list of numbers.
+    say the number of entries in scores
+                                 ^^^^^^
+To count the items of a list, write "the number of items in scores".
+
+Line 11: I can only take the keys of a map, but this is a list of numbers.
+    say the keys of scores
+                    ^^^^^^
+
+Line 12: I can only take the values of a map, but this is a number.
+    say the values of 7
+                      ^
+
+Line 13: I can only remove a key from a map, but this is a list of numbers.
+    remove 95 from scores
+                   ^^^^^^
+To remove an item from a list, write "remove item 2 from scores".
+
+Line 14: The keys of "ages" are text, but this is a number.
+    remove 3 from ages
+           ^
+
+Line 15: All the keys of a map have to be the same kind: the first is text, but this is a number.
+    let mixed be a map of "a" to 1, 2 to 3
+                                    ^
+
+Line 16: All the values of a map have to be the same kind: the first is a number, but this is text.
+    let mixed values be a map of "a" to 1, "b" to "two"
+                                                  ^^^^^
+
+Line 17: A map's keys have to be text or numbers, but this is a yes/no value.
+    let flags be a map of yes to 1
+                          ^^^
+
+Line 18: The key "tea" is in this map twice.
+    let twice be a map of "tea" to 2, "tea" to 3
+                                      ^^^^^
+Each key has one value, so give each key once.
+
+Line 19: The key 1 is in this map twice.
+    let twice numbers be a map of 1 to 2, 1.0 to 3
+                                          ^^^
+Each key has one value, so give each key once.
+
+Line 20: A map has a key and a value in each entry, so going through it takes two names.
+    for each name in ages:
+                     ^^^^
+Name both, like "for each name and age in ages:". To go through only the keys, write "for each name in the keys of ages:".
+
+Line 22: A "for each" loop with two names needs a map to go through, but this is a list of numbers.
+    for each a1 and b1 in scores:
+                          ^^^^^^
+A list has one item at a time, so name it once, like "for each score in scores:".
+
+Line 24: I can only set a value in a map, but this is a list of numbers.
+    set the value for "x" in scores to 1
+                             ^^^^^^
+To change an item of a list, write "set item 2 of scores to ...".
+
+Line 25: The keys of "ages" are text, but this is a number.
+    add 1 to the value for 3 in ages
+                           ^
+
+Line 26: I can't add a number to a map from text to numbers.
+    say ages plus 1
+        ^^^^^^^^^^^
+
+Line 27: I can't compare a map from text to numbers with a map from text to numbers.
+    say ages is greater than ages
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 28: I can't turn a map from text to numbers into a number.
+    say ages as a number
+        ^^^^^^^^^^^^^^^^
+
+Line 30: I can't compare a map from text to numbers with a map from numbers to numbers.
+    if ages is other, say "same"
+       ^^^^^^^^^^^^^
+
+Line 31: I can only find the length of text or a list, but this is a map from text to numbers.
+    say length of ages
+                  ^^^^
+To count the entries of a map, write "the number of entries in ages".
+
+Line 32: I can only look for something in text or a list, but this is a map from text to numbers.
+    say ages contains "Paris"
+        ^^^^
+To check whether a map has a key, use "has".
+
+Line 34: This value is a list of numbers, so this could mean two things.
+    add 5 to the value for "a" in graph
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To put it at the end of the list, write "add ... to the end of the value for ...". To add it to every item, set the value to "every n in ... plus ...".
+
+Line 35: This value is a list of numbers, so this could mean two things.
+    add "x" to the value for "a" in graph
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To put it at the end of the list, write "add ... to the end of the value for ...". To add it to every item, set the value to "every n in ... plus ...".
+
+Line 36: "ages" is a map from text to numbers (made on line 2), but this is a map from text to lists of numbers.
+    set ages to graph
+                ^^^^^
+A variable keeps the kind of value it was made with. To keep a map from text to lists of numbers, make a new variable for it.
+
+Line 38: I can't use "and" between a map from text to numbers and a map from numbers to numbers.
+    say ages and other
+        ^^^^^^^^^^^^^^

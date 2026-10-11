@@ -200,6 +200,10 @@ void parser_find_names(Parser *p) {
             add_name(p, i + 1, n, false, false);
         } else if (strcmp(word, "as") == 0 && after < p->count && p->tokens[after].kind == TOK_COLON) {
             add_name(p, i + 1, n, false, false);  // count ... as NAME:
+        } else if (strcmp(word, "each") == 0 && i > 0 && word_at(p, i - 1, "for") && word_at(p, after, "and") &&
+                   word_at(p, after + 1 + name_words(p, after + 1), "in")) {  // for each NAME and NAME in
+            add_name(p, i + 1, n, false, false);
+            add_name(p, after + 1, name_words(p, after + 1), false, false);
         } else if ((strcmp(word, "each") == 0 && i > 0 && word_at(p, i - 1, "for") &&
                     (word_at(p, after, "in") || word_at(p, after, "from"))) ||
                    (strcmp(word, "every") == 0 && word_at(p, after, "in") &&

@@ -1,0 +1,4 @@
+Line 4: I can't remove "Paris": the map has no value for it.
+    remove "Paris" from ages.
+           ^^^^^^^
+To check first, use "has".

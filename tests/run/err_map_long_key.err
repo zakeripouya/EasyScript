@@ -1,0 +1,6 @@
+Line 3: There's no value for "a very long key that goes on and on and on and on and on and..." in the map.
+        give back the value for key in table
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+To check first, use "has". To use another value when it's missing, add ", or" and that value after it.
+while working out "look up" (key was "a very long key that goes on a...")
+called from line 6: say look up with "a very long key that goes on and on and on and on and on and on and on" and table

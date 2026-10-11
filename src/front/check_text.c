@@ -77,6 +77,7 @@ bool checker_settle_search(Checker *c, const Deferred *d) {
     if (in_type != TYPE_TEXT) {
         diag_error(c->diag, in->pos.span, "I can only look for something in text or a list, but this is %s.",
                    checker_kind(c, d->left));
+        if (type_is_map(in_type)) diag_note(c->diag, "To check whether a map has a key, use \"has\".");
         return true;
     }
     if (!types_require(c, d->right, TYPE_TEXT, wanted->pos.line)) {

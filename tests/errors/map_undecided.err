@@ -1,0 +1,4 @@
+Line 4: I can't tell what kind of value "m" is.
+    to first value of m:
+                      ^
+Nothing in the program decides it. Say which kind in the definition, like "to first value of m (a map from text to numbers):".

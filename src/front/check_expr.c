@@ -22,7 +22,7 @@ static TypeVar error_var(Checker *c) {
 // How a kind is written in a definition: "a number", "text", "yes or no",
 // "a list of numbers".
 static const char *kind_words(Checker *c, Type type) {
-    if (type_is_list(type) || type_is_record(type)) return checker_type_name(c, type);
+    if (type_is_list(type) || type_is_record(type) || type_is_map(type)) return checker_type_name(c, type);
     switch (type) {
     case TYPE_NUMBER: return "a number";
     case TYPE_TEXT: return "text";
@@ -149,6 +149,8 @@ static TypeVar check_binary(Checker *c, const Expr *expr) {
     case BINARY_NOT_STARTS_WITH:
     case BINARY_ENDS_WITH:
     case BINARY_NOT_ENDS_WITH: return checker_check_starts(c, expr, left, right);
+    case BINARY_HAS:
+    case BINARY_NOT_HAS: return checker_check_has(c, expr, left, right);
     default:
         checker_arithmetic(c, op, left, right, expr->pos.span, line);
         return types_new(c, TYPE_NUMBER, line);
@@ -286,10 +288,7 @@ static TypeVar check_name(Checker *c, const Expr *expr) {
     const Constant *k = checker_find_constant(c, expr->as.name);
     if (k) {
         if (!k->ok) return error_var(c);
-        const ConstValue *v = &k->definition->as.constant.folded;
-        Type type = v->kind == CONST_NUMBER ? TYPE_NUMBER : v->kind == CONST_TEXT ? TYPE_TEXT
-                    : v->kind == CONST_YESNO ? TYPE_YESNO : v->list_type;
-        return types_new(c, type, k->definition->pos.line);
+        return types_new(c, checker_const_type(c, &k->definition->as.constant.folded), k->definition->pos.line);
     }
     const Function *f = checker_find_function(c, expr->as.name);
     if (!f) {
@@ -319,6 +318,12 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_CALL: return checker_check_call(c, expr, true);
     case EXPR_LENGTH: {
         TypeVar operand = checker_check_expr(c, expr->as.operand);
+        if (type_is_map(types_of(c, operand))) {
+            diag_error(c->diag, expr->as.operand->pos.span, "I can only find the length of text or a list, but this is "
+                                                            "%s.", checker_kind(c, operand));
+            diag_note(c->diag, "To count the entries of a map, write \"the number of entries in ages\".");
+            return types_new(c, TYPE_NUMBER, line);
+        }
         types_defer_one_of(c, expr->as.operand, operand, operand, KIND_TEXT | KIND_LIST,
                            "I can only find the length of text or a list");
         return types_new(c, TYPE_NUMBER, line);
@@ -345,6 +350,9 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_TEXT_OP: return checker_check_text_op(c, expr);
     case EXPR_FIELD: return checker_narrow(c, expr, checker_check_field(c, expr));
     case EXPR_NEW: return checker_check_new(c, expr);
+    case EXPR_MAP:
+    case EXPR_EMPTY_MAP:
+    case EXPR_MAP_GET: return checker_check_map_expr(c, expr);
     case EXPR_ERROR: return error_var(c);
     }
     return error_var(c);

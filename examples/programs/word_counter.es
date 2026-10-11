@@ -1,4 +1,4 @@
-note: Reads a file, counts its words, and reports the most common ones.
+note: Reads a file, counts how often each word appears with a map, and reports the most common ones.
 
 note: First, a file to read.
 write "The cat sat on the mat. The dog sat on the log." to file "story.txt"
@@ -15,31 +15,33 @@ for each mark in a list of ".", ",", ":", "?" and "!":
 let words be the words of cleaned
 say "It has " followed by the number of items in words followed by " words."
 
-note: Sorted, the same words sit next to each other, so each run is one word.
-sort words
-let distinct be an empty list of text
-let counts be an empty list of numbers
+note: A map from each word to how many times it appears. A word seen for
+note: the first time isn't in the map yet, so ", or 0" counts it from 0.
+let counts be an empty map from text to numbers
 for each word in words:
-    if distinct is not empty and the last item of distinct is word:
-        set the last item of counts to the last item of counts plus 1
-    otherwise:
-        add word to the end of distinct
-        add 1 to the end of counts
-say "Of those, " followed by the number of items in distinct followed by " are different."
+    set the value for word in counts to (the value for word in counts, or 0) plus 1
+say "Of those, " followed by the number of entries in counts followed by " are different."
+say "\"cat\" appears " followed by the value for "cat" in counts followed by " times, and \"bird\" " followed by (the value for "bird" in counts, or 0) followed by "."
 
-note: The most common first: take the biggest count, then put it out of the way.
+note: The most common first: take the word with the biggest count, then
+note: remove it. The map keeps its words in the order they first appeared,
+note: so of two words seen equally often, the earlier one comes first.
 say ""
 say "The five most common words:"
+let remaining be a copy of counts
 count from 1 to 5 as rank:
-    let most be the biggest of counts
-    let place be the position of most in counts
-    let word be item place of distinct
-    say rank followed by ". " followed by word followed by " (" followed by most followed by " times)"
-    set item place of counts to 0
+    let best be ""
+    let most be 0
+    for each word and seen in remaining:
+        if seen is more than most:
+            set best to word
+            set most to seen
+    say rank followed by ". " followed by best followed by " (" followed by most followed by " times)"
+    remove best from remaining
 
 say ""
 let longest be ""
-for each word in distinct:
+for each word in the keys of counts:
     if length of word is more than length of longest, set longest to word
 say "The longest word is \"" followed by longest followed by "\", with " followed by length of longest followed by " letters."
 let capital be the first character of longest in uppercase followed by longest without the first character

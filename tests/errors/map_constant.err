@@ -1,0 +1,103 @@
+Line 3: "prices" is a constant, so it can't change.
+    set the value for "milk" in prices to 1
+                                ^^^^^^
+It's kept on line 2. If it needs to change, make it with "let prices be ..." instead of "keep".
+
+Line 4: "prices" is a constant, so it can't change.
+    add 1 to the value for "tea" in prices
+                                    ^^^^^^
+It's kept on line 2. If it needs to change, make it with "let prices be ..." instead of "keep".
+
+Line 5: "prices" is a constant, so it can't change.
+    remove "tea" from prices
+                      ^^^^^^
+It's kept on line 2. If it needs to change, make it with "let prices be ..." instead of "keep".
+
+Line 6: "prices" is a constant, so it can't change.
+    set prices to an empty map from text to numbers
+        ^^^^^^
+It's kept on line 2. If it needs to change, make it with "let prices be ..." instead of "keep".
+
+Line 7: A constant can't work things out from a map.
+    keep tea cost at the value for "tea" in prices
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A constant can be a map written out, like "keep prices as a map of "tea" to 2" (and its number of entries). To work something out from a map, use "let" instead of "keep".
+
+Line 8: A constant can't work things out from a map.
+    keep listed at the keys of prices
+                       ^^^^^^^^^^^^^^
+A constant can be a map written out, like "keep prices as a map of "tea" to 2" (and its number of entries). To work something out from a map, use "let" instead of "keep".
+
+Line 9: A constant can't work things out from a map.
+    keep has tea at prices has "tea"
+                    ^^^^^^^^^^^^^^^^
+A constant can be a map written out, like "keep prices as a map of "tea" to 2" (and its number of entries). To work something out from a map, use "let" instead of "keep".
+
+Line 10: A constant can't work things out from a map.
+    keep joined at prices followed by "!"
+                   ^^^^^^^^^^^^^^^^^^^^^^
+A constant can be a map written out, like "keep prices as a map of "tea" to 2" (and its number of entries). To work something out from a map, use "let" instead of "keep".
+
+Line 11: I can only count the entries of a map, but this is a number.
+    keep entry count at the number of entries in 5
+                            ^^^^^^^^^^^^^^^^^^^^^^
+
+Line 12: A fixed map can't hold lists or maps, because those could change.
+    keep nested as a map of "a" to (a list of 1 and 2)
+                                   ^^^^^^^^^^^^^^^^^^^
+Make it with "let" instead of "keep".
+
+Line 13: All the values of a map have to be the same kind: the first is a number, but this is text.
+    keep mixed as a map of "a" to 1, "b" to "two"
+                                            ^^^^^
+
+Line 14: All the keys of a map have to be the same kind: the first is text, but this is a number.
+    keep mixed keys as a map of "a" to 1, 2 to 2
+                                          ^
+
+Line 15: A map's keys have to be text or numbers, but this is a yes/no value.
+    keep flag keys as a map of yes to 1
+                               ^^^
+
+Line 16: The key "a" is in this map twice.
+    keep twice as a map of "a" to 1, "a" to 2
+                                     ^^^
+Each key has one value, so give each key once.
+
+Line 17: The key 0.3 is in this map twice.
+    keep twice numbers as a map of 0.1 plus 0.2 to 1, 0.3 to 2
+                                                      ^^^
+Each key has one value, so give each key once.
+
+Line 18: A fixed map can't hold lists or maps, because those could change.
+    keep empty lists as an empty map from text to lists of numbers
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Make it with "let" instead of "keep".
+
+Line 19: I can only check whether a map has a key, but this is text.
+    keep with tea at "tea" has 3
+                     ^^^^^^^^^^^
+
+Line 20: A constant can't work things out from a map.
+    keep looked for at prices contains "tea"
+                       ^^^^^^^^^^^^^^^^^^^^^
+A constant can be a map written out, like "keep prices as a map of "tea" to 2" (and its number of entries). To work something out from a map, use "let" instead of "keep".
+
+Line 21: I can only find the length of text or a list, but this is a map from text to numbers.
+    keep long at length of prices
+                 ^^^^^^^^^^^^^^^^
+
+Line 23: "total" is a variable, so its value isn't known before the program runs.
+    keep made later as a map of "a" to total
+                                       ^^^^^
+A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".
+
+Line 24: A fixed list can't hold lists or maps, because those could change.
+    keep map rows as a list of (a map of 1 to 2)
+                               ^^^^^^^^^^^^^^^^^
+Make it with "let" instead of "keep".
+
+Line 25: A fixed list can't hold lists or maps, because those could change.
+    keep map shelf as an empty list of maps from text to numbers
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Make it with "let" instead of "keep".

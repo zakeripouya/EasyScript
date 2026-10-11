@@ -1,0 +1,4 @@
+Line 3: There's no value for 1.5 in the map.
+    say the value for 1.5 in sizes
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+To check first, use "has". To use another value when it's missing, add ", or" and that value after it.

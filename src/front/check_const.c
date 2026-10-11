@@ -20,6 +20,17 @@ const Constant *checker_closest_constant(const Checker *c, const char *name) {
     return best;
 }
 
+Type checker_const_type(Checker *c, const ConstValue *v) {
+    switch (v->kind) {
+    case CONST_NUMBER: return TYPE_NUMBER;
+    case CONST_TEXT: return TYPE_TEXT;
+    case CONST_YESNO: return TYPE_YESNO;
+    case CONST_LIST: return v->list_type;
+    case CONST_MAP: return ast_map_type(c->arena, c->records, v->key_type, v->value_type);
+    }
+    return TYPE_ERROR;
+}
+
 // --- Constants ---------------------------------------------------------------
 
 static const char *const keep_note =
@@ -67,7 +78,8 @@ void checker_check_constant(Checker *c, const Stmt *stmt) {
     Constant *k = (Constant *)checker_find_constant(c, stmt->as.constant.name.text);
     if (!k || k->definition != stmt) return;  // a duplicate, already reported
     c->constant = k;
-    k->ok = const_eval(c->arena, c->diag, stmt->as.constant.value, lookup_constant, c, &k->definition->as.constant.folded);
+    k->ok = const_eval(c->arena, c->diag, c->records, stmt->as.constant.value, lookup_constant, c,
+                       &k->definition->as.constant.folded);
     c->constant = NULL;
 }
 

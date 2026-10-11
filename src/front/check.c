@@ -7,7 +7,6 @@
 #include <string.h>
 #include "front/check_internal.h"
 
-
 const char *checker_type_name(Checker *c, Type type) {
     return ast_type_name(c->arena, c->records, type);
 }
@@ -187,6 +186,10 @@ static void check_set(Checker *c, const Stmt *stmt) {
     const Expr *value_expr = stmt->as.assign.value;
     TypeVar value = checker_check_value(c, value_expr);
     const Expr *field = stmt->as.assign.field;
+    if (field && field->kind == EXPR_MAP_GET) {
+        checker_check_map_set(c, field, value_expr, value);
+        return;
+    }
     if (field) {
         TypeVar var = check_field_target(c, field);
         if (!checker_fits(c, var, value, value_expr->pos.line)) {
@@ -213,7 +216,7 @@ static void check_change(Checker *c, const Stmt *stmt) {
     const Expr *field = stmt->as.change.field;
     TypeVar var;
     if (field) {
-        var = check_field_target(c, field);
+        var = field->kind == EXPR_MAP_GET ? checker_check_map_change(c, field) : check_field_target(c, field);
         if (types_of(c, var) == TYPE_ERROR) return;
     } else {
         const Symbol *symbol = check_target(c, &stmt->as.change.target);
@@ -283,8 +286,6 @@ static void check_return(Checker *c, const Stmt *stmt) {
 
 static void check_stmt(Checker *c, const Stmt *stmt);
 
-// A block's statements in a scope of their own: names made inside are
-// forgotten (and remembered as "ended") when it ends.
 // Ends a scope opened when made.len was `outer`: its names are forgotten,
 // and remembered as "ended" in `where` on `line`.
 static void end_scope(Checker *c, size_t outer, size_t line, const char *where) {
@@ -434,17 +435,15 @@ static void check_loop(Checker *c, const Stmt *stmt) {
     check_loop_value(c, stmt->as.loop.condition, TYPE_YESNO,
                      "A loop needs yes or no to decide whether to keep going",
                      "Compare it with something, like \"while count is less than 10\".");
-    TypeVar item = 0;
-    if (stmt->as.loop.list) {
-        item = checker_require_list(c, checker_check_expr(c, stmt->as.loop.list), stmt->as.loop.list,
-                                    "A \"for each\" loop needs a list to go through");
-    }
+    TypeVar item = 0, value = 0;
+    if (stmt->as.loop.list) item = checker_check_each(c, stmt, &value);
     size_t outer = c->made.len;
     Loop loop = {stmt->as.loop.kind == LOOP_COUNT || stmt->as.loop.kind == LOOP_TIMES, 0};
     if (stmt->as.loop.kind == LOOP_COUNT) loop.it = check_loop_variable(c, stmt);
     if (stmt->as.loop.kind == LOOP_TIMES) loop.it = types_new(c, TYPE_NUMBER, stmt->pos.line);
     if (stmt->as.loop.kind == LOOP_EACH) {
         checker_make_item_name(c, &stmt->as.loop.var, item);
+        if (stmt->as.loop.pair) checker_make_item_name(c, &stmt->as.loop.value_name, value);
         loop.has_it = true;
         loop.it = item;
     }
@@ -576,7 +575,7 @@ static void collect_functions(Checker *c, const Block *program) {
     }
 }
 
-void check_program(Arena *arena, Diag *diag, const Program *whole) {
+void check_program(Arena *arena, Diag *diag, Program *whole) {
     const Block *program = &whole->body;
     Checker c = {0};
     c.arena = arena;

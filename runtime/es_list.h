@@ -12,15 +12,21 @@
  * (a position past the end, the biggest item of an empty list) stop the
  * program with its line, like the other runtime errors.
  *
- * Operations on items come in five versions, one per kind of item: _n
+ * Operations on items come in six versions, one per kind of item: _n
  * (number), _b (yes/no), _t (text), _l (list), _r (record; NULL for
- * nothing). Records in a list are shared, never copied. */
+ * nothing), _m (map). Records in a list are shared, never copied; lists and
+ * maps in a list belong to it, so copies and slices copy them too. */
 #ifndef ES_LIST_H
 #define ES_LIST_H
 
 #ifndef ES_RUNTIME_H
 #include "es_runtime.h"
 #endif
+
+/* Maps (es_map.h), for lists that hold maps. */
+static EsMap *es_map_copy_of(const EsMap *m);
+static void es_map_own_deep(EsMap *m);
+static bool es_map_equal(const EsMap *a, const EsMap *b);
 
 /* --- Making lists ------------------------------------------------------------ */
 
@@ -100,28 +106,42 @@ static EsList *es_list_snapshot(EsList *l) {
     return copy;
 }
 
-/* "a copy of L": a new list, with copies of the lists inside it too, so
- * changing the copy never changes the original. Only looks at l. */
+/* "a copy of L": a new list, with copies of the lists and maps inside it
+ * too, so changing the copy never changes the original. Only looks at l. */
 static EsList *es_list_copy_of(const EsList *l) {
-    if (l->items != ES_ITEMS_LIST) return es_list_shallow_copy(l);
-    EsList *copy = es_list_new(ES_ITEMS_LIST, l->len);
-    for (size_t i = 0; i < l->len; i++) copy->at.l[i] = es_list_copy_of(l->at.l[i]);
+    if (!es_items_copied(l->items)) return es_list_shallow_copy(l);
+    EsList *copy = es_list_new(l->items, l->len);
+    for (size_t i = 0; i < l->len; i++) {
+        if (l->items == ES_ITEMS_LIST) {
+            copy->at.l[i] = es_list_copy_of(l->at.l[i]);
+        } else {
+            copy->at.m[i] = es_map_copy_of(l->at.m[i]);
+        }
+    }
     copy->len = l->len;
     return copy;
 }
 
-/* Makes every list inside l (and inside those) belong to l alone, copying
- * the ones something else holds: for reusing a list nobody else holds while
- * keeping the promise that copies and slices share no lists. */
+/* A copy of a list or map that belongs to a list or map. Only looks. */
+static EsObject *es_copy_inner(EsItems items, const EsObject *inner) {
+    if (items == ES_ITEMS_LIST) return &es_list_copy_of((const EsList *)inner)->header;
+    return &es_map_copy_of((const EsMap *)inner)->header;
+}
+
+/* Makes every list and map inside l (and inside those) belong to l alone,
+ * copying the ones something else holds: for reusing a list nobody else
+ * holds while keeping the promise that copies and slices share no lists. */
 static void es_list_own_deep(EsList *l) {
-    if (l->items != ES_ITEMS_LIST) return;
+    if (!es_items_copied(l->items)) return;
     for (size_t i = 0; i < l->len; i++) {
-        EsList *inner = l->at.l[i];
-        if (inner->header.refs == 1) {
-            es_list_own_deep(inner);
+        EsObject *inner = l->at.o[i];
+        if (inner->refs != 1) {
+            l->at.o[i] = es_copy_inner(l->items, inner);
+            es_object_release(inner);
+        } else if (l->items == ES_ITEMS_LIST) {
+            es_list_own_deep(l->at.l[i]);
         } else {
-            l->at.l[i] = es_list_copy_of(inner);
-            es_list_release(inner);
+            es_map_own_deep(l->at.m[i]);
         }
     }
 }
@@ -149,8 +169,8 @@ static EsList *es_list_pick(const EsList *l, size_t start, size_t count, size_t 
     size_t size = es_item_size(l->items);
     for (size_t k = 0; k < count; k++) {
         size_t i = start + k * step;
-        if (l->items == ES_ITEMS_LIST) {
-            out->at.l[k] = es_list_copy_of(l->at.l[i]);
+        if (es_items_copied(l->items)) {
+            out->at.o[k] = es_copy_inner(l->items, l->at.o[i]);
         } else {
             memcpy((char *)out->at.any + k * size, (const char *)l->at.any + i * size, size);
             if (l->items == ES_ITEMS_TEXT) es_retain(out->at.t[k]);
@@ -166,8 +186,8 @@ static EsList *es_list_pick(const EsList *l, size_t start, size_t count, size_t 
 static void es_list_append_copies(EsList *dst, const EsList *src) {
     size_t size = es_item_size(src->items);
     for (size_t i = 0; i < src->len; i++, dst->len++) {
-        if (src->items == ES_ITEMS_LIST) {
-            dst->at.l[dst->len] = es_list_copy_of(src->at.l[i]);
+        if (es_items_copied(src->items)) {
+            dst->at.o[dst->len] = es_copy_inner(src->items, src->at.o[i]);
         } else {
             memcpy((char *)dst->at.any + dst->len * size, (const char *)src->at.any + i * size, size);
             if (src->items == ES_ITEMS_TEXT) es_retain(dst->at.t[dst->len]);
@@ -325,6 +345,7 @@ ES_ITEM_OPS(b, bool, b, ES_SAME, ES_IGNORE)
 ES_ITEM_OPS(t, EsText *, t, es_retain, es_release)
 ES_ITEM_OPS(l, EsList *, l, es_list_retain, es_list_release)
 ES_ITEM_OPS(r, EsRecord *, r, es_record_retain, es_record_release)
+ES_ITEM_OPS(m, EsMap *, m, es_map_retain, es_map_release)
 
 /* "remove item N from L" (or the first or last item). */
 static void es_remove(int site, EsList *l, int where, double pos) {
@@ -368,6 +389,7 @@ static bool es_list_equal(const EsList *a, const EsList *b) {
         case ES_ITEMS_TEXT: same = es_text_equal(a->at.t[i], b->at.t[i]); break;
         case ES_ITEMS_LIST: same = es_list_equal(a->at.l[i], b->at.l[i]); break;
         case ES_ITEMS_RECORD: same = a->at.r[i] == b->at.r[i]; break; /* the same record */
+        case ES_ITEMS_MAP: same = es_map_equal(a->at.m[i], b->at.m[i]); break;
         }
         if (!same) return false;
     }
@@ -412,6 +434,14 @@ static bool es_contains_l(EsList *l, EsList *v) {
     return found;
 }
 
+static bool es_contains_m(EsList *l, EsMap *v) {
+    bool found = false;
+    for (size_t i = 0; i < l->len && !found; i++) found = es_map_equal(l->at.m[i], v);
+    es_map_release(v);
+    es_list_release(l);
+    return found;
+}
+
 /* A record is in the list when that same record is (not a record with the same fields). */
 static bool es_contains_r(EsList *l, EsRecord *v) {
     bool found = false;
@@ -439,6 +469,7 @@ ES_POSITION(b, bool, ES_SAME_YESNO, ES_IGNORE)
 ES_POSITION(t, EsText *, es_text_equal, es_release)
 ES_POSITION(l, EsList *, es_list_equal, es_list_release)
 ES_POSITION(r, EsRecord *, ES_SAME_YESNO, es_record_release)
+ES_POSITION(m, EsMap *, es_map_equal, es_map_release)
 
 /* "L added together" */
 static double es_list_sum(EsList *l) {
@@ -514,6 +545,7 @@ static void es_buf_add(EsBuf *b, const char *s, size_t n) {
 }
 
 static void es_record_render(EsBuf *b, const EsRecord *r, int depth); /* es_record.h */
+static void es_map_render(EsBuf *b, const EsMap *m, int depth);       /* es_map.h */
 
 /* "72, 95 and 88"; a list inside a list is in parentheses: "(1 and 2) and
  * (3)". `depth` is how many records it's inside (they stop showing their
@@ -539,6 +571,11 @@ static void es_list_render(EsBuf *b, const EsList *l, int depth) {
             if (l->at.r[i]) es_buf_add(b, "(", 1);
             es_record_render(b, l->at.r[i], depth);
             if (l->at.r[i]) es_buf_add(b, ")", 1);
+            break;
+        case ES_ITEMS_MAP: /* "("a" is 1) and ("b" is 2)" */
+            es_buf_add(b, "(", 1);
+            es_map_render(b, l->at.m[i], depth);
+            es_buf_add(b, ")", 1);
             break;
         }
     }

@@ -5,7 +5,7 @@
 //   and         A and B           (stops before "and call")
 //   not         not A
 //   comparison  A is B, A is greater than B, A >= B, L contains X, L is empty, T starts with X,
-//               C is a letter, ...   (no chaining)
+//               C is a letter, M has K, ...   (no chaining)
 //   join        A followed by B   (below arithmetic, so math happens first)
 //   additive    A plus B, A minus B, + -
 //   multiply    A times B, A multiplied by B, A divided by B, A mod B, * / %
@@ -13,7 +13,8 @@
 //   postfix     A as a number, A as text, L added together, L reversed, T in uppercase,
 //               T split by X, L joined with X, T with X replaced by Y, ... (parse_text.c)
 //   primary     literals, names, calls, ( ), length of X, contents of file X,
-//               lists (parse_list.c), text tools (parse_text.c), only L that are ...
+//               lists (parse_list.c), maps (parse_map.c), text tools (parse_text.c),
+//               only L that are ...
 
 #include <string.h>
 #include "front/parse_internal.h"
@@ -61,6 +62,9 @@ static const Phrase comparison_ops[] = {
     {"ends with", "ends with", BINARY_ENDS_WITH, false},
     {"does not end with", "does not end with", BINARY_NOT_ENDS_WITH, false},
     {"doesn't end with", "doesn't end with", BINARY_NOT_ENDS_WITH, false},
+    {"has", "has", BINARY_HAS, false},
+    {"does not have", "does not have", BINARY_NOT_HAS, false},
+    {"doesn't have", "doesn't have", BINARY_NOT_HAS, false},
 };
 
 // "only the scores that are at least 70": the comparisons, with "are" for "is".

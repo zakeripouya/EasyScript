@@ -1,7 +1,7 @@
 Line 1: I don't know the kind of value "banana".
     to f with x (banana):
                  ^^^^^^
-The kinds are "a number", "text", "yes or no", and lists like "a list of numbers".
+The kinds are "a number", "text", "yes or no", lists like "a list of numbers", and maps like "a map from text to numbers".
 
 Line 3: I expected ")" after the kind of value, but found ":".
     to g with y (a number:
@@ -16,4 +16,4 @@ Say which kind of value: "a number", "text", "yes or no", or a list like "a list
 Line 7: I don't know the kind of value "nothing".
     to k with w (nothing):
                  ^^^^^^^
-The kinds are "a number", "text", "yes or no", and lists like "a list of numbers".
+The kinds are "a number", "text", "yes or no", lists like "a list of numbers", and maps like "a map from text to numbers".

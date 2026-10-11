@@ -320,7 +320,7 @@ fresh_dir
 out=$(cd "$WORK/cwd" && "$ES" emit "$HELLO" 2>&1)
 if [ $? -ne 0 ]; then
     not_ok "cli/emit" "$out"
-elif ! echo "$out" | grep -q '^int main(void) {$'; then
+elif ! echo "$out" | grep '^int main(void) {$' >/dev/null; then
     not_ok "cli/emit" "output does not look like C:
 $out"
 elif check_cwd_empty "cli/emit"; then

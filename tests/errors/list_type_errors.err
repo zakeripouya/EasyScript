@@ -66,11 +66,11 @@ Line 20: I can only reverse a list, but this is a number.
     say 5 reversed
         ^
 
-Line 21: I can only copy a list or a record, but this is text.
+Line 21: I can only copy a list, a map or a record, but this is text.
     say a copy of "text"
                   ^^^^^^
 
-Line 22: I can only check whether text or a list is empty, but this is a number.
+Line 22: I can only check whether text, a list or a map is empty, but this is a number.
     say 5 is empty
         ^
 

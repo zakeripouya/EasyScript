@@ -35,6 +35,7 @@ void cg_append_prefixed(StrBuf *out, const char *prefix, const char *name) {
 
 const char *cg_ctype(Type type) {
     if (type_is_list(type)) return "EsList *";
+    if (type_is_map(type)) return "EsMap *";
     if (type_is_record(type)) return "EsRecord *";
     switch (type) {
     case TYPE_NUMBER: return "double";
@@ -48,34 +49,41 @@ const char *cg_ctype(Type type) {
 // A variable: "es_vn_total" (number), "es_vt_name" (text), "es_vb_done"
 // (yes/no), "es_vl1n_scores" (a list of numbers), "es_vl2t_rows" (a list of
 // lists of text), "es_vr0_rex" (record kind 0), "es_vm0_next" (kind 0 or
-// nothing), "es_vl1r0_dogs" (a list of kind 0).
+// nothing), "es_vl1r0_dogs" (a list of kind 0), "es_vh2_ages" (kind of map 2).
 void cg_append_var(StrBuf *out, const char *name, Type type) {
     Type base = type_base(type);
-    char letter = base == TYPE_TEXT ? 't' : base == TYPE_YESNO ? 'b' : type_is_maybe(base) ? 'm' : type_is_record(base) ? 'r' : 'n';
+    char letter = base == TYPE_TEXT ? 't' : base == TYPE_YESNO ? 'b' : type_is_maybe(base) ? 'm' : type_is_record(base) ? 'r'
+                  : type_is_map(base) ? 'h' : 'n';
     if (type_is_list(type)) sb_appendf(out, "es_vl%u", type / TYPE_LIST);
     sb_appendf(out, "%s%c", type_is_list(type) ? "" : "es_v", letter);
     if (type_is_record(base)) sb_appendf(out, "%zu", type_record_index(base));
+    if (type_is_map(base)) sb_appendf(out, "%u", base - TYPE_MAP);
     cg_append_prefixed(out, "_", name);
 }
 
 const char *cg_retain(Type type) {
+    if (type_is_map(type)) return "es_map_retain";
     return type_is_list(type) ? "es_list_retain" : type_is_record(type) ? "es_record_retain" : "es_retain";
 }
 
 const char *cg_release(Type type) {
+    if (type_is_map(type)) return "es_map_release";
     return type_is_list(type) ? "es_list_release" : type_is_record(type) ? "es_record_release" : "es_release";
 }
 
 const char *cg_set(Type type) {
+    if (type_is_map(type)) return "es_map_set";
     return type_is_list(type) ? "es_list_set" : type_is_record(type) ? "es_record_set" : "es_set";
 }
 
 const char *cg_drop(Type type) {
+    if (type_is_map(type)) return "es_map_drop";
     return type_is_list(type) ? "es_list_drop" : type_is_record(type) ? "es_record_drop" : "es_drop";
 }
 
 const char *cg_empty(Type type) {
     if (type_is_list(type)) return "&es_no_list";
+    if (type_is_map(type)) return "&es_no_map";
     if (type_is_record(type)) return "NULL";
     return type == TYPE_TEXT ? "&es_empty_text" : type == TYPE_YESNO ? "false" : "0";
 }
@@ -215,11 +223,13 @@ bool cg_has_effects(const Codegen *g, const Expr *expr) {
     case EXPR_FILE_CONTENTS:
     case EXPR_LIST_OP:
     case EXPR_EVERY:
-    case EXPR_ONLY: return true;
+    case EXPR_ONLY:
+    case EXPR_MAP_GET: return true;  // reads the map (and can fail)
     case EXPR_ITEM:
     case EXPR_SLICE: return true;  // can fail (a position past the end), for text too
     case EXPR_TEXT_OP: return cg_text_op_effects(g, expr);
     case EXPR_LIST:
+    case EXPR_MAP:
         for (size_t i = 0; i < expr->as.items.len; i++) {
             if (cg_has_effects(g, expr->as.items.items[i])) return true;
         }
@@ -232,7 +242,8 @@ bool cg_has_effects(const Codegen *g, const Expr *expr) {
                cg_has_effects(g, expr->as.convert.operand);
     case EXPR_BINARY:
         return expr->as.binary.op == BINARY_DIVIDE || expr->as.binary.op == BINARY_MODULO ||
-               type_is_list(expr->as.binary.left->type) || cg_has_effects(g, expr->as.binary.left) ||
+               type_is_list(expr->as.binary.left->type) || type_is_map(expr->as.binary.left->type) ||
+               cg_has_effects(g, expr->as.binary.left) ||
                cg_has_effects(g, expr->as.binary.right);
     default: return false;
     }
@@ -242,7 +253,8 @@ const char *cg_list_operand(Codegen *g, const Expr *expr) {
     if (expr->kind == EXPR_NAME && cg_is_constant(g, expr->as.name)) {
         StrBuf sb;
         sb_init(&sb, g->arena);
-        cg_append_prefixed(&sb, "&es_k_", expr->as.name);  // immortal: releasing it does nothing
+        // immortal: releasing it does nothing (a fixed map is already a pointer)
+        cg_append_prefixed(&sb, type_is_map(expr->type) ? "es_k_" : "&es_k_", expr->as.name);
         return sb.data;
     }
     return cg_operand(g, expr, false);
@@ -313,7 +325,7 @@ static void emit_compare(Codegen *g, const Expr *expr, StrBuf *out) {
         sb_appendf(out, "(%s %s %s)", l, op == BINARY_EQUAL ? "==" : "!=", r);
     } else if (equality) {
         const char *same = type_is_list(type) ? "es_list_same" : type_is_record(type) ? "es_record_same"
-                           : type == TYPE_TEXT ? "es_text_same" : "es_close";
+                           : type_is_map(type) ? "es_map_same" : type == TYPE_TEXT ? "es_text_same" : "es_close";
         sb_appendf(out, "%s%s(%s, %s)", negate, same, l, r);
     } else {
         sb_appendf(out, "(%s(%s, %s) %s 0)", type == TYPE_TEXT ? "es_text_order" : "es_number_order", l, r,
@@ -369,6 +381,8 @@ static void emit_binary(Codegen *g, const Expr *expr, StrBuf *out) {
     case BINARY_NOT_STARTS_WITH:
     case BINARY_ENDS_WITH:
     case BINARY_NOT_ENDS_WITH: cg_emit_text_search(g, expr, out); return;
+    case BINARY_HAS:
+    case BINARY_NOT_HAS: cg_emit_has(g, expr, out); return;
     default: emit_compare(g, expr, out); return;
     }
 }
@@ -428,6 +442,9 @@ static void emit_name(Codegen *g, const Expr *expr, StrBuf *out) {
         // A fixed list read where it could be kept (and changed) gets copied;
         // operations that only look at it use it directly (cg_list_operand).
         cg_append_prefixed(out, "es_list_copy(&es_k_", name);
+        sb_append_char(out, ')');
+    } else if (cg_is_constant(g, name) && type_is_map(expr->type)) {  // a fixed map, likewise
+        cg_append_prefixed(out, "es_map_copy(es_k_", name);
         sb_append_char(out, ')');
     } else if (cg_is_constant(g, name)) {
         cg_append_prefixed(out, "es_k_", name);  // text constants are immortal: no retain
@@ -499,6 +516,9 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     case EXPR_TEXT_OP: cg_emit_text_op(g, expr, out); break;
     case EXPR_FIELD: cg_emit_field(g, expr, out); break;
     case EXPR_NEW: cg_emit_new(g, expr, out); break;
+    case EXPR_MAP:
+    case EXPR_EMPTY_MAP:
+    case EXPR_MAP_GET: cg_emit_map_expr(g, expr, out); break;
     case EXPR_NOTHING: sb_append(out, "NULL"); break;  // where a record or nothing goes (the checker made sure)
     case EXPR_ERROR:
         // The checker rejects these before codegen runs.
@@ -514,6 +534,10 @@ void cg_emit_text(Codegen *g, const Expr *expr, StrBuf *out) {
     }
     if (type_is_record(expr->type)) {
         sb_appendf(out, "es_record_text(%s)", cg_operand(g, expr, false));
+        return;
+    }
+    if (type_is_map(expr->type)) {
+        sb_appendf(out, "es_map_text(%s)", cg_list_operand(g, expr));
         return;
     }
     switch (expr->type) {

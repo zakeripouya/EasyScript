@@ -1,0 +1,34 @@
+"A" is (B and C) and "B" is (D and E)
+C
+"A" is (B, C and Z) and "B" is (D and E)
+3
+"A" is (B, C and Z) and "B" is (D and E)
+"A" is (B, C and Z) and "B" is (D, E and Q)
+(B, C and Z) and (D, E and Q)
+"Ada" is ("math" is 96 and "history" is 88)
+96
+"Ada" is ("math" is 96 and "history" is 88)
+"Ada" is ("math" is 0 and "history" is 88)
+("a" is 1) and ("b" is 2)
+yes
+no
+2
+("a" is 10), ("b" is 2) and ("c" is 3)
+"a" is 10
+("a" is 99) and ("b" is 2)
+a student with name "Ada" and scores ("math" is 95)
+a student with name "Grace" and scores ("logic" is 99)
+"math" is 95 and "physics" is 90
+Ada L.
+ada: Ada L.
+grace: Grace
+"the" is 3, "cat" is 1, "and" is 2, "hat" is 1 and "bat" is 1
+8
+"the" is 3, "cat" is 2, "and" is 2, "hat" is 1, "bat" is 1 and "dog" is 1
+0
+THE, CAT, AND, HAT, BAT and DOG
+3, 2 and 2
+5, 4, 4, 3, 3 and 3
+a ledger with entries (("paid" is 10))
+a ledger with entries (an empty list)
+(1 is "one")

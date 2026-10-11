@@ -3,7 +3,8 @@
 
 // Shared by the parser's source files (parse_util.c, parse_expr.c,
 // parse_value.c, parse_stmt.c, parse_if.c, parse_loop.c, parse_func.c,
-// parse_list.c). Not for use outside src/front/.
+// parse_list.c, parse_text.c, parse_record.c, parse_map.c, parse_names.c).
+// Not for use outside src/front/.
 
 #include <stdbool.h>
 #include "common/ast.h"
@@ -201,6 +202,8 @@ void parser_take_name(Parser *p, size_t words, Name *name);
 // A kind of value: "number" (after the dropped "a"), "text", "yes or no" (or
 // "yes/no"), "list of" what it holds, and, when nothing_ok, "nothing".
 bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type);
+// What a list or map holds, in the plural: "numbers", "lists of text", "dogs", ...
+bool parser_parse_items_kind(Parser *p, Type *type);
 // "every second item", "every 3rd item", "every other item": a slice.
 bool parser_at_every_nth(const Parser *p);
 // How many tokens a simple value at `ahead` takes (a number, text, a name,
@@ -230,11 +233,24 @@ Expr *parser_parse_field(Parser *p, Expr *record);
 // "new" and a record kind's name start here.
 bool parser_at_new(const Parser *p);
 Expr *parser_parse_new(Parser *p);  // a new dog [with name "Rex" and age 3]
-// What a sentence changes: a name, or a field of one ("rex's age", "it's
-// age"), then *field is the EXPR_FIELD. `next` is as for parser_parse_name.
+// What a sentence changes: a name, a field of one ("rex's age", "it's
+// age"), then *field is the EXPR_FIELD, or a value in a map ("the value for
+// K in M"), then *field is the EXPR_MAP_GET. `next` is as for parser_parse_name.
 bool parser_parse_target(Parser *p, Name *name, Expr **field, const char *const *next);
 // A method's inputs: [for] RECORD, then [with | using | of] more inputs.
 void parser_parse_method_args(Parser *p, Expr *call);
+
+// parse_map.c
+// "map from" (or, if plural, "maps from") starts a kind of map here.
+bool parser_at_map_kind(const Parser *p, bool plural);
+// map from KEYS to VALUES: "a map from text to numbers".
+bool parser_parse_map_kind(Parser *p, Type *type);
+// A map form starting with a word ("map of", "empty map from", "value for",
+// "keys of", "values of", "number of entries in"), or NULL if none starts here.
+Expr *parser_parse_map_word(Parser *p);
+// "value for" starts "the value for K in M" here.
+bool parser_at_lookup(const Parser *p);
+Expr *parser_parse_lookup(Parser *p);
 
 // parse_text.c
 // "the characters of T", "the words of T", "the lines of T", "the code of T",

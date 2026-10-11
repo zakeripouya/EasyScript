@@ -1,15 +1,15 @@
-/* EasyScript runtime, part 1: heap objects (text, lists and records) and memory.
+/* EasyScript runtime, part 1: heap objects (text, lists, records and maps) and memory.
  *
- * The runtime is six files, embedded into the compiler at build time (in
+ * The runtime is seven files, embedded into the compiler at build time (in
  * this order: es_memory.h, es_runtime.h, es_list.h, es_sort.h, es_text.h,
- * es_record.h) and copied to the top of every generated C program, so
+ * es_record.h, es_map.h) and copied to the top of every generated C program, so
  * programs need nothing else to build.
  * Everything is static; generated code calls it.
  *
  * The compiler knows the kind of every value, so generated code uses plain C
  * types: a number is a double, yes/no is a bool, text is an EsText *, a list
- * is an EsList *, and a record is an EsRecord * (NULL for nothing). Text,
- * lists and records live on the heap with a reference count, and are freed
+ * is an EsList *, a record is an EsRecord * (NULL for nothing), and a map is
+ * an EsMap *. Text, lists, records and maps live on the heap with a reference count, and are freed
  * as soon as nothing uses them (see docs/memory.md);
  * text written in the program (literals, constants) is a static object marked
  * immortal, which is never counted or freed.
@@ -54,7 +54,7 @@
  * records) share the same retain/release machinery. A header whose count is
  * ES_IMMORTAL is never counted or freed. */
 
-typedef enum { ES_OBJ_TEXT, ES_OBJ_LIST, ES_OBJ_RECORD } EsObjectKind;
+typedef enum { ES_OBJ_TEXT, ES_OBJ_LIST, ES_OBJ_RECORD, ES_OBJ_MAP } EsObjectKind;
 
 #define ES_IMMORTAL SIZE_MAX
 
@@ -78,7 +78,7 @@ static EsText es_empty_text = ES_STATIC_TEXT("");
 
 /* A kind of record the program defines: its name with "a" or "an" ("a
  * dog"), and each field's name, kind ('n' number, 'b' yes/no, 't' text, 'l'
- * list, 'r' record, which may be NULL for nothing) and offset. The compiler
+ * list, 'r' record, which may be NULL for nothing, 'm' map) and offset. The compiler
  * writes one per kind (es_rt0, ...), with a C struct that starts with
  * EsRecord and then has the fields. */
 typedef struct {
@@ -103,9 +103,12 @@ typedef struct EsRecord {
 
 #define ES_FIELD(r, T, offset) (*(T *)((char *)(r) + (offset)))
 
-/* What a list holds. Text, lists and records inside a list are counted
- * references that the list owns (a record item can be NULL, for nothing). */
-typedef enum { ES_ITEMS_NUMBER, ES_ITEMS_YESNO, ES_ITEMS_TEXT, ES_ITEMS_LIST, ES_ITEMS_RECORD } EsItems;
+/* What a list holds (or a map's keys or values). Text, lists, records and
+ * maps inside a list are counted references that the list owns (a record
+ * item can be NULL, for nothing). */
+typedef enum { ES_ITEMS_NUMBER, ES_ITEMS_YESNO, ES_ITEMS_TEXT, ES_ITEMS_LIST, ES_ITEMS_RECORD, ES_ITEMS_MAP } EsItems;
+
+struct EsMap;
 
 typedef struct EsList {
     EsObject header;
@@ -118,7 +121,8 @@ typedef struct EsList {
         EsText **t;
         struct EsList **l;
         EsRecord **r;
-        EsObject **o; /* text, lists or records, any of them */
+        struct EsMap **m;
+        EsObject **o; /* text, lists, records or maps, any of them */
         void *any;
     } at;
 } EsList;
@@ -128,19 +132,70 @@ static size_t es_item_size(EsItems items) {
 }
 
 static bool es_items_counted(EsItems items) {
-    return items == ES_ITEMS_TEXT || items == ES_ITEMS_LIST || items == ES_ITEMS_RECORD;
+    return items != ES_ITEMS_NUMBER && items != ES_ITEMS_YESNO;
+}
+
+/* Lists and maps belong to what holds them: copying a list or a map copies
+ * the lists and maps inside it too (records and text are shared). */
+static bool es_items_copied(EsItems items) {
+    return items == ES_ITEMS_LIST || items == ES_ITEMS_MAP;
 }
 
 /* What a list variable holds before it's given a list (never read, never
  * changed): it lets releasing need no NULL checks, like es_empty_text. */
 static EsList es_no_list = {{ES_OBJ_LIST, ES_IMMORTAL}, ES_ITEMS_NUMBER, 0, 0, {NULL}};
 
+/* A key or value in a map. The map knows what kind its keys and its values
+ * are, so the union needs no tag. */
+typedef union {
+    double n;
+    bool b;
+    EsText *t;
+    EsList *l;
+    EsRecord *r;
+    struct EsMap *m;
+    EsObject *o; /* any counted one */
+} EsValue;
+
+/* One entry of a map: its key's hash (0 once it's removed), key and value. */
+typedef struct {
+    uint64_t hash;
+    EsValue key;
+    EsValue value;
+} EsEntry;
+
+/* A map (es_map.h): its entries in the order they were added, and an index
+ * to find them by key. Removed entries stay in place (hash 0) until the
+ * entries are packed again. Small maps have no index: looking through a few
+ * entries is faster. */
+typedef struct EsMap {
+    EsObject header;
+    EsItems keys;     /* ES_ITEMS_TEXT or ES_ITEMS_NUMBER */
+    EsItems values;
+    size_t len;       /* entries in the map */
+    size_t used;      /* entries[0..used) hold them, with the removed ones */
+    size_t cap;       /* room in entries */
+    EsEntry *entries;
+    uint32_t *index;  /* `slots` places: 0 empty, ES_GONE removed, or 1 + the entry's place; NULL when small */
+    size_t slots;     /* a power of two, or 0 */
+    size_t filled;    /* places in the index that aren't empty */
+} EsMap;
+
+#define ES_GONE UINT32_MAX
+
+/* What a map variable holds before it's given a map, like es_no_list. */
+static EsMap es_no_map = {{ES_OBJ_MAP, ES_IMMORTAL}, ES_ITEMS_TEXT, ES_ITEMS_NUMBER, 0, 0, 0, NULL, NULL, 0, 0};
+
+static size_t es_map_bytes(const EsMap *m) { /* what it takes, as counted */
+    return sizeof(EsMap) + m->cap * sizeof(EsEntry) + m->slots * sizeof(uint32_t);
+}
+
 /* --- Memory --------------------------------------------------------------
  *
  * Live objects and bytes are always counted (it's cheap). Two environment
  * variables turn on checks, used by the tests:
  *   ES_DEBUG_MEMORY=1   at the end, fail if any heap object is still alive
- *   ES_MEMORY_LIMIT=N   fail as soon as live text and lists would take more than N bytes */
+ *   ES_MEMORY_LIMIT=N   fail as soon as live text, lists, records and maps would take more than N bytes */
 
 static struct {
     size_t live_objects;
@@ -227,13 +282,25 @@ static void es_free_one(EsObject *obj) {
         const EsRecordType *type = r->type;
         for (int i = 0; i < type->fields; i++) {
             char kind = type->kinds[i];
-            if (kind == 't' || kind == 'l' || kind == 'r') {
+            if (kind == 't' || kind == 'l' || kind == 'r' || kind == 'm') {
                 EsObject *field = ES_FIELD(r, EsObject *, type->offsets[i]);
                 if (field) es_object_release(field);
             }
         }
         if (es_memory.check) es_unlink_record(r);
         size = type->size;
+        break;
+    }
+    case ES_OBJ_MAP: {
+        EsMap *m = (EsMap *)obj;
+        for (size_t i = 0; i < m->used; i++) {
+            if (m->entries[i].hash == 0) continue;
+            if (m->keys == ES_ITEMS_TEXT) es_object_release(m->entries[i].key.o);
+            if (es_items_counted(m->values) && m->entries[i].value.o) es_object_release(m->entries[i].value.o);
+        }
+        size = es_map_bytes(m);
+        free(m->entries);
+        free(m->index);
         break;
     }
     }
@@ -248,7 +315,7 @@ static void es_free_one(EsObject *obj) {
  * compiler, which otherwise sees free() reachable from releases of static
  * immortal text and warns (-Wfree-nonheap-object). Freeing is the rare path,
  * so a real call costs nothing that matters. Text holds nothing, so it's
- * freed at once; a list or record found while another is being freed waits
+ * freed at once; a list, record or map found while another is being freed waits
  * its turn in es_dying. */
 #if defined(__GNUC__) && !defined(__clang__)
 __attribute__((noipa, cold))
@@ -314,6 +381,25 @@ static inline void es_set(EsText **slot, EsText *t) {
 /* Releases a text variable at the end of its block. */
 static inline void es_drop(EsText **slot) {
     es_set(slot, &es_empty_text);
+}
+
+static inline EsMap *es_map_retain(EsMap *m) {
+    if (m->header.refs != ES_IMMORTAL) m->header.refs++;
+    return m;
+}
+
+static inline void es_map_release(EsMap *m) {
+    es_object_release(&m->header);
+}
+
+static inline void es_map_set(EsMap **slot, EsMap *m) {
+    EsMap *old = *slot;
+    *slot = m;
+    es_map_release(old);
+}
+
+static inline void es_map_drop(EsMap **slot) {
+    es_map_set(slot, &es_no_map);
 }
 
 /* Records: like text and lists, except that a record can be NULL (nothing). */
@@ -399,7 +485,7 @@ typedef struct {
 
 /* The call stack. Every EasyScript function call pushes a frame holding the
  * function (its name and its inputs' names and kinds: 'n' number, 'b'
- * yes/no, 't' text, 'l' list, 'r' record), the values it was given, and the site of the
+ * yes/no, 't' text, 'l' list, 'r' record, 'm' map), the values it was given, and the site of the
  * call. Errors print the chain. The frames are an array as deep as the
  * recursion limit, so pushing is a few stores and popping is the depth
  * counter going down. A function with one input (the usual case) keeps its
@@ -410,7 +496,7 @@ typedef union {
     bool b;
     EsText *t;   /* retained by the function for as long as the frame lives */
     EsRecord *r; /* the same */
-    void *list;
+    void *list;  /* a list or a map */
 } EsArg;
 
 typedef struct {
@@ -534,7 +620,8 @@ static void es_print_count(long n) {
 }
 
 /* "(count was 0, name was "Ada")": the inputs that are numbers, yes/no,
- * text or records (long ones cut short); nothing if there are none of those. */
+ * text or records (long ones cut short; lists and maps are left out);
+ * nothing if there are none of those. */
 static EsText *es_number_text(double x);
 static EsText *es_record_short_text(const EsRecord *r); /* es_record.h */
 
@@ -551,7 +638,7 @@ static void es_print_inputs(const EsFrame *frame) {
     bool open = false;
     for (int i = 0; i < frame->fn->inputs; i++) {
         char kind = frame->fn->kinds[i];
-        if (kind == 'l') continue;
+        if (kind == 'l' || kind == 'm') continue;
         fprintf(stderr, "%s%s was ", open ? ", " : " (", frame->fn->input_names[i]);
         open = true;
         if (kind == 'n') {

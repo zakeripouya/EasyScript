@@ -1,0 +1,4 @@
+Line 3: There's no value for "Bob" in the map.
+    say the value for "Bob" in ages
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To check first, use "has". To use another value when it's missing, add ", or" and that value after it.

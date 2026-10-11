@@ -4,6 +4,7 @@
 //   go from A to B [by S | in steps of S] [and call each number N | as N]:
 //   for each N from A to B [by S | in steps of S]:
 //   for each N in L:                       ("it" is the item too)
+//   for each K and V in M:                 (a map: each key and its value)
 //   do this N times:  /  repeat N times:
 //   while C:  /  as long as C:  /  repeat while C:
 //   keep doing this until C:  /  repeat until C:
@@ -89,17 +90,26 @@ static bool parse_count(Parser *p, Stmt *stmt, const Token *verb) {
     return parser_expect_word(p, from, example) && parse_range(p, stmt, example) && parse_loop_name(p, stmt);
 }
 
-// for each N from A to B [by S] / for each N in L
+// for each N from A to B [by S] / for each N in L / for each K and V in M
 static bool parse_for_each(Parser *p, Stmt *stmt) {
     static const char *const each[] = {"each", NULL};
-    static const char *const from_in[] = {"from", "in", NULL};
+    static const char *const from_in[] = {"from", "in", "and", NULL};
+    static const char *const in[] = {"in", NULL};
     static const char *const example = "for each n from 1 to 10:";
     stmt->as.loop.var_named = true;
     if (!parser_expect_word(p, each, example) || !parser_parse_name(p, &stmt->as.loop.var, from_in) ||
         !parser_expect_word(p, from_in, example)) {
         return false;
     }
-    if (strcmp(p->tokens[p->pos - 1].text, "from") == 0) return parse_range(p, stmt, example);
+    if (strcmp(p->tokens[p->pos - 1].text, "and") == 0) {  // for each name and age in ages
+        stmt->as.loop.pair = true;
+        if (!parser_parse_name(p, &stmt->as.loop.value_name, in) ||
+            !parser_expect_word(p, in, "for each name and age in ages:")) {
+            return false;
+        }
+    } else if (strcmp(p->tokens[p->pos - 1].text, "from") == 0) {
+        return parse_range(p, stmt, example);
+    }
     stmt->as.loop.kind = LOOP_EACH;
     stmt->as.loop.list = parse_expression(p);
     return !p->sentence_failed;
