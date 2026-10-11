@@ -11,4 +11,7 @@ myfile*
 .idea/
 .DS_Store
 .vscode/
+
+# Python caches (tests/tools)
 __pycache__/
+*.pyc
