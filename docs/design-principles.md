@@ -71,6 +71,18 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 - **A function made inside a value shares the names it uses from around it,** never a copy: a change made inside it is seen outside, and the other way round, even after the function around it has ended. Each `let` makes a new name, so functions made in different rounds of a loop don't share one.
 - **Values of kinds with variants never change** once made: a different value is made instead (`set s to a new circle with radius 4`). Like text, they're shared, and sharing them can't be seen, except through a list or map in a field (which can change); `a copy of s` gives the copy its own lists and maps.
 
+## Rules for new phrases
+
+Every phrase added from now on follows these too. They aren't audited by tests yet; the [English pass](english-pass.md) will add the audits and review the existing phrases against them.
+
+- **One meaning per word.** Synonyms are fine (`say` and `print`). A word with two meanings needs a documented exception below. Current overloads to review in the English pass: **`and`** (joins yes/no values, joins text, separates inputs and items) and **`is`** (compares values, and starts `is a circle`, `is empty`, `is anything with`, ...).
+- **Keywords come from common everyday English.** No idioms unless a plain form is also accepted: `every other item` is an idiom, so `every 2nd item` works too.
+- **Messages beginners see stay at a grade 6 to 8 reading level,** and never use these words: variable, function, parameter, argument, return, string, boolean, integer, float, array, index, null, exception, syntax, compile, runtime, type, object, instance, iterate, initialize, declare, scope. Docs written for programmers ([architecture](architecture.md), [memory](memory.md), comments in the compiler) may use them.
+- **Every high-level phrase has an exact meaning in terms of the core language** (loops, `if`s, lists, maps), written down in its docs, so a programmer can trust it and write it out by hand. For example, `the numbers in scores where it is above 50` is a new empty list, then `for each` item of `scores` (as it was when it started), adding the item when the condition is yes.
+- **High-level operations stay their own syntax-tree nodes:** sorting, top N, grouping, filtering, counting. The parser never rewrites them into loops, so a later optimizer can see what was meant and pick how to do it.
+- **Each pattern starts with its own trigger words,** so two patterns never overlap and the parser never has to try one and fall back to another.
+- **The success test,** written down so it can be checked: someone who has never written code builds a working quiz in 30 minutes, with no help.
+
 ## Known exceptions
 
 Each exception exists because following the rule would cost more than it gives. New exceptions are added here with their reason.

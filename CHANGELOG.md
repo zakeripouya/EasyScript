@@ -74,6 +74,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- **Docs: plans for what comes next.** Rules for new phrases in the [design principles](docs/design-principles.md#rules-for-new-phrases) (one meaning per word, everyday English, beginner messages without programmer words, exact meanings in core terms, high-level operations kept as themselves, distinct trigger words, and the success test), the [English pass](docs/english-pass.md) plan, and a [roadmap](docs/roadmap.md) with steps 21 and 22, the English pass and v0.2.0, a browser playground, going public, and the later phases' planned items.
 - **No more anonymous struct in a parameter list:** `check_func_value.c` took a `Vec(const char *) *`, which GCC warns about ("anonymous struct declared inside parameter list"); it now takes a `NameList` (a new typedef in `ast.h`, also used for the names kept in cells). No change in behavior.
 - **Whole numbers print exactly up to 2^53** (9007199254740992), without an exponent: `1000000 times 1000000 times 1000` prints `1000000000000000` (it printed `1e+15`). Map keys keep whole numbers up to 2^53 exactly too.
 - **Generated temporaries are always initialized,** so GCC 13 at `-O2` no longer warns "may be used uninitialized" for map lookups' temporaries (the Linux CI failure), and `consteval.c` initializes its comparison result.
