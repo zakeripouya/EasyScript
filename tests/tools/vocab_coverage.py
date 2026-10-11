@@ -31,8 +31,10 @@ def phrases():
     return sorted(p for p in found if p not in ERROR_ONLY)
 
 def documented(phrase, code_spans):
-    """True if the phrase appears, as whole words, inside some `code span`."""
-    words = r'\s+'.join(re.escape(w) for w in phrase.lower().split())
+    """True if the phrase appears, as whole words, inside some `code span`.
+    The lexer drops "the", "a" and "an", so they may sit between the words."""
+    filler = r'(?:\s+(?:the|a|an))*\s+'
+    words = filler.join(re.escape(w) for w in phrase.lower().split())
     pattern = re.compile(r'(?<![\w\'])' + words + r'(?![\w\'])')
     return any(pattern.search(span) for span in code_spans)
 

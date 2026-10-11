@@ -1,0 +1,4 @@
+Line 2: I can't leave out "Bob": the map has no value for it.
+    say ages without "Bob"
+                     ^^^^^
+To check first, use "has".

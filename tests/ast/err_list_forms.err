@@ -90,3 +90,13 @@ Line 22: Something is missing after "sorted biggest".
     say n sorted biggest
           ^^^^^^^^^^^^^^
 Did you mean "sorted biggest first"?
+
+Line 23: Something is missing after "item".
+    say scores without item
+               ^^^^^^^^^^^^
+Say which item to leave out, like "scores without item 2".
+
+Line 24: Something is missing after "without".
+    say ages without
+             ^^^^^^^
+Say which key to leave out, like "ages without "Bob"", or which item, like "scores without item 2".

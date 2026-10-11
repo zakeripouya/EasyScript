@@ -358,6 +358,15 @@ static void es_remove(int site, EsList *l, int where, double pos) {
     es_list_release(l);
 }
 
+/* "L without item N": a new list (reusing L when nobody else holds it), with
+ * copies of the lists inside it, like the other slices. */
+static EsList *es_slice_without_at(int site, EsList *l, double pos) {
+    es_index(site, l, ES_AT, pos); /* it has to be there */
+    EsList *r = es_list_copy(l);
+    es_remove(site, es_list_retain(r), ES_AT, pos);
+    return r;
+}
+
 /* --- Questions ----------------------------------------------------------------- */
 
 static double es_list_length(EsList *l) {

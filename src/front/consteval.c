@@ -515,7 +515,8 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
     case EXPR_ONLY: return reject_list(ev, span);
     case EXPR_MAP: return map(ev, expr, out);
     case EXPR_EMPTY_MAP: return empty_map(ev, expr, out);
-    case EXPR_MAP_GET: return reject_map(ev, span);
+    case EXPR_MAP_GET:
+    case EXPR_MAP_WITHOUT: return reject_map(ev, span);
     case EXPR_TEXT_OP: return reject_text_tool(ev, span);
     case EXPR_FILE_CONTENTS:
         return fail(ev, span, fixed_note, "A constant can't read a file, because files are read while the program runs.");

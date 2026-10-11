@@ -232,7 +232,8 @@ bool cg_has_effects(const Codegen *g, const Expr *expr) {
     case EXPR_LIST_OP:
     case EXPR_EVERY:
     case EXPR_ONLY:
-    case EXPR_MAP_GET: return true;  // reads the map (and can fail)
+    case EXPR_MAP_GET:
+    case EXPR_MAP_WITHOUT: return true;  // reads the map (and can fail)
     case EXPR_ITEM:
     case EXPR_SLICE: return true;  // can fail (a position past the end), for text too
     case EXPR_TEXT_OP: return cg_text_op_effects(g, expr);
@@ -526,7 +527,8 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     case EXPR_NEW: cg_emit_new(g, expr, out); break;
     case EXPR_MAP:
     case EXPR_EMPTY_MAP:
-    case EXPR_MAP_GET: cg_emit_map_expr(g, expr, out); break;
+    case EXPR_MAP_GET:
+    case EXPR_MAP_WITHOUT: cg_emit_map_expr(g, expr, out); break;
     case EXPR_NOTHING: sb_append(out, "NULL"); break;  // where a record or nothing goes (the checker made sure)
     case EXPR_ERROR:
         // The checker rejects these before codegen runs.

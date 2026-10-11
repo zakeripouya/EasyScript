@@ -55,3 +55,6 @@ say scores sorted biggest first
 say names sorted by their length longest first
 let sorted be 1
 say sorted
+say scores without item 2
+say word without character n
+say ages without "Bob"

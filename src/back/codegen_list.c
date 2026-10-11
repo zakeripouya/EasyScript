@@ -107,6 +107,13 @@ static void emit_list_op(Codegen *g, const Expr *expr, StrBuf *out) {
 // last), es_slice_without(SITE, L, last), es_slice_every(L, STEP, FIRST).
 static void emit_slice(Codegen *g, const Expr *expr, StrBuf *out) {
     SliceKind kind = expr->as.slice.kind;
+    if (kind == SLICE_WITHOUT_AT) {  // the list is written first: es_slice_without_at(SITE, L, POSITION)
+        Expr *parts[] = {expr->as.slice.list, expr->as.slice.from};
+        const char *v[2];
+        bool opened = cg_ordered(g, parts, 2, v, out);
+        sb_appendf(out, "es_slice_without_at(%zu, %s, %s)%s", cg_site(g, expr->pos), v[0], v[1], opened ? ")" : "");
+        return;
+    }
     Expr *parts[] = {expr->as.slice.from, expr->as.slice.to, expr->as.slice.list};
     const char *v[3] = {"0", "0", NULL};
     bool opened = cg_ordered(g, parts, 3, v, out);
@@ -123,6 +130,7 @@ static void emit_slice(Codegen *g, const Expr *expr, StrBuf *out) {
     case SLICE_EVERY:
         sb_appendf(out, "es_slice_every(%s, %zu, %zu)", v[2], expr->as.slice.step, expr->as.slice.start);
         break;
+    case SLICE_WITHOUT_AT: break;  // above
     }
     if (opened) sb_append_char(out, ')');
 }
@@ -181,7 +189,8 @@ static void collect(Codegen *g, const Expr *expr, Names *bound, Codegen *helper)
     case EXPR_CONVERT: collect(g, expr->as.convert.operand, bound, helper); return;
     case EXPR_LIST:
     case EXPR_MAP: collect_all(g, expr->as.items.items, expr->as.items.len, bound, helper); return;
-    case EXPR_MAP_GET: {
+    case EXPR_MAP_GET:
+    case EXPR_MAP_WITHOUT: {
         Expr *parts[] = {expr->as.lookup.key, expr->as.lookup.map, expr->as.lookup.fallback};
         collect_all(g, parts, 3, bound, helper);
         return;
@@ -235,6 +244,7 @@ static bool calls_function(const Codegen *g, const Expr *expr) {
         }
         return false;
     case EXPR_MAP_GET:
+    case EXPR_MAP_WITHOUT:
         return calls_function(g, expr->as.lookup.key) || calls_function(g, expr->as.lookup.map) ||
                (expr->as.lookup.fallback && calls_function(g, expr->as.lookup.fallback));
     case EXPR_ITEM:

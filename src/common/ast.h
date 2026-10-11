@@ -132,6 +132,7 @@ typedef enum {
     EXPR_MAP,            // a map of "coffee" to 3, "tea" to 2
     EXPR_EMPTY_MAP,      // an empty map from text to numbers
     EXPR_MAP_GET,        // the value for K in M [, or D]
+    EXPR_MAP_WITHOUT,    // M without K: a new map (as.lookup: key and map, no fallback)
 } ExprKind;
 
 typedef enum {
@@ -201,6 +202,7 @@ typedef enum {
     SLICE_WITHOUT_FIRST,  // L without the first item
     SLICE_WITHOUT_LAST,   // L without the last item
     SLICE_EVERY,          // every STEP-th item of L ("every second item": 2, 4, 6...; "every other item": 1, 3, 5...)
+    SLICE_WITHOUT_AT,     // L without item FROM (a position)
 } SliceKind;
 
 // What a text tool does. Each makes something new; text never changes.
@@ -335,7 +337,7 @@ struct Expr {
             Expr *key;
             Expr *map;
             Expr *fallback;  // ", or D": the value when the key isn't there (NULL: that's an error)
-        } lookup;  // EXPR_MAP_GET
+        } lookup;  // EXPR_MAP_GET, EXPR_MAP_WITHOUT
     } as;
 };
 

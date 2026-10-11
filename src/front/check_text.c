@@ -27,7 +27,8 @@ TypeVar checker_check_characters(Checker *c, const Expr *expr) {
         text = expr->as.item.list;
     } else {
         const Expr *parts[] = {expr->as.slice.from, expr->as.slice.to};
-        const char *message = expr->as.slice.kind == SLICE_RANGE ? "The position of a character has to be a number"
+        bool position = expr->as.slice.kind == SLICE_RANGE || expr->as.slice.kind == SLICE_WITHOUT_AT;
+        const char *message = position ? "The position of a character has to be a number"
                                                                   : "The number of characters has to be a number";
         for (size_t i = 0; i < 2; i++) {
             if (parts[i]) checker_require(c, checker_check_expr(c, parts[i]), TYPE_NUMBER, parts[i], message, NULL);

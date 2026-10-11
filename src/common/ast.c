@@ -222,9 +222,10 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
     case EXPR_ONLY: return "only";
     case EXPR_SLICE: {
         static const char *const names[] = {"items", "first items", "last items", "without the first item",
-                                            "without the last item", "every"};
+                                            "without the last item", "every", "without item"};
         static const char *const text_names[] = {"characters", "first characters", "last characters",
-                                                 "without the first character", "without the last character", "every"};
+                                                 "without the first character", "without the last character", "every",
+                                                 "without character"};
         bool characters = expr->as.slice.characters;
         sb_append(scratch, (characters ? text_names : names)[expr->as.slice.kind]);
         const char *noun = characters ? "character" : "item";
@@ -248,6 +249,7 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
         sb_appendf(scratch, "empty %s", ast_type_name(scratch->arena, records, expr->as.list_type) + 2);  // without "a "
         break;
     case EXPR_MAP_GET: return expr->as.lookup.fallback ? "value for, or" : "value for";
+    case EXPR_MAP_WITHOUT: return "map without";
     }
     return scratch->data;
 }
@@ -275,11 +277,16 @@ static void dump_expr(const Expr *expr, size_t depth, Dump *d) {
         dump_children(expr->as.lookup.key, expr->as.lookup.map, depth, d);
         dump_children(expr->as.lookup.fallback, NULL, depth, d);
         break;
+    case EXPR_MAP_WITHOUT: dump_children(expr->as.lookup.map, expr->as.lookup.key, depth, d); break;
     case EXPR_ITEM: dump_children(expr->as.item.position, expr->as.item.list, depth, d); break;
     case EXPR_LIST_OP: dump_children(expr->as.list_op.operand, NULL, depth, d); break;
     case EXPR_EVERY: dump_children(expr->as.every.list, expr->as.every.body, depth, d); break;
     case EXPR_ONLY: dump_children(expr->as.only.list, expr->as.only.condition, depth, d); break;
     case EXPR_SLICE:  // in the order they're written, except postfix "without": the list first
+        if (expr->as.slice.kind == SLICE_WITHOUT_AT) {
+            dump_children(expr->as.slice.list, expr->as.slice.from, depth, d);
+            break;
+        }
         dump_children(expr->as.slice.from, expr->as.slice.to, depth, d);
         dump_expr(expr->as.slice.list, depth + 1, d);
         break;

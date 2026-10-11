@@ -266,6 +266,8 @@ Expr *parser_parse_text_word(Parser *p);
 // After a value: "in uppercase", "in lowercase", "without extra spaces",
 // "split by X", "joined with X", "with X replaced by Y"; NULL if none is next.
 Expr *parser_parse_text_postfix(Parser *p, Expr *expr);
+// "L without item N" / "T without character N", at "without" (parse_list.c).
+Expr *parser_parse_without_at(Parser *p, Expr *list);
 // "with X replaced by" is next (so "with" doesn't start a call's inputs).
 bool parser_at_replace(const Parser *p);
 // After a value: "is a letter", "is not a digit", "isn't a space"; NULL if none is next.

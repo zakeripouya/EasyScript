@@ -145,6 +145,12 @@ TypeVar checker_check_list_expr(Checker *c, const Expr *expr) {
     }
     case EXPR_SLICE: {
         const Expr *from = expr->as.slice.from;
+        if (expr->as.slice.kind == SLICE_WITHOUT_AT) {  // written list first
+            TypeVar list = checker_check_expr(c, expr->as.slice.list);
+            require_list_not_text(c, list, expr->as.slice.list, "I can only take items from a list", false);
+            require_position(c, from);
+            return list;
+        }
         if (expr->as.slice.kind == SLICE_RANGE) {
             require_position(c, from);
             require_position(c, expr->as.slice.to);

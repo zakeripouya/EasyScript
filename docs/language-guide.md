@@ -361,6 +361,8 @@ ask "How old are you? " and call the answer age.
 say "Next year you'll be " and age as a number plus 1.
 ```
 
+`and call it name` works too, as in `read file`.
+
 Any sentence can begin with `please`, which is skipped: `please say "hi"`.
 
 `stop the program` ends the program straight away.
@@ -572,6 +574,8 @@ read file "notes.txt" and call it notes.
 say notes.
 ```
 
+`and call the answer notes` works too, as in `ask`.
+
 `write X to file F` replaces the file's contents, and `append` adds to the end; both end what they write with a new line, so each one is a line of the file. Reading gives back the whole file without its last new line, so the example prints the two lines. If a file can't be read, the program stops with a message like `Line 3: I couldn't read the file "notes.txt": it doesn't exist.` Inside an expression, `contents of file "notes.txt"` gives the whole file as text.
 
 Coming soon: checking whether a file exists.
@@ -698,6 +702,7 @@ say the first 3 items in scores.        # 10, 20 and 30
 say the last 2 items in scores.         # 50 and 60
 say scores without the first item.      # 20, 30, 40, 50 and 60
 say scores without the last item.       # 10, 20, 30, 40 and 50
+say scores without item 3.              # 10, 20, 40, 50 and 60
 say every second item of scores.        # 20, 40 and 60
 say every other item of scores.         # 10, 30 and 50
 ```
@@ -841,6 +846,7 @@ say characters 6 to the end of word.      # au lait
 say the first 4 characters of word.       # café
 say the last 4 characters of word.        # lait
 say word without the first character.     # afé au lait
+say word without character 5.             # caféau lait
 say every other character of "abcdefg".   # aceg
 say every second character of "abcdefg".  # bdf
 say the characters of "café".             # c, a, f and é
@@ -1168,6 +1174,8 @@ remove "Paris" from ages.
 ```
 
 `add`, `subtract`, `increase`, `decrease`, `multiply` and `divide` change a value in place; the key has to be there already (otherwise the program stops: "There's no value for "Bob" in the map."). `remove K from M` takes a key out; it has to be there too ("I can't remove "Bob": the map has no value for it."). Removing a key and adding it again puts it at the end.
+
+`ages without "Paris"` is the value form: a new map with every key but that one, leaving `ages` as it was (lists and maps inside are copied, like `a copy of`). The key has to be there ("I can't leave out "Bob": the map has no value for it.").
 
 ### Going through a map
 

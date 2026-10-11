@@ -409,6 +409,18 @@ static void es_map_remove(int site, EsMap *m, EsValue key) {
     es_map_release(m);
 }
 
+/* "M without K": a new map (reusing M when nobody else holds it), with copies
+ * of the lists and maps inside it, like "a copy of". K has to be there. */
+static EsMap *es_map_without(int site, EsMap *m, EsValue key) {
+    EsMap *r = es_map_copy(m);
+    key = es_key(r, key);
+    if (!es_map_take_out(r, key)) {
+        es_map_missing(site, r, key, "To check first, use \"has\".", "I can't leave out ", ": the map has no value for it.");
+    }
+    es_value_release(r->keys, key);
+    return r;
+}
+
 /* --- Questions -------------------------------------------------------------------- */
 
 static double es_map_length(EsMap *m) {

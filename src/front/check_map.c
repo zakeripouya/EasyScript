@@ -132,11 +132,25 @@ static TypeVar check_lookup(Checker *c, const Expr *expr) {
     return value;
 }
 
+// M without K: a new map like M, without K.
+static TypeVar check_without(Checker *c, const Expr *expr) {
+    const Expr *map = expr->as.lookup.map;
+    TypeVar map_var = checker_check_expr(c, map);
+    TypeVar key_var = checker_check_expr(c, expr->as.lookup.key);
+    TypeVar key, value;
+    if (checker_require_map(c, map_var, map, "I can only leave a key out of a map",
+                            "To leave out an item of a list, write \"scores without item 2\".", &key, &value)) {
+        require_key(c, map, key, expr->as.lookup.key, key_var);
+    }
+    return map_var;
+}
+
 TypeVar checker_check_map_expr(Checker *c, const Expr *expr) {
     switch (expr->kind) {
     case EXPR_MAP: return check_literal(c, expr);
     case EXPR_EMPTY_MAP: return types_new(c, expr->as.list_type, expr->pos.line);
     case EXPR_MAP_GET: return check_lookup(c, expr);
+    case EXPR_MAP_WITHOUT: return check_without(c, expr);
     default: return error_var(c);
     }
 }

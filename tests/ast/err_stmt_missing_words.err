@@ -48,11 +48,6 @@ Line 10: Something is missing after the text "Name?".
         ^^^^^^^
 Write it like "ask "What's your name?" and call the answer name".
 
-Line 11: I expected "and call the answer" here, but found "and call it".
-    ask "Name?" and call it name
-                ^^^^^^^^^^^
-Write it like "ask "What's your name?" and call the answer name".
-
 Line 12: Something is missing after "and call the answer".
     ask "Name?" and call the answer
                 ^^^^^^^^^^^^^^^^^^^
@@ -76,11 +71,6 @@ Write it like "append "hello" to file "notes.txt"".
 Line 16: I expected "file" here, but found the text "notes.txt".
     read "notes.txt" and call it notes
          ^^^^^^^^^^^
-Write it like "read file "notes.txt" and call it notes".
-
-Line 17: I expected "and call it" here, but found "and call the answer".
-    read file "notes.txt" and call the answer notes
-                          ^^^^^^^^^^^^^^^^^^^
 Write it like "read file "notes.txt" and call it notes".
 
 Line 18: Something is missing after the text "notes.txt".

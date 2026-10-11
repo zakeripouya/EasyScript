@@ -6,6 +6,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **`L without item N`** and **`T without character N`**, the value forms of `remove item N from L`, and **`M without K`**, a new map without one key (the key has to be there: "I can't leave out "Bob": the map has no value for it.").
+- **`ask ... and call it NAME`** and **`read file ... and call the answer NAME`**: both sentences take both phrasings.
 - **Methods with the same name for different kinds of record:** `to speak, for a dog:` and `to speak, for a cat:` can both exist; `speak rex` and `speak tom` each call the one for their record's kind, worked out like any other kind (so a function that calls `speak pet` works once it's given a dog). Two methods with the same name for one kind, or a plain function sharing a method's name, are errors; calling it on another kind lists the kinds that have it; and when nothing decides the kind, the error asks for it (`(a dog)`).
 - **More ways to introduce a function's inputs:** `for`, `from` and `in` work like `to`: `to pause for seconds:` is called `pause for 3`, `to busiest artist from names:` is called `busiest artist from names`, and `to count vowels in word:` is called `count vowels in "banana"` (or with `with`, `of` or `using`, as always). Methods take them after the record too (`fetch rex from "the park"`), and so does `to` (`rename rex to "Max"`, which didn't work before). Calling a function with a word it doesn't take is an error that names the ones it does.
 - **`L sorted`:** a sorted copy of a list, leaving it as it was, the value form of `sort L`: `scores sorted`, `scores sorted biggest first`, `names sorted by their length`, `names sorted by their length longest first`.

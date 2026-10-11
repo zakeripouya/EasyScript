@@ -181,7 +181,7 @@ The words that start statements are only special at the start of a sentence, so 
 | `show X` | Synonym of `say` | `show total` | Available |
 | `display X` | Synonym of `say` | `display total` | Available |
 | `write X` | Synonym of `say` (unless followed by `to file`; see [Files](#files)) | `write "done"` | Available |
-| `ask X and call the answer NAME` | Print a question, then read a line of text typed by the user into `NAME` (empty text if there's no more input). Makes `NAME` if it doesn't exist yet | `ask "What's your name? " and call the answer name` | Available |
+| `ask X and call the answer NAME` / `ask X and call it NAME` | Print a question, then read a line of text typed by the user into `NAME` (empty text if there's no more input). Makes `NAME` if it doesn't exist yet | `ask "What's your name? " and call the answer name` | Available |
 
 ### Files
 
@@ -189,7 +189,7 @@ The words that start statements are only special at the start of a sentence, so 
 |---|---|---|---|
 | `write X to file F` | Replace a file's contents with `X` and a new line | `write "hello" to file "notes.txt"` | Available |
 | `append X to file F` | Add `X` and a new line to the end of a file | `append "more" to file "notes.txt"` | Available |
-| `read file F and call it NAME` | Read a whole file into a variable (without its final new line) | `read file "notes.txt" and call it notes` | Available |
+| `read file F and call it NAME` / `read file F and call the answer NAME` | Read a whole file into a variable (without its final new line) | `read file "notes.txt" and call it notes` | Available |
 | `file X exists` | A condition: does the file exist? | `if file "notes.txt" exists:` | Coming soon (Phase 2) |
 
 Reading a file inside an expression also works: `contents of file X` ([Built-in values](#built-in-values)).
@@ -326,6 +326,7 @@ Each of these gives back a **new list** (changing it doesn't change the original
 | `the first N items in L` / `the first N items of L` | The first N items (all of them if there are fewer) | `the first 3 items in scores` |
 | `the last N items in L` / `the last N items of L` | The last N items (all of them if there are fewer) | `the last 2 items of scores` |
 | `L without the first item` / `L without the last item` | All but the first or last item (an empty list is an error) | `scores without the first item` |
+| `L without item N` | All but the item at position N, the value form of `remove item N from L` (a position that isn't there is an error) | `scores without item 2` |
 | `every other item of L` / `every other item in L` | The items at positions 1, 3, 5, ... (starting with the first) | `every other item of scores` |
 | `every second item of L` / `every ... item in L` | The items at positions 2, 4, 6, ... (starting with the second): `second`, `third`, `fourth`, `fifth`, `sixth`, `seventh`, `eighth`, `ninth`, `tenth`, or any number written as an ordinal (`3rd`, `12th`, `21st`) | `every third item of scores` |
 
@@ -395,6 +396,7 @@ All text words are **Available**. A **character** is one Unicode character (a co
 | `characters A to the end of T` | Character A and everything after it | `characters 3 to the end of word` |
 | `the first N characters of T` / `the last N characters in T` | The first or last N characters (all of them if there are fewer) | `the first 3 characters of word` |
 | `T without the first character` / `T without the last character` | All but the first or last character (empty text is an error) | `word without the first character` |
+| `T without character N` | All but the character at position N | `word without character 3` |
 | `every other character of T` | The characters at positions 1, 3, 5, ... | `every other character of word` |
 | `every second character of T` / `every 3rd character in T` | The characters at positions 2, 4, 6, ... (any ordinal, as for items) | `every second character of word` |
 | `the characters of T` | A list of text, one character each | `for each letter in the characters of word:` |
@@ -561,6 +563,7 @@ Number keys are the same key when they're the same to 12 significant digits, so 
 | `add X to the value for K in M` (also `subtract ... from`, `increase`/`decrease`/`multiply`/`divide ... by`) | Change a value in place; K has to be there | `add 1 to the value for word in counts` |
 | `add X to the end of the value for K in M` | Add to a list kept in a map | `add "Elm" to the end of the value for "Ash" in graph` |
 | `remove K from M` | Take key K (and its value) out; K has to be there | `remove "Paris" from ages` |
+| `M without K` | A new map with every key but K (lists and maps in it are copied); M doesn't change, and K has to be there. K is a single value | `ages without "Paris"` |
 
 `remove item from M` reads as a list's item with its position missing (an error); write the key another way, like `remove (item) from M`.
 

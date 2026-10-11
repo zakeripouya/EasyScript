@@ -139,6 +139,20 @@ static EsText *es_text_without(int site, EsText *t, bool last) {
     return es_text_keep(t, last ? 0 : 1, n - 1);
 }
 
+/* "T without character N" */
+static EsText *es_text_without_at(int site, EsText *t, double pos) {
+    size_t n = es_text_chars(t);
+    size_t at = es_char_offset(t, es_char_index(site, n, ES_AT, pos));
+    size_t bytes = es_char_bytes(t, at);
+    EsBuf b = {NULL, 0, 0};
+    es_buf_add(&b, t->chars, at);
+    es_buf_add(&b, t->chars + at + bytes, t->len - at - bytes);
+    EsText *result = es_text_piece(b.data, b.len, n - 1);
+    free(b.data);
+    es_release(t);
+    return result;
+}
+
 /* "every second character of T": characters step, 2 * step, ...;
  * "every other character of T": 1, 3, 5, ... (start is the first position). */
 static EsText *es_text_every(EsText *t, size_t step, size_t start) {

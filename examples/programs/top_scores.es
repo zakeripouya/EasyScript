@@ -38,3 +38,4 @@ say "Shortest name first: " followed by games sorted by their length
 say "From the bottom: " followed by top points reversed
 let late games be a list of "Quinn" and "Rae"
 say "Everyone who played, late arrivals too: " followed by (games followed by late games)
+say "Everyone but the first player: " followed by games without item 1

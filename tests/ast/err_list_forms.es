@@ -20,3 +20,5 @@ say "end"
 say n sorted longest first
 say n sorted by their length biggest first
 say n sorted biggest
+say scores without item
+say ages without

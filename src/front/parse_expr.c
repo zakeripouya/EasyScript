@@ -414,6 +414,11 @@ static Expr *parse_postfix(Parser *p) {
             expr = slice;
             continue;
         }
+        if (parser_at_word(p, 0, "without") && (parser_at_word(p, 1, "item") || parser_at_word(p, 1, "character"))) {
+            expr = parser_parse_without_at(p, expr);  // L without item N / T without character N
+            if (p->sentence_failed) return expr;
+            continue;
+        }
         const Phrase *list_op = parser_match_phrase(p, list_postfix, COUNT(list_postfix), &len);
         if (list_op) {
             expr = new_list_op(p, (ListOp)list_op->value, parser_consume(p, len), expr);
@@ -424,6 +429,22 @@ static Expr *parse_postfix(Parser *p) {
         Expr *text_op = p->sentence_failed ? NULL : parser_parse_text_postfix(p, expr);
         if (text_op) {
             expr = text_op;
+            continue;
+        }
+        if (!p->sentence_failed && parser_at_word(p, 0, "without")) {  // M without K (a map)
+            Span op_span = parser_advance(p)->span;
+            if (parser_at_sentence_end(p) || parser_at(p, 0, TOK_COLON) || parser_at(p, 0, TOK_COMMA)) {
+                if (parser_error(p, op_span, "Something is missing after \"without\".")) {
+                    diag_note(p->diag, "Say which key to leave out, like \"ages without \"Bob\"\", or which item, "
+                                       "like \"scores without item 2\".");
+                }
+                return parser_error_expr(p);
+            }
+            Expr *key = parse_unary(p);
+            Expr *without = ast_new_expr(p->arena, EXPR_MAP_WITHOUT, ast_pos_join(expr->pos, key->pos));
+            without->as.lookup.map = expr;
+            without->as.lookup.key = key;
+            expr = without;
             continue;
         }
         const Phrase *conversion = parser_match_phrase(p, conversions, COUNT(conversions), &len);

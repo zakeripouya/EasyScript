@@ -417,7 +417,8 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_NEW: return checker_check_new(c, expr);
     case EXPR_MAP:
     case EXPR_EMPTY_MAP:
-    case EXPR_MAP_GET: return checker_check_map_expr(c, expr);
+    case EXPR_MAP_GET:
+    case EXPR_MAP_WITHOUT: return checker_check_map_expr(c, expr);
     case EXPR_ERROR: return error_var(c);
     }
     return error_var(c);

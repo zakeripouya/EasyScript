@@ -13,7 +13,7 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 
 - **A statement starts with a verb and does something:** `say X`, `set X to Y`, `sort L`, `remove K from M`. Statements change things in place or have effects.
 - **A value is a noun phrase or a value with a describing word after it:** `the length of T`, `the keys of M`, `L reversed`, `T in uppercase`. Values never change anything; they make something new.
-- **A statement that changes something in place has a value form that gives a changed copy, where both are useful:** `sort L` and `L sorted`; `remove the first item from L` and `L without the first item`; `add X to the end of L` and `L followed by M`. The value form uses the past participle (`sorted`, `reversed`, `added together`) or a describing phrase (`without ...`, `with X replaced by Y`).
+- **A statement that changes something in place has a value form that gives a changed copy, where both are useful:** `sort L` and `L sorted`; `remove item N from L` and `L without item N` (also `the first item`/`the last item`); `remove K from M` and `M without K`; `add X to the end of L` and `L followed by M`. The value form uses the past participle (`sorted`, `reversed`, `added together`) or a describing phrase (`without ...`, `with X replaced by Y`).
 - **Text never changes,** so text tools are only values; `set T to T followed by X` is how text grows.
 - **Expressions can't stand alone as sentences,** so a sentence that starts with a value is always an error, never silently dropped.
 
@@ -74,14 +74,12 @@ Each exception exists because following the rule would cost more than it gives. 
 - **`and` joins text as well as combining yes/no values.** `"Hello, " and name` is natural English; the compiler decides which `and` it is from the kinds on both sides, and reports an error when the kinds don't settle it (`and` between two numbers).
 - **`add X to L` is an error when L is a list of numbers,** because it could mean adding X to every item or adding it to the end. For other lists it adds to the end. The error shows both phrasings.
 - **`every other item` and `every second item` are different:** `every other` starts with the first item (1, 3, 5), `every second` with the second (2, 4, 6), as in everyday English.
+- **`ask` and `read file` both take `and call the answer NAME` and `and call it NAME`.** Each sentence reads most naturally with one of them, but accepting both means nobody has to remember which goes where.
+- **`L followed by M` needs two lists.** Adding one item as a value (`L followed by X`) would read naturally, but `followed by` with a list and text already joins text (`"Slots: " followed by slots`), so its meaning would depend on kinds in a way that's easy to misread. Write `L followed by (a list of X)`.
+- **`a copy of R` is shallow for records** (the records inside are shared) while lists and maps inside a list or map are copied. Records have an identity and can point to each other, so copying them silently would change what `is` says and could copy a whole web of records; a separate deep copy phrase is an [idea](ideas.md#a-deep-copy).
+- **Maps have `M without K` but no `M with K as X`** yet: setting a value as a value form waits until its wording is settled. Copy the map and `set the value for K in ...` the copy.
 - **A word ending in `'s` is always a possessive,** so a name can't end in `'s`, and `it's` means "its" (the field of `it`), not "it is".
 
 ## Open questions
 
-Phrasings that may not follow these rules, left as they are until they're decided:
-
-- **`ask X and call the answer NAME` and `read file F and call it NAME`** name their result with different words. Accepting both `call the answer` and `call it` in both sentences would be more regular, but each reads naturally as it is.
-- **Only the first and last item have a value form for removing.** `remove item N from L` changes L; there's `L without the first item` and `L without the last item`, but no `L without item N`.
-- **Maps have no value forms for changes.** `remove K from M` and `set the value for K in M to X` have no `M without K` or `M with K as X`. Copying a map and changing the copy works today.
-- **`L followed by M` needs two lists.** Adding one item as a value (`L followed by X`) would read naturally, but `followed by` with a list and text already joins text (`"Slots: " followed by slots`), so it would depend on kinds in a way that's easy to misread.
-- **`a copy of R` is shallow for records but deep for lists and maps.** This follows from records having identity (see [sharing and copying](#8-sharing-and-copying)); a deep copy phrase is an [idea](ideas.md#a-deep-copy).
+None at the moment. Phrasings that may not follow these rules go here until they're decided.

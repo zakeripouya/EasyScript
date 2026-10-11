@@ -43,6 +43,13 @@ static void emit_character(Codegen *g, const Expr *expr, StrBuf *out) {
 // The text versions of the list slices (codegen_list.c's emit_slice).
 static void emit_characters(Codegen *g, const Expr *expr, StrBuf *out) {
     SliceKind kind = expr->as.slice.kind;
+    if (kind == SLICE_WITHOUT_AT) {  // the text is written first: es_text_without_at(SITE, T, POSITION)
+        Expr *parts[] = {expr->as.slice.list, expr->as.slice.from};
+        const char *v[2];
+        bool opened = cg_ordered(g, parts, 2, v, out);
+        sb_appendf(out, "es_text_without_at(%zu, %s, %s)%s", cg_site(g, expr->pos), v[0], v[1], opened ? ")" : "");
+        return;
+    }
     Expr *parts[] = {expr->as.slice.from, expr->as.slice.to, expr->as.slice.list};
     const char *v[3] = {"0", "0", NULL};
     bool opened = cg_ordered(g, parts, 3, v, out);
@@ -58,6 +65,7 @@ static void emit_characters(Codegen *g, const Expr *expr, StrBuf *out) {
     case SLICE_EVERY:
         sb_appendf(out, "es_text_every(%s, %zu, %zu)", v[2], expr->as.slice.step, expr->as.slice.start);
         break;
+    case SLICE_WITHOUT_AT: break;  // above
     }
     if (opened) sb_append_char(out, ')');
 }
@@ -181,6 +189,7 @@ static bool reads(const Expr *expr, const char *name) {
                reads(expr->as.text_op.arg2, name);
     case EXPR_FIELD: return reads(expr->as.field.record, name);
     case EXPR_MAP_GET:
+    case EXPR_MAP_WITHOUT:
         return reads(expr->as.lookup.key, name) || reads(expr->as.lookup.map, name) ||
                reads(expr->as.lookup.fallback, name);
     case EXPR_NEW:

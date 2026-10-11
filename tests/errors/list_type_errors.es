@@ -34,3 +34,8 @@ set total to scores
 say length of 5
 say (a list of yes) sorted
 say (a list of 1) sorted by their length
+say 5 without "a"
+let nums be a list of 1 and 2
+say nums without "x"
+say nums without character 1
+say "abc" without item "x"

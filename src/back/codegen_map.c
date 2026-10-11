@@ -68,10 +68,20 @@ static void emit_lookup(Codegen *g, const Expr *expr, StrBuf *out) {
     if (opened) sb_append_char(out, ')');
 }
 
+// M without K: es_map_without(SITE, MAP, KEY), the map worked out first.
+static void emit_without(Codegen *g, const Expr *expr, StrBuf *out) {
+    Expr *parts[] = {expr->as.lookup.map, expr->as.lookup.key};
+    const char *v[2];
+    bool opened = cg_ordered(g, parts, 2, v, out);
+    sb_appendf(out, "es_map_without(%zu, %s, %s)%s", cg_site(g, expr->as.lookup.key->pos), v[0],
+               key_code(g, expr->as.lookup.map->type, v[1]), opened ? ")" : "");
+}
+
 void cg_emit_map_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     switch (expr->kind) {
     case EXPR_MAP: emit_literal(g, expr, out); break;
     case EXPR_EMPTY_MAP: sb_appendf(out, "es_map_new(%s, 0)", kinds_code(g, expr->type)); break;
+    case EXPR_MAP_WITHOUT: emit_without(g, expr, out); break;
     default: emit_lookup(g, expr, out); break;
     }
 }

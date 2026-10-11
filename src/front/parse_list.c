@@ -207,6 +207,26 @@ static Expr *parse_position(Parser *p, const Noun *noun) {
     return position;
 }
 
+// L without item P / T without character P: a new list or text.
+Expr *parser_parse_without_at(Parser *p, Expr *list) {
+    const Noun *noun = parser_at_word(p, 1, "character") ? &character_noun : &item_noun;
+    parser_consume(p, 2);
+    if (parser_at_sentence_end(p) || parser_at(p, 0, TOK_COLON) || parser_at(p, 0, TOK_COMMA)) {
+        if (parser_error(p, p->prev_span, "Something is missing after \"%s\".", noun->one)) {
+            diag_note(p->diag, "Say which %s to leave out, like \"%s\".", noun->one,
+                      noun->characters ? "word without character 2" : "scores without item 2");
+        }
+        return parser_error_expr(p);
+    }
+    Expr *slice = ast_new_expr(p->arena, EXPR_SLICE, list->pos);
+    slice->as.slice.kind = SLICE_WITHOUT_AT;
+    slice->as.slice.characters = noun->characters;
+    slice->as.slice.list = list;
+    slice->as.slice.from = parse_position(p, noun);
+    slice->pos = ast_pos_join(list->pos, slice->as.slice.from->pos);
+    return slice;
+}
+
 // "item P", "first item" or "last item"; `after` are the words that may
 // follow ("of"/"in", or "from").
 static bool parse_item_ref(Parser *p, const Noun *noun, const char *const *after, ItemWhere *where, Expr **position) {

@@ -125,3 +125,26 @@ Line 35: I can only sort a list of numbers or text, but this is a list of yes/no
 Line 36: I can only sort a list of text or lists by their length, but this is a list of numbers.
     say (a list of 1) sorted by their length
         ^^^^^^^^^^^^^
+
+Line 37: I can only leave a key out of a map, but this is a number.
+    say 5 without "a"
+        ^
+
+Line 39: I can only leave a key out of a map, but this is a list of numbers.
+    say nums without "x"
+        ^^^^
+To leave out an item of a list, write "scores without item 2".
+
+Line 40: I can only take characters from text, but this is a list of numbers.
+    say nums without character 1
+        ^^^^
+To take items of a list, write it with "items", like "items 2 to 4 of scores".
+
+Line 41: I can only take items from a list, but this is text.
+    say "abc" without item "x"
+        ^^^^^
+To take characters of text, write it with "characters", like "characters 2 to 4 of word".
+
+Line 41: The position of an item has to be a number, but this is text.
+    say "abc" without item "x"
+                           ^^^

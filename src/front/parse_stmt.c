@@ -185,10 +185,20 @@ static Stmt *parse_write(Parser *p, const Token *verb, const StmtForm *form) {
     return stmt;
 }
 
+// "and call the answer" or "and call it" (the lexer drops "the"), in both
+// "ask" and "read file"; an error names the one the sentence's example uses.
+static bool expect_call_phrase(Parser *p, const char *phrase, const char *written, const char *example) {
+    if (parser_match_words(p, "and call answer") || parser_match_words(p, "and call it")) {
+        parser_consume(p, 3);
+        return true;
+    }
+    return parser_expect_phrase(p, phrase, written, example);
+}
+
 static Stmt *parse_ask(Parser *p, const Token *verb, const StmtForm *form) {
     Stmt *stmt = parser_new_stmt(p, STMT_ASK, verb);
     stmt->as.ask.prompt = parse_expression(p);
-    if (p->sentence_failed || !parser_expect_phrase(p, "and call answer", "and call the answer", form->example)) return NULL;
+    if (p->sentence_failed || !expect_call_phrase(p, "and call answer", "and call the answer", form->example)) return NULL;
     if (!parser_parse_name(p, &stmt->as.ask.answer, NULL)) return NULL;
     return stmt;
 }
@@ -207,7 +217,7 @@ static Stmt *parse_read(Parser *p, const Token *verb, const StmtForm *form) {
     Stmt *stmt = parser_new_stmt(p, STMT_READ_FILE, verb);
     if (!parser_expect_word(p, file, form->example)) return NULL;
     stmt->as.read_file.path = parse_expression(p);
-    if (p->sentence_failed || !parser_expect_phrase(p, "and call it", "and call it", form->example)) return NULL;
+    if (p->sentence_failed || !expect_call_phrase(p, "and call it", "and call it", form->example)) return NULL;
     if (!parser_parse_name(p, &stmt->as.read_file.name, NULL)) return NULL;
     return stmt;
 }
