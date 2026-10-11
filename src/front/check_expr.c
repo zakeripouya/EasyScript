@@ -21,8 +21,8 @@ static TypeVar error_var(Checker *c) {
 
 // How a kind is written in a definition: "a number", "text", "yes or no",
 // "a list of numbers".
-static const char *kind_words(const Checker *c, Type type) {
-    if (type_is_list(type)) return ast_type_name(c->arena, type);
+static const char *kind_words(Checker *c, Type type) {
+    if (type_is_list(type) || type_is_record(type)) return checker_type_name(c, type);
     switch (type) {
     case TYPE_NUMBER: return "a number";
     case TYPE_TEXT: return "text";
@@ -33,14 +33,16 @@ static const char *kind_words(const Checker *c, Type type) {
 
 // "to area with width (a number) and height", with input `marked` given the
 // kind `mark` (when marked is in range), and kinds that were written down.
-static const char *header(const Checker *c, const Function *f, size_t marked, Type mark) {
+static const char *header(Checker *c, const Function *f, size_t marked, Type mark) {
     StrBuf sb;
     sb_init(&sb, c->arena);
     sb_appendf(&sb, "to %s", f->display);
     const Stmt *def = f->definition;
-    for (size_t i = 0; i < def->as.function.params.len; i++) {
-        if (i == 0) sb_appendf(&sb, " %s ", def->as.function.intro ? def->as.function.intro : "with");
-        if (i > 0) sb_append(&sb, " and ");
+    size_t first = def->as.function.method ? 1 : 0;  // a method: "to bark, for a dog"
+    if (first) sb_appendf(&sb, ", for %s", checker_type_name(c, def->as.function.declared.items[0]));
+    for (size_t i = first; i < def->as.function.params.len; i++) {
+        if (i == first) sb_appendf(&sb, "%s %s ", first ? "," : "", def->as.function.intro ? def->as.function.intro : "with");
+        if (i > first) sb_append(&sb, " and ");
         sb_append(&sb, def->as.function.params.items[i].display);
         Type kind = i == marked ? mark : def->as.function.declared.items[i];
         if (kind != TYPE_UNKNOWN) sb_appendf(&sb, " (%s)", kind_words(c, kind));
@@ -51,7 +53,7 @@ static const char *header(const Checker *c, const Function *f, size_t marked, Ty
     return sb.data;
 }
 
-const char *checker_function_header(const Checker *c, const Function *f) {
+const char *checker_function_header(Checker *c, const Function *f) {
     return header(c, f, (size_t)-1, TYPE_UNKNOWN);
 }
 
@@ -96,10 +98,21 @@ static void require_or_side(Checker *c, TypeVar var, const Expr *expr, const cha
                checker_kind(c, var));
 }
 
+// Two records are the same record or not, even if one could be nothing.
+static bool same_record_kind(Checker *c, TypeVar left, TypeVar right) {
+    Type l = types_of(c, left), r = types_of(c, right);
+    return type_is_record(l) && type_is_record(r) && type_present(l) == type_present(r);
+}
+
 static TypeVar check_binary(Checker *c, const Expr *expr) {
     BinaryOp op = expr->as.binary.op;
+    TypeVar result;
+    if (checker_check_nothing_test(c, expr, &result)) return result;
     TypeVar left = checker_check_expr(c, expr->as.binary.left);
+    size_t outer = c->present.len;  // "x is not nothing and x's age is 3": the right side knows x isn't nothing
+    if (op == BINARY_AND || op == BINARY_OR) checker_narrow_condition(c, expr->as.binary.left, op == BINARY_AND);
     TypeVar right = checker_check_expr(c, expr->as.binary.right);
+    c->present.len = outer;
     size_t line = expr->pos.line;
     switch (op) {
     case BINARY_AND: {
@@ -113,7 +126,7 @@ static TypeVar check_binary(Checker *c, const Expr *expr) {
         return types_new(c, TYPE_YESNO, line);
     case BINARY_EQUAL:
     case BINARY_NOT_EQUAL:
-        if (!types_unify(c, left, right)) report_compare(c, expr, left, right);
+        if (!same_record_kind(c, left, right) && !types_unify(c, left, right)) report_compare(c, expr, left, right);
         return types_new(c, TYPE_YESNO, line);
     case BINARY_LESS:
     case BINARY_LESS_EQUAL:
@@ -220,14 +233,19 @@ static void report_argument_kind(Checker *c, const Function *f, size_t i, const 
     const char *param = def->as.function.params.items[i].display;
     Type wanted = types_of(c, f->params.items[i]);
     diag_error(c->diag, arg->pos.span, "\"%s\" needs %s for \"%s\", but this is %s.", f->display,
-               ast_type_name(c->arena, wanted), param, checker_kind(c, given));
+               checker_type_name(c, wanted), param, checker_kind(c, given));
+    if (type_is_maybe(types_of(c, given)) && type_present(types_of(c, given)) == wanted) {
+        const char *path = checker_path(c, arg);
+        diag_note(c->diag, "It could be nothing. Check it first, like \"if %s is not nothing:\".", path ? path : "NAME");
+        return;
+    }
     if (def->as.function.declared.items[i] != TYPE_UNKNOWN) {
         diag_note(c->diag, "It's defined on line %zu: \"%s\".", def->pos.line, checker_function_header(c, f));
         return;
     }
     diag_note(c->diag, "\"%s\" is %s because of line %zu. An input has one kind of value everywhere; to make it "
                        "clear, write it in the definition, like \"%s:\".",
-              param, ast_type_name(c->arena, wanted), types_line(c, f->params.items[i]), header(c, f, i, wanted));
+              param, checker_type_name(c, wanted), types_line(c, f->params.items[i]), header(c, f, i, wanted));
 }
 
 // What a call gives back. A function that gives back no value can only be
@@ -243,7 +261,7 @@ static TypeVar call_result(Checker *c, const Function *f, const Expr *expr, bool
 TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value) {
     size_t n = expr->as.call.args.len;
     TypeVar *args = arena_alloc(c->arena, (n + 1) * sizeof(TypeVar));
-    for (size_t i = 0; i < n; i++) args[i] = checker_check_expr(c, expr->as.call.args.items[i]);
+    for (size_t i = 0; i < n; i++) args[i] = checker_check_value(c, expr->as.call.args.items[i]);
     const Function *f = checker_find_function(c, expr->as.call.name);
     if (!f) {
         report_unknown_function(c, expr->as.call.name, expr->display, expr->pos);
@@ -254,7 +272,7 @@ TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value) {
         return error_var(c);
     }
     for (size_t i = 0; i < n; i++) {
-        if (!types_unify(c, f->params.items[i], args[i])) {
+        if (!checker_fits(c, f->params.items[i], args[i], expr->as.call.args.items[i]->pos.line)) {
             report_argument_kind(c, f, i, expr->as.call.args.items[i], args[i]);
         }
     }
@@ -264,7 +282,7 @@ TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value) {
 // A bare name: a variable, a constant, or a function that takes no values.
 static TypeVar check_name(Checker *c, const Expr *expr) {
     const Symbol *symbol = checker_find_made(c, expr->as.name);
-    if (symbol) return symbol->var;
+    if (symbol) return checker_narrow(c, expr, symbol->var);
     const Constant *k = checker_find_constant(c, expr->as.name);
     if (k) {
         if (!k->ok) return error_var(c);
@@ -325,6 +343,8 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_ONLY:
     case EXPR_SLICE: return checker_check_list_expr(c, expr);
     case EXPR_TEXT_OP: return checker_check_text_op(c, expr);
+    case EXPR_FIELD: return checker_narrow(c, expr, checker_check_field(c, expr));
+    case EXPR_NEW: return checker_check_new(c, expr);
     case EXPR_ERROR: return error_var(c);
     }
     return error_var(c);

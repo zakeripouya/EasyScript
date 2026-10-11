@@ -1,0 +1,36 @@
+a player with name "Ann" and scores (an empty list)
+a player with name "Bo" and scores (3 and 4)
+8 and 1
+9
+8
+2
+8, 1 and 100
+yes
+a team with name "Reds", players ((a player with name "Ann" and scores (8, 1 and 100)) and (a player with name "Bo" and scores (3 and 4))), captain (a player with name "Ann" and scores (8, 1 and 100)) and rounds ((1 and 2))
+Ann: 109
+Bo: 7
+Bob
+2
+Bob plays
+Cy doesn't play
+2
+0
+2
+Annie
+Dee
+Cy
+Bob
+Cy
+Dee
+Cy
+Bob
+Annie
+Bob
+Cy
+Dee
+3
+2
+((a player with name "Annie" and scores (8, 1 and 100)) and (a player with name "Bob" and scores (3 and 4))) and ((a player with name "Cy" and scores (5)))
+
+a player with name "Annie" and scores (8, 1 and 100)
+3

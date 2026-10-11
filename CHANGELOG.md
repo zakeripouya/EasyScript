@@ -6,6 +6,23 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Records** (Phase 2, step 17). See the new [Records chapter](docs/language-guide.md#12-records).
+  - **Kinds of record:** `a dog is a kind of thing with:` and indented fields, `a name, which is text.`, of any kind (lists and other records too), with names of several words (`a start time, which is a number.`) and optional starting values (`an age, which is a number, starting at 0.`; fixed values, or an empty list, copied for each record).
+  - **Making them:** `a new dog with name "Rex" and age 3`. A missing field is a compile error unless it has a starting value or can be nothing.
+  - **Fields:** `rex's name`, chains (`the order's customer's name`), `it's age`, `(item 1 of dogs)'s name`; `set rex's age to 4`, `add 1 to rex's age` and the other change sentences. The lexer now makes a word ending in `'s` a name and a possessive (`POSSESSIVE` token), so a name can no longer end in `'s`.
+  - **Fields that can be nothing:** `a next, which is a node or nothing.` Using one as a record before checking it (`if the node's next is not nothing:`, `while`, `until`, `and`/`or`, or after an `if ... is nothing` that leaves) is a compile error; inside the check it's the record. Setting it ends the check. `nothing` can be stored, given and given back where a record or nothing goes. The program checks again while it runs, so a record set to nothing through another name is a runtime error, not a crash.
+  - **Sharing:** records are shared by reference like lists; `a copy of rex` is a shallow copy; `is` means the same record.
+  - **Methods:** `to bark, for a dog:` (the record is `the dog` inside), `to have a birthday for a dog:`, `to rename, for a dog, with new name:`; called as `bark rex.`, `have a birthday for rex.`, `rename rex with "Max".` or in values. A function's name ends before `for` only when a kind of record follows.
+  - **Printing:** `say rex` shows `a dog with name "Rex" and age 3` (records and lists inside in parentheses, three levels deep); stack traces show record inputs the same way, cut short.
+  - **Memory:** records are reference counted with their fields. Freeing works through a list instead of recursion, so a million-node chain frees without running out of C stack. With `ES_DEBUG_MEMORY=1`, records left alive in a circle at the end are found and explained (exit 70); weak references come later ([memory.md](docs/memory.md#cycles)).
+  - Records in lists (`a list of dogs`; `contains` and `the position of` find the same record) and lists in records.
+  - Examples: `linked_list.es` and `binary_tree.es`. Tests for every form, every error, sharing and copying, and records in a 200,000-round loop under the memory limit.
+  - Inside the compiler: `Type` gained record kinds (`TYPE_RECORD + n`) and "or nothing" (`TYPE_MAYBE`), and `TYPE_LIST` is now 32768; `parse_program` gives back a `Program` (statements and record kinds); new files `src/front/parse_record.c`, `src/front/check_record.c`, `src/back/codegen_record.c` and `runtime/es_record.h` (the runtime's sixth part).
+
+### Changed
+
+- `a copy of` works on records too, so its message is now "I can only copy a list or a record, but this is text."
+
 - **Text tools** (Phase 2, step 16). See the new [Text chapter](docs/language-guide.md#11-text).
   - **A character is a Unicode character** (a code point, stored as UTF-8), so `"café"` has 4 characters. Text keeps its character count once it's been worked out (literals carry it from the compiler); text whose count equals its length is plain ASCII and is worked on byte by byte, and a single ASCII character is a static text, so taking ASCII text apart allocates nothing but the list.
   - **Characters and pieces** with exactly the list forms and rules: `character 3 of word`, `the first character of word`, `the last character in word`, `characters 2 to 5 of word`, `characters 3 to the end of word`, `the first 3 characters of word`, `the last 2 characters of word`, `word without the first character` / `without the last character`, `every other character of word`, `every second character of word` (any ordinal), `the characters of word` (a list of text), and `the number of characters in word`. Positions that aren't in the text stop the program like list positions do ("There's no character 5 in the text: it has 4 characters."). Using a list form on text (or the other way round) is a compile error that shows the right form.

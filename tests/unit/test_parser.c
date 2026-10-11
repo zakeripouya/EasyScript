@@ -13,7 +13,7 @@ static Parsed parse_source(TestContext *t, const char *source) {
     parsed.source = source;
     parsed.diag = diag_new(t->arena, source, strlen(source));
     TokenList tokens = lex(t->arena, parsed.diag, source, strlen(source));
-    parsed.program = parse_program(t->arena, parsed.diag, source, &tokens);
+    parsed.program = &parse_program(t->arena, parsed.diag, source, &tokens)->body;
     return parsed;
 }
 

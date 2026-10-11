@@ -43,7 +43,7 @@ static Type kind_type(ConstValue v) {
 }
 
 static const char *kind_name(const Eval *ev, ConstValue v) {
-    return ast_type_name(ev->arena, kind_type(v));
+    return ast_type_name(ev->arena, NULL, kind_type(v));
 }
 
 static ConstValue number(double x) {
@@ -397,6 +397,12 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
     case EXPR_TEXT_OP: return reject_text_tool(ev, span);
     case EXPR_FILE_CONTENTS:
         return fail(ev, span, fixed_note, "A constant can't read a file, because files are read while the program runs.");
+    case EXPR_FIELD:
+        return fail(ev, span, fixed_note, "A constant can't use a field of a record, because records are made while "
+                                          "the program runs.");
+    case EXPR_NEW:
+        return fail(ev, span, fixed_note, "A constant can't be a record, because records are made while the program "
+                                          "runs.");
     case EXPR_ERROR: return false;
     }
     return false;

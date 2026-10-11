@@ -66,7 +66,7 @@ Line 20: I can only reverse a list, but this is a number.
     say 5 reversed
         ^
 
-Line 21: I can only copy a list, but this is text.
+Line 21: I can only copy a list or a record, but this is text.
     say a copy of "text"
                   ^^^^^^
 

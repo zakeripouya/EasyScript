@@ -422,6 +422,47 @@ To take a character of text, write it with "character", like "character 1 of wor
 
 The full, tested set is the `text_*.err` files in [`tests/errors/`](../tests/errors/) and [`err_text_forms.err`](../tests/ast/err_text_forms.err).
 
+### Records
+
+Records are checked before the program runs: their fields, the values given to `new`, and every use of a value that could be nothing.
+
+**A value that could be nothing, used without a check**: [`record_nothing.es`](../tests/errors/record_nothing.es)
+
+```
+Line 13: "first's next" could be nothing, so check it first.
+    say first's next's value.
+        ^^^^^^^^^^^^
+Use it inside "if first's next is not nothing:".
+```
+
+**A field missing from `new`**: [`record_fields.es`](../tests/errors/record_fields.es)
+
+```
+Line 11: A new dog needs a value for "name" and "age".
+    let odd be a new dog.
+               ^^^^^^^^^
+Give it after "with", like "with name ...", or give the field a starting value where a dog is defined (line 1), like "..., starting at ...".
+```
+
+| Problem | Message (summary) |
+|---|---|
+| A field the kind doesn't have | "A dog doesn't have a field called "nme"." with "Did you mean "name"?" or the list of its fields |
+| A field no kind has (on a value whose kind isn't known) | "No kind of record has a field called "wingspan"." |
+| A field of something that isn't a record | "Only a record has fields, but this is a number." |
+| A field given a value twice, or the wrong kind | "This gives "name" a value twice." / "The field "name" of a dog is text, but this is a number." |
+| Setting a field to the wrong kind | "The field "age" is a number, but this is text." |
+| A record or nothing given where a record is needed | ""value" needs a node for "start", but this is a node or nothing." with "It could be nothing. Check it first, like "if first's next is not nothing:"." |
+| A value (not a name or field) that could be nothing | "This is a node or nothing, so check it first." with a note to give it a name first |
+| Checking a record that can't be nothing | ""first" is a node, so it's never nothing." |
+| Comparing something that isn't a record with nothing | "I can't compare a number with nothing." / "I can't compare nothing with nothing." |
+| A field that always holds its own kind | "Every chain link would need another chain link inside it, so none could ever be made." with a suggestion to make it "or nothing" |
+| A kind of record defined twice, or inside a block | "You already defined "box" on line 3." / "Kinds of record can only be defined at the top level, not inside an "if" or a loop." |
+| A field defined twice | "A box already has a field called "width", on line 4." |
+| A starting value that isn't fixed, or of the wrong kind | ""size" isn't a constant, so a field can't start at it." / "The field "weight" is a number, but its starting value is text." / "Only a field that can be nothing can start at nothing." / "A field that holds a record can't have a starting value, because records are made while the program runs." |
+| A record in a constant | "A constant can't be a record, because records are made while the program runs." |
+
+Mistakes in how a definition or a field is written are parser errors, like "I expected "," here, but found "which"." (a field without its comma), "Only a record can be "or nothing", not a number.", "A new record inside another one needs parentheses.", ""let" makes a new name, so it can't change a field." and "A method is for a kind of record, but this is a number.". The full set is in [`err_records.err`](../tests/ast/err_records.err) and the `record_*.err` files in [`tests/errors/`](../tests/errors/).
+
 ### While the program runs
 
 Runtime errors look like compile errors: `Line N:` and what went wrong, the line with carets under the part that failed, and sometimes a hint. Anything the program printed before the error stays printed. Only mistakes that kinds can't catch are left for this.
@@ -434,7 +475,7 @@ Line 3: You divided by zero.
         ^^^^^^^^^^^^^^^^^^^^
 ```
 
-**Inside functions**, the error also shows the chain of calls that led to it, innermost first: the function being worked out and the values it was given (numbers, yes/no, and text, cut short after 30 characters; lists aren't shown), then each call back to the main program, whose line is shown: [`err_stack_nested.es`](../tests/run/err_stack_nested.es)
+**Inside functions**, the error also shows the chain of calls that led to it, innermost first: the function being worked out and the values it was given (numbers, yes/no, and text, cut short after 30 characters; records as their fields, cut short after 60 characters; lists aren't shown), then each call back to the main program, whose line is shown: [`err_stack_nested.es`](../tests/run/err_stack_nested.es)
 
 ```
 Line 4: You divided by zero.
@@ -491,6 +532,7 @@ Positions start at 1: the first item is item 1.
 | Replacing empty text | "I can't replace empty text: there's nothing to look for." |
 | The code of anything but one character | "The code of a character needs exactly one character, but this text has 2." (or "... but this text is empty.") |
 | A character code that isn't one | "There's no character with code 55296." with the hint "Character codes are whole numbers from 1 to 1114111, like 65 for "A"." |
+| A record checked not to be nothing, then set to nothing through another name before it's used | "This was checked not to be nothing, but something has set it to nothing since then." with the hint "Another name for the same record can change it. Check it again just before using it." |
 
 Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).
 

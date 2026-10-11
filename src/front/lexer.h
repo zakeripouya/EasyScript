@@ -32,6 +32,7 @@ typedef enum {
     TOK_GREATER_EQUAL,  // >=
     TOK_NOT_EQUAL,      // !=
     TOK_EQUAL_EQUAL,    // ==
+    TOK_POSSESSIVE,     // 's at the end of a word: "rex's" is the word "rex", then this
 } TokenKind;
 
 typedef struct {

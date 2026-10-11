@@ -12,8 +12,9 @@
  * (a position past the end, the biggest item of an empty list) stop the
  * program with its line, like the other runtime errors.
  *
- * Operations on items come in four versions, one per kind of item: _n
- * (number), _b (yes/no), _t (text), _l (list). */
+ * Operations on items come in five versions, one per kind of item: _n
+ * (number), _b (yes/no), _t (text), _l (list), _r (record; NULL for
+ * nothing). Records in a list are shared, never copied. */
 #ifndef ES_LIST_H
 #define ES_LIST_H
 
@@ -84,7 +85,7 @@ static EsList *es_list_shallow_copy(const EsList *l) {
     if (l->len > 0) memcpy(copy->at.any, l->at.any, l->len * es_item_size(l->items));
     copy->len = l->len;
     for (size_t i = 0; es_items_counted(l->items) && i < l->len; i++) {
-        if (copy->at.o[i]->refs != ES_IMMORTAL) copy->at.o[i]->refs++;
+        if (copy->at.o[i] && copy->at.o[i]->refs != ES_IMMORTAL) copy->at.o[i]->refs++;
     }
     return copy;
 }
@@ -153,6 +154,7 @@ static EsList *es_list_pick(const EsList *l, size_t start, size_t count, size_t 
         } else {
             memcpy((char *)out->at.any + k * size, (const char *)l->at.any + i * size, size);
             if (l->items == ES_ITEMS_TEXT) es_retain(out->at.t[k]);
+            if (l->items == ES_ITEMS_RECORD) es_record_retain(out->at.r[k]);
         }
     }
     out->len = count;
@@ -169,6 +171,7 @@ static void es_list_append_copies(EsList *dst, const EsList *src) {
         } else {
             memcpy((char *)dst->at.any + dst->len * size, (const char *)src->at.any + i * size, size);
             if (src->items == ES_ITEMS_TEXT) es_retain(dst->at.t[dst->len]);
+            if (src->items == ES_ITEMS_RECORD) es_record_retain(dst->at.r[dst->len]);
         }
     }
 }
@@ -237,7 +240,7 @@ static EsList *es_list_keep(EsList *l, size_t start, size_t count, size_t step) 
     size_t size = es_item_size(l->items);
     for (size_t i = 0; es_items_counted(l->items) && i < l->len; i++) {
         bool kept = i >= start && (i - start) % step == 0 && (i - start) / step < count;
-        if (!kept) es_object_release(l->at.o[i]);
+        if (!kept && l->at.o[i]) es_object_release(l->at.o[i]);
     }
     char *base = l->at.any;
     for (size_t k = 0; k < count; k++) memmove(base + k * size, base + (start + k * step) * size, size);
@@ -321,12 +324,13 @@ ES_ITEM_OPS(n, double, n, ES_SAME, ES_IGNORE)
 ES_ITEM_OPS(b, bool, b, ES_SAME, ES_IGNORE)
 ES_ITEM_OPS(t, EsText *, t, es_retain, es_release)
 ES_ITEM_OPS(l, EsList *, l, es_list_retain, es_list_release)
+ES_ITEM_OPS(r, EsRecord *, r, es_record_retain, es_record_release)
 
 /* "remove item N from L" (or the first or last item). */
 static void es_remove(int site, EsList *l, int where, double pos) {
     size_t i = es_index(site, l, where, pos);
     size_t size = es_item_size(l->items);
-    if (es_items_counted(l->items)) es_object_release(l->at.o[i]);
+    if (es_items_counted(l->items) && l->at.o[i]) es_object_release(l->at.o[i]);
     char *base = l->at.any;
     memmove(base + i * size, base + (i + 1) * size, (l->len - i - 1) * size);
     l->len--;
@@ -363,6 +367,7 @@ static bool es_list_equal(const EsList *a, const EsList *b) {
         case ES_ITEMS_YESNO: same = a->at.b[i] == b->at.b[i]; break;
         case ES_ITEMS_TEXT: same = es_text_equal(a->at.t[i], b->at.t[i]); break;
         case ES_ITEMS_LIST: same = es_list_equal(a->at.l[i], b->at.l[i]); break;
+        case ES_ITEMS_RECORD: same = a->at.r[i] == b->at.r[i]; break; /* the same record */
         }
         if (!same) return false;
     }
@@ -407,6 +412,15 @@ static bool es_contains_l(EsList *l, EsList *v) {
     return found;
 }
 
+/* A record is in the list when that same record is (not a record with the same fields). */
+static bool es_contains_r(EsList *l, EsRecord *v) {
+    bool found = false;
+    for (size_t i = 0; i < l->len && !found; i++) found = l->at.r[i] == v;
+    es_record_release(v);
+    es_list_release(l);
+    return found;
+}
+
 /* "the position of X in L": the position of the first item equal to X, or 0
  * if none is. */
 #define ES_POSITION(S, T, SAME, RELEASE)                                   \
@@ -424,6 +438,7 @@ ES_POSITION(n, double, es_close, ES_IGNORE)
 ES_POSITION(b, bool, ES_SAME_YESNO, ES_IGNORE)
 ES_POSITION(t, EsText *, es_text_equal, es_release)
 ES_POSITION(l, EsList *, es_list_equal, es_list_release)
+ES_POSITION(r, EsRecord *, ES_SAME_YESNO, es_record_release)
 
 /* "L added together" */
 static double es_list_sum(EsList *l) {
@@ -498,8 +513,12 @@ static void es_buf_add(EsBuf *b, const char *s, size_t n) {
     b->len += n;
 }
 
-/* "72, 95 and 88"; a list inside a list is in parentheses: "(1 and 2) and (3)". */
-static void es_list_render(EsBuf *b, const EsList *l) {
+static void es_record_render(EsBuf *b, const EsRecord *r, int depth); /* es_record.h */
+
+/* "72, 95 and 88"; a list inside a list is in parentheses: "(1 and 2) and
+ * (3)". `depth` is how many records it's inside (they stop showing their
+ * fields after a few levels). */
+static void es_list_render(EsBuf *b, const EsList *l, int depth) {
     for (size_t i = 0; i < l->len; i++) {
         if (i > 0) es_buf_add(b, i + 1 == l->len ? " and " : ", ", i + 1 == l->len ? 5 : 2);
         switch (l->items) {
@@ -513,8 +532,13 @@ static void es_list_render(EsBuf *b, const EsList *l) {
         case ES_ITEMS_TEXT: es_buf_add(b, l->at.t[i]->chars, l->at.t[i]->len); break;
         case ES_ITEMS_LIST:
             es_buf_add(b, "(", 1);
-            es_list_render(b, l->at.l[i]);
+            es_list_render(b, l->at.l[i], depth);
             es_buf_add(b, ")", 1);
+            break;
+        case ES_ITEMS_RECORD:  /* "(a dog with name "Rex" and age 3) and (...)" */
+            if (l->at.r[i]) es_buf_add(b, "(", 1);
+            es_record_render(b, l->at.r[i], depth);
+            if (l->at.r[i]) es_buf_add(b, ")", 1);
             break;
         }
     }
@@ -522,7 +546,7 @@ static void es_list_render(EsBuf *b, const EsList *l) {
 
 static EsText *es_list_text(EsList *l) {
     EsBuf b = {NULL, 0, 0};
-    es_list_render(&b, l);
+    es_list_render(&b, l, 0);
     EsText *t = b.len > 0 ? es_text_copy(b.data, b.len) : &es_empty_text;
     free(b.data);
     es_list_release(l);

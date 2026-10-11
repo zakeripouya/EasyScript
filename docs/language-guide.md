@@ -21,6 +21,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [9. Types](#9-types) | Available |
 | [10. Lists](#10-lists) | Available |
 | [11. Text](#11-text) | Available |
+| [12. Records](#12-records) | Available |
 
 ---
 
@@ -917,3 +918,157 @@ say line.                                  # 1 2 3 4 5
 A character that isn't there (or character 0, or 1.5), a range of characters that goes backwards, a negative or fractional number of characters, `without the first character` of empty text, splitting by empty text, replacing empty text, the code of anything but one character, a character code that isn't one, and `as a number` on text that isn't a number stop the program with the line and what went wrong. Everything else, including every kind mistake (`the words of 42`), is checked before the program runs.
 
 Try it: `./easyscript run examples/programs/word_counter.es`
+
+## 12. Records
+
+**Available.** A record keeps several named values together: a dog has a name and an age, an order has a customer and a total. You define a **kind of record** once, then make as many records of that kind as you like.
+
+```
+a dog is a kind of thing with:
+    a name, which is text.
+    an age, which is a number, starting at 0.
+
+let rex be a new dog with name "Rex" and age 3.
+say rex.
+say rex's name.
+```
+
+```
+a dog with name "Rex" and age 3
+Rex
+```
+
+### Defining a kind of record
+
+A definition is `NAME is a kind of thing with:` at the start of a line (never inside an `if`, a loop or a function), with its **fields** indented below, one per line: `a NAME, which is KIND.` The kind is any kind of value: `a number`, `text`, `yes or no`, a list like `a list of numbers`, or another kind of record. Names of several words work for kinds and fields alike: `a tree node`, `a start time`.
+
+A field can have a **starting value** (`an age, which is a number, starting at 0.`). It's fixed before the program runs, like a constant: a number, text, yes or no, a constant, a fixed list, or an empty list (each record gets its own copy of a list).
+
+### Making records
+
+`a new dog with name "Rex" and age 3` makes a dog. Give every field a value unless it has a starting value or can be nothing; a missing one is an error before the program runs:
+
+```
+Line 10: A new dog needs a value for "age".
+    let pup be a new dog with name "Pup".
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+```
+
+Fields can come in any order, separated by `and` or commas. A `new` inside another one needs parentheses, so it's clear which record the fields after it belong to: `a new person with name "Ann" and pet (a new dog with name "Rex" and age 3)`.
+
+### Fields
+
+`rex's age` is a field. It works anywhere a value does, and chains: `the order's customer's name`. Inside a `for each` loop, `it's name` is the item's field, and `(item 1 of dogs)'s name` takes a field of a value in parentheses. `'s` binds tightest of all, so `rex's age plus 1` is `(rex's age) plus 1`.
+
+Change fields with the same sentences as variables:
+
+```
+set rex's age to 4.
+add 1 to rex's age.
+increase rex's age by 2.
+add "ball" to the end of rex's toys.
+```
+
+### Records are shared
+
+Like lists, a record is **shared**: `let same dog be rex` gives the same record another name, and a function given a record can change it. `is` asks whether two values are **the same record**:
+
+```
+let same dog be rex.
+set same dog's name to "Rexy".
+say rex's name.                    # Rexy
+if same dog is rex, say "same".    # same
+```
+
+`a copy of rex` makes a new record with the same field values. The copy is **shallow**: text, lists and records inside it are shared with the original. Two records with the same fields are still two records, so `is` says no for a copy. To compare what's inside, compare the fields, or write a method:
+
+```
+to matches, for a dog, with other (a dog), giving back yes or no:
+    give back the dog's name is other's name and the dog's age is other's age
+```
+
+### Fields that can be nothing
+
+A field whose kind ends in `or nothing` may hold nothing. That's how a linked list ends, or a tree has no child:
+
+```
+a node is a kind of thing with:
+    a value, which is a number.
+    a next, which is a node or nothing.
+```
+
+Such a field starts as nothing, and `set first's next to nothing` empties it again. Before using it as a record, **check it**. Using it unchecked is an error before the program runs:
+
+```
+Line 13: "first's next" could be nothing, so check it first.
+    say first's next's value.
+        ^^^^^^^^^^^^
+Use it inside "if first's next is not nothing:".
+```
+
+Inside the check, it's a node:
+
+```
+if first's next is not nothing:
+    say first's next's value.
+
+let current be first.
+while current is not nothing:
+    say current's value.
+    set current to current's next.
+```
+
+These count as checks: `if X is not nothing:` (and the `otherwise` of `if X is nothing:`), `while X is not nothing:`, `repeat until X is nothing:`, the right side of `X is not nothing and ...` or `X is nothing or ...`, and the rest of a block after `if X is nothing, give back 0.` (an `if` that always leaves). A check lasts until the block ends or the program sets X. While the program runs it's checked once more, so if another name for the same record set it to nothing in between, the program stops with "This was checked not to be nothing, but something has set it to nothing since then." instead of crashing.
+
+Functions can take and give back records that may be nothing. Their kinds are worked out like any other, or written down: `(a node or nothing)`, `giving back a node or nothing`, and `give back nothing`.
+
+```
+to sum of start:
+    if start is nothing, give back 0.
+    give back start's value plus (sum of start's next)
+```
+
+Only a record can be nothing: a number, text, yes/no value or list always has a value.
+
+### Methods
+
+A **method** is a function for a kind of record: `to bark, for a dog:`. Inside it, the record is called like its kind (`the dog`). The name is every word before `for`, so `to have a birthday for a dog:` is "have birthday" (the `a` is ignored), and more inputs come after `with`:
+
+```
+to bark, for a dog:
+    say the dog's name followed by " says woof".
+
+to have a birthday for a dog:
+    add 1 to the dog's age.
+
+to rename, for a dog, with new name:
+    set the dog's name to new name.
+
+bark rex.
+have a birthday for rex.
+rename rex with "Max".
+say (describe rex) followed by "!".
+```
+
+A method is called with the record straight after its name (`bark rex`) or after `for`, as a sentence or inside a value. Two kinds of record can't have methods with the same name yet.
+
+### Records in lists, and lists in records
+
+A list can hold records (`a list of dogs`), and a field can hold a list (`the toys, which is a list of text, starting at an empty list of text.`). Records in a list are shared, never copied, even by `a copy of` the list. `contains` and `the position of` look for the same record. Sorting and `biggest of` don't work on records.
+
+### Memory
+
+A record is freed as soon as nothing holds it, with what its fields hold. Records that point to each other in a circle (two people who are each other's friend) keep each other alive, so they're never freed while the program runs. The memory check (`ES_DEBUG_MEMORY=1`) reports them at the end. Before the program ends, break the circle by setting one of its fields to nothing. See [memory](memory.md#cycles).
+
+### Things to watch
+
+- **A word ending in `'s` is always a possessive,** so a name can't end in `'s`.
+- **`every d in dogs's age` takes the field of the list,** not of each dog. Use a `for each` loop to go through fields.
+- **A field can't always hold its own kind:** `a next, which is a node.` would need a node before any node could be made. Make it `a node or nothing`.
+- **A function that gives back a record first and nothing later** is worked out as giving back a record. Write `giving back a node or nothing` (or give back nothing first).
+
+### What's checked while the program runs
+
+Only a record that was checked not to be nothing, and then set to nothing through another name before it was used. Every other mistake (a missing field, a wrong kind, a field that could be nothing) is caught before the program runs.
+
+Try it: `./easyscript run examples/programs/linked_list.es` and `./easyscript run examples/programs/binary_tree.es`

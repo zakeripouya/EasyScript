@@ -134,8 +134,25 @@ static Expr *parse_name_or_call(Parser *p) {
     const KnownName *known = parser_match_name(p, 0, false);
     Name name;
     parser_take_name(p, known ? known->words : 1, &name);
+    bool method_record = p->method_record;
+    p->method_record = false;
+    if (method_record && !parser_is_function(p, name.text)) {
+        Expr *expr = ast_new_expr(p->arena, EXPR_NAME, name.pos);
+        expr->as.name = name.text;
+        expr->display = name.display;
+        return expr;
+    }
     // "word with "a" replaced by "b"" replaces text, unless "word" is a function.
     bool replace = parser_at_replace(p) && !parser_is_function(p, name.text);
+    if (parser_is_method(p, name.text) && (parser_at_word(p, 0, "for") || parser_at_call_intro(p, name.text) ||
+                                           parser_starts_operand(parser_peek(p, 0)))) {
+        Expr *call = ast_new_expr(p->arena, EXPR_CALL, name.pos);  // bark rex / have a birthday for rex
+        call->as.call.name = name.text;
+        call->display = name.display;
+        if (parser_at_call_intro(p, name.text)) parser_advance(p);
+        parser_parse_method_args(p, call);
+        return parser_finish_call(p, call);
+    }
     if (!replace && parser_at_call_intro(p, name.text)) return parse_call(p, &name);
     Expr *expr = ast_new_expr(p->arena, EXPR_NAME, name.pos);
     expr->as.name = name.text;
@@ -174,6 +191,7 @@ static Expr *parse_word(Parser *p) {
         return parser_error_expr(p);
     }
     if (parser_is_operator_word(word)) return expected_value(p);
+    if (parser_at_new(p)) return parser_parse_new(p);
     const KnownName *known = parser_match_name(p, 0, false);
     if (known && known->words > 1) return parse_name_or_call(p);  // "late fee", before any other meaning
     Expr *list = parser_parse_list_word(p);
@@ -186,7 +204,7 @@ static Expr *parse_word(Parser *p) {
     return parse_name_or_call(p);
 }
 
-Expr *parse_primary(Parser *p) {
+static Expr *parse_value(Parser *p) {
     if (p->pending_item) {  // "every NAME in L ...": the item comes first
         Expr *item = p->pending_item;
         p->pending_item = NULL;
@@ -199,4 +217,11 @@ Expr *parse_primary(Parser *p) {
     case TOK_WORD: return parse_word(p);
     default: return expected_value(p);
     }
+}
+
+// A value and its fields: "rex", "rex's owner's name".
+Expr *parse_primary(Parser *p) {
+    Expr *expr = parse_value(p);
+    while (parser_at(p, 0, TOK_POSSESSIVE) && expr->kind != EXPR_ERROR) expr = parser_parse_field(p, expr);
+    return expr;
 }

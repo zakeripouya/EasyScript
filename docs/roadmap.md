@@ -5,7 +5,7 @@ EasyScript grows in five phases. Each phase ends with working, tested, documente
 | Phase | Focus | Status |
 |---|---|---|
 | [1](#phase-1-core-language) | Core language | **Complete** (v0.1.0, 2026-10-10) |
-| [2](#phase-2-data-and-structure) | Memory, static types, records, lists, maps, modules | **In progress** (memory and static types done) |
+| [2](#phase-2-data-and-structure) | Memory, static types, records, lists, maps, modules | **In progress** (memory, static types, lists, text tools and records done) |
 | [3](#phase-3-self-hosting) | Self-hosting | Coming soon |
 | [4](#phase-4-real-world-programs) | Standard library, C interop, concurrency, servers | Coming soon |
 | [5](#phase-5-systems-mode) | Systems mode and an operating system | Coming soon |
@@ -75,12 +75,12 @@ Planned. Each will be added with its expected output in the same commit as its f
 ## Phase 2: Data and structure
 
 - [x] **Memory management:** reference counting. Text (and, since lists arrived, lists) made while a program runs is freed as soon as nothing uses it, so loops run in flat memory (the text benchmark went from 280 MB to under 2 MB). Users never write anything about memory. See [memory.md](memory.md).
-  - **Needed once records arrive:** reference counting can't free objects that refer to each other in a cycle. Text and lists can't form cycles (a list never holds a list of its own kind), but records (and lists of records) can, so they'll need **weak references or a cycle collector**.
+  - **Records can form cycles** (two records that point to each other), which reference counting can't free. Since records arrived, the memory check (`ES_DEBUG_MEMORY=1`) finds and explains them at the end of the program. **Still to come: weak references** (or a cycle collector) so they're freed while the program runs. See [memory.md](memory.md#cycles).
 - [x] **Text tools:** characters taken with the list forms (`character 3 of word`, `the first 3 characters of word`, `every other character of word`, `the characters of word`), counted as Unicode characters; `contains`, `starts with`, `ends with`, `the position of`; `the words of`, `the lines of`, `split by`, `joined with`; `in uppercase`, `in lowercase`, `without extra spaces`, `with ... replaced by`; `is a letter`/`is a digit`/`is a space`, `the code of`, `the character with code`; text built piece by piece grows in place (a million pieces: 130 s before, about 5 ms after). See [Text](language-guide.md#11-text).
 - [x] **Static types:** the compiler works out whether every value is a number, text, or yes/no, inferring function inputs and results from how they're used and called, with optional kinds in definitions (`to area with width (a number), giving back a number:`). Kind mistakes are compile errors with the runtime's old wording plus carets; generated code uses plain C `double`/`bool` and only text is reference counted. See [Types](language-guide.md#9-types).
 - [x] **From Phase 1: runtime errors with the source line,** shown like compile errors, plus an English stack trace: the function being worked out with the values it was given, and each call back to the main program (repeated calls collapsed).
 - **From Phase 1:** `file ... exists`
-- **Records:** named groups of fields ("a point has an x and a y")
+- [x] **Records:** kinds of record with named fields (`a dog is a kind of thing with:`), `a new dog with name "Rex" and age 3` (missing fields are compile errors unless they have a starting value), fields with `'s` (`the order's customer's name`), fields that can be nothing and have to be checked before use, sharing by reference with shallow `a copy of`, methods (`to bark, for a dog:`), records in lists and lists in records, and readable printing. Linked list and binary tree examples. See [Records](language-guide.md#12-records).
 - [x] **Lists:** ordered collections of one kind, shared by reference (`a copy of` makes a separate one), with 1-based positions, `for each score in scores:`, `every`/`only`, totals, a stable sort, nested lists, and friendly errors for positions that aren't there. Reference counted like text; a list can't hold itself, so there are no cycles. See [Lists](language-guide.md#10-lists).
 - **Maps:** look up values by key
 - **Modules:** split programs across files and reuse code

@@ -10,7 +10,7 @@ To check that two things are different, write "!=".
 Line 3: I don't understand this apostrophe.
     say guests' list.
               ^
-An apostrophe can only go inside a word, like isn't or guest's. Text goes in double quotes, like "hello".
+An apostrophe can only go inside a word, like isn't or rex's. Text goes in double quotes, like "hello".
 
 Line 4: I don't understand the character "’".
     say it isn’t.

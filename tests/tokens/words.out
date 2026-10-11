@@ -15,7 +15,8 @@ WORD          2:43    another
 WORD          2:51    anthem
 PERIOD        2:57    .
 NEWLINE       2:58
-WORD          3:5     guest's  [after "the"]
+WORD          3:5     guest  [after "the"]
+POSSESSIVE    3:10    's
 WORD          3:13    rock'n'roll
 WORD          3:25    player_2
 WORD          3:34    x1

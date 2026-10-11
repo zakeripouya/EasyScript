@@ -31,16 +31,16 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | `\n` `\t` `\"` `\\` | Escapes inside text: new line, tab, quote, backslash | `"Line one\nLine two"` | Available |
 | `yes`, `true` | The yes value | `done is yes` | Available |
 | `no`, `false` | The no value | `ready is false` | Available |
-| `nothing` | What a function gives back when it gives back no value. It can't be used as a value | `return` (gives back nothing) | Available |
+| `nothing` | What a function gives back when it gives back no value. Otherwise it can only be used where a record can be nothing (see [Records](#records)) | `return` (gives back nothing), `set node's next to nothing` | Available |
 | `it` | The number of the loop you're in, or the item of a `for each` loop (see [Loops](#it-and-names-in-loops)) | `say it` | Available |
 | `a list of X, Y and Z` | A list (see [Lists](#lists)) | `a list of 72, 95 and 88` | Available |
-| names | Start with a letter, then letters, digits, `_`, or an apostrophe between letters | `total`, `player_2`, `guest's`, `clientName` | Available |
+| names | Start with a letter, then letters, digits, `_`, or an apostrophe between letters. A word ending in `'s` is a name and then a possessive (see [Records](#records)), so a name can't end in `'s` | `total`, `player_2`, `isn't`, `rock'n'roll`, `clientName` | Available |
 | names of several words | Words separated by spaces, made by `let`, `keep`, `to`, `as`, `call`, `for each` or `every`, and then recognized everywhere (the longest known name wins). They can't contain the operator and value words or `be`, `equal`, `to`, `from`, `by`, `of`, `with`, `in`, `at`, `then`, `that`, `giving` | `late fee`, `hourly rate`, `session number` | Available |
 | `( X )` | Grouping: work this out first | `(price plus tax) times 2` | Available |
 
 **How values print:** whole numbers print without decimals (`7`, not `7.0`), other numbers with up to 15 significant digits (`0.1 plus 0.2` prints `0.3`), yes/no as `yes`/`no`, and lists in English: `72, 95 and 88`.
 
-**Kinds:** every value is a number, text, yes/no, or a list, worked out before the program runs (see [Kinds of values](#kinds-of-values)).
+**Kinds:** every value is a number, text, yes/no, a list, or a record, worked out before the program runs (see [Kinds of values](#kinds-of-values)).
 
 **Words that can't be names:** the operator words `and`, `or`, `not`, `is`, `isn't`, `equals`, `reaches`, `plus`, `minus`, `times`, `multiplied`, `divided`, `mod`, `followed`, `as`, and `using`. The value words `yes`, `no`, `true`, `false`, `nothing`, and `it` can't be names either. Every other word can be, including `count`, `length`, `contents`, and `file`.
 
@@ -448,6 +448,71 @@ Each gives back new text.
 
 `set T to T followed by X` (or `set T to T and X`) adds to the end of T. When nothing else holds that text, it grows in place instead of being copied, so building a long text one piece at a time is fast: a million pieces take about 5 milliseconds. Every other name that held the old text still sees the old text.
 
+## Records
+
+All record words are **Available**. A record holds named values, its **fields**, and a kind of record is defined once at the top of the program. Records are shared like lists. See the [language guide](language-guide.md#12-records).
+
+### Defining a kind of record
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `NAME is a kind of thing with:` + indented fields | Defines a kind of record called NAME (one or more words). Only at the top level | `a dog is a kind of thing with:` |
+| `NAME, which is KIND.` | A field, one per line (or sentence). KIND is any kind: `a number`, `text`, `yes or no`, a list, or a kind of record | `a name, which is text.`<br>`a start time, which is a number.` |
+| `NAME, which is KIND, starting at X.` | A field with a starting value, used when `new` doesn't give one. X is fixed before the program runs, like a constant: numbers, text, yes or no, constants, fixed lists, or an empty list | `an age, which is a number, starting at 0.` |
+| `NAME, which is KIND or nothing.` | A field that can be nothing (only a kind of record can). It starts as nothing | `a next, which is a node or nothing.` |
+
+A kind of record is written like any other kind: `(a dog)` for an input, `giving back a dog or nothing`, `a list of dogs` (the plural adds `s`, or `es` after `s`, `x`, `z`, `ch` and `sh`; `y` after a consonant becomes `ies`). A field can't always hold a record of its own kind (`a next, which is a node.`), because then no node could ever be made; make it `a node or nothing`.
+
+### Making and using records
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `a new NAME with FIELD X and FIELD Y` | A new record. Every field needs a value, unless it has a starting value or can be nothing. Fields are separated by `and` or commas; each value is a value up to the next `and` or comma (arithmetic and `followed by` are part of it). A `new` inside another `new` needs parentheses | `a new dog with name "Rex" and age 3` |
+| `a new NAME` | A new record whose fields all start at their starting values | `a new chain` |
+| `R's FIELD` | A field of a record. Chains work, and so does `it's` | `rex's name`, `the order's customer's name`, `it's age` |
+| `(X)'s FIELD` | A field of a value in parentheses | `(item 1 of dogs)'s name` |
+| `set R's FIELD to X` | Changes a field | `set rex's age to 4` |
+| `add X to R's FIELD`, `subtract`, `increase`, `decrease`, `multiply`, `divide` | Changes a number field, like a variable (`add X to R's FIELD` adds to the end of a list field that doesn't hold numbers, as for list variables) | `add 1 to rex's age` |
+| `R is S` / `R is not S` | Yes if R and S are **the same record** (two records with the same fields are still two records) | `if rex is fido, ...` |
+| `a copy of R` | A new record whose fields hold the same values (the text, lists and records in them are shared, not copied) | `let twin be a copy of rex` |
+| `say R` | Shows the record: its kind, then each field (text in quotes, lists and records inside it in parentheses, three levels deep) | `a dog with name "Rex" and age 3` |
+
+`'s` binds tightest of all: `rex's age plus 1` is `(rex's age) plus 1`, and `the first item of dogs's name` takes the first item of `dogs's name`; write `(the first item of dogs)'s name` for the name of the first dog. A word ending in `'s` is always a possessive.
+
+**Comparing contents:** `is` asks whether two records are the same one. To compare what's in them, compare their fields (`if rex's name is fido's name and rex's age is fido's age`), or write a method that does, like `to matches, for a dog, with other (a dog), giving back yes or no:`.
+
+### Fields that can be nothing
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `X is nothing` / `X is not nothing` / `X isn't nothing` | Yes if X (a record or nothing) is nothing, or isn't | `if the node's next is not nothing:` |
+| `set R's FIELD to nothing` | Empties a field that can be nothing | `set ann's friend to nothing` |
+| `give back nothing` | In a function that gives back a record or nothing (or in one that gives back nothing at all, where it's `return`) | `give back nothing` |
+
+A value that can be nothing (a field, a variable made from one, or an input) **can't be used as a record until it's checked**: its fields, and giving it where a record is needed, are compile errors outside a check. Checks:
+
+- inside `if X is not nothing:` (and in `otherwise` after `if X is nothing:`)
+- inside `while X is not nothing:` and `repeat until X is nothing:`
+- on the right of `X is not nothing and ...` and `X is nothing or ...`
+- after `if X is nothing, ...` when that `if` always leaves (with `give back`, `return`, `stop` or `skip`)
+
+X is a name or a chain of fields (`node`, `the node's next`). Setting X (or anything it's part of) ends the check, and a loop that sets X can't rely on a check made before it. The program also checks again while it runs, so if another name for the same record changed it in between, that's a runtime error instead of a crash.
+
+### Methods
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `to NAME, for a KIND:` / `to NAME for a KIND:` | A method: a function whose first input is a record of that kind, called like its kind inside (`the dog`). Its name is every word before `for` | `to bark, for a dog:`<br>`to have a birthday for a dog:` |
+| `to NAME, for a KIND, with INPUTS:` | A method with more inputs (also `using`, `of`, `to`, and `giving back`) | `to rename, for a dog, with new name:` |
+| `NAME R` / `NAME for R` | Calls a method, as a sentence or as a value | `bark rex.`, `have a birthday for rex.` |
+| `NAME R with X and Y` | Calls a method with more inputs | `rename rex with "Max".` |
+
+A method is a function, so `call bark with rex`, `bark of rex` and `describe for rex followed by "!"` (an ambiguity: use parentheses) work as for any function. Two kinds of record can't have methods with the same name yet.
+
+### Memory
+
+Records are freed when nothing holds them, like text and lists, including what their fields hold. Records that point to each other in a circle (two people who are each other's friend) keep each other alive and are never freed; the memory check (`ES_DEBUG_MEMORY=1`) reports them. See [memory](memory.md#circles).
+
 ## Kinds of values
 
 Every value has a kind, worked out by the compiler before the program runs (**Available**). Kind mistakes are compile errors with the line and a caret. See the [language guide](language-guide.md#9-types).
@@ -458,8 +523,10 @@ Every value has a kind, worked out by the compiler before the program runs (**Av
 | text | `(text)`, `giving back text` | text values, `followed by`, `and` with text, `as text`, `ask`, reading a file, characters, `in uppercase`, `joined with`, ... |
 | yes/no | `(yes or no)` or `(yes/no)`, `giving back yes or no` | `yes`/`no`, comparisons, `and`/`or`/`not` between yes/no values |
 | nothing | `giving back nothing` | a function with no `give back X` (only as what a function gives back) |
-| list | `(a list of numbers)`, `(a list of text)`, `(a list of yes/no values)` or `(a list of yes or no values)`, `(a list of lists of numbers)`, `giving back a list of text` | `a list of ...`, `an empty list of ...`, `every`, `only`, `reversed`, `a copy of` |
+| list | `(a list of numbers)`, `(a list of text)`, `(a list of yes/no values)` or `(a list of yes or no values)`, `(a list of lists of numbers)`, `(a list of dogs)`, `giving back a list of text` | `a list of ...`, `an empty list of ...`, `every`, `only`, `reversed`, `a copy of` |
+| record | `(a dog)`, `giving back a dog` | `a new dog`, a field holding one, `a copy of` |
+| record or nothing | `(a dog or nothing)`, `giving back a dog or nothing` | a field `which is a dog or nothing`, `nothing` where one goes |
 
 ## Later phases
 
-Records, maps, and modules (Phase 2), and everything after, will be added here as their designs settle. See the [roadmap](roadmap.md).
+Maps and modules (Phase 2), and everything after, will be added here as their designs settle. See the [roadmap](roadmap.md).

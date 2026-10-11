@@ -178,6 +178,12 @@ static bool reads(const Expr *expr, const char *name) {
     case EXPR_TEXT_OP:
         return reads(expr->as.text_op.operand, name) || reads(expr->as.text_op.arg, name) ||
                reads(expr->as.text_op.arg2, name);
+    case EXPR_FIELD: return reads(expr->as.field.record, name);
+    case EXPR_NEW:
+        for (size_t i = 0; i < expr->as.new_record.values.len; i++) {
+            if (reads(expr->as.new_record.values.items[i].value, name)) return true;
+        }
+        return false;
     case EXPR_ERROR:
     case EXPR_NUMBER:
     case EXPR_TEXT:

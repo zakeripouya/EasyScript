@@ -8,8 +8,12 @@
 #include "front/check_internal.h"
 
 
+const char *checker_type_name(Checker *c, Type type) {
+    return ast_type_name(c->arena, c->records, type);
+}
+
 const char *checker_kind(Checker *c, TypeVar var) {
-    return ast_type_name(c->arena, types_of(c, var));
+    return checker_type_name(c, types_of(c, var));
 }
 
 static const Symbol *find(const Symbol *items, size_t len, const char *name) {
@@ -163,17 +167,42 @@ static const Symbol *check_target(Checker *c, const Name *name) {
 
 // A variable keeps the kind it was made with.
 static void store(Checker *c, const Symbol *symbol, TypeVar value, Span span) {
-    if (types_unify(c, symbol->var, value)) return;
+    if (checker_fits(c, symbol->var, value, diag_line(c->diag, span.offset))) return;
     diag_error(c->diag, span, "\"%s\" is %s (made on line %zu), but this is %s.", symbol->display,
                checker_kind(c, symbol->var), symbol->line, checker_kind(c, value));
     diag_note(c->diag, "A variable keeps the kind of value it was made with. To keep %s, make a new variable for it.",
               checker_kind(c, value));
 }
 
+// The field a sentence changes ("set rex's age to"): its kind, as defined.
+static TypeVar check_field_target(Checker *c, const Expr *field) {
+    const Expr *saved = c->unnarrowed;
+    c->unnarrowed = field;
+    TypeVar var = checker_check_expr(c, field);
+    c->unnarrowed = saved;
+    return var;
+}
+
 static void check_set(Checker *c, const Stmt *stmt) {
-    TypeVar value = checker_check_expr(c, stmt->as.assign.value);
+    const Expr *value_expr = stmt->as.assign.value;
+    TypeVar value = checker_check_value(c, value_expr);
+    const Expr *field = stmt->as.assign.field;
+    if (field) {
+        TypeVar var = check_field_target(c, field);
+        if (!checker_fits(c, var, value, value_expr->pos.line)) {
+            diag_error(c->diag, value_expr->pos.span, "The field \"%s\" is %s, but this is %s.",
+                       field->as.field.name.display, checker_kind(c, var), checker_kind(c, value));
+        }
+        checker_kill_path(c, field, NULL);
+        return;
+    }
     const Symbol *symbol = check_target(c, &stmt->as.assign.name);
-    if (symbol) store(c, symbol, value, stmt->as.assign.value->pos.span);
+    if (symbol) {
+        store(c, symbol, value, value_expr->pos.span);
+        TypedSlot slot = {(Type *)&stmt->as.assign.type, symbol->var};
+        vec_push(c->arena, &c->slots, slot);
+    }
+    checker_kill_path(c, NULL, stmt->as.assign.name.text);
 }
 
 // add/subtract/increase/decrease/multiply/divide: the runtime's arithmetic
@@ -181,13 +210,21 @@ static void check_set(Checker *c, const Stmt *stmt) {
 static void check_change(Checker *c, const Stmt *stmt) {
     static const BinaryOp ops[] = {BINARY_ADD, BINARY_SUBTRACT, BINARY_MULTIPLY, BINARY_DIVIDE};
     TypeVar amount = checker_check_expr(c, stmt->as.change.amount);
-    const Symbol *symbol = check_target(c, &stmt->as.change.target);
-    if (!symbol) return;
-    if (stmt->as.change.op == CHANGE_ADD && type_is_list(types_of(c, symbol->var))) {
-        checker_add_to_list(c, (Stmt *)stmt, symbol, amount);
+    const Expr *field = stmt->as.change.field;
+    TypeVar var;
+    if (field) {
+        var = check_field_target(c, field);
+        if (types_of(c, var) == TYPE_ERROR) return;
+    } else {
+        const Symbol *symbol = check_target(c, &stmt->as.change.target);
+        if (!symbol) return;
+        var = symbol->var;
+    }
+    if (stmt->as.change.op == CHANGE_ADD && type_is_list(types_of(c, var))) {
+        checker_add_to_list(c, (Stmt *)stmt, var, amount);
         return;
     }
-    checker_arithmetic(c, ops[stmt->as.change.op], symbol->var, amount, stmt->pos.span, stmt->pos.line);
+    checker_arithmetic(c, ops[stmt->as.change.op], var, amount, stmt->pos.span, stmt->pos.line);
 }
 
 // "ask ... and call the answer X" and "read file ... and call it X" make X as
@@ -212,11 +249,13 @@ static void check_let(Checker *c, const Stmt *stmt) {
         return;
     }
     make(c, name, value);
+    TypedSlot slot = {(Type *)&stmt->as.assign.type, value};
+    vec_push(c->arena, &c->slots, slot);
 }
 
 // A function gives back one kind of value, or nothing, everywhere.
 static void check_return(Checker *c, const Stmt *stmt) {
-    TypeVar value = stmt->as.returned ? checker_check_expr(c, stmt->as.returned) : 0;
+    TypeVar value = stmt->as.returned ? checker_check_value(c, stmt->as.returned) : 0;
     const Function *f = c->function;
     if (!f) {
         diag_error(c->diag, stmt->pos.span, "\"give back\" only works inside a function.");
@@ -225,6 +264,8 @@ static void check_return(Checker *c, const Stmt *stmt) {
         return;
     }
     Type result = types_of(c, f->result);
+    bool nothing = stmt->as.returned && stmt->as.returned->kind == EXPR_NOTHING;
+    if (nothing && result == TYPE_NOTHING) return;  // "give back nothing" is "return"
     if (!stmt->as.returned) {
         if (result == TYPE_NOTHING || result == TYPE_ERROR) return;
         diag_error(c->diag, stmt->pos.span, "\"%s\" gives back a value, so it can't give back nothing here.", f->display);
@@ -233,9 +274,9 @@ static void check_return(Checker *c, const Stmt *stmt) {
         diag_error(c->diag, stmt->as.returned->pos.span, "\"%s\" gives back nothing, so it can't give back a value.",
                    f->display);
         diag_note(c->diag, "It's defined on line %zu: \"%s\".", f->definition->pos.line, checker_function_header(c, f));
-    } else if (!types_unify(c, f->result, value)) {
+    } else if (!checker_fits(c, f->result, value, stmt->pos.line)) {
         diag_error(c->diag, stmt->as.returned->pos.span, "\"%s\" gives back %s (since line %zu), but this is %s.",
-                   f->display, ast_type_name(c->arena, result), types_line(c, f->result), checker_kind(c, value));
+                   f->display, checker_type_name(c, result), types_line(c, f->result), checker_kind(c, value));
         diag_note(c->diag, "A function gives back the same kind of value every time.");
     }
 }
@@ -255,18 +296,33 @@ static void end_scope(Checker *c, size_t outer, size_t line, const char *where) 
     c->made.len = outer;
 }
 
+// Whether a block always leaves before its end (give back, stop, skip).
+static bool always_leaves(const Block *block) {
+    if (block->len == 0) return false;
+    StmtKind last = block->items[block->len - 1]->kind;
+    return last == STMT_RETURN || last == STMT_STOP || last == STMT_BREAK || last == STMT_CONTINUE;
+}
+
+// After "if node is nothing, give back 0." the rest of the block knows
+// node isn't nothing.
 static void check_statements(Checker *c, const Block *block) {
     for (size_t i = 0; i < block->len; i++) {
-        check_stmt(c, block->items[i]);
+        const Stmt *stmt = block->items[i];
+        check_stmt(c, stmt);
+        if (stmt->kind == STMT_IF && stmt->as.if_stmt.branches.len == 1 &&
+            always_leaves(&stmt->as.if_stmt.branches.items[0].body)) {
+            checker_narrow_condition(c, stmt->as.if_stmt.branches.items[0].condition, false);
+        }
     }
 }
 
 static void check_block(Checker *c, const Block *block, size_t line, const char *where) {
-    size_t outer = c->made.len;
+    size_t outer = c->made.len, checked = c->present.len;
     c->blocks++;
     check_statements(c, block);
     c->blocks--;
     end_scope(c, outer, line, where);
+    c->present.len = checked;
 }
 
 static void check_params(Checker *c, const Function *f) {
@@ -308,15 +364,23 @@ static void check_function(Checker *c, const Stmt *stmt) {
     c->loops.len = saved_loops;
 }
 
+// Each branch knows what its condition says isn't nothing, and what the
+// conditions before it being false say.
 static void check_if(Checker *c, const Stmt *stmt) {
+    size_t outer = c->present.len;
     for (size_t i = 0; i < stmt->as.if_stmt.branches.len; i++) {
         const IfBranch *branch = &stmt->as.if_stmt.branches.items[i];
         if (branch->condition) {
             checker_require(c, checker_check_expr(c, branch->condition), TYPE_YESNO, branch->condition,
                             "An \"if\" needs yes or no to decide", "Compare it with something, like \"if x is 5\".");
         }
+        size_t before = c->present.len;
+        if (branch->condition) checker_narrow_condition(c, branch->condition, true);
         check_block(c, &branch->body, stmt->pos.line, "the \"if\"");
+        c->present.len = before;
+        if (branch->condition) checker_narrow_condition(c, branch->condition, false);
     }
+    c->present.len = outer;
 }
 
 void checker_make_item_name(Checker *c, const Name *name, TypeVar item) {
@@ -359,6 +423,10 @@ static void check_loop_value(Checker *c, const Expr *value, Type type, const cha
 }
 
 static void check_loop(Checker *c, const Stmt *stmt) {
+    // A check made before the loop doesn't hold in later rounds if the body
+    // sets what was checked; the loop's own condition is checked every round.
+    size_t checked = c->present.len;
+    checker_kill_set_in(c, &stmt->as.loop.body);
     check_loop_value(c, stmt->as.loop.from, TYPE_NUMBER, "A count has to start at a number", NULL);
     check_loop_value(c, stmt->as.loop.to, TYPE_NUMBER, "A count has to end at a number", NULL);
     check_loop_value(c, stmt->as.loop.step, TYPE_NUMBER, "The step of a count has to be a number", NULL);
@@ -381,10 +449,12 @@ static void check_loop(Checker *c, const Stmt *stmt) {
         loop.it = item;
     }
     vec_push(c->arena, &c->loops, loop);
+    if (stmt->as.loop.condition) checker_narrow_condition(c, stmt->as.loop.condition, stmt->as.loop.kind == LOOP_WHILE);
     c->blocks++;
     check_statements(c, &stmt->as.loop.body);
     c->blocks--;
     c->loops.len--;
+    c->present.len = checked;
     end_scope(c, outer, stmt->pos.line, "the loop");
 }
 
@@ -430,6 +500,7 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
     case STMT_CALL: checker_check_call(c, stmt->as.call, false); break;
     case STMT_CONSTANT: checker_check_constant(c, stmt); break;
     case STMT_LIST: checker_check_list_stmt(c, stmt); break;
+    case STMT_RECORD: checker_check_record(c, (Stmt *)stmt); break;
     }
 }
 
@@ -463,7 +534,7 @@ static void collect_names(Checker *c, const Block *program) {
 static bool gives_value(const Block *block) {
     for (size_t i = 0; i < block->len; i++) {
         const Stmt *stmt = block->items[i];
-        if (stmt->kind == STMT_RETURN && stmt->as.returned) return true;
+        if (stmt->kind == STMT_RETURN && stmt->as.returned && stmt->as.returned->kind != EXPR_NOTHING) return true;
         if (stmt->kind == STMT_LOOP && gives_value(&stmt->as.loop.body)) return true;
         for (size_t b = 0; stmt->kind == STMT_IF && b < stmt->as.if_stmt.branches.len; b++) {
             if (gives_value(&stmt->as.if_stmt.branches.items[b].body)) return true;
@@ -505,18 +576,22 @@ static void collect_functions(Checker *c, const Block *program) {
     }
 }
 
-void check_program(Arena *arena, Diag *diag, const Block *program) {
+void check_program(Arena *arena, Diag *diag, const Program *whole) {
+    const Block *program = &whole->body;
     Checker c = {0};
     c.arena = arena;
     c.diag = diag;
+    c.records = &whole->records;
     size_t first_error = diag_count(diag);
+    checker_collect_records(&c, program);
     collect_functions(&c, program);
     checker_collect_constants(&c, program);
     collect_names(&c, program);
-    for (size_t pass = 0; pass < 3; pass++) {  // constants, then functions, then the rest
+    for (size_t pass = 0; pass < 4; pass++) {  // constants, kinds of record, functions, then the rest
         for (size_t i = 0; i < program->len; i++) {
             const Stmt *stmt = program->items[i];
-            int kind_pass = stmt->kind == STMT_CONSTANT ? 0 : stmt->kind == STMT_FUNCTION ? 1 : 2;
+            int kind_pass = stmt->kind == STMT_CONSTANT ? 0 : stmt->kind == STMT_RECORD ? 1
+                            : stmt->kind == STMT_FUNCTION ? 2 : 3;
             if (kind_pass == (int)pass) check_stmt(&c, stmt);
         }
     }

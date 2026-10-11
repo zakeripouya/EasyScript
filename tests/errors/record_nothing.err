@@ -1,0 +1,52 @@
+Line 13: "first's next" could be nothing, so check it first.
+    say first's next's value.
+        ^^^^^^^^^^^^
+Use it inside "if first's next is not nothing:".
+
+Line 14: This is a node or nothing, so check it first.
+    say (find with 1 and first)'s value.
+        ^^^^^^^^^^^^^^^^^^^^^^^
+Give it a name with "let", then use it inside "if NAME is not nothing:".
+
+Line 15: "value" needs a node for "start", but this is a node or nothing.
+    say value of first's next.
+                 ^^^^^^^^^^^^
+It could be nothing. Check it first, like "if first's next is not nothing:".
+
+Line 16: "first" is a node, so it's never nothing.
+    if first is nothing, say "never".
+       ^^^^^
+Only a value that's "a node or nothing" can be nothing.
+
+Line 17: I can't compare a number with nothing.
+    if 5 is not nothing, say "never".
+       ^^^^^^^^^^^^^^^^
+Only a record can be nothing: a field or input whose kind is like "a dog or nothing".
+
+Line 18: I can't compare nothing with nothing.
+    if nothing is nothing, say "always".
+       ^^^^^^^^^^^^^^^^^^
+Compare a record or nothing with it, like "if the node's next is nothing".
+
+Line 20: "first" is a node (made on line 12), but this is a node or nothing.
+    set first to later.
+                 ^^^^^
+A variable keeps the kind of value it was made with. To keep a node or nothing, make a new variable for it.
+
+Line 21: The field "value" is a number, but this is nothing.
+    set first's value to nothing.
+                         ^^^^^^^
+
+Line 24: This is a record or nothing, but it's used as a number here.
+        if x is not nothing, give back x plus 1.
+                                       ^
+
+Line 31: "later" could be nothing, so check it first.
+        say later's value.
+            ^^^^^
+Use it inside "if later is not nothing:".
+
+Line 35: "walker" could be nothing, so check it first.
+            say walker's value.
+                ^^^^^^
+Use it inside "if walker is not nothing:".

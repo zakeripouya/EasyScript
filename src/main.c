@@ -118,7 +118,7 @@ static void generate_c(const char *source_path) {
     char *source = read_file(source_path, &length);
     Diag *diag = diag_new(arena, source, length);
     TokenList tokens = lex(arena, diag, source, length);
-    Block *program = parse_program(arena, diag, source, &tokens);
+    Program *program = parse_program(arena, diag, source, &tokens);
     if (diag_count(diag) == 0) {
         check_program(arena, diag, program);  // only on a cleanly parsed program
     }
@@ -228,11 +228,11 @@ static int cmd_ast(const char *source_path) {
     char *source = read_file(source_path, &length);
     Diag *diag = diag_new(arena, source, length);
     TokenList tokens = lex(arena, diag, source, length);
-    Block *program = parse_program(arena, diag, source, &tokens);
+    Program *program = parse_program(arena, diag, source, &tokens);
 
     StrBuf out;
     sb_init(&out, arena);
-    ast_dump_block(program, &out);
+    ast_dump_program(program, &out);
     fwrite(out.data, 1, out.len, stdout);
     if (diag_count(diag) > 0) {
         diag_print(diag, stderr);

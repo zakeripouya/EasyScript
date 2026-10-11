@@ -21,12 +21,13 @@
 
 const char *cg_item_suffix(Type list) {
     Type item = type_item(list);
-    return type_is_list(item) ? "l" : item == TYPE_TEXT ? "t" : item == TYPE_YESNO ? "b" : "n";
+    return type_is_list(item) ? "l" : type_is_record(item) ? "r" : item == TYPE_TEXT ? "t" : item == TYPE_YESNO ? "b" : "n";
 }
 
 // ES_ITEMS_NUMBER, ...: what the runtime calls the kind of a list's items.
 static const char *items_kind(Type list) {
     Type item = type_item(list);
+    if (type_is_record(item)) return "ES_ITEMS_RECORD";
     return type_is_list(item) ? "ES_ITEMS_LIST" : item == TYPE_TEXT ? "ES_ITEMS_TEXT"
                                               : item == TYPE_YESNO ? "ES_ITEMS_YESNO" : "ES_ITEMS_NUMBER";
 }
@@ -71,7 +72,7 @@ static void emit_list_op(Codegen *g, const Expr *expr, StrBuf *out) {
                    expr->as.list_op.op == LIST_BIGGEST);
         break;
     case LIST_REVERSED: sb_appendf(out, "es_list_reversed(%s)", code); break;
-    case LIST_COPY: sb_appendf(out, "es_list_copy(%s)", code); break;
+    case LIST_COPY: sb_appendf(out, "%s(%s)", type_is_record(operand->type) ? "es_record_copy" : "es_list_copy", code); break;
     case LIST_IS_EMPTY:
     case LIST_NOT_EMPTY:
         sb_appendf(out, "%s%s(%s)", expr->as.list_op.op == LIST_NOT_EMPTY ? "!" : "",

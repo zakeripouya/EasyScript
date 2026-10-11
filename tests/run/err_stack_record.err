@@ -1,0 +1,6 @@
+Line 7: You divided by zero.
+        give back 7 divided by (pet's age minus 3)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+while working out "dog years" (pet was a dog with name "Rex, the very good boy from next door", age...)
+called from "report" on line 10 (pet was a dog with name "Rex, the very good boy from next door", age..., label was "Rex: ")
+called from line 15: report with rex and "Rex: ".

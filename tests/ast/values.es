@@ -12,4 +12,4 @@ say count
 say length
 say contents
 say file
-say guest's
+say rock'n'roll

@@ -77,14 +77,14 @@ Hello, Ada!
 | Functions | `to make tea:` / `to greet with someone:` / `to area with width and height:` / `to add tax to amount:`, `give back` / `return`, calls as sentences (`greet "Paris".`, `call greet with "Paris".`, `add tax to 100.`) or values (`area of 3 and 4`); recursion, and calling a function before it's defined |
 | Types | Every value is a number, text, yes/no, or a list of one kind, worked out by the compiler (no annotations needed); kind mistakes are caught before the program runs; optional kinds in definitions: `to area with width (a number) and height (a number), giving back a number:`, `(a list of numbers)` |
 | Other | `stop the program`; any sentence can start with `please` |
-| Memory | Nothing to manage: text and lists are freed as soon as nothing uses them, so loops that make them run in flat memory ([how](docs/memory.md)) |
+| Memory | Nothing to manage: text, lists and records are freed as soon as nothing uses them, so loops that make them run in flat memory ([how](docs/memory.md)) |
 | Friendly errors | Compile errors show the line, the source, carets, and a suggestion ("Did you mean "total"? You made it on line 1."). Kind mistakes are compile errors too ("I can't add text to a number."). Runtime errors show the line with carets too, and the chain of function calls that led there, with the values they were given ("while working out "average" (count was 0)", "called from line 8: ...") |
 | Tools | `run`, `build`, `emit`, `tokens`, `ast`, and an interactive shell. Generated programs are self-contained C. |
 | Tests | Unit, lexer, parser, program, runtime-error, memory, example, and CLI tests with `make test` (every program also runs with a memory check), plus a sanitizer build with `make test-debug`; GitHub Actions runs both on Linux (GCC) and macOS (Clang) on every push |
 
 See the runnable [example programs](examples/programs/).
 
-**Phase 2 has started.** Done so far: **memory management** (text and lists are freed as soon as nothing uses them, so long loops run in flat memory; [how it works](docs/memory.md)), **static types** (the compiler works out whether every value is a number, text, yes/no, or a list, catches kind mistakes before the program runs, and generates plain C numbers; [Types](docs/language-guide.md#9-types)), **lists** (shared by reference, with items by position from 1, `for each`, `every`/`only`, sorting, and friendly errors; [Lists](docs/language-guide.md#10-lists)), and **text tools** (characters, searching, splitting into words and lines, joining, changing case, character codes, and fast text building; [Text](docs/language-guide.md#11-text)). Runtime errors now show the source line and the chain of calls. **Coming next:** records, maps and modules, plus `file ... exists` (moved from Phase 1). Follow along in the [roadmap](docs/roadmap.md).
+**Phase 2 has started.** Done so far: **memory management** (text and lists are freed as soon as nothing uses them, so long loops run in flat memory; [how it works](docs/memory.md)), **static types** (the compiler works out whether every value is a number, text, yes/no, or a list, catches kind mistakes before the program runs, and generates plain C numbers; [Types](docs/language-guide.md#9-types)), **lists** (shared by reference, with items by position from 1, `for each`, `every`/`only`, sorting, and friendly errors; [Lists](docs/language-guide.md#10-lists)), **text tools** (characters, searching, splitting into words and lines, joining, changing case, character codes, and fast text building; [Text](docs/language-guide.md#11-text)), and **records** (`a dog is a kind of thing with:` and its fields, `a new dog with name "Rex" and age 3`, `rex's name`, fields that can be nothing and must be checked first, and methods like `to bark, for a dog:`; [Records](docs/language-guide.md#12-records)). Runtime errors now show the source line and the chain of calls. **Coming next:** maps and modules, weak references for records that point to each other, plus `file ... exists` (moved from Phase 1). Follow along in the [roadmap](docs/roadmap.md).
 
 ## Performance
 
@@ -106,7 +106,7 @@ Apple M4, macOS 15.3.1, EasyScript 0.1.0 plus reference counting, static types, 
 | Phase | Focus | Status |
 |---|---|---|
 | 1 | **Core language:** variables, constants, arithmetic, text, output, input, decisions, loops, functions, files, friendly errors | **Complete** (v0.1.0) |
-| 2 | **Data and structure:** memory management, static types, records, lists, maps, modules, text tools | **In progress** (memory management, static types, lists and text tools done) |
+| 2 | **Data and structure:** memory management, static types, records, lists, maps, modules, text tools | **In progress** (memory management, static types, lists, text tools and records done) |
 | 3 | **Self-hosting:** the EasyScript compiler, written in EasyScript | Coming soon |
 | 4 | **Real-world programs:** standard library, C interop, concurrency, backend servers | Coming soon |
 | 5 | **Systems mode:** low-level control, no runtime, and an operating system | Coming soon |

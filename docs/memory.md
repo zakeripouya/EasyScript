@@ -13,12 +13,13 @@ repeat 1000000 times:
 say last
 ```
 
-Only the latest text is kept; every earlier one is freed the moment `last` stops holding it. Lists work the same way: a list is freed, with everything in it, when no variable (and no other list) holds it any more. Numbers, yes and no, and `nothing` don't take extra memory at all, and text written in your program (like `"item "`) is part of the program itself.
+Only the latest text is kept; every earlier one is freed the moment `last` stops holding it. Lists and records work the same way: a list or record is freed, with everything in it, when nothing (no variable, list or record) holds it any more. Numbers, yes and no, and `nothing` don't take extra memory at all, and text written in your program (like `"item "`) is part of the program itself.
 
 Two things to know:
 
 - **Text you keep growing really does grow.** Adding to the same text over and over (`set story to story followed by more`) keeps the whole text, as it should. A 50,000-character text takes about 50 KB. The same goes for a list you keep adding to: a million numbers take about 8 MB.
 - **Memory goes back to the computer when the program ends,** including when it stops with an error or with `stop the program`.
+- **Records in a circle are never freed while the program runs.** If two people are each other's friend, each one holds the other, so neither is ever "unused". For most programs this doesn't matter (the memory goes back when the program ends), but a loop that keeps making such circles keeps using more memory. Break the circle when you're done with it, by setting one of its fields to nothing (`set ann's friend to nothing`). With `ES_DEBUG_MEMORY=1` the program reports any circle left at the end.
 
 ## For contributors
 
@@ -73,9 +74,28 @@ The variables of `main()` are C locals of `main()`, not globals. Their addresses
 - **Runtime errors** print their message and exit straight away, in the middle of a sentence. The operating system reclaims everything.
 - **`stop the program` inside a function** can't reach the variables of `main()` or of the functions that called it, or values they were still working out. Again, the operating system reclaims them as the program ends.
 
+### Records
+
+A record (`EsRecord`, `runtime/es_record.h`) is a header (kind, count, its `EsRecordType`, and two links) followed by its fields, laid out by a C struct codegen writes per kind (`es_R0`). The `EsRecordType` lists each field's name, kind (`n b t l r`) and offset, so the runtime can release, copy and print any record without knowing its struct. A field that can be nothing holds `NULL`; every record retain and release is NULL-safe. Records in lists are counted items (`ES_ITEMS_RECORD`) and are shared, never copied, by list copies and slices.
+
+**Freeing doesn't recurse.** Releasing the first node of a million-node chain frees a million records. `es_free_object` frees text at once, but a list or record whose count reaches zero while another is being freed is put on `es_dying`, a growing array, and freed in a loop, so the C stack never grows with the chain (`tests/run/records_long_chain.es`).
+
 ### Cycles
 
-A reference count can't free objects that refer to each other in a loop. With text and lists, that can't happen: a list holds one kind of item, and a list of some kind can never hold a list of its own kind (a list of numbers holds numbers, a list of lists of numbers holds lists of numbers), so no list can ever contain itself, directly or through other lists. The checker enforces it: `add grid to the end of grid` is a kind error. When records arrive in Phase 2, a record will be able to refer to itself, so EasyScript will need weak references or a cycle collector then (see the [roadmap](roadmap.md)).
+A reference count can't free objects that refer to each other in a loop. Text and lists can't: a list of some kind can never hold a list of its own kind, so no list can contain itself (the checker enforces it). **Records can:** two people who are each other's friend, or a node whose `next` leads back to it. Such a circle is never freed while the program runs.
+
+For now, EasyScript finds them instead of freeing them. With `ES_DEBUG_MEMORY=1`, every record is linked into a list of live records (`es_memory.records`, using `EsRecord.prev` and `next`). If anything is alive at the end, `es_report_cycles` takes each live record's count, subtracts the references from other live records (directly, or through lists only they hold), and treats records with references left over as held from outside. Everything those lead to is alive for a reason; the rest only keep each other alive. It prints up to three of them and how to break the circle, and exits 70:
+
+```
+Memory check: 4 records were still alive at the end of the program, because they point to each other in a circle:
+    a person with name "Ann" and friend (a person with ...)
+    a person with name "Bo" and friend (a person with ...)
+    a person with name "Cy" and friend (a person with ...)
+    ...and 1 more
+Records in a circle are never freed, because each one keeps the next alive. Before the program ends, set a field in the circle to nothing.
+```
+
+**Plan:** weak references come later: a field written as weak (the wording isn't decided) wouldn't count, so a back-link (a child's parent, a doubly linked list's `previous`) wouldn't keep anything alive. A cycle collector (finding circles while the program runs, as the check above does at the end) is the alternative if weak references turn out too hard to explain. See the [roadmap](roadmap.md).
 
 ### Checking it
 
@@ -93,3 +113,5 @@ Lists were added this way, so they're a worked example:
 3. Give it a type in the checker and a C type in codegen (`cg_ctype`), and make `type_counted` true for it, so retains, releases and drops are generated for it as for text (`cg_retain`, `cg_release`, `cg_set`, `cg_drop`, `cg_empty`).
 4. Follow the ownership table: operations consume their arguments, and storing goes through a setter like `es_set` or `es_list_set`.
 5. Make sure it can't form cycles, or plan for them (see above).
+
+Records followed these steps too, plus `es_dying` for freeing without recursion.

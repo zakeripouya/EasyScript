@@ -1,0 +1,12 @@
+20
+30
+35
+40
+50
+60
+70
+80
+Depth: 4
+Holds 35: yes
+Holds 36: no
+a tree node with key 30, left (a tree node with key 20, left nothing and right nothing) and right (a tree node with key 40, left (a tree node with key 35, left nothing and right nothing) and right nothing)

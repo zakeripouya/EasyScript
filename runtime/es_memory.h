@@ -1,14 +1,16 @@
-/* EasyScript runtime, part 1: heap objects (text and lists) and memory.
+/* EasyScript runtime, part 1: heap objects (text, lists and records) and memory.
  *
- * The runtime is five files, embedded into the compiler at build time (in
- * this order: es_memory.h, es_runtime.h, es_list.h, es_sort.h, es_text.h) and copied to the top of
- * every generated C program, so programs need nothing else to build.
+ * The runtime is six files, embedded into the compiler at build time (in
+ * this order: es_memory.h, es_runtime.h, es_list.h, es_sort.h, es_text.h,
+ * es_record.h) and copied to the top of every generated C program, so
+ * programs need nothing else to build.
  * Everything is static; generated code calls it.
  *
  * The compiler knows the kind of every value, so generated code uses plain C
- * types: a number is a double, yes/no is a bool, text is an EsText *, and a
- * list is an EsList *. Text and lists live on the heap with a reference
- * count, and are freed as soon as nothing uses them (see docs/memory.md);
+ * types: a number is a double, yes/no is a bool, text is an EsText *, a list
+ * is an EsList *, and a record is an EsRecord * (NULL for nothing). Text,
+ * lists and records live on the heap with a reference count, and are freed
+ * as soon as nothing uses them (see docs/memory.md);
  * text written in the program (literals, constants) is a static object marked
  * immortal, which is never counted or freed.
  *
@@ -28,6 +30,7 @@
 #include <errno.h>
 #include <math.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -47,11 +50,11 @@
 
 /* --- Heap objects --------------------------------------------------------
  *
- * Every heap object starts with this header, so all kinds (text, lists, and
- * later records) share the same retain/release machinery. A header whose
- * count is ES_IMMORTAL is never counted or freed. */
+ * Every heap object starts with this header, so all kinds (text, lists and
+ * records) share the same retain/release machinery. A header whose count is
+ * ES_IMMORTAL is never counted or freed. */
 
-typedef enum { ES_OBJ_TEXT, ES_OBJ_LIST } EsObjectKind;
+typedef enum { ES_OBJ_TEXT, ES_OBJ_LIST, ES_OBJ_RECORD } EsObjectKind;
 
 #define ES_IMMORTAL SIZE_MAX
 
@@ -73,9 +76,36 @@ typedef struct {
 
 static EsText es_empty_text = ES_STATIC_TEXT("");
 
-/* What a list holds. Text and lists inside a list are counted references
- * that the list owns. */
-typedef enum { ES_ITEMS_NUMBER, ES_ITEMS_YESNO, ES_ITEMS_TEXT, ES_ITEMS_LIST } EsItems;
+/* A kind of record the program defines: its name with "a" or "an" ("a
+ * dog"), and each field's name, kind ('n' number, 'b' yes/no, 't' text, 'l'
+ * list, 'r' record, which may be NULL for nothing) and offset. The compiler
+ * writes one per kind (es_rt0, ...), with a C struct that starts with
+ * EsRecord and then has the fields. */
+typedef struct {
+    const char *name;
+    int fields;
+    const char *const *field_names;
+    const char *kinds;
+    const size_t *offsets;
+    size_t size;
+} EsRecordType;
+
+/* A record. Its fields come after this header and own the text, lists and
+ * records in them. `prev` and `next` link every record alive while
+ * ES_DEBUG_MEMORY is on, so the check at the end can find records that keep
+ * each other alive in a circle (see es_finish). */
+typedef struct EsRecord {
+    EsObject header;
+    const EsRecordType *type;
+    struct EsRecord *prev, *next;
+    size_t mark; /* used by that check */
+} EsRecord;
+
+#define ES_FIELD(r, T, offset) (*(T *)((char *)(r) + (offset)))
+
+/* What a list holds. Text, lists and records inside a list are counted
+ * references that the list owns (a record item can be NULL, for nothing). */
+typedef enum { ES_ITEMS_NUMBER, ES_ITEMS_YESNO, ES_ITEMS_TEXT, ES_ITEMS_LIST, ES_ITEMS_RECORD } EsItems;
 
 typedef struct EsList {
     EsObject header;
@@ -87,7 +117,8 @@ typedef struct EsList {
         bool *b;
         EsText **t;
         struct EsList **l;
-        EsObject **o; /* text or lists, either way */
+        EsRecord **r;
+        EsObject **o; /* text, lists or records, any of them */
         void *any;
     } at;
 } EsList;
@@ -97,7 +128,7 @@ static size_t es_item_size(EsItems items) {
 }
 
 static bool es_items_counted(EsItems items) {
-    return items == ES_ITEMS_TEXT || items == ES_ITEMS_LIST;
+    return items == ES_ITEMS_TEXT || items == ES_ITEMS_LIST || items == ES_ITEMS_RECORD;
 }
 
 /* What a list variable holds before it's given a list (never read, never
@@ -116,6 +147,7 @@ static struct {
     size_t live_bytes;
     size_t limit;
     bool check;
+    EsRecord *records; /* with check on: every record alive, newest first */
 } es_memory;
 
 static _Noreturn void es_out_of_memory(void) {
@@ -148,34 +180,94 @@ static EsObject *es_new_object(EsObjectKind kind, size_t size) {
 
 static inline void es_object_release(EsObject *obj);
 
-/* Frees a heap object whose count reached zero. It's never inlined (and on
- * GCC never specialized) into its callers: es_release only calls it for
- * counted objects, and keeping it out of line keeps that visible to the C
- * compiler, which otherwise sees free() reachable from releases of static
- * immortal text and warns (-Wfree-nonheap-object). Freeing is the rare path,
- * so a real call costs nothing that matters. */
-#if defined(__GNUC__) && !defined(__clang__)
-__attribute__((noipa, cold))
-#elif defined(__clang__)
-__attribute__((noinline, cold))
-#endif
-static void es_free_object(EsObject *obj) {
+/* Objects whose count reached zero and whose insides still have to be
+ * released. Freeing works through this list instead of calling itself, so
+ * freeing a long chain of records (a linked list of a million nodes) can't
+ * run out of C stack. It's never freed: it's reused for the whole run. */
+static struct {
+    EsObject **items;
+    size_t len, cap;
+    bool busy;
+} es_dying;
+
+static void es_dying_add(EsObject *obj) {
+    if (es_dying.len == es_dying.cap) {
+        size_t cap = es_dying.cap ? es_dying.cap * 2 : 64;
+        EsObject **items = realloc(es_dying.items, cap * sizeof(EsObject *));
+        if (!items) es_out_of_memory();
+        es_dying.items = items;
+        es_dying.cap = cap;
+    }
+    es_dying.items[es_dying.len++] = obj;
+}
+
+static void es_unlink_record(EsRecord *r) {
+    if (r->prev) r->prev->next = r->next; else es_memory.records = r->next;
+    if (r->next) r->next->prev = r->prev;
+}
+
+/* Releases what one object holds and frees it. */
+static void es_free_one(EsObject *obj) {
     size_t size = 0;
     switch (obj->kind) {
     case ES_OBJ_TEXT: size = sizeof(EsText) + ((EsText *)obj)->cap + 1; break;
     case ES_OBJ_LIST: {
         EsList *l = (EsList *)obj;
         if (es_items_counted(l->items)) {
-            for (size_t i = 0; i < l->len; i++) es_object_release(l->at.o[i]);
+            for (size_t i = 0; i < l->len; i++) {
+                if (l->at.o[i]) es_object_release(l->at.o[i]);
+            }
         }
         free(l->at.any);
         size = sizeof(EsList) + l->cap * es_item_size(l->items);
+        break;
+    }
+    case ES_OBJ_RECORD: {
+        EsRecord *r = (EsRecord *)obj;
+        const EsRecordType *type = r->type;
+        for (int i = 0; i < type->fields; i++) {
+            char kind = type->kinds[i];
+            if (kind == 't' || kind == 'l' || kind == 'r') {
+                EsObject *field = ES_FIELD(r, EsObject *, type->offsets[i]);
+                if (field) es_object_release(field);
+            }
+        }
+        if (es_memory.check) es_unlink_record(r);
+        size = type->size;
         break;
     }
     }
     es_memory.live_bytes -= size;
     es_memory.live_objects--;
     free(obj);
+}
+
+/* Frees a heap object whose count reached zero. It's never inlined (and on
+ * GCC never specialized) into its callers: es_release only calls it for
+ * counted objects, and keeping it out of line keeps that visible to the C
+ * compiler, which otherwise sees free() reachable from releases of static
+ * immortal text and warns (-Wfree-nonheap-object). Freeing is the rare path,
+ * so a real call costs nothing that matters. Text holds nothing, so it's
+ * freed at once; a list or record found while another is being freed waits
+ * its turn in es_dying. */
+#if defined(__GNUC__) && !defined(__clang__)
+__attribute__((noipa, cold))
+#elif defined(__clang__)
+__attribute__((noinline, cold))
+#endif
+static void es_free_object(EsObject *obj) {
+    if (obj->kind == ES_OBJ_TEXT) {
+        es_free_one(obj);
+        return;
+    }
+    if (es_dying.busy) {
+        es_dying_add(obj);
+        return;
+    }
+    es_dying.busy = true;
+    es_free_one(obj);
+    while (es_dying.len > 0) es_free_one(es_dying.items[--es_dying.len]);
+    es_dying.busy = false;
 }
 
 static inline void es_object_release(EsObject *obj) {
@@ -222,6 +314,39 @@ static inline void es_set(EsText **slot, EsText *t) {
 /* Releases a text variable at the end of its block. */
 static inline void es_drop(EsText **slot) {
     es_set(slot, &es_empty_text);
+}
+
+/* Records: like text and lists, except that a record can be NULL (nothing). */
+static inline EsRecord *es_record_retain(EsRecord *r) {
+    if (r) r->header.refs++;
+    return r;
+}
+
+static inline void es_record_release(EsRecord *r) {
+    if (r) es_object_release(&r->header);
+}
+
+static inline void es_record_set(EsRecord **slot, EsRecord *r) {
+    EsRecord *old = *slot;
+    *slot = r;
+    es_record_release(old);
+}
+
+static inline void es_record_drop(EsRecord **slot) {
+    es_record_set(slot, NULL);
+}
+
+/* A new record of the kind, for the generated code to fill in. */
+static EsRecord *es_record_new(const EsRecordType *type) {
+    EsRecord *r = (EsRecord *)es_new_object(ES_OBJ_RECORD, type->size);
+    r->type = type;
+    r->prev = r->next = NULL;
+    if (es_memory.check) {
+        r->next = es_memory.records;
+        if (r->next) r->next->prev = r;
+        es_memory.records = r;
+    }
+    return r;
 }
 
 /* New heap text of len bytes (plus a NUL), for the caller to fill in. */
@@ -274,7 +399,7 @@ typedef struct {
 
 /* The call stack. Every EasyScript function call pushes a frame holding the
  * function (its name and its inputs' names and kinds: 'n' number, 'b'
- * yes/no, 't' text, 'l' list), the values it was given, and the site of the
+ * yes/no, 't' text, 'l' list, 'r' record), the values it was given, and the site of the
  * call. Errors print the chain. The frames are an array as deep as the
  * recursion limit, so pushing is a few stores and popping is the depth
  * counter going down. A function with one input (the usual case) keeps its
@@ -283,7 +408,8 @@ typedef struct {
 typedef union {
     double n;
     bool b;
-    EsText *t; /* retained by the function for as long as the frame lives */
+    EsText *t;   /* retained by the function for as long as the frame lives */
+    EsRecord *r; /* the same */
     void *list;
 } EsArg;
 
@@ -338,15 +464,19 @@ static void es_init(const EsSite *sites, const char *const *source, int source_l
     if (limit) es_memory.limit = (size_t)strtoull(limit, NULL, 10);
 }
 
+static bool es_report_cycles(void); /* es_record.h */
+
 /* The end of the program (normally, or "stop the program"), once the
  * generated code has released the variables it can reach. With
- * ES_DEBUG_MEMORY, checks that nothing is left. A stop inside a function
- * skips the check: the variables of main() and of the functions that called
- * it, and values they were still working out, are out of its reach; the
- * operating system reclaims them as the program ends. */
+ * ES_DEBUG_MEMORY, checks that nothing is left, and explains records that
+ * point to each other in a circle, which counting can never free. A stop
+ * inside a function skips the check: the variables of main() and of the
+ * functions that called it, and values they were still working out, are out
+ * of its reach; the operating system reclaims them as the program ends. */
 static void es_finish(bool check) {
     fflush(stdout);
     if (check && es_memory.check && es_memory.live_objects != 0) {
+        if (es_report_cycles()) exit(70);
         fprintf(stderr, "Memory check: %zu value%s still alive at the end of the program (%zu bytes).\n",
                 es_memory.live_objects, es_memory.live_objects == 1 ? " was" : "s were", es_memory.live_bytes);
         exit(70);
@@ -403,9 +533,20 @@ static void es_print_count(long n) {
     }
 }
 
-/* "(count was 0, name was "Ada")": the inputs that are numbers, yes/no or
- * text (long text cut short); nothing if there are none of those. */
+/* "(count was 0, name was "Ada")": the inputs that are numbers, yes/no,
+ * text or records (long ones cut short); nothing if there are none of those. */
 static EsText *es_number_text(double x);
+static EsText *es_record_short_text(const EsRecord *r); /* es_record.h */
+
+static void es_print_cut(const EsText *t, size_t most, bool quoted) {
+    size_t shown = 0, chars = 0;
+    while (shown < t->len && chars < most) {
+        shown++;
+        if (shown == t->len || !es_continuation_byte(t->chars[shown])) chars++;
+    }
+    fprintf(stderr, "%s%.*s%s%s", quoted ? "\"" : "", (int)shown, t->chars, shown < t->len ? "..." : "", quoted ? "\"" : "");
+}
+
 static void es_print_inputs(const EsFrame *frame) {
     bool open = false;
     for (int i = 0; i < frame->fn->inputs; i++) {
@@ -419,14 +560,12 @@ static void es_print_inputs(const EsFrame *frame) {
             es_release(t);
         } else if (kind == 'b') {
             fputs(es_frame_input(frame, i).b ? "yes" : "no", stderr);
+        } else if (kind == 'r') {
+            EsText *t = es_record_short_text(es_frame_input(frame, i).r);
+            es_print_cut(t, 60, false);
+            es_release(t);
         } else {
-            const EsText *t = es_frame_input(frame, i).t;
-            size_t shown = 0, chars = 0;
-            while (shown < t->len && chars < 30) {
-                shown++;
-                if (shown == t->len || !es_continuation_byte(t->chars[shown])) chars++;
-            }
-            fprintf(stderr, "\"%.*s%s\"", (int)shown, t->chars, shown < t->len ? "..." : "");
+            es_print_cut(es_frame_input(frame, i).t, 30, true);
         }
     }
     if (open) fputc(')', stderr);

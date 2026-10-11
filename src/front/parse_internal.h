@@ -16,6 +16,7 @@ typedef struct {
     size_t words;
     bool function;
     bool to_inputs;    // a function whose definition introduces its inputs with "to"
+    bool method;       // a function "for" a kind of record ("to bark, for a dog:")
 } KnownName;
 
 typedef struct {
@@ -33,7 +34,10 @@ typedef struct {
     bool as_ends_value;     // in a count loop's header, "as" names the loop variable
     Vec(const char *) functions; // every function's name (pre-scan), for suggestions
     Vec(KnownName) names;        // every function, and every name of several words (pre-scan)
+    Vec(KnownName) fields;       // every field name of every record kind (pre-scan)
+    Records *records;            // the record kinds (pre-scan), filled in with their definitions
     Expr *pending_item;     // "every NAME in L": the item's name, the first value of what follows
+    bool method_record;     // parsing a method's record: "rename rex with ..." doesn't call rex
 } Parser;
 
 // A word or symbol sequence with a meaning, e.g. "is greater than".
@@ -178,9 +182,12 @@ Stmt *parse_constant(Parser *p, const Token *verb);   // keep NAME as E
 Stmt *parse_call_statement(Parser *p, const Token *verb, const KnownName *function);
 
 // parse_names.c
-// Fills p->names and p->functions: every name introduced by let, keep, to,
-// as, call, for each and every.
+// Fills p->records and p->fields (every "X is a kind of thing" and every
+// "a field, which is"), then p->names and p->functions: every name
+// introduced by let, keep, to, as, call, for each and every, and the names
+// of record kinds (a method's input is called that).
 void parser_find_names(Parser *p);
+bool parser_is_method(const Parser *p, const char *name);
 // The longest known name (or function, if functions_only) starting `ahead`
 // tokens from here, or NULL.
 const KnownName *parser_match_name(const Parser *p, size_t ahead, bool functions_only);
@@ -210,6 +217,24 @@ Stmt *parser_parse_set_item(Parser *p, const Token *verb);  // set item P of L t
 Stmt *parser_parse_remove(Parser *p, const Token *verb);
 Stmt *parser_parse_insert(Parser *p, const Token *verb);
 Stmt *parser_parse_sort(Parser *p, const Token *verb);
+
+// parse_record.c
+// "X is a kind of thing" starts here.
+bool parser_at_record_definition(const Parser *p);
+Stmt *parse_record(Parser *p);  // a dog is a kind of thing with: (fields indented below)
+// The record kind whose name (or, if plural, whose plural) the tokens
+// `ahead` spell, with its token count in *words; -1 if none.
+int parser_match_record(const Parser *p, size_t ahead, bool plural, size_t *words);
+// After a value: 's and a field's name ("rex's age"); called at the 's.
+Expr *parser_parse_field(Parser *p, Expr *record);
+// "new" and a record kind's name start here.
+bool parser_at_new(const Parser *p);
+Expr *parser_parse_new(Parser *p);  // a new dog [with name "Rex" and age 3]
+// What a sentence changes: a name, or a field of one ("rex's age", "it's
+// age"), then *field is the EXPR_FIELD. `next` is as for parser_parse_name.
+bool parser_parse_target(Parser *p, Name *name, Expr **field, const char *const *next);
+// A method's inputs: [for] RECORD, then [with | using | of] more inputs.
+void parser_parse_method_args(Parser *p, Expr *call);
 
 // parse_text.c
 // "the characters of T", "the words of T", "the lines of T", "the code of T",

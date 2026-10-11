@@ -1,3 +1,4 @@
+#include <string.h>
 #include "common/ast.h"
 
 Expr *ast_new_expr(Arena *arena, ExprKind kind, SourcePos pos) {
@@ -21,22 +22,39 @@ SourcePos ast_pos_join(SourcePos first, SourcePos last) {
     return pos;
 }
 
-// "a list of numbers", "a list of lists of text"; "a list" (or "a list of
-// lists") when the innermost kind isn't decided.
-static const char *list_name(Arena *arena, Type type) {
+// "a dog", "an apple": the article that goes before a word.
+static const char *article(const char *word) {
+    return strchr("aeiouAEIOU", word[0]) ? "an" : "a";
+}
+
+static const RecordKind *record_kind(const Records *records, Type type) {
+    size_t index = type_record_index(type);
+    return records && index < records->len ? &records->items[index] : NULL;
+}
+
+// "a list of numbers", "a list of lists of text", "a list of dogs"; "a list"
+// (or "a list of lists") when the innermost kind isn't decided.
+static const char *list_name(Arena *arena, const Records *records, Type type) {
     static const char *const plural[] = {NULL, "numbers", "text", "yes/no values"};
     StrBuf sb;
     sb_init(&sb, arena);
     sb_append(&sb, "a list");
     Type base = type_base(type);
-    bool known = base == TYPE_NUMBER || base == TYPE_TEXT || base == TYPE_YESNO;
     for (Type t = type_item(type); type_is_list(t); t = type_item(t)) sb_append(&sb, " of lists");
-    if (known) sb_appendf(&sb, " of %s", plural[base]);
+    if (base == TYPE_NUMBER || base == TYPE_TEXT || base == TYPE_YESNO) sb_appendf(&sb, " of %s", plural[base]);
+    const RecordKind *kind = type_is_record(base) ? record_kind(records, base) : NULL;
+    if (kind) sb_appendf(&sb, " of %s%s", kind->plural, type_is_maybe(base) ? " or nothing" : "");
     return sb.data;
 }
 
-const char *ast_type_name(Arena *arena, Type type) {
-    if (type_is_list(type)) return list_name(arena, type);
+const char *ast_type_name(Arena *arena, const Records *records, Type type) {
+    if (type_is_list(type)) return list_name(arena, records, type);
+    if (type == TYPE_MAYBE) return "a record or nothing";
+    const RecordKind *kind = type_is_record(type) ? record_kind(records, type) : NULL;
+    if (kind) {
+        return arena_sprintf(arena, "%s %s%s", article(kind->display), kind->display,
+                             type_is_maybe(type) ? " or nothing" : "");
+    }
     switch (type) {
     case TYPE_NUMBER: return "a number";
     case TYPE_TEXT: return "text";
@@ -80,21 +98,27 @@ const char *ast_text_op_name(TextOp op) {
     return names[op];
 }
 
-static void dump_expr(const Expr *expr, size_t depth, StrBuf *out);
+// What the dump writes to, and the program's record kinds (for their names).
+typedef struct {
+    StrBuf *out;
+    const Records *records;
+} Dump;
 
-static void dump_line(const SourcePos *pos, size_t depth, StrBuf *out, const char *label) {
-    sb_append_repeat(out, ' ', depth * 2);
-    sb_append(out, label);
-    sb_appendf(out, " [%zu:%zu]\n", pos->line, pos->column);
+static void dump_expr(const Expr *expr, size_t depth, Dump *d);
+
+static void dump_line(const SourcePos *pos, size_t depth, Dump *d, const char *label) {
+    sb_append_repeat(d->out, ' ', depth * 2);
+    sb_append(d->out, label);
+    sb_appendf(d->out, " [%zu:%zu]\n", pos->line, pos->column);
 }
 
-static void dump_children(const Expr *a, const Expr *b, size_t depth, StrBuf *out) {
-    if (a) dump_expr(a, depth + 1, out);
-    if (b) dump_expr(b, depth + 1, out);
+static void dump_children(const Expr *a, const Expr *b, size_t depth, Dump *d) {
+    if (a) dump_expr(a, depth + 1, d);
+    if (b) dump_expr(b, depth + 1, d);
 }
 
 // The label for a leaf or a node whose label carries a value.
-static const char *expr_label(const Expr *expr, StrBuf *scratch) {
+static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *records) {
     switch (expr->kind) {
     case EXPR_ERROR: return "error";
     case EXPR_NUMBER: sb_appendf(scratch, "number %s", expr->as.number.text); break;
@@ -114,7 +138,7 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch) {
     case EXPR_CONVERT: return expr->as.convert.target == CONVERT_TO_NUMBER ? "as number" : "as text";
     case EXPR_LIST: return "list of";
     case EXPR_EMPTY_LIST:
-        sb_appendf(scratch, "empty %s", ast_type_name(scratch->arena, expr->as.list_type) + 2);  // without "a "
+        sb_appendf(scratch, "empty %s", ast_type_name(scratch->arena, records, expr->as.list_type) + 2);  // without "a "
         break;
     case EXPR_ITEM: {
         const char *noun = expr->as.item.characters ? "character" : "item";
@@ -146,42 +170,55 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch) {
             break;
         }
         return ast_text_op_name(expr->as.text_op.op);
+    case EXPR_FIELD: sb_appendf(scratch, "field %s", expr->as.field.name.text); break;
+    case EXPR_NEW: sb_appendf(scratch, "new %s", ast_type_name(scratch->arena, records, expr->as.new_record.type) + 2); break;
     }
     return scratch->data;
 }
 
-static void dump_expr(const Expr *expr, size_t depth, StrBuf *out) {
+static void dump_expr(const Expr *expr, size_t depth, Dump *d) {
     StrBuf label;
-    sb_init(&label, out->arena);
-    dump_line(&expr->pos, depth, out, expr_label(expr, &label));
+    sb_init(&label, d->out->arena);
+    dump_line(&expr->pos, depth, d, expr_label(expr, &label, d->records));
     switch (expr->kind) {
     case EXPR_CALL:
         for (size_t i = 0; i < expr->as.call.args.len; i++) {
-            dump_expr(expr->as.call.args.items[i], depth + 1, out);
+            dump_expr(expr->as.call.args.items[i], depth + 1, d);
         }
         break;
     case EXPR_LENGTH:
-    case EXPR_FILE_CONTENTS: dump_children(expr->as.operand, NULL, depth, out); break;
-    case EXPR_UNARY: dump_children(expr->as.unary.operand, NULL, depth, out); break;
-    case EXPR_BINARY: dump_children(expr->as.binary.left, expr->as.binary.right, depth, out); break;
-    case EXPR_CONVERT: dump_children(expr->as.convert.operand, NULL, depth, out); break;
+    case EXPR_FILE_CONTENTS: dump_children(expr->as.operand, NULL, depth, d); break;
+    case EXPR_UNARY: dump_children(expr->as.unary.operand, NULL, depth, d); break;
+    case EXPR_BINARY: dump_children(expr->as.binary.left, expr->as.binary.right, depth, d); break;
+    case EXPR_CONVERT: dump_children(expr->as.convert.operand, NULL, depth, d); break;
     case EXPR_LIST:
-        for (size_t i = 0; i < expr->as.items.len; i++) dump_expr(expr->as.items.items[i], depth + 1, out);
+        for (size_t i = 0; i < expr->as.items.len; i++) dump_expr(expr->as.items.items[i], depth + 1, d);
         break;
-    case EXPR_ITEM: dump_children(expr->as.item.position, expr->as.item.list, depth, out); break;
-    case EXPR_LIST_OP: dump_children(expr->as.list_op.operand, NULL, depth, out); break;
-    case EXPR_EVERY: dump_children(expr->as.every.list, expr->as.every.body, depth, out); break;
-    case EXPR_ONLY: dump_children(expr->as.only.list, expr->as.only.condition, depth, out); break;
+    case EXPR_ITEM: dump_children(expr->as.item.position, expr->as.item.list, depth, d); break;
+    case EXPR_LIST_OP: dump_children(expr->as.list_op.operand, NULL, depth, d); break;
+    case EXPR_EVERY: dump_children(expr->as.every.list, expr->as.every.body, depth, d); break;
+    case EXPR_ONLY: dump_children(expr->as.only.list, expr->as.only.condition, depth, d); break;
     case EXPR_SLICE:  // in the order they're written, except postfix "without": the list first
-        dump_children(expr->as.slice.from, expr->as.slice.to, depth, out);
-        dump_expr(expr->as.slice.list, depth + 1, out);
+        dump_children(expr->as.slice.from, expr->as.slice.to, depth, d);
+        dump_expr(expr->as.slice.list, depth + 1, d);
+        break;
+    case EXPR_FIELD: dump_children(expr->as.field.record, NULL, depth, d); break;
+    case EXPR_NEW:
+        for (size_t i = 0; i < expr->as.new_record.values.len; i++) {
+            const FieldValue *value = &expr->as.new_record.values.items[i];
+            StrBuf label;
+            sb_init(&label, d->out->arena);
+            sb_appendf(&label, "with %s", value->field.text);
+            dump_line(&value->field.pos, depth + 1, d, label.data);
+            dump_expr(value->value, depth + 2, d);
+        }
         break;
     case EXPR_TEXT_OP:  // in the order they're written, except "the position of X in T": X first
         if (expr->as.text_op.op == TEXT_POSITION) {
-            dump_children(expr->as.text_op.arg, expr->as.text_op.operand, depth, out);
+            dump_children(expr->as.text_op.arg, expr->as.text_op.operand, depth, d);
         } else {
-            dump_children(expr->as.text_op.operand, expr->as.text_op.arg, depth, out);
-            dump_children(expr->as.text_op.arg2, NULL, depth, out);
+            dump_children(expr->as.text_op.operand, expr->as.text_op.arg, depth, d);
+            dump_children(expr->as.text_op.arg2, NULL, depth, d);
         }
         break;
     default: break;
@@ -218,12 +255,16 @@ static const char *list_label(const Stmt *stmt, StrBuf *scratch) {
 }
 
 // The first line of a statement, e.g. "let total" or "read file, call it notes".
-static const char *stmt_label(const Stmt *stmt, StrBuf *scratch) {
+static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *records) {
     switch (stmt->kind) {
     case STMT_LET: sb_appendf(scratch, "let %s", stmt->as.assign.name.text); break;
-    case STMT_SET: sb_appendf(scratch, "set %s", stmt->as.assign.name.text); break;
+    case STMT_SET:
+        if (stmt->as.assign.field) return "set field";
+        sb_appendf(scratch, "set %s", stmt->as.assign.name.text);
+        break;
     case STMT_CHANGE:
-        sb_appendf(scratch, "%s %s", ast_change_op_name(stmt->as.change.op), stmt->as.change.target.text);
+        sb_appendf(scratch, "%s %s", ast_change_op_name(stmt->as.change.op),
+                   stmt->as.change.field ? "field" : stmt->as.change.target.text);
         break;
     case STMT_SAY: return "say";
     case STMT_ASK: sb_appendf(scratch, "ask, call the answer %s", stmt->as.ask.answer.text); break;
@@ -240,111 +281,134 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch) {
         for (size_t i = 0; i < stmt->as.function.params.len; i++) {
             sb_appendf(scratch, "%s%s", i ? ", " : "", stmt->as.function.params.items[i].text);
             Type declared = stmt->as.function.declared.items[i];
-            if (declared != TYPE_UNKNOWN) sb_appendf(scratch, ": %s", ast_type_name(scratch->arena, declared));
+            if (declared != TYPE_UNKNOWN) sb_appendf(scratch, ": %s", ast_type_name(scratch->arena, records, declared));
         }
         sb_append_char(scratch, ')');
         if (stmt->as.function.declared_result != TYPE_UNKNOWN) {
-            sb_appendf(scratch, " giving back %s", ast_type_name(scratch->arena, stmt->as.function.declared_result));
+            sb_appendf(scratch, " giving back %s", ast_type_name(scratch->arena, records, stmt->as.function.declared_result));
         }
         break;
     case STMT_RETURN: return "give back";
     case STMT_CALL: return "call";
     case STMT_CONSTANT: sb_appendf(scratch, "keep %s", stmt->as.constant.name.text); break;
     case STMT_LIST: return list_label(stmt, scratch);
+    case STMT_RECORD: sb_appendf(scratch, "record %s", stmt->as.record.name.text); break;
     }
     return scratch->data;
 }
 
-static void dump_stmt(const Stmt *stmt, size_t depth, StrBuf *out);
+static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d);
 
-static void dump_label(size_t depth, StrBuf *out, const char *label) {
-    sb_append_repeat(out, ' ', depth * 2);
-    sb_append(out, label);
-    sb_append_char(out, '\n');
+static void dump_label(size_t depth, Dump *d, const char *label) {
+    sb_append_repeat(d->out, ' ', depth * 2);
+    sb_append(d->out, label);
+    sb_append_char(d->out, '\n');
 }
 
 // branch if / branch otherwise if / branch otherwise, then "condition" and
 // "then" sections.
-static void dump_if(const Stmt *stmt, size_t depth, StrBuf *out) {
+static void dump_if(const Stmt *stmt, size_t depth, Dump *d) {
     for (size_t i = 0; i < stmt->as.if_stmt.branches.len; i++) {
         const IfBranch *branch = &stmt->as.if_stmt.branches.items[i];
         const char *label = i == 0 ? "branch if" : branch->condition ? "branch otherwise if" : "branch otherwise";
-        dump_line(&branch->pos, depth + 1, out, label);
+        dump_line(&branch->pos, depth + 1, d, label);
         if (branch->condition) {
-            dump_label(depth + 2, out, "condition");
-            dump_expr(branch->condition, depth + 3, out);
+            dump_label(depth + 2, d, "condition");
+            dump_expr(branch->condition, depth + 3, d);
         }
-        dump_label(depth + 2, out, "then");
+        dump_label(depth + 2, d, "then");
         for (size_t j = 0; j < branch->body.len; j++) {
-            dump_stmt(branch->body.items[j], depth + 3, out);
+            dump_stmt(branch->body.items[j], depth + 3, d);
         }
     }
 }
 
-static void dump_section(const char *label, const Expr *expr, size_t depth, StrBuf *out) {
+static void dump_section(const char *label, const Expr *expr, size_t depth, Dump *d) {
     if (!expr) return;
-    dump_label(depth, out, label);
-    dump_expr(expr, depth + 1, out);
+    dump_label(depth, d, label);
+    dump_expr(expr, depth + 1, d);
 }
 
 // Sections "from", "to", "by", "times", "condition", then "do" with the body.
-static void dump_loop(const Stmt *stmt, size_t depth, StrBuf *out) {
-    dump_section("from", stmt->as.loop.from, depth + 1, out);
-    dump_section("to", stmt->as.loop.to, depth + 1, out);
-    dump_section("by", stmt->as.loop.step, depth + 1, out);
-    dump_section("times", stmt->as.loop.times, depth + 1, out);
-    dump_section("condition", stmt->as.loop.condition, depth + 1, out);
-    dump_section("in", stmt->as.loop.list, depth + 1, out);
-    dump_label(depth + 1, out, "do");
+static void dump_loop(const Stmt *stmt, size_t depth, Dump *d) {
+    dump_section("from", stmt->as.loop.from, depth + 1, d);
+    dump_section("to", stmt->as.loop.to, depth + 1, d);
+    dump_section("by", stmt->as.loop.step, depth + 1, d);
+    dump_section("times", stmt->as.loop.times, depth + 1, d);
+    dump_section("condition", stmt->as.loop.condition, depth + 1, d);
+    dump_section("in", stmt->as.loop.list, depth + 1, d);
+    dump_label(depth + 1, d, "do");
     for (size_t i = 0; i < stmt->as.loop.body.len; i++) {
-        dump_stmt(stmt->as.loop.body.items[i], depth + 2, out);
+        dump_stmt(stmt->as.loop.body.items[i], depth + 2, d);
     }
 }
 
-static void dump_stmt(const Stmt *stmt, size_t depth, StrBuf *out) {
+static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
     StrBuf label;
-    sb_init(&label, out->arena);
-    dump_line(&stmt->pos, depth, out, stmt_label(stmt, &label));
+    sb_init(&label, d->out->arena);
+    dump_line(&stmt->pos, depth, d, stmt_label(stmt, &label, d->records));
     switch (stmt->kind) {
     case STMT_LET:
-    case STMT_SET: dump_expr(stmt->as.assign.value, depth + 1, out); break;
-    case STMT_CHANGE: dump_expr(stmt->as.change.amount, depth + 1, out); break;
-    case STMT_SAY: dump_expr(stmt->as.value, depth + 1, out); break;
-    case STMT_ASK: dump_expr(stmt->as.ask.prompt, depth + 1, out); break;
+    case STMT_SET:
+        dump_section("field", stmt->as.assign.field, depth + 1, d);
+        dump_expr(stmt->as.assign.value, depth + 1, d);
+        break;
+    case STMT_CHANGE:  // in the order they're written
+        if (stmt->as.change.field && stmt->as.change.amount->pos.span.offset < stmt->as.change.field->pos.span.offset) {
+            dump_expr(stmt->as.change.amount, depth + 1, d);
+            dump_section("field", stmt->as.change.field, depth + 1, d);
+        } else {
+            dump_section("field", stmt->as.change.field, depth + 1, d);
+            dump_expr(stmt->as.change.amount, depth + 1, d);
+        }
+        break;
+    case STMT_SAY: dump_expr(stmt->as.value, depth + 1, d); break;
+    case STMT_ASK: dump_expr(stmt->as.ask.prompt, depth + 1, d); break;
     case STMT_WRITE_FILE:
     case STMT_APPEND_FILE:
-        dump_children(stmt->as.file_write.text, stmt->as.file_write.path, depth, out);
+        dump_children(stmt->as.file_write.text, stmt->as.file_write.path, depth, d);
         break;
-    case STMT_READ_FILE: dump_expr(stmt->as.read_file.path, depth + 1, out); break;
+    case STMT_READ_FILE: dump_expr(stmt->as.read_file.path, depth + 1, d); break;
     case STMT_STOP: break;
-    case STMT_IF: dump_if(stmt, depth, out); break;
-    case STMT_LOOP: dump_loop(stmt, depth, out); break;
+    case STMT_IF: dump_if(stmt, depth, d); break;
+    case STMT_LOOP: dump_loop(stmt, depth, d); break;
     case STMT_BREAK:
     case STMT_CONTINUE: break;
     case STMT_FUNCTION:
-        dump_label(depth + 1, out, "do");
+        dump_label(depth + 1, d, "do");
         for (size_t i = 0; i < stmt->as.function.body.len; i++) {
-            dump_stmt(stmt->as.function.body.items[i], depth + 2, out);
+            dump_stmt(stmt->as.function.body.items[i], depth + 2, d);
         }
         break;
     case STMT_RETURN:
-        if (stmt->as.returned) dump_expr(stmt->as.returned, depth + 1, out);
+        if (stmt->as.returned) dump_expr(stmt->as.returned, depth + 1, d);
         break;
-    case STMT_CALL: dump_expr(stmt->as.call, depth + 1, out); break;
-    case STMT_CONSTANT: dump_expr(stmt->as.constant.value, depth + 1, out); break;
+    case STMT_CALL: dump_expr(stmt->as.call, depth + 1, d); break;
+    case STMT_CONSTANT: dump_expr(stmt->as.constant.value, depth + 1, d); break;
     case STMT_LIST:
         // In the order they're written: "set item P of L to V" ends with its
         // value, the others start with it.
-        if (stmt->as.list.op != LIST_SET_ITEM) dump_section("value", stmt->as.list.value, depth + 1, out);
-        dump_section("position", stmt->as.list.position, depth + 1, out);
-        dump_section("list", stmt->as.list.list, depth + 1, out);
-        if (stmt->as.list.op == LIST_SET_ITEM) dump_section("value", stmt->as.list.value, depth + 1, out);
+        if (stmt->as.list.op != LIST_SET_ITEM) dump_section("value", stmt->as.list.value, depth + 1, d);
+        dump_section("position", stmt->as.list.position, depth + 1, d);
+        dump_section("list", stmt->as.list.list, depth + 1, d);
+        if (stmt->as.list.op == LIST_SET_ITEM) dump_section("value", stmt->as.list.value, depth + 1, d);
+        break;
+    case STMT_RECORD:
+        for (size_t i = 0; i < stmt->as.record.fields.len; i++) {
+            const Field *field = &stmt->as.record.fields.items[i];
+            StrBuf label;
+            sb_init(&label, d->out->arena);
+            sb_appendf(&label, "field %s: %s", field->name.text, ast_type_name(d->out->arena, d->records, field->type));
+            dump_line(&field->pos, depth + 1, d, label.data);
+            dump_section("starting at", field->initial, depth + 2, d);
+        }
         break;
     }
 }
 
-void ast_dump_block(const Block *block, StrBuf *out) {
-    for (size_t i = 0; i < block->len; i++) {
-        dump_stmt(block->items[i], 0, out);
+void ast_dump_program(const Program *program, StrBuf *out) {
+    Dump d = {out, &program->records};
+    for (size_t i = 0; i < program->body.len; i++) {
+        dump_stmt(program->body.items[i], 0, &d);
     }
 }

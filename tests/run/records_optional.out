@@ -1,0 +1,20 @@
+a node with value 1 and next nothing
+no next yet
+2
+a node with value 1 and next (a node with value 2 and next (a node with value 3 and next nothing))
+second is 2
+and works
+or works
+2
+at 2
+at 3
+walked off the end
+walking 2
+walking 3
+2
+0
+found 3
+9 isn't there
+a node with value 2 and next (a node with value 3 and next nothing)
+nothing
+6

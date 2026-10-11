@@ -2,7 +2,7 @@
 #define FRONT_CHECK_INTERNAL_H
 
 // Shared by the checker's source files (check.c, check_expr.c, check_types.c,
-// check_const.c, check_list.c, check_text.c). Not for use outside src/front/.
+// check_const.c, check_list.c, check_text.c, check_record.c). Not for use outside src/front/.
 
 #include <stdbool.h>
 #include "common/ast.h"
@@ -35,10 +35,12 @@ typedef enum {
     DEFER_ONE_OF,     // `left` has one of the kinds in `allowed` (e.g. text or a list for "length of")
     DEFER_JOIN,       // "followed by": two lists of one kind join into a list; anything else into text
     DEFER_SEARCH,     // "contains", "the position of": `left` is text (and `right` text) or a list (of `right`)
+    DEFER_FIELD,      // "R's NAME" when several kinds of record have NAME: `left` is R, `result` the field
+    DEFER_PRESENT,    // a record or nothing (`left`) checked not to be nothing: `right` is the record
 } DeferKind;
 
 // Kinds for DEFER_ONE_OF.
-enum { KIND_NUMBER = 1, KIND_TEXT = 2, KIND_YESNO = 4, KIND_LIST = 8 };
+enum { KIND_NUMBER = 1, KIND_TEXT = 2, KIND_YESNO = 4, KIND_LIST = 8, KIND_RECORD = 16 };
 
 typedef struct {
     DeferKind kind;
@@ -53,6 +55,12 @@ typedef struct {
     Expr *expr;
     TypeVar var;
 } TypedExpr;
+
+// A kind in the program to fill in at the end (a variable's, for a sentence that sets it).
+typedef struct {
+    Type *slot;
+    TypeVar var;
+} TypedSlot;
 
 typedef struct {
     const char *name;     // as matched (lowercased)
@@ -85,9 +93,21 @@ typedef struct {
     bool ok;           // its value was worked out
 } Constant;
 
+// A value checked not to be nothing ("if the node's next is not nothing:"),
+// by its path: a name, or a name and fields ("node's next"). Until the block
+// ends (or something sets it), it's used as the record it holds.
+typedef struct {
+    const char *path;
+    bool killed;  // set since it was checked
+} Narrowing;
+
 typedef struct {
     Arena *arena;
     Diag *diag;
+    const Records *records;           // the program's kinds of record
+    Vec(Narrowing) present;           // values checked not to be nothing, innermost last
+    const Expr *unnarrowed;           // checked as written even if it was checked ("x is nothing", "set x's f to")
+    bool explained_default;           // a field's starting value used a name, and that was explained
     Vec(Function) functions;          // every top-level function (pre-scanned)
     Vec(Constant) constants;          // every top-level constant (pre-scanned)
     const Constant *constant;         // the constant whose value is being worked out, if any
@@ -101,6 +121,7 @@ typedef struct {
     Vec(TypeSlot) types;
     Vec(Deferred) deferred;
     Vec(TypedExpr) typed;  // every expression checked, to receive its kind at the end
+    Vec(TypedSlot) slots;  // other kinds to fill in at the end
 } Checker;
 
 // check_types.c
@@ -123,6 +144,7 @@ void types_defer_one_of(Checker *c, const Expr *expr, TypeVar var, TypeVar shown
 void types_finish(Checker *c, size_t first_error);
 
 // check.c
+const char *checker_type_name(Checker *c, Type type);  // "a number", "a dog or nothing", ...
 const char *checker_kind(Checker *c, TypeVar var);  // "a number", "a list of text", ...
 const Symbol *checker_find_made(const Checker *c, const char *name);
 // A name the main program makes anywhere (with the line it's first made on).
@@ -134,7 +156,7 @@ void checker_report_unknown(Checker *c, const char *name, const char *display, S
 // A variable, input, or loop number named like a function or constant: reports and returns true.
 bool checker_clashes(Checker *c, const Name *name);
 // "to area with width and height"
-const char *checker_function_header(const Checker *c, const Function *f);
+const char *checker_function_header(Checker *c, const Function *f);
 
 // check_expr.c
 // Checks an expression and returns its kind. as_value: a function call must
@@ -157,7 +179,7 @@ TypeVar checker_check_list_expr(Checker *c, const Expr *expr);  // EXPR_LIST ...
 void checker_require_item(Checker *c, const Expr *list, TypeVar list_var, const Expr *value, TypeVar value_var);
 void checker_check_list_stmt(Checker *c, const Stmt *stmt);
 // "add E to X" where X is a list: adds to its end when that's the only meaning.
-void checker_add_to_list(Checker *c, Stmt *stmt, const Symbol *symbol, TypeVar amount);
+void checker_add_to_list(Checker *c, Stmt *stmt, TypeVar list, TypeVar amount);
 
 // check_text.c
 // "character 2 of T", "the first 3 characters of T", ...: an EXPR_ITEM or EXPR_SLICE marked `characters`.
@@ -169,15 +191,67 @@ TypeVar checker_check_starts(Checker *c, const Expr *expr, TypeVar left, TypeVar
 // Settles a DEFER_SEARCH once the kinds are known enough; true when settled.
 bool checker_settle_search(Checker *c, const Deferred *d);
 
-// check_text.c
-// "character 2 of T", "the first 3 characters of T", ...: an EXPR_ITEM or EXPR_SLICE marked `characters`.
-TypeVar checker_check_characters(Checker *c, const Expr *expr);
-TypeVar checker_check_text_op(Checker *c, const Expr *expr);  // EXPR_TEXT_OP
-// "L contains X" (text or a list): waits until the kind of L is known.
-TypeVar checker_check_contains(Checker *c, const Expr *expr, TypeVar left, TypeVar right);
-TypeVar checker_check_starts(Checker *c, const Expr *expr, TypeVar left, TypeVar right);  // starts/ends with
-// Settles a DEFER_SEARCH once the kinds are known enough; true when settled.
-bool checker_settle_search(Checker *c, const Deferred *d);
+// check_record.c
+void checker_collect_records(Checker *c, const Block *program);  // reports kinds defined twice
+void checker_check_record(Checker *c, Stmt *stmt);               // STMT_RECORD: its fields and starting values
+TypeVar checker_check_field(Checker *c, const Expr *expr);       // EXPR_FIELD
+TypeVar checker_check_new(Checker *c, const Expr *expr);         // EXPR_NEW
+// A value that may be "nothing" (stored, given to a function, given back):
+// "nothing" gets the kind nothing (TYPE_NOTHING), which only fits a record
+// or nothing; anything else is checked as usual.
+TypeVar checker_check_value(Checker *c, const Expr *expr);
+// Whether a value of kind `value` can go where `target` is kept: the same
+// kind, or a record (or nothing) where a record or nothing is kept.
+bool checker_fits(Checker *c, TypeVar target, TypeVar value, size_t line);
+// "X is nothing" / "X is not nothing": checks it and sets *result; false if the comparison isn't one.
+bool checker_check_nothing_test(Checker *c, const Expr *expr, TypeVar *result);
+// A name or field read where it was checked not to be nothing: its record.
+TypeVar checker_narrow(Checker *c, const Expr *expr, TypeVar var);
+// What a condition being `when` (true or false) says isn't nothing, added to c->present.
+void checker_narrow_condition(Checker *c, const Expr *condition, bool when);
+// Forgets that a name or field (and everything under it) was checked: it's being set.
+void checker_kill_path(Checker *c, const Expr *target, const char *name);
+// Forgets every check of something a block sets (before a loop body that sets it).
+void checker_kill_set_in(Checker *c, const Block *block);
+// "rex", "the order's customer"; NULL for any other value.
+const char *checker_path(Checker *c, const Expr *expr);
+// "\"node's next\" could be nothing, so check it first." for a record-or-nothing used as a record.
+void checker_report_maybe(Checker *c, const Expr *at, TypeVar var);
+bool checker_settle_field(Checker *c, const Deferred *d);
+bool checker_settle_present(Checker *c, const Deferred *d);
+// A kind of record that has a field called `name`, for suggestions (NULL if none).
+const RecordKind *checker_field_owner(const Checker *c, const char *name);
+
+// check_record.c
+void checker_collect_records(Checker *c, const Block *program);  // reports kinds defined twice
+void checker_check_record(Checker *c, Stmt *stmt);               // STMT_RECORD: its fields and starting values
+TypeVar checker_check_field(Checker *c, const Expr *expr);       // EXPR_FIELD
+TypeVar checker_check_new(Checker *c, const Expr *expr);         // EXPR_NEW
+// A value that may be "nothing" (stored, given to a function, given back):
+// "nothing" gets the kind nothing (TYPE_NOTHING), which only fits a record
+// or nothing; anything else is checked as usual.
+TypeVar checker_check_value(Checker *c, const Expr *expr);
+// Whether a value of kind `value` can go where `target` is kept: the same
+// kind, or a record (or nothing) where a record or nothing is kept.
+bool checker_fits(Checker *c, TypeVar target, TypeVar value, size_t line);
+// "X is nothing" / "X is not nothing": checks it and sets *result; false if the comparison isn't one.
+bool checker_check_nothing_test(Checker *c, const Expr *expr, TypeVar *result);
+// A name or field read where it was checked not to be nothing: its record.
+TypeVar checker_narrow(Checker *c, const Expr *expr, TypeVar var);
+// What a condition being `when` (true or false) says isn't nothing, added to c->present.
+void checker_narrow_condition(Checker *c, const Expr *condition, bool when);
+// Forgets that a name or field (and everything under it) was checked: it's being set.
+void checker_kill_path(Checker *c, const Expr *target, const char *name);
+// Forgets every check of something a block sets (before a loop body that sets it).
+void checker_kill_set_in(Checker *c, const Block *block);
+// "rex", "the order's customer"; NULL for any other value.
+const char *checker_path(Checker *c, const Expr *expr);
+// "\"node's next\" could be nothing, so check it first." for a record-or-nothing used as a record.
+void checker_report_maybe(Checker *c, const Expr *at, TypeVar var);
+bool checker_settle_field(Checker *c, const Deferred *d);
+bool checker_settle_present(Checker *c, const Deferred *d);
+// A kind of record that has a field called `name`, for suggestions (NULL if none).
+const RecordKind *checker_field_owner(const Checker *c, const char *name);
 
 // check_const.c
 void checker_collect_constants(Checker *c, const Block *program);

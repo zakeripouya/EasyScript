@@ -17,7 +17,7 @@ let count equal 3
 say count
 let the price be 2.5
 say price times count
-let guest's be "apostrophes work"
-say guest's
+let rock'n'roll be "apostrophes work"
+say rock'n'roll
 let player_2 be 2
 say player_2

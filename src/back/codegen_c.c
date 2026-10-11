@@ -72,9 +72,9 @@ static void emit_drop_all(Codegen *g) {
         for (size_t i = 0; i < g->function->as.function.params.len; i++) {
             Type type = g->function->as.function.param_types.items[i];
             if (type_counted(type)) emit_drop(g, g->function->as.function.params.items[i].text, type);
-            if (type == TYPE_TEXT) {  // the frame's reference to the value it was given
+            if (type == TYPE_TEXT || type_is_record(type)) {  // the frame's reference to the value it was given
                 indent(g);
-                sb_appendf(&g->body, "es_release(es_input(%zu).t);\n", i);
+                sb_appendf(&g->body, "%s(es_input(%zu).%c);\n", cg_release(type), i, type == TYPE_TEXT ? 't' : 'r');
             }
         }
     }
@@ -116,6 +116,12 @@ static const char *text_code(Codegen *g, const Expr *expr) {
 // add/subtract/increase/decrease/multiply/divide: x = x + amount, or es_div.
 // "add E to L" where L is a list adds E to its end.
 static void emit_change(Codegen *g, const Stmt *stmt) {
+    if (stmt->as.change.field) {
+        const char *code = cg_field_stmt(g, stmt);
+        indent(g);
+        sb_appendf(&g->body, "%s\n", code);
+        return;
+    }
     const char *name = stmt->as.change.target.text;
     if (stmt->as.change.append) {
         Type list = type_list_of(stmt->as.change.amount->type);
@@ -276,8 +282,9 @@ static const char *leave_code(const Codegen *g) {
 
 static void emit_return(Codegen *g, const Stmt *stmt) {
     size_t t = 0;
-    if (stmt->as.returned) {
-        t = cg_new_temp(g, stmt->as.returned->type);
+    Type result = g->function->as.function.result;
+    if (stmt->as.returned && result != TYPE_NOTHING) {
+        t = cg_new_temp(g, result);
         indent(g);
         sb_appendf(&g->body, "es_t%zu = %s;\n", t, expr_code(g, stmt->as.returned));
     }
@@ -333,9 +340,15 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
     case STMT_LET:
     case STMT_SET: {
         const Expr *value = stmt->as.assign.value;
+        if (stmt->kind == STMT_SET && stmt->as.assign.field) {
+            const char *code = cg_field_stmt(g, stmt);
+            indent(g);
+            sb_appendf(&g->body, "%s\n", code);
+            break;
+        }
         if (stmt->kind == STMT_SET && cg_emit_append(g, stmt)) break;
-        if (stmt->kind == STMT_LET) cg_declare_name(g, stmt->as.assign.name.text, value->type);
-        emit_store(g, stmt->as.assign.name.text, value->type, expr_code(g, value));
+        if (stmt->kind == STMT_LET) cg_declare_name(g, stmt->as.assign.name.text, stmt->as.assign.type);
+        emit_store(g, stmt->as.assign.name.text, stmt->as.assign.type, expr_code(g, value));
         break;
     }
     case STMT_CHANGE: emit_change(g, stmt); break;
@@ -361,6 +374,7 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
     case STMT_LOOP: emit_loop(g, stmt); break;
     case STMT_FUNCTION: break;  // generated separately, before main()
     case STMT_CONSTANT: break;  // a static initializer, worked out by the compiler
+    case STMT_RECORD: break;    // a C struct, before the functions
     case STMT_RETURN: emit_return(g, stmt); break;
     case STMT_CALL: emit_call_statement(g, stmt); break;
     case STMT_LIST: {
@@ -383,7 +397,7 @@ static void emit_stmt(Codegen *g, const Stmt *stmt) {
 // static const double es_k_rate = 0.20000000000000001;
 // static EsText *const es_k_greeting = &es_s3;  (immortal)
 // A worked-out number as C: "0.20000000000000001", "NAN", "-HUGE_VAL".
-static void append_number(StrBuf *out, double x) {
+void cg_append_number(StrBuf *out, double x) {
     if (isnan(x)) {
         sb_append(out, "NAN");
     } else if (isinf(x)) {
@@ -398,7 +412,7 @@ static void append_number(StrBuf *out, double x) {
 // it wherever it could be kept and changed; see cg_list_operand):
 //   static EsText *es_ki_days[] = {&es_s1, &es_s2};
 //   static EsList es_k_days = {{ES_OBJ_LIST, ES_IMMORTAL}, ES_ITEMS_TEXT, 2, 2, {.t = es_ki_days}};
-static void emit_fixed_list(Codegen *g, const char *name, const ConstValue *v, StrBuf *out) {
+void cg_emit_fixed_list(Codegen *g, const char *name, const ConstValue *v, StrBuf *out) {
     Type item = type_item(v->list_type);
     const char *field = item == TYPE_TEXT ? "t" : item == TYPE_YESNO ? "b" : "n";
     if (v->len > 0) {
@@ -413,15 +427,16 @@ static void emit_fixed_list(Codegen *g, const char *name, const ConstValue *v, S
             } else if (item == TYPE_YESNO) {
                 sb_append(out, x->yes ? "true" : "false");
             } else {
-                append_number(out, x->number);
+                cg_append_number(out, x->number);
             }
         }
         sb_append(out, "};\n");
     }
     sb_append(out, "static EsList ");
     cg_append_prefixed(out, "es_k_", name);
-    sb_appendf(out, " = {{ES_OBJ_LIST, ES_IMMORTAL}, %s, %zu, %zu, {", item == TYPE_TEXT ? "ES_ITEMS_TEXT"
-               : item == TYPE_YESNO ? "ES_ITEMS_YESNO" : "ES_ITEMS_NUMBER", v->len, v->len);
+    const char *items = type_is_record(item) ? "ES_ITEMS_RECORD" : type_is_list(item) ? "ES_ITEMS_LIST"
+                        : item == TYPE_TEXT ? "ES_ITEMS_TEXT" : item == TYPE_YESNO ? "ES_ITEMS_YESNO" : "ES_ITEMS_NUMBER";
+    sb_appendf(out, " = {{ES_OBJ_LIST, ES_IMMORTAL}, %s, %zu, %zu, {", items, v->len, v->len);
     if (v->len > 0) {
         sb_appendf(out, ".%s = ", field);
         cg_append_prefixed(out, "es_ki_", name);
@@ -439,10 +454,10 @@ static void emit_constant(Codegen *g, const Stmt *stmt, StrBuf *out) {
         sb_append(out, "static const double ");
         cg_append_prefixed(out, "es_k_", name);
         sb_append(out, " = ");
-        append_number(out, v->number);
+        cg_append_number(out, v->number);
         sb_append(out, ";\n");
         break;
-    case CONST_LIST: emit_fixed_list(g, name, v, out); break;
+    case CONST_LIST: cg_emit_fixed_list(g, name, v, out); break;
     case CONST_TEXT:
         sb_append(out, "static EsText *const ");
         cg_append_prefixed(out, "es_k_", name);
@@ -520,7 +535,8 @@ static void emit_function_info(const Stmt *fn, StrBuf *out) {
     sb_append(out, ", \"");
     for (size_t i = 0; i < n; i++) {
         Type type = fn->as.function.param_types.items[i];
-        sb_append_char(out, type_is_list(type) ? 'l' : type == TYPE_TEXT ? 't' : type == TYPE_YESNO ? 'b' : 'n');
+        sb_append_char(out, type_is_list(type) ? 'l' : type_is_record(type) ? 'r' : type == TYPE_TEXT ? 't'
+                            : type == TYPE_YESNO ? 'b' : 'n');
     }
     sb_append(out, "\"};\n");
 }
@@ -528,9 +544,11 @@ static void emit_function_info(const Stmt *fn, StrBuf *out) {
 // One input's value for its frame: "{.n = es_vn_width}", "{.t = es_retain(es_vt_label)}".
 static void append_input(const Stmt *fn, size_t i, StrBuf *out) {
     Type type = fn->as.function.param_types.items[i];
-    sb_append(out, type_is_list(type) ? "{.list = " : type == TYPE_TEXT ? "{.t = es_retain(" : type == TYPE_YESNO ? "{.b = " : "{.n = ");
+    bool record = type_is_record(type);
+    sb_append(out, type_is_list(type) ? "{.list = " : record ? "{.r = es_record_retain(" : type == TYPE_TEXT ? "{.t = es_retain("
+                   : type == TYPE_YESNO ? "{.b = " : "{.n = ");
     cg_append_var(out, fn->as.function.params.items[i].text, type);
-    sb_append(out, type == TYPE_TEXT ? ")}" : "}");
+    sb_append(out, type == TYPE_TEXT || record ? ")}" : "}");
 }
 
 // The function's frame, pushed onto the call stack with the values it was given:
@@ -565,6 +583,7 @@ static void emit_frame(const Stmt *fn, StrBuf *out) {
 static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     Codegen f = {0};
     f.arena = g->arena;
+    f.records = g->records;
     f.texts = g->texts;
     f.helpers = g->helpers;
     f.sites = g->sites;
@@ -603,7 +622,8 @@ static void emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     sb_append(out, "}\n\n");
 }
 
-void codegen_c(Arena *arena, const Block *program, const char *source_table, StrBuf *out) {
+void codegen_c(Arena *arena, const Program *whole, const char *source_table, StrBuf *out) {
+    const Block *program = &whole->body;
     TextPool texts = {0};
     sb_init(&texts.code, arena);
     HelperPool helpers = {0};
@@ -612,6 +632,7 @@ void codegen_c(Arena *arena, const Block *program, const char *source_table, Str
     sb_init(&sites.code, arena);
     Codegen g = {0};
     g.arena = arena;
+    g.records = &whole->records;
     g.texts = &texts;
     g.helpers = &helpers;
     g.sites = &sites;
@@ -639,7 +660,8 @@ void codegen_c(Arena *arena, const Block *program, const char *source_table, Str
     for (size_t i = 0; i < g.constants.len; i++) {
         emit_constant(&g, g.constants.items[i], &constants);
     }
-    sb_append_n(out, texts.code.data, texts.code.len);  // after the constants added theirs
+    cg_emit_records(&g, &constants);
+    sb_append_n(out, texts.code.data, texts.code.len);  // after the constants and records added theirs
     sb_append_n(out, constants.data, constants.len);
     if (g.functions.len > 0) sb_append_char(out, '\n');
     for (size_t i = 0; i < g.functions.len; i++) {  // prototypes, for calls in any order

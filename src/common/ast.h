@@ -21,8 +21,10 @@ typedef struct {
 // The kind of a value, worked out by the checker before the program runs. A
 // list holds one kind of item, so a list type is its innermost kind plus
 // TYPE_LIST for each level of list: TYPE_LIST + TYPE_NUMBER is a list of
-// numbers, 2 * TYPE_LIST + TYPE_TEXT a list of lists of text. Two types are
-// the same exactly when they're equal numbers.
+// numbers, 2 * TYPE_LIST + TYPE_TEXT a list of lists of text. A record kind
+// the program defines is TYPE_RECORD + its index in the program's Records;
+// with TYPE_MAYBE added it's "a dog or nothing". Two types are the same
+// exactly when they're equal numbers.
 typedef unsigned Type;
 
 enum {
@@ -32,18 +34,43 @@ enum {
     TYPE_YESNO,
     TYPE_NOTHING,  // only what a function gives back when it gives back no value
     TYPE_ERROR,    // stands in after a type error, so one mistake gives one message
-    TYPE_LIST = 8,
+    TYPE_RECORD = 16,       // TYPE_RECORD + n: the program's record kind n
+    TYPE_MAYBE = 1u << 14,  // added to a record kind: "or nothing"; alone: a record or nothing, kind not decided
+    TYPE_LIST = 1u << 15,
 };
 
 static inline Type type_list_of(Type item) { return item + TYPE_LIST; }
 static inline bool type_is_list(Type type) { return type >= TYPE_LIST; }
 static inline Type type_item(Type list) { return list - TYPE_LIST; }
 static inline Type type_base(Type type) { return type % TYPE_LIST; }  // the innermost kind
-static inline bool type_counted(Type type) { return type == TYPE_TEXT || type_is_list(type); }  // reference counted
+static inline Type type_present(Type type) { return type_is_list(type) ? type : type & ~(Type)TYPE_MAYBE; }
+static inline bool type_is_record(Type type) { return !type_is_list(type) && type_present(type) >= TYPE_RECORD; }
+// "a dog or nothing" (not TYPE_MAYBE alone, whose kind of record isn't decided)
+static inline bool type_is_maybe(Type type) { return type_is_record(type) && (type & TYPE_MAYBE); }
+static inline Type type_record(size_t index) { return TYPE_RECORD + (Type)index; }
+static inline size_t type_record_index(Type type) { return type_present(type) - TYPE_RECORD; }
+static inline bool type_counted(Type type) {  // reference counted
+    return type == TYPE_TEXT || type_is_list(type) || type_is_record(type);
+}
+
+typedef struct Stmt Stmt;
+
+// A kind of record the program defines ("a dog is a kind of thing with:"),
+// found by the parser's pre-scan; its index makes its Type.
+typedef struct {
+    const char *name;     // matched: lowercased, one space between words
+    const char *display;  // as written in the definition
+    const char *plural;   // matched: "dogs", "boxes", "berries"
+    Stmt *definition;     // STMT_RECORD (the first one, if it's defined twice)
+} RecordKind;
+
+typedef Vec(RecordKind) Records;
 
 // "a number", "text", "a yes/no value", "nothing", "a list of numbers",
-// "a list of lists of text", "a list" (items not decided).
-const char *ast_type_name(Arena *arena, Type type);
+// "a list of lists of text", "a list" (items not decided), "a dog", "a dog
+// or nothing", "a list of dogs". `records` names the record kinds (NULL if
+// there are none).
+const char *ast_type_name(Arena *arena, const Records *records, Type type);
 
 // --- Expressions -----------------------------------------------------------
 
@@ -69,6 +96,8 @@ typedef enum {
     EXPR_ONLY,           // only L that are <comparison>
     EXPR_SLICE,          // items 2 to 4 of L, the first 3 items in L, L without the last item, ...
     EXPR_TEXT_OP,        // the words of T, T in uppercase, T split by ",", the position of X in T, ...
+    EXPR_FIELD,          // R's NAME (a field of a record)
+    EXPR_NEW,            // a new dog with name "Rex" and age 3
 } ExprKind;
 
 typedef enum {
@@ -152,6 +181,8 @@ typedef enum {
 
 typedef struct Expr Expr;
 
+typedef struct FieldValue FieldValue;
+
 // A name written in the program, e.g. a variable. A name can be several
 // words ("hourly rate"); `text` is how it's matched (lowercased, one space
 // between words) and `display` how it was written here ("Hourly Rate",
@@ -162,10 +193,18 @@ typedef struct {
     SourcePos pos;
 } Name;
 
+// "name "Rex"" in "a new dog with name "Rex" and age 3".
+struct FieldValue {
+    Name field;
+    Expr *value;
+    size_t index;  // filled in by the checker: the field's place in the definition
+};
+
 struct Expr {
     ExprKind kind;
     SourcePos pos;
     Type type;            // filled in by the checker
+    bool narrowed;        // filled in by the checker: "a dog or nothing" checked not to be nothing here
     const char *display;  // EXPR_NAME, EXPR_CALL: the name as written here, for messages
     union {
         struct {
@@ -239,6 +278,15 @@ struct Expr {
             Expr *arg2;     // TEXT_REPLACE: what to put instead
             bool negated;   // TEXT_IS_*: "is not a letter", "isn't a digit"
         } text_op;
+        struct {
+            Expr *record;  // whose field it is
+            Name name;     // the field's name
+            size_t index;  // filled in by the checker: its place in the definition
+        } field;
+        struct {
+            Type type;               // the record kind
+            Vec(FieldValue) values;  // as written, in order
+        } new_record;
     } as;
 };
 
@@ -263,6 +311,7 @@ typedef enum {
     STMT_CALL,         // greet "Paris" / greet with "Paris" / call greet with "Paris"
     STMT_CONSTANT,     // keep NAME as E / keep NAME at E  (top level only)
     STMT_LIST,         // add E to the end of L, insert, remove, set item N of L to E, sort
+    STMT_RECORD,       // a dog is a kind of thing with: (fields indented below; top level only)
 } StmtKind;
 
 // A constant's value, worked out by the compiler (see front/consteval.h).
@@ -283,6 +332,15 @@ struct ConstValue {
     Type list_type;    // CONST_LIST: e.g. a list of text
     ConstValue *items; // CONST_LIST
 };
+
+// One field of a record kind: "an age, which is a number, starting at 0."
+typedef struct {
+    Name name;
+    Type type;      // its kind, as written
+    Expr *initial;  // "starting at E", or NULL
+    SourcePos pos;
+    ConstValue folded;  // filled in by the checker: the starting value, worked out (unless it's "nothing")
+} Field;
 
 typedef enum {
     LOOP_COUNT,    // count [down] from A to B [by S] [as N]; go from; for each N from
@@ -308,8 +366,6 @@ typedef enum {
     LIST_SORT,      // sort L [by their length] [, biggest/smallest/longest/shortest first]
 } ListChange;
 
-typedef struct Stmt Stmt;
-
 // A block is a list of statements, in order. A program is a block.
 typedef Vec(Stmt *) Block;
 
@@ -329,11 +385,14 @@ struct Stmt {
         struct {
             Name name;
             Expr *value;
+            Expr *field;  // STMT_SET of a field ("set rex's age to 4"): an EXPR_FIELD; name is then unused
+            Type type;    // filled in by the checker: the variable's kind
         } assign;  // STMT_LET, STMT_SET
         struct {
             ChangeOp op;
             Name target;
             Expr *amount;
+            Expr *field;  // a field ("add 1 to rex's age"): an EXPR_FIELD; target is then unused
             bool append;  // filled in by the checker: "add E to L" where L is a list
         } change;
         Expr *value;  // STMT_SAY
@@ -356,6 +415,7 @@ struct Stmt {
         struct {
             Name name;
             const char *intro;     // the word before the inputs: "with", "of", "using" or "to" (NULL: none)
+            bool method;           // "to bark, for a dog:": the first input is the dog
             Vec(Name) params;
             Vec(Type) declared;    // per input: the kind written in "(a number)", or TYPE_UNKNOWN
             Type declared_result;  // "giving back a number", or TYPE_UNKNOWN
@@ -390,8 +450,19 @@ struct Stmt {
             bool by_length;   // LIST_SORT: "by their length"
             bool descending;  // LIST_SORT: "biggest first" / "longest first"
         } list;
+        struct {
+            Name name;
+            size_t index;      // in the program's Records
+            Vec(Field) fields;
+        } record;
     } as;
 };
+
+// A parsed program: its statements, and the record kinds it defines.
+typedef struct {
+    Block body;
+    Records records;
+} Program;
 
 // --- Helpers ---------------------------------------------------------------
 
@@ -411,6 +482,6 @@ const char *ast_text_op_name(TextOp op);
 // Indented outline, one node per line: "label [line:column]", children
 // indented two spaces. Statement children come in source order (for files:
 // the text, then the file). Used by `easyscript ast`.
-void ast_dump_block(const Block *block, StrBuf *out);
+void ast_dump_program(const Program *program, StrBuf *out);
 
 #endif

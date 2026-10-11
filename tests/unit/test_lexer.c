@@ -32,10 +32,10 @@ static void test_spans_cover_source_text(TestContext *t) {
 }
 
 static void test_word_text_is_lowercased(TestContext *t) {
-    Lexed lexed = lex_string(t, "GuEsT's");
+    Lexed lexed = lex_string(t, "IsN't");
     CHECK(t, lexed.tokens.items[0].kind == TOK_WORD);
-    CHECK_STR(t, lexed.tokens.items[0].text, "guest's");
-    CHECK_SIZE(t, lexed.tokens.items[0].text_len, 7);
+    CHECK_STR(t, lexed.tokens.items[0].text, "isn't");
+    CHECK_SIZE(t, lexed.tokens.items[0].text_len, 5);
 }
 
 static void test_string_value_is_decoded(TestContext *t) {

@@ -167,13 +167,8 @@ static bool is_filler(const char *word) {
     return strcmp(word, "the") == 0 || strcmp(word, "a") == 0 || strcmp(word, "an") == 0;
 }
 
-// An apostrophe belongs to a word only between letters: isn't, guest's.
-static void lex_word(Lexer *lx) {
-    size_t start = lx->pos;
-    while (is_word_char(peek_at(lx, lx->pos)) ||
-           (peek_at(lx, lx->pos) == '\'' && is_alpha(peek_at(lx, lx->pos + 1)))) {
-        lx->pos++;
-    }
+// The word from start to the current position: lowercased, or dropped as filler.
+static void lex_plain_word(Lexer *lx, size_t start) {
     size_t n = lx->pos - start;
     char *text = arena_alloc(lx->arena, n + 1);
     for (size_t i = 0; i < n; i++) {
@@ -184,6 +179,23 @@ static void lex_word(Lexer *lx) {
         return;
     }
     emit_content(lx, TOK_WORD, start, lx->pos, text, n);
+}
+
+// An apostrophe belongs to a word only between letters: isn't, rock'n'roll.
+// A word ending in 's is the word and then a possessive: "rex's" is "rex", 's.
+static void lex_word(Lexer *lx) {
+    size_t start = lx->pos;
+    while (is_word_char(peek_at(lx, lx->pos)) ||
+           (peek_at(lx, lx->pos) == '\'' && is_alpha(peek_at(lx, lx->pos + 1)))) {
+        lx->pos++;
+    }
+    size_t end = lx->pos;
+    bool possessive = end - start > 2 && lx->src[end - 2] == '\'' && to_lower(lx->src[end - 1]) == 's';
+    if (possessive) lx->pos = end - 2;
+    lex_plain_word(lx, start);
+    if (!possessive) return;
+    lx->pos = end;
+    emit_content(lx, TOK_POSSESSIVE, end - 2, end, "'s", 2);
 }
 
 static void report_letters_after_number(Lexer *lx, size_t start) {
@@ -332,7 +344,7 @@ static void report_unexpected(Lexer *lx) {
 
     if (c == '\'') {
         diag_error(lx->diag, span, "I don't understand this apostrophe.");
-        diag_note(lx->diag, "An apostrophe can only go inside a word, like isn't or guest's. "
+        diag_note(lx->diag, "An apostrophe can only go inside a word, like isn't or rex's. "
                             "Text goes in double quotes, like \"hello\".");
     } else if (c == '!') {
         diag_error(lx->diag, span, "I don't understand \"!\".");
@@ -382,6 +394,14 @@ static void lex_symbol(Lexer *lx) {
     if (kind == TOK_EOF) {
         kind = one_char_symbol(peek_at(lx, start));
         n = 1;
+    }
+    // "(first item of people)'s name": a possessive after a closing parenthesis.
+    bool after_paren = start > 0 && lx->src[start - 1] == ')';
+    if (kind == TOK_EOF && after_paren && peek_at(lx, start) == '\'' && to_lower(peek_at(lx, start + 1)) == 's' &&
+        !is_word_char(peek_at(lx, start + 2))) {
+        lx->pos += 2;
+        emit_content(lx, TOK_POSSESSIVE, start, start + 2, "'s", 2);
+        return;
     }
     if (kind == TOK_EOF) {
         report_unexpected(lx);
@@ -499,7 +519,7 @@ const char *token_kind_name(TokenKind kind) {
         "EOF", "NEWLINE", "INDENT", "DEDENT", "WORD", "NUMBER", "STRING", "ORDINAL",
         "PERIOD", "COMMA", "COLON", "LPAREN", "RPAREN", "PLUS", "MINUS",
         "STAR", "SLASH", "PERCENT", "EQUAL", "LESS", "GREATER",
-        "LESS_EQUAL", "GREATER_EQUAL", "NOT_EQUAL", "EQUAL_EQUAL",
+        "LESS_EQUAL", "GREATER_EQUAL", "NOT_EQUAL", "EQUAL_EQUAL", "POSSESSIVE",
     };
     return names[kind];
 }

@@ -1,0 +1,6 @@
+Memory check: 4 records were still alive at the end of the program, because they point to each other in a circle:
+    a person with name "Ann" and friend (a person with ...)
+    a person with name "Bo" and friend (a person with ...)
+    a person with name "Cy" and friend (a person with ...)
+    ...and 1 more
+Records in a circle are never freed, because each one keeps the next alive. Before the program ends, set a field in the circle to nothing.

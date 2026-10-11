@@ -86,7 +86,10 @@ static TypeVar check_list_op(Checker *c, const Expr *expr) {
         return item;
     }
     case LIST_REVERSED: checker_require_list(c, var, operand, "I can only reverse a list"); return var;
-    case LIST_COPY: checker_require_list(c, var, operand, "I can only copy a list"); return var;
+    case LIST_COPY:  // a record when it's known to be one, otherwise a list
+        if (type_is_record(types_of(c, var)) && !type_is_maybe(types_of(c, var))) return var;
+        checker_require_list(c, var, operand, "I can only copy a list or a record");
+        return var;
     case LIST_IS_EMPTY:
     case LIST_NOT_EMPTY:
         types_defer_one_of(c, operand, var, var, KIND_TEXT | KIND_LIST, "I can only check whether text or a list is empty");
@@ -156,14 +159,18 @@ void checker_require_item(Checker *c, const Expr *list, TypeVar list_var, const 
 // "add E to X" where X is a list: adding to its end is the only meaning
 // unless it holds numbers (then "add 5 to scores" could also mean adding 5
 // to each score), so that's an error that shows both ways to say it.
-void checker_add_to_list(Checker *c, Stmt *stmt, const Symbol *symbol, TypeVar amount) {
-    TypeVar item = types_item(c, symbol->var);
+void checker_add_to_list(Checker *c, Stmt *stmt, TypeVar list, TypeVar amount) {
+    TypeVar item = types_item(c, list);
     Type kind = types_of(c, item);
     if (kind == TYPE_ERROR) return;
+    const Expr *field = stmt->as.change.field;
+    const char *name = field ? arena_sprintf(c->arena, "%s's %s", checker_path(c, field->as.field.record)
+                                                                     ? checker_path(c, field->as.field.record) : "...",
+                                             field->as.field.name.display)
+                             : stmt->as.change.target.display;
     if (kind == TYPE_NUMBER || kind == TYPE_UNKNOWN) {
-        const char *name = symbol->display;
         diag_error(c->diag, stmt->pos.span, "\"%s\" is %s, so this could mean two things.", name,
-                   checker_kind(c, symbol->var));
+                   checker_kind(c, list));
         diag_note(c->diag, "To put it at the end of the list, write \"add ... to the end of %s\". To add it to every "
                            "item, write \"set %s to every n in %s plus ...\".", name, name, name);
         return;
@@ -171,9 +178,8 @@ void checker_add_to_list(Checker *c, Stmt *stmt, const Symbol *symbol, TypeVar a
     stmt->as.change.append = true;
     Expr target = {0};  // only for the message
     target.kind = EXPR_NAME;
-    target.as.name = symbol->name;
-    target.display = symbol->display;
-    require_item(c, &target, symbol->var, item, stmt->as.change.amount, amount, false);
+    target.display = name;
+    require_item(c, &target, list, item, stmt->as.change.amount, amount, false);
 }
 
 // A fixed list ("keep weekdays as a list of ...") can't change.

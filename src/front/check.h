@@ -16,6 +16,6 @@
 // make a name; "set", "change", and the arithmetic statements need one that
 // exists. A name made inside a block (an if branch or a loop body), and a
 // loop's number, exist only until that block ends. Only run it on a program that parsed without errors.
-void check_program(Arena *arena, Diag *diag, const Block *program);
+void check_program(Arena *arena, Diag *diag, const Program *program);
 
 #endif

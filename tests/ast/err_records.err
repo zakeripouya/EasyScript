@@ -1,0 +1,84 @@
+Line 2: I expected "," here, but found "which".
+        a name which is text.
+               ^^^^^
+Write each field like "a name, which is text.".
+
+Line 3: Something is missing after "plus".
+        an age, which is a number, starting at 0 plus.
+                                                 ^^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 4: Only a record can be "or nothing", not a number.
+        a size, which is a number or nothing.
+                                  ^^^^^^^^^^
+A number, text, yes/no value or list always has a value. To say there's none, use 0, empty text (""), no, or an empty list.
+
+Line 5: I expected "which is" here, but found "is".
+        a weight, is a number.
+                  ^^
+Write it like "a name, which is text.".
+
+Line 6: I expected the field to end after "text".
+        a color, which is text and more.
+                               ^^^
+Write one field per sentence, like "a name, which is text.".
+
+Line 7: This line is indented more than the fields above it.
+            a tail, which is text.
+    ^^^^^^^^
+Line the fields up with each other.
+
+Line 10: Something is missing after "is a kind of thing".
+    a cat is a kind of thing
+          ^^^^^^^^^^^^^^^^^^
+Write it like "a dog is a kind of thing with:".
+
+Line 11: I expected ":" here, but found the end of the line.
+    a bird is a kind of thing with
+                                  ^
+Write it like "a dog is a kind of thing with:", with its fields indented below.
+
+Line 12: The fields of "fish" go on the lines below, indented.
+    a fish is a kind of thing with: a fin, which is text.
+                                      ^^^
+Write each one on its own line, like "    a name, which is text.".
+
+Line 14: A method is for a kind of record, but this is a number.
+    to bark, for a number:
+                   ^^^^^^
+Write the kind of record it works on, like "to bark, for a dog:".
+
+Line 16: I expected ":" or "with" here, but found "loudly".
+    to wag, for a dog loudly:
+                      ^^^^^^
+Write it like "to rename, for a dog, with new name:".
+
+Line 19: I expected the name of a field here, but found "3".
+    let rex be a new dog with name "Rex" and 3.
+                                             ^
+Give each field's name and then its value, like "a new dog with name "Rex" and age 3".
+
+Line 20: A new record inside another one needs parentheses.
+    let rex2 be a new dog with name "Rex" and friend a new dog with name "Fido" and age 2.
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Otherwise it isn't clear which one the fields after it belong to. Write it like "(a new dog with name "Fido" and age 2)".
+
+Line 21: "let" makes a new name, so it can't change a field.
+    let rex's age be 4.
+           ^^
+To change a field, write "set rex's ... to ...".
+
+Line 22: Something is missing after "'s".
+    say rex's.
+           ^^
+Write the name of a field after it, like "rex's name".
+
+Line 23: I expected a name or a field here, like "rex's name".
+    set (rex) to 5.
+        ^
+A value in parentheses can only be changed through one of its fields, like "(item 1 of dogs)'s name".
+
+Line 24: Something is missing after "with".
+    let tail be a new dog with.
+                          ^^^^
+Give each field's name and then its value, like "a new dog with name "Rex" and age 3".

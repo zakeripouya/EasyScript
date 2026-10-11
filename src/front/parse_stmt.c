@@ -101,7 +101,14 @@ static bool reject_missing_value(Parser *p, const char *words) {
 static Stmt *parse_let(Parser *p, const Token *verb, const StmtForm *form) {
     static const char *const after[] = {"be", "equal", NULL};
     Stmt *stmt = parser_new_stmt(p, STMT_LET, verb);
-    if (!parser_parse_name(p, &stmt->as.assign.name, after) || !parser_expect_word(p, after, form->example)) return NULL;
+    if (!parser_parse_name(p, &stmt->as.assign.name, after)) return NULL;
+    if (parser_at(p, 0, TOK_POSSESSIVE)) {  // "let rex's age be 4"
+        if (parser_error(p, parser_peek(p, 0)->span, "\"let\" makes a new name, so it can't change a field.")) {
+            diag_note(p->diag, "To change a field, write \"set %s's ... to ...\".", stmt->as.assign.name.display);
+        }
+        return NULL;
+    }
+    if (!parser_expect_word(p, after, form->example)) return NULL;
     stmt->as.assign.value = parse_expression(p);
     return stmt;
 }
@@ -111,7 +118,10 @@ static Stmt *parse_set(Parser *p, const Token *verb, const StmtForm *form) {
     static const char *const of_in[] = {"of", "in", NULL};
     if (parser_at_item(p, of_in)) return parser_parse_set_item(p, verb);
     Stmt *stmt = parser_new_stmt(p, STMT_SET, verb);
-    if (!parser_parse_name(p, &stmt->as.assign.name, after) || !parser_expect_word(p, after, form->example)) return NULL;
+    if (!parser_parse_target(p, &stmt->as.assign.name, &stmt->as.assign.field, after) ||
+        !parser_expect_word(p, after, form->example)) {
+        return NULL;
+    }
     stmt->as.assign.value = parse_expression(p);
     return stmt;
 }
@@ -127,7 +137,7 @@ static Stmt *parse_amount_first(Parser *p, const Token *verb, const StmtForm *fo
     if (form->op == CHANGE_ADD && parser_match_words(p, "end of")) {
         return parser_finish_add_end(p, stmt, stmt->as.change.amount);
     }
-    if (!parser_parse_name(p, &stmt->as.change.target, NULL)) return NULL;
+    if (!parser_parse_target(p, &stmt->as.change.target, &stmt->as.change.field, NULL)) return NULL;
     return stmt;
 }
 
@@ -136,7 +146,8 @@ static Stmt *parse_target_first(Parser *p, const Token *verb, const StmtForm *fo
     const char *const connector[] = {form->connector, NULL};
     Stmt *stmt = parser_new_stmt(p, STMT_CHANGE, verb);
     stmt->as.change.op = (ChangeOp)form->op;
-    if (!parser_parse_name(p, &stmt->as.change.target, connector) || !parser_expect_word(p, connector, form->example)) {
+    if (!parser_parse_target(p, &stmt->as.change.target, &stmt->as.change.field, connector) ||
+        !parser_expect_word(p, connector, form->example)) {
         return NULL;
     }
     stmt->as.change.amount = parse_expression(p);
@@ -372,6 +383,7 @@ Stmt *parse_statement(Parser *p) {
         }
     }
     const Token *verb = parser_peek(p, 0);
+    if (parser_at_record_definition(p)) return parse_record(p);
     const StmtForm *form = find_form(verb);
     // A function's name starts a call: one of several words even if its first
     // word starts sentences ("add tax to 100"), a one-word one otherwise.
@@ -487,7 +499,7 @@ void parse_statements(Parser *p, Block *block, bool in_block) {
     }
 }
 
-Block *parse_program(Arena *arena, Diag *diag, const char *source, const TokenList *tokens) {
+Program *parse_program(Arena *arena, Diag *diag, const char *source, const TokenList *tokens) {
     Parser p = {0};
     p.arena = arena;
     p.diag = diag;
@@ -495,8 +507,9 @@ Block *parse_program(Arena *arena, Diag *diag, const char *source, const TokenLi
     p.tokens = tokens->items;
     p.count = tokens->len;
 
-    Block *program = arena_alloc(arena, sizeof(Block));
+    Program *program = arena_alloc(arena, sizeof(Program));
+    p.records = &program->records;
     parser_find_names(&p);
-    parse_statements(&p, program, false);
+    parse_statements(&p, &program->body, false);
     return program;
 }

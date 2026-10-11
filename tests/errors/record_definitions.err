@@ -1,0 +1,58 @@
+Line 5: "size" isn't a constant, so a field can't start at it.
+        a height, which is a number, starting at size.
+                                                 ^^^^
+A field's starting value is fixed before the program runs: use numbers, text, yes or no, and constants made with "keep".
+
+Line 6: Only a field that can be nothing can start at nothing.
+        a label, which is text, starting at nothing.
+                                            ^^^^^^^
+A field whose kind is like "a dog or nothing" can be nothing (and starts as nothing).
+
+Line 8: The field "weight" is a number, but its starting value is text.
+        a weight, which is a number, starting at "heavy".
+                                                 ^^^^^^^
+
+Line 9: A box already has a field called "width", on line 4.
+        a width, which is text.
+          ^^^^^
+Give each field its own name.
+
+Line 12: Every chain link would need another chain link inside it, so none could ever be made.
+        a next, which is a chain link.
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Let the field be nothing: write its kind like "a chain link or nothing".
+
+Line 15: Every egg would need another egg inside it, so none could ever be made.
+        a chicken, which is a chicken.
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Let the field be nothing: write its kind like "a chicken or nothing".
+
+Line 17: Every chicken would need another chicken inside it, so none could ever be made.
+        an egg, which is an egg.
+           ^^^^^^^^^^^^^^^^^^^^
+Let the field be nothing: write its kind like "an egg or nothing".
+
+Line 20: A field that holds a record can't have a starting value, because records are made while the program runs.
+        a left, which is a box, starting at 0.
+                                            ^
+Leave out "starting at" and give it a value when you make a new record, after "with".
+
+Line 22: You already defined "box" on line 3.
+    a box is a kind of thing with:
+      ^^^
+Each kind of record needs its own name.
+
+Line 26: Kinds of record can only be defined at the top level, not inside an "if" or a loop.
+        a note card is a kind of thing with:
+          ^^^^^^^^^
+Move "a note card is a kind of thing with:" to the start of a line, outside every block.
+
+Line 29: A constant can't be a record, because records are made while the program runs.
+    keep favourite as a new box with height 1.
+                      ^^^^^^^^^^^^^^^^^^^^^^^
+A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".
+
+Line 30: A constant can't use a field of a record, because records are made while the program runs.
+    keep favourite width as size's width.
+                            ^^^^^^^^^^^^
+A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".

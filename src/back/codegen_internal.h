@@ -53,6 +53,7 @@ typedef struct {
 
 typedef struct {
     Arena *arena;
+    const Records *records;      // the program's kinds of record
     TextPool *texts;
     HelperPool *helpers;
     SitePool *sites;
@@ -117,6 +118,17 @@ void cg_emit_var(StrBuf *out, const char *name, Type type);
 // codegen_c.c
 // Temporaries and hoisted variables, at the top of main(), a function, or a helper.
 void cg_emit_declarations(const Codegen *g, StrBuf *out);
+// A worked-out number as C: "0.20000000000000001", "NAN", "-HUGE_VAL".
+void cg_append_number(StrBuf *out, double x);
+// A fixed list (a constant, or a field's starting value) as a static immortal list es_k_NAME.
+void cg_emit_fixed_list(Codegen *g, const char *name, const ConstValue *v, StrBuf *out);
+
+// codegen_record.c
+void cg_emit_records(Codegen *g, StrBuf *out);                // every kind's struct, description and maker
+void cg_emit_new(Codegen *g, const Expr *expr, StrBuf *out);    // EXPR_NEW
+void cg_emit_field(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_FIELD
+// "set R's F to V" or "add V to R's F" (and the other changes) as one C statement.
+const char *cg_field_stmt(Codegen *g, const Stmt *stmt);
 
 // codegen_list.c
 const char *cg_item_suffix(Type list);  // the runtime's suffix for its items: "n", "b", "t", "l"

@@ -64,6 +64,9 @@ static bool compatible(Checker *c, TypeVar a, TypeVar b) {
     if (ta == TYPE_UNKNOWN) return !occurs(c, ra, rb);
     if (tb == TYPE_UNKNOWN) return !occurs(c, rb, ra);
     if (ta == TYPE_LIST && tb == TYPE_LIST) return compatible(c, c->types.items[ra].item, c->types.items[rb].item);
+    // A record or nothing, kind not decided yet, goes with any record or nothing.
+    if (ta == TYPE_MAYBE) return tb == TYPE_MAYBE || type_is_maybe(tb);
+    if (tb == TYPE_MAYBE) return type_is_maybe(ta);
     return ta == tb;
 }
 
@@ -76,7 +79,7 @@ static void join(Checker *c, TypeVar a, TypeVar b) {
     Type ta = c->types.items[ra].type, tb = c->types.items[rb].type;
     if (ta == TYPE_ERROR || tb == TYPE_UNKNOWN) {
         c->types.items[rb].parent = ra;
-    } else if (tb == TYPE_ERROR || ta == TYPE_UNKNOWN) {
+    } else if (tb == TYPE_ERROR || ta == TYPE_UNKNOWN || ta == TYPE_MAYBE) {
         c->types.items[ra].parent = rb;
     } else {
         if (ta == TYPE_LIST) join(c, c->types.items[ra].item, c->types.items[rb].item);
@@ -117,7 +120,7 @@ static bool settle_and(Checker *c, const Deferred *d) {
         if (left == TYPE_UNKNOWN || right == TYPE_UNKNOWN) return false;
         if (left == TYPE_TEXT || right == TYPE_TEXT) return types_require(c, d->result, TYPE_TEXT, line);
         report(c, d->expr, NULL, arena_sprintf(c->arena, "I can't use \"and\" between %s and %s.",
-                                               ast_type_name(c->arena, left), ast_type_name(c->arena, right)));
+                                               checker_type_name(c, left), checker_type_name(c, right)));
         return types_require(c, d->result, TYPE_ERROR, line);
     }
     if (left == TYPE_YESNO || right == TYPE_YESNO) {
@@ -125,8 +128,8 @@ static bool settle_and(Checker *c, const Deferred *d) {
         if (types_require(c, other, TYPE_YESNO, line)) return types_require(c, d->result, TYPE_YESNO, line);
         bool with_text = left == TYPE_TEXT || right == TYPE_TEXT;
         report(c, d->expr, with_text ? "To join them, turn the yes/no value into text first with \"as text\"." : NULL,
-               arena_sprintf(c->arena, "I can't use \"and\" between %s and %s.", ast_type_name(c->arena, left),
-                             ast_type_name(c->arena, right)));
+               arena_sprintf(c->arena, "I can't use \"and\" between %s and %s.", checker_type_name(c, left),
+                             checker_type_name(c, right)));
         return types_require(c, d->result, TYPE_ERROR, line);
     }
     if (left == TYPE_NUMBER && right == TYPE_NUMBER) {
@@ -143,6 +146,7 @@ static bool settle_and(Checker *c, const Deferred *d) {
 
 static unsigned kind_bit(Type type) {
     if (type_is_list(type)) return KIND_LIST;
+    if (type_is_record(type) && !type_is_maybe(type)) return KIND_RECORD;
     return type == TYPE_NUMBER ? KIND_NUMBER : type == TYPE_TEXT ? KIND_TEXT : type == TYPE_YESNO ? KIND_YESNO : 0;
 }
 
@@ -169,8 +173,8 @@ static bool settle_join(Checker *c, const Deferred *d) {
     if (!types_unify(c, d->left, d->right)) {
         report(c, d->expr, "Only lists of the same kind join into one list. To join them as text, turn one into text "
                            "first with \"as text\".",
-               arena_sprintf(c->arena, "I can't join %s with %s.", ast_type_name(c->arena, left),
-                             ast_type_name(c->arena, right)));
+               arena_sprintf(c->arena, "I can't join %s with %s.", checker_type_name(c, left),
+                             checker_type_name(c, right)));
         return types_require(c, d->result, TYPE_ERROR, line);
     }
     types_unify(c, d->result, d->left);
@@ -182,12 +186,15 @@ static bool settle(Checker *c, Deferred *d) {
     if (d->kind == DEFER_JOIN) return settle_join(c, d);
     if (d->kind == DEFER_ONE_OF) return settle_one_of(c, d);
     if (d->kind == DEFER_SEARCH) return checker_settle_search(c, d);
+    if (d->kind == DEFER_FIELD) return checker_settle_field(c, d);
+    if (d->kind == DEFER_PRESENT) return checker_settle_present(c, d);
     Type type = types_of(c, d->left);
     if (type == TYPE_UNKNOWN) return false;
-    const char *name = ast_type_name(c->arena, type);
-    if ((type == TYPE_YESNO || type_is_list(type)) && d->kind == DEFER_ORDER) {
+    const char *name = checker_type_name(c, type);
+    bool other = type == TYPE_YESNO || type_is_list(type) || type_is_record(type) || type == TYPE_MAYBE;
+    if (other && d->kind == DEFER_ORDER) {
         report(c, d->expr, NULL, arena_sprintf(c->arena, "I can't compare %s with %s.", name, name));
-    } else if (type == TYPE_YESNO || type_is_list(type)) {
+    } else if (other) {
         report(c, d->expr, NULL, arena_sprintf(c->arena, "I can't turn %s into a number.", name));
     }
     return true;
@@ -236,16 +243,33 @@ static bool searched(Checker *c, TypeVar var) {
     return false;
 }
 
+// The kind of record whose field `var` is waiting to be looked up in, if any.
+static const RecordKind *field_owner(Checker *c, TypeVar var) {
+    for (size_t i = 0; i < c->deferred.len; i++) {
+        const Deferred *d = &c->deferred.items[i];
+        if (!d->done && d->kind == DEFER_FIELD && root(c, d->left) == root(c, var)) {
+            return checker_field_owner(c, d->expr->as.field.name.text);
+        }
+    }
+    return NULL;
+}
+
 // What to suggest writing for a kind nothing decided: "a number", "text"
-// for what's searched, or "a list of numbers" when it's known to be a list.
+// for what's searched, "a list of numbers" when it's known to be a list, or
+// a kind of record that has the field it's asked for ("a dog", or "a dog or
+// nothing" if it can be nothing).
 static const char *suggested_kind(Checker *c, TypeVar var) {
     if (searched(c, var)) return "text";
     Type type = types_of(c, var);
-    return type_is_list(type) ? ast_type_name(c->arena, type - TYPE_UNKNOWN + TYPE_NUMBER) : "a number";
+    const RecordKind *owner = field_owner(c, var);
+    if (!owner && type == TYPE_MAYBE && c->records->len > 0) owner = &c->records->items[0];
+    if (owner) return arena_sprintf(c->arena, "a %s%s", owner->display, type == TYPE_MAYBE ? " or nothing" : "");
+    return type_is_list(type) ? checker_type_name(c, type - TYPE_UNKNOWN + TYPE_NUMBER) : "a number";
 }
 
 static bool undecided(Checker *c, TypeVar var) {
-    return type_base(types_of(c, var)) == TYPE_UNKNOWN;
+    Type base = type_base(types_of(c, var));
+    return base == TYPE_UNKNOWN || base == TYPE_MAYBE;
 }
 
 // "to show with x (a number)", with the given input marked.
@@ -254,9 +278,11 @@ static const char *header_with_kind(Checker *c, const Function *f, size_t marked
     sb_init(&sb, c->arena);
     sb_appendf(&sb, "to %s", f->display);
     const Stmt *def = f->definition;
-    for (size_t i = 0; i < def->as.function.params.len; i++) {
-        if (i == 0) sb_appendf(&sb, " %s ", def->as.function.intro ? def->as.function.intro : "with");
-        if (i > 0) sb_append(&sb, " and ");
+    size_t first = def->as.function.method ? 1 : 0;  // a method: "to bark, for a dog"
+    if (first) sb_appendf(&sb, ", for %s", checker_type_name(c, def->as.function.declared.items[0]));
+    for (size_t i = first; i < def->as.function.params.len; i++) {
+        if (i == first) sb_appendf(&sb, "%s %s ", first ? "," : "", def->as.function.intro ? def->as.function.intro : "with");
+        if (i > first) sb_append(&sb, " and ");
         sb_append(&sb, def->as.function.params.items[i].display);
         if (i == marked) sb_appendf(&sb, " (%s)", suggested_kind(c, f->params.items[i]));
     }
@@ -289,6 +315,9 @@ void types_finish(Checker *c, size_t first_error) {
     }
     for (size_t i = 0; i < c->typed.len; i++) {
         c->typed.items[i].expr->type = types_of(c, c->typed.items[i].var);
+    }
+    for (size_t i = 0; i < c->slots.len; i++) {
+        *c->slots.items[i].slot = types_of(c, c->slots.items[i].var);
     }
     for (size_t i = 0; i < c->functions.len; i++) {
         Function *f = &c->functions.items[i];

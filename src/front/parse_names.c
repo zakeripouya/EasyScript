@@ -66,20 +66,25 @@ static bool word_at(const Parser *p, size_t i, const char *word) {
     return i < p->count && p->tokens[i].kind == TOK_WORD && strcmp(p->tokens[i].text, word) == 0;
 }
 
-static void add_name(Parser *p, size_t at, size_t n, bool function, bool to_inputs) {
-    if (n == 0 || (n == 1 && !function)) return;  // one-word variables need no recognizing
-    const char *text = join_words(p, at, n, false, ' ');
+static void add_known(Parser *p, const char *text, size_t n, bool function, bool to_inputs, bool method) {
     for (size_t i = 0; i < p->names.len; i++) {
         KnownName *known = &p->names.items[i];
         if (strcmp(known->text, text) == 0) {
+            if (function && !known->function) vec_push(p->arena, &p->functions, text);
             known->function |= function;
             known->to_inputs |= to_inputs;
+            known->method |= method;
             return;
         }
     }
-    KnownName known = {text, n, function, to_inputs};
+    KnownName known = {text, n, function, to_inputs, method};
     vec_push(p->arena, &p->names, known);
     if (function) vec_push(p->arena, &p->functions, text);
+}
+
+static void add_name(Parser *p, size_t at, size_t n, bool function, bool to_inputs) {
+    if (n == 0 || (n == 1 && !function)) return;  // one-word variables need no recognizing
+    add_known(p, join_words(p, at, n, false, ' '), n, function, to_inputs, false);
 }
 
 static bool at_line_start(const Parser *p, size_t index) {
@@ -88,14 +93,34 @@ static bool at_line_start(const Parser *p, size_t index) {
     return before == TOK_NEWLINE || before == TOK_INDENT || before == TOK_DEDENT;
 }
 
-// to NAME [with | of | using | to] INPUT [(KIND)] [and | ,] INPUT ...
+static bool at_sentence_end_index(const Parser *p, size_t i) {
+    if (i >= p->count) return true;
+    TokenKind kind = p->tokens[i].kind;
+    return kind == TOK_PERIOD || kind == TOK_NEWLINE || kind == TOK_EOF || kind == TOK_DEDENT || kind == TOK_INDENT;
+}
+
+// to NAME [[,] for KIND] [with | of | using | to] INPUT [(KIND)] [and | ,] INPUT ...
 static void find_function(Parser *p, size_t i) {
-    size_t n = name_words(p, i + 1);
+    size_t n = name_words(p, i + 1), words;
+    for (size_t k = 1; k < n; k++) {  // a method's name ends before "for" and a kind of record
+        if (word_at(p, i + 1 + k, "for") && parser_match_record(p, i + 2 + k, false, &words) >= 0) {
+            n = k;
+            break;
+        }
+    }
     if (n == 0) return;
     size_t j = i + 1 + n;
+    bool method = (word_at(p, j, "for") && parser_match_record(p, j + 1, false, &words) >= 0) ||
+                  (p->tokens[j].kind == TOK_COMMA && word_at(p, j + 1, "for"));
+    if (method) {  // skip "for KIND" and a comma after it
+        while (j < p->count && p->tokens[j].kind != TOK_COLON && !at_sentence_end_index(p, j) &&
+               !word_at(p, j, "with") && !word_at(p, j, "of") && !word_at(p, j, "using") && !word_at(p, j, "to")) {
+            j++;
+        }
+    }
     static const char *const intros[] = {"with", "of", "using", "to", NULL};
     bool introduced = word_among(&p->tokens[j], intros);
-    add_name(p, i + 1, n, true, introduced && word_at(p, j, "to"));
+    add_known(p, join_words(p, i + 1, n, false, ' '), n, true, introduced && word_at(p, j, "to"), method);
     if (!introduced) return;
     j++;
     for (;;) {
@@ -111,13 +136,58 @@ static void find_function(Parser *p, size_t i) {
     }
 }
 
-static bool at_sentence_end_index(const Parser *p, size_t i) {
-    if (i >= p->count) return true;
-    TokenKind kind = p->tokens[i].kind;
-    return kind == TOK_PERIOD || kind == TOK_NEWLINE || kind == TOK_EOF || kind == TOK_DEDENT || kind == TOK_INDENT;
+// "dog" -> "dogs", "box" -> "boxes", "berry" -> "berries" (the last word).
+static const char *plural_of(Arena *arena, const char *name) {
+    size_t len = strlen(name);
+    char last = name[len - 1], before = len > 1 ? name[len - 2] : ' ';
+    if (last == 'y' && !strchr("aeiou ", before)) return arena_sprintf(arena, "%.*sies", (int)(len - 1), name);
+    bool es = strchr("sxz", last) || ((last == 'h') && (before == 'c' || before == 's'));
+    return arena_sprintf(arena, "%s%s", name, es ? "es" : "s");
+}
+
+// NAME is a kind of thing (the "a" before "kind" is dropped)
+static size_t record_definition_words(const Parser *p, size_t i) {
+    if (!at_line_start(p, i)) return 0;
+    size_t n = name_words(p, i);
+    if (n == 0) return 0;
+    size_t j = i + n;
+    bool kind = word_at(p, j, "is") && word_at(p, j + 1, "kind") && word_at(p, j + 2, "of") && word_at(p, j + 3, "thing");
+    return kind ? n : 0;
+}
+
+// Every record kind, in order, and every field name: "NAME, which is".
+static void find_records(Parser *p) {
+    for (size_t i = 0; i < p->count; i++) {
+        size_t n = record_definition_words(p, i);
+        if (n > 0) {
+            const char *name = join_words(p, i, n, false, ' ');
+            bool known = false;
+            for (size_t r = 0; r < p->records->len; r++) known |= strcmp(p->records->items[r].name, name) == 0;
+            if (!known) {
+                RecordKind kind = {name, join_words(p, i, n, true, ' '), plural_of(p->arena, name), NULL};
+                vec_push(p->arena, p->records, kind);
+                add_known(p, name, n, false, false, false);  // a method's input is called this
+            }
+            continue;
+        }
+        n = at_line_start(p, i) ? name_words(p, i) : 0;
+        if (n > 0 && i + n + 2 < p->count && p->tokens[i + n].kind == TOK_COMMA && word_at(p, i + n + 1, "which") &&
+            word_at(p, i + n + 2, "is")) {
+            KnownName field = {join_words(p, i, n, false, ' '), n, false, false, false};
+            vec_push(p->arena, &p->fields, field);
+        }
+    }
+}
+
+bool parser_is_method(const Parser *p, const char *name) {
+    for (size_t i = 0; i < p->names.len; i++) {
+        if (strcmp(p->names.items[i].text, name) == 0) return p->names.items[i].method;
+    }
+    return false;
 }
 
 void parser_find_names(Parser *p) {
+    find_records(p);
     for (size_t i = 0; i + 1 < p->count; i++) {
         if (p->tokens[i].kind != TOK_WORD) continue;
         const char *word = p->tokens[i].text;

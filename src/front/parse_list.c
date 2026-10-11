@@ -80,6 +80,9 @@ static bool parse_items_kind(Parser *p, Type *type) {
         if (!parse_items_kind(p, type)) return false;
         *type = type_list_of(*type);
         return true;
+    } else {
+        int record = parser_match_record(p, 0, true, &words);
+        if (record >= 0) *type = type_record((size_t)record);
     }
     if (words > 0) {
         parser_consume(p, words);
@@ -88,6 +91,22 @@ static bool parse_items_kind(Parser *p, Type *type) {
     return report_kind(p, "A list holds \"numbers\", \"text\", \"yes/no values\", or \"lists of\" something, "
                           "like \"a list of numbers\".",
                        "Say what the list holds, like \"a list of numbers\".");
+}
+
+// "or nothing" after a kind: only a record can be nothing.
+static bool parse_or_nothing(Parser *p, Type *type) {
+    size_t words = parser_match_words(p, "or nothing");
+    if (words == 0) return true;
+    Span span = parser_consume(p, words);
+    if (type_is_record(*type)) {
+        *type += TYPE_MAYBE;
+        return true;
+    }
+    if (parser_error(p, span, "Only a record can be \"or nothing\", not %s.", ast_type_name(p->arena, p->records, *type))) {
+        diag_note(p->diag, "A number, text, yes/no value or list always has a value. To say there's none, use 0, "
+                           "empty text (\"\"), no, or an empty list.");
+    }
+    return false;
 }
 
 bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type) {
@@ -108,10 +127,13 @@ bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type) {
         *type = TYPE_YESNO, words = 3;
     } else if (nothing_ok && parser_at_word(p, 0, "nothing")) {
         *type = TYPE_NOTHING, words = 1;
+    } else {
+        int record = parser_match_record(p, 0, false, &words);
+        if (record >= 0) *type = type_record((size_t)record);
     }
     if (words > 0) {
         parser_consume(p, words);
-        return true;
+        return parse_or_nothing(p, type);
     }
     return report_kind(p,
                        nothing_ok ? "The kinds are \"a number\", \"text\", \"yes or no\", and lists like \"a list of "

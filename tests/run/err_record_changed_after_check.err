@@ -1,0 +1,4 @@
+Line 8: This was checked not to be nothing, but something has set it to nothing since then.
+        say head's next's value.
+            ^^^^^^^^^^^
+Another name for the same record can change it. Check it again just before using it.
