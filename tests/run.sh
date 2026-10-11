@@ -30,6 +30,9 @@
 set -u
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
+# Programs read ES_DEBUG_MEMORY and the other test variables only when
+# "easyscript run" builds them with the hooks (see SECURITY.md).
+export ES_HOOKS=1
 ES=${ES:-$ROOT/easyscript}
 UNIT=${UNIT:-$ROOT/build/release/unit_tests}
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/easyscript-test-XXXXXX")
@@ -216,6 +219,20 @@ done
 
 # --- Memory -------------------------------------------------------------------
 #
+
+# "easyscript build" never compiles in the environment hooks, so the memory
+# tests build from "easyscript emit" with ES_HOOKS defined (sanitized like
+# "easyscript run" under ES_SANITIZE=1).
+build_with_hooks() {  # build_with_hooks SOURCE OUTPUT
+    "$ES" emit "$1" >"$WORK/program.c" || return 1
+    if [ "${ES_SANITIZE:-0}" = 1 ]; then
+        cc -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all -DES_HOOKS \
+            "$WORK/program.c" -o "$2" -lm
+    else
+        cc -O2 -DES_HOOKS "$WORK/program.c" -o "$2" -lm
+    fi
+}
+
 # tests/memory/NAME.es builds text in loops of up to a million rounds. Each is
 # built, then run with ES_DEBUG_MEMORY=1 and ES_MEMORY_LIMIT=MEMORY_LIMIT, so
 # the runtime stops it (exit 70) if live heap text ever takes more than that.
@@ -249,7 +266,7 @@ for src in "$ROOT"/tests/memory/*.es; do
     input="${src%.es}.in"
     [ -f "$input" ] || input=/dev/null
     fresh_dir
-    if ! "$ES" build "$src" -o "$WORK/program" 2>"$WORK/stderr"; then
+    if ! build_with_hooks "$src" "$WORK/program" 2>"$WORK/stderr"; then
         not_ok "$name" "$(cat "$WORK/stderr")"
         continue
     fi
@@ -395,11 +412,23 @@ leak_control() {
         awk 'skip { skip = 0; if ($0 ~ /es_release\(t\);/) next } { print } /es_out\("\\n", 1\);/ { skip = 1 }' \
             leak.c >broken.c &&
         ! cmp -s leak.c broken.c &&
-        cc -O2 broken.c -o broken -lm 2>/dev/null &&
+        cc -O2 -DES_HOOKS broken.c -o broken -lm 2>/dev/null &&
         ES_DEBUG_MEMORY=1 ./broken
 }
 expect_failure "memory/check-catches-a-leak" 70 \
     "Memory check: 1 value was still alive at the end of the program (55 bytes)." leak_control
+
+# Programs from "easyscript build" (and "run" without ES_HOOKS=1) never read
+# the test environment variables: here they'd skip output and record answers.
+hooks_ignored() {
+    fresh_dir
+    printf 'ask "? " and call the answer x\nsay "hello " followed by x\n' >"$WORK/hooks.es"
+    "$ES" build "$WORK/hooks.es" -o "$WORK/hooks" || return 1
+    built=$(echo Ada | ES_SKIP_OUTPUT=4 ES_ANSWERS="$WORK/answers" ES_MEMORY_LIMIT=1 "$WORK/hooks")
+    ran=$(echo Ada | env ES_HOOKS=0 ES_SKIP_OUTPUT=4 ES_ANSWERS="$WORK/answers" "$ES" run "$WORK/hooks.es")
+    [ "$built" = "? hello Ada" ] && [ "$ran" = "? hello Ada" ] && [ ! -e "$WORK/answers" ]
+}
+if hooks_ignored; then ok "cli/no-env-hooks-in-built-programs"; else not_ok "cli/no-env-hooks-in-built-programs" "a built program read a test variable"; fi
 
 # Temp directories made by the compiler must be cleaned up, including on errors.
 fresh_dir

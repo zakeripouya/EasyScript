@@ -103,6 +103,8 @@ Records in a circle are never freed, because each one keeps the next alive. Befo
 
 ### Checking it
 
+The first two are read only by programs built with the runtime's test hooks: `ES_HOOKS=1 ES_DEBUG_MEMORY=1 easyscript run program.es`. Programs made with `easyscript build` never read them (see [SECURITY.md](../SECURITY.md)).
+
 - **`ES_DEBUG_MEMORY=1`**: every generated program counts its live heap objects. With this set, the program fails at the end (exit 70) if any are still alive: `Memory check: 1 value was still alive at the end of the program (39 bytes).` `make test` runs every program this way, and a control test in `tests/run.sh` checks that the check really catches a missing release.
 - **`ES_MEMORY_LIMIT=N`**: fail (exit 70) as soon as live text, lists, records and maps would take more than N bytes (it's checked before allocating, including when a list or map grows). `tests/memory/` runs loops of up to a million rounds under a 100,000-byte limit, and also checks that the program's peak memory stays under 16 MB where `/usr/bin/time` can measure it.
 - **`ES_SANITIZE=1`**: the compiler builds programs with AddressSanitizer and UBSan, so a use after free or a double free stops with a report. `make test-debug` sets it for the whole suite.

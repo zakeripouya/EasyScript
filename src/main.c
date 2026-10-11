@@ -176,17 +176,24 @@ static int run_process(char *const argv[]) {
     return -1;
 }
 
+static bool env_is_1(const char *name) {
+    const char *value = getenv(name);
+    return value && strcmp(value, "1") == 0;
+}
+
 // With ES_SANITIZE=1 (used by make test-debug), the program is built with
 // AddressSanitizer and UBSan, so a reference-counting mistake in the runtime
 // or the generated code (a use after free, a double free, or, on Linux, a
-// leak) stops it with a report.
-static int compile_c(const char *output_path) {
-    const char *sanitize = getenv("ES_SANITIZE");
-    bool sanitized = sanitize && strcmp(sanitize, "1") == 0;
-    char *plain[] = {"cc", "-O2", temp_c_path, "-o", (char *)output_path, "-lm", NULL};
+// leak) stops it with a report. `hooks` (only for "run" with ES_HOOKS=1, set
+// by the tests and the shell) compiles in the runtime's environment hooks
+// (ES_SKIP_OUTPUT, ES_ANSWERS, ES_DEBUG_MEMORY, ES_MEMORY_LIMIT); "build"
+// never does, so programs given to others don't read them.
+static int compile_c(const char *output_path, bool hooks) {
+    char *hook = hooks ? "-DES_HOOKS" : NULL;  // last, so without hooks the list ends there
+    char *plain[] = {"cc", "-O2", temp_c_path, "-o", (char *)output_path, "-lm", hook, NULL};
     char *checked[] = {"cc", "-O1", "-fno-omit-frame-pointer", "-fsanitize=address,undefined",
-                       "-fno-sanitize-recover=all", temp_c_path, "-o", (char *)output_path, "-lm", NULL};
-    if (run_process(sanitized ? checked : plain) != 0) {
+                       "-fno-sanitize-recover=all", temp_c_path, "-o", (char *)output_path, "-lm", hook, NULL};
+    if (run_process(env_is_1("ES_SANITIZE") ? checked : plain) != 0) {
         fprintf(stderr, "The C compiler couldn't build the program. This is a bug in EasyScript; please report it.\n");
         return 1;
     }
@@ -244,13 +251,13 @@ static int cmd_ast(const char *source_path) {
 static int cmd_build(const char *source_path, const char *output_path) {
     make_temp_dir();
     generate_c(source_path);
-    return compile_c(output_path);
+    return compile_c(output_path, false);
 }
 
 static int cmd_run(const char *source_path) {
     make_temp_dir();
     generate_c(source_path);
-    if (compile_c(temp_bin_path) != 0) {
+    if (compile_c(temp_bin_path, env_is_1("ES_HOOKS")) != 0) {
         return 1;
     }
     char *argv[] = {temp_bin_path, NULL};

@@ -39,6 +39,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- **Programs made with `easyscript build` no longer read the runtime's test variables** (`ES_SKIP_OUTPUT`, `ES_ANSWERS`, `ES_DEBUG_MEMORY`, `ES_MEMORY_LIMIT`). They're compiled in only for `easyscript run` with `ES_HOOKS=1`, which the test suite and the interactive shell set. New [SECURITY.md](SECURITY.md): how to report a problem and what the compiler guarantees (no shell, escaped output, private temporary directories).
 - **Error messages never suggest underscore names.** A word that can't be a name suggests a name that says what it holds (`"total"`), a word inside a name suggests the other words (`"price tax"`, `"pay rate"` for `rate of pay`), a function named like a sentence word suggests adding a word (`"say something"`), and a taken item name suggests `"current score"`. A new audit in `make test` checks that suggestions only show underscores the program itself wrote.
 - **`for` always ends a function's name** in its definition, because it now introduces inputs: `to print receipt for customer:` is `print receipt` with the input `customer` (it was a function called `print receipt for customer` with no inputs).
 - **`L reversed` copies the lists inside it,** like slices and `a copy of`, so changing the reversed list never changes the original (they were shared).

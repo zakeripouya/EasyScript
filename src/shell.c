@@ -153,6 +153,7 @@ static int run_session(Shell *sh, size_t *printed) {
         close(fds[0]);
         dup2(fds[1], STDOUT_FILENO);
         close(fds[1]);
+        setenv("ES_HOOKS", "1", 1);  // so "run" builds the program with the hooks below
         setenv("ES_SKIP_OUTPUT", arena_sprintf(sh->arena, "%zu", sh->shown), 1);
         setenv("ES_ANSWERS", sh->answers_path, 1);
         char *argv[] = {sh->self, "run", (char *)sh->session_path, NULL};

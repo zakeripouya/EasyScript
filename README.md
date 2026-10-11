@@ -176,6 +176,7 @@ The **front end** (lexer, parser, checker) understands EasyScript and reports er
 - [Errors](docs/errors.md): what error messages look like and why
 - [Design principles](docs/design-principles.md): the rules every phrasing follows, and the known exceptions
 - [Ideas](docs/ideas.md): possible features that aren't planned yet
+- [Security](SECURITY.md): how to report a problem, and what the compiler guarantees
 - [Architecture](docs/architecture.md): how the compiler is built
 - [Roadmap](docs/roadmap.md): the phases in detail
 - [Performance](docs/performance.md): benchmarks against C, Go, and Python, with history

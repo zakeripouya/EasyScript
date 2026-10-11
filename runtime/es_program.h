@@ -14,8 +14,13 @@
 
 /* --- Starting and ending ------------------------------------------------ */
 
-/* The interactive shell reruns the whole session for every line it keeps,
- * and sets two environment variables (normal programs see neither):
+/* Environment hooks, compiled in only when ES_HOOKS is defined: the
+ * compiler defines it for "easyscript run" when its own environment has
+ * ES_HOOKS=1, which only the tests and the interactive shell set. Programs
+ * made with "easyscript build" never read these variables.
+ *
+ * The interactive shell reruns the whole session for every line it keeps,
+ * and sets two environment variables:
  *   ES_SKIP_OUTPUT=N  don't print the first N bytes (shown on earlier runs)
  *   ES_ANSWERS=path   answers to earlier "ask"s, one per line, used before
  *                     reading the keyboard; new answers are added to it */
@@ -91,6 +96,7 @@ static void es_init(const EsSite *sites, const char *const *source, int source_l
     es_site_table = sites;
     es_source_table = source;
     es_source_lines = source_lines;
+#ifdef ES_HOOKS
     const char *skip = getenv("ES_SKIP_OUTPUT");
     if (skip) es_skip_output = (size_t)strtoull(skip, NULL, 10);
     const char *answers = getenv("ES_ANSWERS");
@@ -104,6 +110,7 @@ static void es_init(const EsSite *sites, const char *const *source, int source_l
     es_memory.check = check && *check && strcmp(check, "0") != 0;
     const char *limit = getenv("ES_MEMORY_LIMIT");
     if (limit) es_memory.limit = (size_t)strtoull(limit, NULL, 10);
+#endif
 }
 
 static bool es_report_cycles(void); /* es_record.h */

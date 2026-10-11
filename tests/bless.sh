@@ -10,6 +10,9 @@
 set -u
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
+# Programs read ES_DEBUG_MEMORY and the other test variables only when
+# "easyscript run" builds them with the hooks (see SECURITY.md).
+export ES_HOOKS=1
 ES=${ES:-$ROOT/easyscript}
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/easyscript-bless-XXXXXX")
 trap 'rm -rf "$WORK"' EXIT

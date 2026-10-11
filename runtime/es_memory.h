@@ -191,7 +191,8 @@ static size_t es_map_bytes(const EsMap *m) { /* what it takes, as counted */
 /* --- Memory --------------------------------------------------------------
  *
  * Live objects and bytes are always counted (it's cheap). Two environment
- * variables turn on checks, used by the tests:
+ * variables turn on checks, used by the tests (read only in programs built
+ * with ES_HOOKS; see es_init in es_program.h):
  *   ES_DEBUG_MEMORY=1   at the end, fail if any heap object is still alive
  *   ES_MEMORY_LIMIT=N   fail as soon as live text, lists, records and maps would take more than N bytes */
 
