@@ -316,6 +316,22 @@ Rules:
 - **Equal:** two function values are equal only when they're the same one (like records).
 - **Memory:** a function that's kept in a name it uses (or in a list, record or map that name holds) keeps itself alive; the memory check explains it at the end of the program. A `to` function never does: use one for recursion.
 
+### Built-ins that take a function
+
+All **Available**. F is any single value holding a function; a function's name there means the function itself (`using sum`, not a call of `sum`). Each value makes a new list (or a value); each sentence changes the list itself, so every name for it sees the change. The words naming the items (`number` in `every number in`, `numbers` in `the numbers in`) are only there to read well: inside, `it` is the item.
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `F applied to every X in L` (or `of L`) | A new list of F of each item | `double applied to every number in scores` |
+| `apply F to every X in L` | Replaces each item of L with F of it (F gives back the kind L holds) | `apply double to every number in scores.` |
+| `the Xs in L where C` | A new list of the items for which C is yes (`it` is the item). C is the rest of the value | `the numbers in scores where it is above 50` |
+| `the Xs in L that pass F` / `that passes F` | A new list of the items F gives back yes for | `the words in names that pass short` |
+| `keep only the Xs in L where C` / `keep only the Xs in L that pass F` | Takes out of L the items that don't pass | `keep only the numbers in scores where it is at least 50.` |
+| `L combined using F, starting from S` / `the Xs in L combined using F ...` | S combined with each item in turn: F is given what's combined so far and the next item | `scores combined using sum, starting from 0` |
+| `L combined using F` | The same, starting from the first item (an empty list is an error) | `names combined using longer` |
+| `L sorted by F` / `L sorted by F biggest first` | A new list ordered by what F gives back for each item (numbers or text; equal ones keep their order) | `names sorted by length biggest first` |
+| `sort L by F [, biggest first]` | Puts L itself in that order (`smallest first` is the usual order) | `sort sales by price, biggest first.` |
+
 ## Lists
 
 All list words are **Available**. A list holds values of one kind, in order; positions start at 1. See the [language guide](language-guide.md#10-lists).

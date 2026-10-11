@@ -420,6 +420,11 @@ static Expr *parse_postfix(Parser *p) {
             if (p->sentence_failed) return expr;
             continue;
         }
+        Expr *applied = p->sentence_failed ? NULL : parser_parse_apply_postfix(p, expr);
+        if (applied) {
+            expr = applied;
+            continue;
+        }
         const Phrase *list_op = parser_match_phrase(p, list_postfix, COUNT(list_postfix), &len);
         if (list_op) {
             expr = new_list_op(p, (ListOp)list_op->value, parser_consume(p, len), expr);

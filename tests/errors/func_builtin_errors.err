@@ -1,0 +1,31 @@
+Line 7: This has to be a function taking a number, but it's a number.
+    say 5 applied to every number in scores.
+        ^
+It's given each item, and what it gives back goes in the new list.
+
+Line 8: This has to be a function taking a number and giving back a yes/no value, but it's a function taking a number and giving back a number.
+    say the numbers in scores that pass double.
+                                        ^^^^^^
+It's given each item, and the items it gives back yes for are kept.
+
+Line 9: This has to be a function taking a number and a number and giving back a number, but it's a function taking a number and giving back a number.
+    say scores combined using double.
+                              ^^^^^^
+It's given what's combined so far and the next item, and gives back what they combine into.
+
+Line 10: To sort by it, the function has to give back numbers or text, but this is a yes/no value.
+    say names sorted by (a function taking n that gives back n is "a").
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 11: "scores" is a list of numbers, so the function applied to its items has to give back a number, but this gives back text.
+    apply (a function taking n that gives back n as text) to every number in scores.
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To make a new list of what the function gives back, write it like "double applied to every number in scores" instead.
+
+Line 12: The function has to give back a value, but this is nothing.
+    say print out applied to every number in scores.
+        ^^^^^^^^^
+
+Line 13: I can only choose items from a list, but this is a number.
+    say the numbers in 5 where it is 1.
+                       ^

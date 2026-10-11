@@ -1,0 +1,6 @@
+Line 4: There's nothing to combine: the list is empty.
+        give back numbers combined using sum.
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Say what to start from, like ", starting from 0".
+while working out "total"
+called from line 6: say total of (an empty list of numbers).

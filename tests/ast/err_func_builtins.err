@@ -1,0 +1,39 @@
+Line 1: I expected "to every" here, but found "to scores".
+    apply double to scores.
+                 ^^^^^^^^^
+Write it like "apply double to every number in scores".
+
+Line 2: Something is missing after "number scores".
+    apply double to every number scores.
+                          ^^^^^^^^^^^^^
+Write it like "apply double to every number in scores".
+
+Line 3: I expected "the items in" here, but found "scores".
+    keep only scores where it is 1.
+              ^^^^^^
+Write it like "keep only the numbers in scores where it is above 50".
+
+Line 4: Something is missing after "scores".
+    keep only the numbers in scores.
+                             ^^^^^^
+Write it like "keep only the numbers in scores where it is above 50".
+
+Line 5: I expected "where", "that pass" or "combined using" here, but found "twice".
+    say the numbers in (scores) twice where it is 1.
+                                ^^^^^
+Put the list in parentheses if it's more than one word, like "the numbers in (item 1 of tables) where it is above 50".
+
+Line 6: Something is missing after ", starting from".
+    say scores combined using sum, starting from.
+                                 ^^^^^^^^^^^^^^^
+Write it like "scores combined using sum, starting from 0".
+
+Line 7: Something is missing after "applied to every".
+    say double applied to every.
+               ^^^^^^^^^^^^^^^^
+Add a name there, like "total".
+
+Line 8: Something is missing after "by".
+    sort names by.
+               ^^
+Add a value there, like a number, some text in quotes, or a name.

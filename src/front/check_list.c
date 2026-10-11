@@ -167,7 +167,7 @@ TypeVar checker_check_list_expr(Checker *c, const Expr *expr) {
     case EXPR_ONLY: {
         const Expr *list = expr->as.only.list;
         TypeVar var = checker_check_expr(c, list);
-        TypeVar item = checker_require_list(c, var, list, "\"only\" needs a list to choose from");
+        TypeVar item = checker_require_list(c, var, list, "I can only choose items from a list");
         check_for_each_item(c, NULL, item, expr->as.only.condition);
         return var;
     }
@@ -234,6 +234,10 @@ void checker_check_list_stmt(Checker *c, const Stmt *stmt) {
         checker_check_remove_key(c, stmt);
         return;
     }
+    if (stmt->as.list.op == LIST_APPLY || stmt->as.list.op == LIST_KEEP || stmt->as.list.op == LIST_SORT_BY) {
+        checker_check_replace(c, stmt);
+        return;
+    }
     const Expr *list = stmt->as.list.list;
     if (checker_reject_fixed(c, list)) return;
     const Expr *value = stmt->as.list.value;
@@ -252,7 +256,10 @@ void checker_check_list_stmt(Checker *c, const Stmt *stmt) {
         message = stmt->as.list.by_length ? "I can only sort a list of text or lists by their length"
                                           : "I can only sort a list of numbers or text";
         break;
-    case LIST_REMOVE_KEY: break;  // checked above
+    case LIST_REMOVE_KEY:
+    case LIST_APPLY:
+    case LIST_KEEP:
+    case LIST_SORT_BY: break;  // checked above
     }
     TypeVar item = checker_require_list(c, list_var, list, message);
     if (types_of(c, item) == TYPE_ERROR) return;

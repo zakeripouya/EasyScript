@@ -240,6 +240,10 @@ bool checker_reject_set_inside(Checker *c, const Expr *expr, const char *path);
 void checker_report_undecided_lambdas(Checker *c);
 void checker_write_lambdas(Checker *c);  // the kinds of their inputs, results and captures, into the program
 
+// check_apply.c: built-ins that take a function
+TypeVar checker_check_apply(Checker *c, const Expr *expr);  // EXPR_APPLY
+void checker_check_replace(Checker *c, const Stmt *stmt);   // apply F to every X in L, keep only ..., sort L by F
+
 // check_list.c
 // The kind of a list's items; if `var` isn't a list, reports "<message>, but this is <kind>."
 TypeVar checker_require_list(Checker *c, TypeVar var, const Expr *at, const char *message);

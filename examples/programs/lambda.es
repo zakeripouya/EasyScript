@@ -35,9 +35,9 @@ to evaluate with t and scope, giving back a result:
         when it's an application:
             let callee be evaluate with (its callee) and scope.
             let argument be evaluate with (its argument) and scope.
-            give back apply with callee and argument.
+            give back evaluate application with callee and argument.
 
-to apply with callee and argument, giving back a result:
+to evaluate application with callee and argument, giving back a result:
     check which kind callee is:
         when it's a closure:
             let inner be a copy of its scope.

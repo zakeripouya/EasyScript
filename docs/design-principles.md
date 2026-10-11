@@ -14,6 +14,7 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 - **A statement starts with a verb and does something:** `say X`, `set X to Y`, `sort L`, `remove K from M`. Statements change things in place or have effects.
 - **A value is a noun phrase or a value with a describing word after it:** `the length of T`, `the keys of M`, `L reversed`, `T in uppercase`. Values never change anything; they make something new.
 - **A statement that changes something in place has a value form that gives a changed copy, where both are useful:** `sort L` and `L sorted`; `remove item N from L` and `L without item N` (also `the first item`/`the last item`); `remove K from M` and `M without K`; `add X to the end of L` and `L followed by M`. The value form uses the past participle (`sorted`, `reversed`, `added together`) or a describing phrase (`without ...`, `with X replaced by Y`).
+- **Built-ins that take a function follow the same pairs:** `apply F to every X in L` and `F applied to every X in L`; `keep only the Xs in L where ...` and `the Xs in L where ...`; `sort L by F` and `L sorted by F`. Combining (`L combined using F`) only has a value form, because it gives back one value rather than changing the list.
 - **Text never changes,** so text tools are only values; `set T to T followed by X` is how text grows.
 - **Expressions can't stand alone as sentences,** so a sentence that starts with a value is always an error, never silently dropped.
 - **A block belongs to the sentence whose line ends with its colon,** and ends that sentence. A value can only end with a block (`let shout be a function taking word:`) when it's the last thing in the sentence.
@@ -86,6 +87,7 @@ Each exception exists because following the rule would cost more than it gives. 
 - **Maps have `M without K` but no `M with K as X`** yet: setting a value as a value form waits until its wording is settled. Copy the map and `set the value for K in ...` the copy.
 - **A word ending in `'s` is always a possessive,** so a name can't end in `'s`, and `it's` means "its" (the field of `it`), not "it is", except right after `when` in `check which kind`, where `when it's a circle:` reads as English does ("when it is a circle"); `when it is a circle:` works too. `its radius` (without the apostrophe) is also the field of `it`, but only before a field's name, so `its` stays an ordinary name elsewhere.
 
+- **The words naming the items in `every number in scores` and `the numbers in scores where ...` aren't names.** They're there so the sentence reads as English; inside, the item is `it`. Making them names would mean `the scores in scores` couldn't be written, and a condition like `where it is above 50` already says which item it means.
 - **`call F` is a value as well as a sentence** (`let n be call next`), although values don't start with a verb. A name alone is the function itself (`let f be next` keeps it), so a function with no inputs needs a word that calls it, and `call` is the one sentences already use.
 
 ## Open questions

@@ -212,6 +212,7 @@ static Expr *parse_word(Parser *p) {
         }
         return parser_error_expr(p);
     }
+    if (parser_at_selection(p)) return parser_parse_selection(p);  // "the numbers in scores where ..."
     const KnownName *known = parser_match_name(p, 0, false);
     if (known && known->words > 1) return parse_name_or_call(p);  // "late fee", before any other meaning
     if (parser_at_function_value(p)) return parser_parse_function_value(p);

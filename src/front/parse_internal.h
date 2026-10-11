@@ -43,6 +43,7 @@ typedef struct {
     bool no_call;           // parsing what "call" calls: "call handler with 3" doesn't call handler yet
     size_t lambdas;         // functions made inside values so far (their C names: 0l1, 0l2, ...)
     size_t block_end;       // 1 + the token after a block that ended a value ("a function taking x:"), or 0
+    size_t hidden_lists;    // lists sentences like "apply F to every X in L" hold in hidden names so far
 } Parser;
 
 // A word or symbol sequence with a meaning, e.g. "is greater than".
@@ -205,6 +206,17 @@ bool parser_parse_called(Parser *p, Expr *call);
 // "call" starts a value here ("let total be call adder with 3").
 bool parser_at_call_value(const Parser *p);
 Expr *parser_parse_call_value(Parser *p);
+
+// parse_apply.c: built-ins that take a function
+// "the numbers in scores where ..." / "... that pass F" / "... combined using F" starts here.
+bool parser_at_selection(const Parser *p);
+Expr *parser_parse_selection(Parser *p);
+// After a value: "applied to every X in L", "combined using F", "sorted by F"; NULL if none is next.
+Expr *parser_parse_apply_postfix(Parser *p, Expr *expr);
+Stmt *parser_parse_apply(Parser *p, const Token *verb);  // apply F to every X in L
+bool parser_at_keep_only(const Parser *p);                // "keep" + "only" (not a constant called "only")
+Stmt *parser_parse_keep_only(Parser *p, const Token *verb);
+Stmt *parser_finish_sort_by(Parser *p, Stmt *stmt);     // sort L by F, after "by"
 
 // parse_names.c
 // Fills p->records and p->fields (every "X is a kind of thing" and every

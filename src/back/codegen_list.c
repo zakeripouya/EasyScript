@@ -187,7 +187,10 @@ static void collect(Codegen *g, const Expr *expr, Names *bound, Codegen *helper)
             collect(g, expr->as.new_record.values.items[i].value, bound, helper);
         }
         return;
-    case EXPR_CALL: collect_all(g, expr->as.call.args.items, expr->as.call.args.len, bound, helper); return;
+    case EXPR_CALL:
+        if (expr->as.call.callee) collect(g, expr->as.call.callee, bound, helper);
+        collect_all(g, expr->as.call.args.items, expr->as.call.args.len, bound, helper);
+        return;
     case EXPR_LENGTH:
     case EXPR_FILE_CONTENTS: collect(g, expr->as.operand, bound, helper); return;
     case EXPR_UNARY: collect(g, expr->as.unary.operand, bound, helper); return;
@@ -222,6 +225,11 @@ static void collect(Codegen *g, const Expr *expr, Names *bound, Codegen *helper)
         collect_all(g, parts, 2, bound, helper);
         return;
     }
+    case EXPR_APPLY: {
+        Expr *parts[] = {expr->as.apply.function, expr->as.apply.list, expr->as.apply.start};
+        collect_all(g, parts, 3, bound, helper);
+        return;
+    }
     case EXPR_SLICE: {
         Expr *parts[] = {expr->as.slice.from, expr->as.slice.to, expr->as.slice.list};
         collect_all(g, parts, 3, bound, helper);
@@ -240,7 +248,8 @@ static void collect(Codegen *g, const Expr *expr, Names *bound, Codegen *helper)
 // the list being gone through).
 static bool calls_function(const Codegen *g, const Expr *expr) {
     switch (expr->kind) {
-    case EXPR_CALL: return true;
+    case EXPR_CALL:
+    case EXPR_APPLY: return true;
     case EXPR_NAME: return cg_find_function(g, expr->as.name) != NULL;
     case EXPR_LENGTH:
     case EXPR_FILE_CONTENTS: return calls_function(g, expr->as.operand);
@@ -457,6 +466,9 @@ const char *cg_list_stmt(Codegen *g, const Stmt *stmt) {
         break;
     }
     case LIST_REMOVE_KEY: break;  // above
+    case LIST_APPLY:
+    case LIST_KEEP:
+    case LIST_SORT_BY: return cg_replace_stmt(g, stmt);
     case LIST_SORT: {
         static const char *const how[] = {"ES_SORT_UP", "ES_SORT_DOWN", "ES_SORT_LENGTH_UP", "ES_SORT_LENGTH_DOWN"};
         sb_appendf(&out, "es_sort(%s, %s)", cg_operand(g, stmt->as.list.list, false),

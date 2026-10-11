@@ -112,6 +112,12 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
         sb_appendf(scratch, "call %s", expr->as.call.name);
         break;
     case EXPR_FUNCTION_REF: sb_appendf(scratch, "function %s", expr->as.ref.name); break;
+    case EXPR_APPLY: {
+        static const char *const names[] = {"applied to every", "that pass", "combined using", "sorted by"};
+        sb_append(scratch, names[expr->as.apply.kind]);
+        if (expr->as.apply.descending) sb_append(scratch, ", biggest first");
+        break;
+    }
     case EXPR_LAMBDA:
         sb_append(scratch, "function ");
         append_inputs(scratch, expr->as.lambda, records);
@@ -184,6 +190,10 @@ static void dump_expr(const Expr *expr, size_t depth, Dump *d) {
     sb_init(&label, d->out->arena);
     dump_line(&expr->pos, depth, d, expr_label(expr, &label, d->records));
     switch (expr->kind) {
+    case EXPR_APPLY:  // the function, then the list (and where to start)
+        dump_children(expr->as.apply.function, expr->as.apply.list, depth, d);
+        dump_children(expr->as.apply.start, NULL, depth, d);
+        break;
     case EXPR_LAMBDA:
         dump_label(depth + 1, d, "do");
         for (size_t i = 0; i < expr->as.lambda->as.function.body.len; i++) {
@@ -276,6 +286,9 @@ static const char *list_label(const Stmt *stmt, StrBuf *scratch) {
         if (stmt->as.list.descending) sb_append(scratch, stmt->as.list.by_length ? ", longest first" : ", biggest first");
         break;
     case LIST_REMOVE_KEY: return "remove from map";
+    case LIST_APPLY: return "apply to every item of";
+    case LIST_KEEP: return "keep only";
+    case LIST_SORT_BY: return "sort by";
     }
     return scratch->data;
 }
@@ -442,6 +455,11 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
     case STMT_CALL: dump_expr(stmt->as.call, depth + 1, d); break;
     case STMT_CONSTANT: dump_expr(stmt->as.constant.value, depth + 1, d); break;
     case STMT_LIST:
+        if (stmt->as.list.op == LIST_APPLY || stmt->as.list.op == LIST_KEEP || stmt->as.list.op == LIST_SORT_BY) {
+            dump_section("list", stmt->as.list.list, depth + 1, d);  // then its new items, read from it
+            dump_section("new items", stmt->as.list.value, depth + 1, d);
+            break;
+        }
         // In the order they're written: "set item P of L to V" ends with its
         // value, the others start with it.
         if (stmt->as.list.op != LIST_SET_ITEM) {

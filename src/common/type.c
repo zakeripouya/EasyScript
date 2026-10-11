@@ -171,7 +171,7 @@ static const char *func_name(Arena *arena, const Records *records, Type type) {
         sb_appendf(&sb, "%s%s%s%s", i == 0 ? " taking " : " and ", parenthesized ? "(" : "", name,
                    parenthesized ? ")" : "");
     }
-    if (kind->result != TYPE_NOTHING) {
+    if (kind->result != TYPE_NOTHING && kind->result != TYPE_UNKNOWN) {  // (undecided: said nothing about)
         sb_appendf(&sb, "%sgiving back %s", kind->count > 0 ? " and " : " ",
                    ast_type_name(arena, records, kind->result));
     }

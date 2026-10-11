@@ -14,23 +14,27 @@ EasyScript compiles to C and then to native code, so it's meant to be fast. This
 | `text` | Builds a text of 50,000 characters by joining `"word "` 10,000 times |
 | `build` | Builds a text of 5 million characters by adding `"word "` to it a million times (`set text to text followed by "word "`). C grows a buffer by doubling, Go uses `strings.Builder`, Python `text += "word "` inside a function (at the top level CPython copies every time: over two minutes) |
 | `words` | Counts words with a map: two million words picked from a vocabulary of 20,000 (`"w0"` to `"w19999"`, the same picks in every language), each counted with `set the value for word in counts to (the value for word in counts, or 0) plus 1`. Go uses a `map[string]float64`, Python a `dict` with `counts.get(word, 0) + 1` |
+| `pipeline` | Functions given to built-ins: a million pseudo-random numbers, ten times over, each doubled (`double applied to every number in numbers`), the ones divisible by three kept (`the numbers in doubled that pass wanted`), those added up (`kept combined using sum, starting from 0`), then each made one bigger (`apply (a function taking n that gives back n plus 1) to every number in numbers`). C calls through function pointers (kept `volatile` so they're really called), Go and Python pass closures to `map`/`filter`/`reduce`-style functions |
+| `pipeline_loop` | The same work written as loops in EasyScript (`for each`, `if`, `add`, `set item i of`), to compare the built-ins with a loop you write yourself. EasyScript only |
 | `sort` | Makes a list of a million pseudo-random numbers (the same in every language) and sorts it, smallest first. C uses the standard library's `qsort`, Go `sort.Float64s`, Python `list.sort()`. Its file `items` (1000000) makes `make bench` add a "bytes/item" column: the peak memory of the whole process divided by the number of items |
 
 The C versions keep their totals `volatile` so the compiler can't remove the loops. The timer's resolution is 10 ms, so times under about 0.05 s are rough.
 
 ## Latest results
 
-Machine: Apple M4, 24 GB, macOS 15.3.1. Apple clang 17.0.0, Go 1.27.1, Python 3.14.7. EasyScript 0.1.0 plus reference counting, static types, lists, runtime stack traces, leaner lists, text tools, records and maps, 2026-10-10.
+Machine: Apple M4, 24 GB, macOS 15.3.1. Apple clang 17.0.0, Go 1.27.1, Python 3.14.7. EasyScript 0.1.0 plus reference counting, static types, lists, runtime stack traces, leaner lists, text tools, records, maps, kinds with variants and functions as values, 2026-10-11.
 
 | Program | EasyScript | C | Go | Python |
 |---|---|---|---|---|
-| fib | 0.24 s, 1.2 MB | 0.07 s, 1.2 MB | 0.08 s, 3.8 MB | 2.85 s, 11.6 MB |
-| count | 0.05 s, 1.3 MB | 0.02 s, 1.2 MB | 0.02 s, 3.8 MB | 4.07 s, 11.6 MB |
-| nested | 0.11 s, 1.2 MB | 0.03 s, 1.2 MB | 0.03 s, 3.9 MB | 5.16 s, 11.3 MB |
-| text | 0.00 s, 1.3 MB | (none) | 0.01 s, 10.8 MB | 0.01 s, 11.5 MB |
-| sort | 0.06 s, 8.9 MB (9.4 bytes/item) | 0.08 s, 8.9 MB (9.3 bytes/item) | 0.08 s, 35.1 MB (36.8 bytes/item) | 0.31 s, 62.8 MB (65.9 bytes/item) |
-| build | 0.00 s, 6.0 MB | 0.00 s, 6.0 MB | 0.00 s, 18.0 MB | 0.04 s, 16.3 MB |
-| words | 0.10 s, 3.6 MB | (none) | 0.05 s, 8.1 MB | 0.39 s, 13.2 MB |
+| fib | 0.24 s, 1.3 MB | 0.07 s, 1.2 MB | 0.08 s, 3.9 MB | 2.78 s, 11.5 MB |
+| count | 0.05 s, 1.3 MB | 0.03 s, 1.2 MB | 0.02 s, 3.9 MB | 4.04 s, 11.6 MB |
+| nested | 0.11 s, 1.3 MB | 0.03 s, 1.2 MB | 0.03 s, 3.9 MB | 4.99 s, 11.7 MB |
+| text | 0.00 s, 1.3 MB | (none) | 0.01 s, 11.1 MB | 0.01 s, 11.5 MB |
+| sort | 0.06 s, 9.0 MB (9.4 bytes/item) | 0.09 s, 8.9 MB (9.3 bytes/item) | 0.08 s, 22.6 MB (23.7 bytes/item) | 0.31 s, 65.8 MB (69.0 bytes/item) |
+| build | 0.00 s, 6.0 MB | 0.00 s, 6.0 MB | 0.00 s, 17.9 MB | 0.05 s, 16.4 MB |
+| words | 0.09 s, 3.4 MB | (none) | 0.05 s, 7.9 MB | 0.37 s, 13.3 MB |
+| pipeline | 0.13 s, 59.4 MB | 0.05 s, 19.1 MB | 0.04 s, 73.0 MB | 1.24 s, 180.0 MB |
+| pipeline_loop | 0.09 s, 16.5 MB | (none) | (none) | (none) |
 
 ## Reading the results
 
@@ -43,20 +47,22 @@ Machine: Apple M4, 24 GB, macOS 15.3.1. Apple clang 17.0.0, Go 1.27.1, Python 3.
 - **Building text grows it in place.** `set text to text followed by "word "` used to make a new text each time, copying everything so far, so building a text of n pieces took time in proportion to n squared: the `build` benchmark (a million pieces, 5 MB of text) took 129.7 s and 147 MB. Now, when nothing else holds the text, it grows where it is, doubling its room when it's full, as C's buffer does: about 5 ms (C: 2.5 ms, both including starting the process; timed with the fastest of 20 runs, since `make bench` only sees 10 ms steps) and 6.0 MB, the same peak as C. Text also keeps its count of characters once it's been worked out, so `length of` and the text tools don't count again.
 - **Counting words with a map is 4 times faster than Python's `dict`, in under half Go's memory.** Each round looks the word up twice (`the value for word in counts, or 0`, then `set the value for word in counts to ...`), hashing it each time. The map keeps its entries in an array in the order they were added, with a separate index of 4-byte places, so 20,000 entries take about 1 MB. Go is twice as fast.
 - **Telling variants apart costs no more than reading a record's field.** Going through a million shapes (circles and squares) 20 times, adding up each one's radius or side with `check which kind s is:` and `its radius`, took 0.13 s (fastest of 10 runs), exactly what the same loop over records took with `if s's round:` and `s's size`; the shapes took 98 MB at the peak, the records 106 MB. A value of a kind is laid out like a record, and `when it's a circle` compares its type pointer, so no separate benchmark was added.
+- **Built-ins that take a function cost about 1.4 times a loop you write yourself, and run 9 times faster than Python's `map`, `filter` and `reduce`.** `pipeline` (0.13 s) does the same work as `pipeline_loop` (0.09 s) with four built-ins in each round. Each use becomes a C function that goes through the list; a function defined with `to` is called directly (the C compiler can inline it), and a function value through its closure's code pointer. What's left is the call itself (each pushes a frame for the call stack), and the new list each value form makes: the loop never makes one. A closure that uses names from around it could change the list while it's being gone through, so then the built-in goes through the list as it was; one that uses no names (`a function taking n that gives back n plus 1`) can't, and doesn't pay for that copy (keeping it took the peak from 85 MB to 59 MB). Peak memory on macOS varies a lot from run to run here (36 to 100 MB for the same program), because freed blocks of a few megabytes aren't always given back at once; C and the loop keep fewer lists alive at once.
 - **Memory stays flat.** Text is freed as soon as nothing uses it ([how](memory.md)), so building a 50,000-character text by adding to it 10,000 times takes 1.3 MB at its peak, less than Go or Python (it was 280 MB before reference counting).
 
 ## History
 
 One row per milestone, with EasyScript's numbers on that milestone's machine. **Never edit past rows' results; only add new rows**, so the history shows real progress (or regressions). A benchmark added later shows "(none)" in the rows from before it existed.
 
-| Date | Version | Machine | fib | count | nested | text | sort | build | words |
-|---|---|---|---|---|---|---|---|---|---|
-| 2026-10-10 | 0.1.0-dev (after `580a056`) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.52 s, 1.3 MB | 0.07 s, 1.2 MB | 0.87 s, 1.3 MB | 0.04 s, 280.2 MB | (none) | (none) | (none) |
-| 2026-10-10 | 0.1.0 (Phase 1 complete) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.52 s, 1.2 MB | 0.06 s, 1.2 MB | 0.87 s, 1.3 MB | 0.03 s, 280.2 MB | (none) | (none) | (none) |
-| 2026-10-10 | 0.1.0 + reference counting (Phase 2, step 13) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.2 MB | 0.07 s, 1.2 MB | 0.86 s, 1.2 MB | 0.00 s, 1.8 MB | (none) | (none) | (none) |
-| 2026-10-10 | 0.1.0 + static types (Phase 2, step 14) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.23 s, 1.2 MB | 0.05 s, 1.2 MB | 0.10 s, 1.2 MB | 0.00 s, 1.6 MB | (none) | (none) | (none) |
-| 2026-10-10 | 0.1.0 + lists (Phase 2, step 15) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.23 s, 1.2 MB | 0.05 s, 1.2 MB | 0.11 s, 1.2 MB | 0.00 s, 1.6 MB | 0.06 s, 16.7 MB | (none) | (none) |
-| 2026-10-10 | 0.1.0 + stack traces in runtime errors | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.3 MB | 0.05 s, 1.2 MB | 0.11 s, 1.2 MB | 0.00 s, 1.6 MB | 0.06 s, 16.5 MB | (none) | (none) |
-| 2026-10-10 | 0.1.0 + leaner lists (pdqsort, reuse, exact sizes) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.2 MB | 0.05 s, 1.2 MB | 0.11 s, 1.2 MB | 0.00 s, 1.6 MB | 0.06 s, 9.0 MB (9.4 bytes/item; was 17.3) | (none) | (none) |
-| 2026-10-10 | 0.1.0 + text tools (Phase 2, step 16) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.2 MB | 0.05 s, 1.2 MB | 0.11 s, 1.2 MB | 0.00 s, 1.3 MB | 0.06 s, 9.0 MB (9.5 bytes/item) | 0.00 s, 6.0 MB (was 129.7 s, 147 MB) | (none) |
-| 2026-10-10 | 0.1.0 + records and maps (Phase 2, steps 17 and 18) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.2 MB | 0.05 s, 1.3 MB | 0.11 s, 1.2 MB | 0.00 s, 1.3 MB | 0.06 s, 8.9 MB (9.4 bytes/item) | 0.00 s, 6.0 MB | 0.10 s, 3.6 MB |
+| Date | Version | Machine | fib | count | nested | text | sort | build | words | pipeline | pipeline_loop |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-10 | 0.1.0-dev (after `580a056`) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.52 s, 1.3 MB | 0.07 s, 1.2 MB | 0.87 s, 1.3 MB | 0.04 s, 280.2 MB | (none) | (none) | (none) | (none) | (none) |
+| 2026-10-10 | 0.1.0 (Phase 1 complete) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.52 s, 1.2 MB | 0.06 s, 1.2 MB | 0.87 s, 1.3 MB | 0.03 s, 280.2 MB | (none) | (none) | (none) | (none) | (none) |
+| 2026-10-10 | 0.1.0 + reference counting (Phase 2, step 13) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.2 MB | 0.07 s, 1.2 MB | 0.86 s, 1.2 MB | 0.00 s, 1.8 MB | (none) | (none) | (none) | (none) | (none) |
+| 2026-10-10 | 0.1.0 + static types (Phase 2, step 14) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.23 s, 1.2 MB | 0.05 s, 1.2 MB | 0.10 s, 1.2 MB | 0.00 s, 1.6 MB | (none) | (none) | (none) | (none) | (none) |
+| 2026-10-10 | 0.1.0 + lists (Phase 2, step 15) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.23 s, 1.2 MB | 0.05 s, 1.2 MB | 0.11 s, 1.2 MB | 0.00 s, 1.6 MB | 0.06 s, 16.7 MB | (none) | (none) | (none) | (none) |
+| 2026-10-10 | 0.1.0 + stack traces in runtime errors | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.3 MB | 0.05 s, 1.2 MB | 0.11 s, 1.2 MB | 0.00 s, 1.6 MB | 0.06 s, 16.5 MB | (none) | (none) | (none) | (none) |
+| 2026-10-10 | 0.1.0 + leaner lists (pdqsort, reuse, exact sizes) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.2 MB | 0.05 s, 1.2 MB | 0.11 s, 1.2 MB | 0.00 s, 1.6 MB | 0.06 s, 9.0 MB (9.4 bytes/item; was 17.3) | (none) | (none) | (none) | (none) |
+| 2026-10-10 | 0.1.0 + text tools (Phase 2, step 16) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.2 MB | 0.05 s, 1.2 MB | 0.11 s, 1.2 MB | 0.00 s, 1.3 MB | 0.06 s, 9.0 MB (9.5 bytes/item) | 0.00 s, 6.0 MB (was 129.7 s, 147 MB) | (none) | (none) | (none) |
+| 2026-10-10 | 0.1.0 + records and maps (Phase 2, steps 17 and 18) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.2 MB | 0.05 s, 1.3 MB | 0.11 s, 1.2 MB | 0.00 s, 1.3 MB | 0.06 s, 8.9 MB (9.4 bytes/item) | 0.00 s, 6.0 MB | 0.10 s, 3.6 MB | (none) | (none) |
+| 2026-10-11 | 0.1.0 + kinds with variants and functions as values (Phase 2, steps 19 and 20) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.3 MB | 0.05 s, 1.3 MB | 0.11 s, 1.3 MB | 0.00 s, 1.3 MB | 0.06 s, 9.0 MB (9.4 bytes/item) | 0.00 s, 6.0 MB | 0.09 s, 3.4 MB | 0.13 s, 59.4 MB | 0.09 s, 16.5 MB |

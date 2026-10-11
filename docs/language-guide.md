@@ -1538,6 +1538,49 @@ Line 19: "maybe" was checked, but the function made on line 16 can set "maybe" w
 Keep it in a name of its own first, like "let current maybe be maybe", and check that instead.
 ```
 
+### Built-ins that take a function
+
+Four built-ins go through a list with a function. Each has a value form, which makes something new, and (except combining) a sentence that changes the list itself:
+
+```
+to double with x:
+    give back x times 2.
+to sum of so far and x:
+    give back so far plus x.
+to even with n:
+    give back n mod 2 is 0.
+
+let scores be a list of 40, 75, 12, 90 and 51.
+say double applied to every number in scores.
+say the numbers in scores where it is more than 50.
+say the numbers in scores that pass even.
+say scores combined using sum, starting from 0.
+```
+
+```
+80, 150, 24, 180 and 102
+75, 90 and 51
+40, 12 and 90
+268
+```
+
+- **`F applied to every X in L`** gives a new list of F of each item; **`apply F to every X in L.`** replaces each item of L with it instead (so F has to give back the kind L holds).
+- **`the Xs in L where C`** keeps the items for which C is yes; inside C, `it` is the item. **`the Xs in L that pass F`** keeps the items F gives back yes for. **`keep only the Xs in L where C.`** (or `that pass F`) takes the others out of L.
+- **`L combined using F, starting from S`** gives F the start and the first item, then what that gave back and the second item, and so on: `scores combined using sum, starting from 0` adds them up. Without `starting from`, it starts with the first item, and an empty list stops the program with "There's nothing to combine: the list is empty." `the numbers in scores combined using sum` reads well too.
+- **`L sorted by F`** orders the items by what F gives back for each (numbers or text), smallest first or `biggest first`; items with equal keys keep their order. **`sort L by F, biggest first.`** sorts L itself.
+
+The words naming the items (`number`, `numbers`) are there to read well; any word works. A function's name means the function itself here, not a call of it, and any function value works, including one made right there:
+
+```
+let bonus be 5.
+say (a function taking s that gives back s plus bonus) applied to every score in scores.
+sort names by (a function taking name that gives back the number of characters in name), biggest first.
+```
+
+The condition after `where` (and a function made after `using`) runs to the end of the value, so put the whole thing in parentheses to use it inside a longer one: `(the numbers in scores where it is above 50) combined using sum, starting from 0`.
+
+These are as fast as a loop you write yourself: a `to` function is called directly, with no closure in between (see [performance](performance.md)).
+
 ### Equality and printing
 
 Two function values are equal (`is`) only when they're the same one, like records. A function prints as its name: `the function double`, or `the function made on line 9` for one made inside a value.
@@ -1550,4 +1593,4 @@ Functions are freed when nothing holds them, like records. A function that's kep
 
 Nothing new: every kind mistake with function values is caught before the program runs. A runtime error inside a function value shows it in the chain of calls, like any function: `while working out "the function made on line 3" (n was 0)`.
 
-Try it: `./easyscript run examples/programs/counter.es` and `./easyscript run examples/programs/event_handlers.es`
+Try it: `./easyscript run examples/programs/counter.es`, `./easyscript run examples/programs/event_handlers.es` and `./easyscript run examples/programs/pipeline.es`

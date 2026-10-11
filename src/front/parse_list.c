@@ -480,6 +480,9 @@ Stmt *parser_parse_sort(Parser *p, const Token *verb) {
     if (parser_match_words(p, "by their length")) {
         parser_consume(p, 3);
         stmt->as.list.by_length = true;
+    } else if (parser_at_word(p, 0, "by")) {  // "sort names by length of": a function
+        parser_advance(p);
+        return parser_finish_sort_by(p, stmt);
     }
     size_t comma = parser_at(p, 0, TOK_COMMA) ? 1 : 0;
     const Token *word = parser_peek(p, comma);

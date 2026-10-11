@@ -65,6 +65,95 @@ ES_CELL_KIND(l, EsList *, "l")
 ES_CELL_KIND(r, EsRecord *, "r")
 ES_CELL_KIND(m, EsMap *, "m")
 
+/* --- Built-ins that take a function ------------------------------------------------ *
+ *
+ * The compiler writes a C function for each use ("double applied to every
+ * number in scores"), which goes through the list calling the function
+ * directly (a "to" function) or through its closure. These are what they
+ * share. */
+
+/* "apply F to every X in L", "keep only ...", "sort L by F": L's items
+ * become `items`' (worked out from L), so every name for L sees the change.
+ * Takes both. */
+static void es_list_replace(EsList *l, EsList *items) {
+    if (l == items) {
+        es_list_release(items);
+        es_list_release(l);
+        return;
+    }
+    items = es_list_copy(items); /* lists inside belong to one list */
+    if (es_items_counted(l->items)) {
+        for (size_t i = 0; i < l->len; i++) {
+            if (l->at.o[i]) es_object_release(l->at.o[i]);
+        }
+    }
+    /* Copied into the room the list already has (moving the new items' block
+     * over instead made macOS keep both: the peak went from 36 to 100 MB). */
+    l->len = 0;
+    es_list_reserve(l, items->len);
+    memcpy(l->at.any, items->at.any, items->len * es_item_size(l->items));
+    l->len = items->len;
+    if (es_items_counted(l->items)) { /* items keeps its own references until it's released */
+        for (size_t i = 0; i < l->len; i++) {
+            if (l->at.o[i] && l->at.o[i]->refs != ES_IMMORTAL) l->at.o[i]->refs++;
+        }
+    }
+    es_list_release(items);
+    es_list_release(l);
+}
+
+/* An item's place and the key it's sorted by ("names sorted by length of"). */
+typedef struct {
+    double number;
+    EsText *text;
+    size_t at;
+} EsByKey;
+
+#define ES_BY_NUMBER_UP(x, y) ((x).number < (y).number)
+#define ES_BY_NUMBER_DOWN(x, y) ((x).number > (y).number)
+#define ES_BY_TEXT_UP(x, y) es_text_less((x).text, (y).text)
+#define ES_BY_TEXT_DOWN(x, y) es_text_less((y).text, (x).text)
+
+ES_DEFINE_SORT(es_sort_by_number_up, EsByKey, ES_BY_NUMBER_UP)
+ES_DEFINE_SORT(es_sort_by_number_down, EsByKey, ES_BY_NUMBER_DOWN)
+ES_DEFINE_SORT(es_sort_by_text_up, EsByKey, ES_BY_TEXT_UP)
+ES_DEFINE_SORT(es_sort_by_text_down, EsByKey, ES_BY_TEXT_DOWN)
+
+/* Puts l's items in the order of their keys (numbers or text, one per item,
+ * worked out by the function), keeping items with equal keys in the order
+ * they were in. "not a number" keys go last. Takes the keys, only looks at l. */
+static void es_sort_by_keys(EsList *l, EsList *keys, bool down) {
+    size_t n = l->len, size = es_item_size(l->items);
+    if (n > 1) {
+        EsByKey *by = malloc(n * sizeof *by);
+        char *moved = malloc(n * size);
+        if (!by || !moved) es_out_of_memory();
+        size_t m = 0, last = n;
+        for (size_t i = 0; i < n; i++) { /* "not a number" keys last, in order */
+            bool nan = keys->items == ES_ITEMS_NUMBER && isnan(keys->at.n[i]);
+            EsByKey *slot = nan ? &by[--last] : &by[m++];
+            slot->number = keys->items == ES_ITEMS_NUMBER ? keys->at.n[i] : 0;
+            slot->text = keys->items == ES_ITEMS_TEXT ? keys->at.t[i] : NULL;
+            slot->at = i;
+        }
+        for (size_t i = last, j = n - 1; i < j; i++, j--) { /* they were put there backwards */
+            EsByKey swap = by[i];
+            by[i] = by[j];
+            by[j] = swap;
+        }
+        if (keys->items == ES_ITEMS_TEXT) {
+            (down ? es_sort_by_text_down : es_sort_by_text_up)(by, m);
+        } else {
+            (down ? es_sort_by_number_down : es_sort_by_number_up)(by, m);
+        }
+        for (size_t i = 0; i < n; i++) memcpy(moved + i * size, (char *)l->at.any + by[i].at * size, size);
+        memcpy(l->at.any, moved, n * size);
+        free(moved);
+        free(by);
+    }
+    es_list_release(keys);
+}
+
 /* --- The memory check ------------------------------------------------------------- */
 
 static bool es_report_function_cycle(size_t circled, EsRecord *oldest) {

@@ -169,6 +169,9 @@ static bool reads(const Expr *expr, const char *name) {
     case EXPR_NAME: return strcmp(expr->as.name, name) == 0;
     case EXPR_FUNCTION_REF: return false;
     case EXPR_LAMBDA: return true;  // it could use the name (in place building isn't worth working that out)
+    case EXPR_APPLY:
+        return reads(expr->as.apply.function, name) || reads(expr->as.apply.list, name) ||
+               reads(expr->as.apply.start, name);
     case EXPR_CALL:
         if (reads(expr->as.call.callee, name)) return true;
         // fall through

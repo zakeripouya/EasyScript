@@ -50,6 +50,7 @@ typedef enum {
     EXPR_KIND_TEST,      // X is a circle / X is not a circle (a variant of a kind with variants)
     EXPR_FUNCTION_REF,   // the function double (a function defined with "to", not called)
     EXPR_LAMBDA,         // a function taking x that gives back x times 2 / a function taking word: (a block)
+    EXPR_APPLY,          // F applied to every X in L, the Xs in L that pass F, L combined using F, L sorted by F
 } ExprKind;
 
 typedef enum {
@@ -140,6 +141,14 @@ typedef enum {
     TEXT_IS_DIGIT,    // T is a digit
     TEXT_IS_SPACE,    // T is a space
 } TextOp;
+
+// What a built-in that takes a function does with it (EXPR_APPLY). Each makes something new.
+typedef enum {
+    APPLY_MAP,      // F applied to every X in L: a list of F of each item
+    APPLY_FILTER,   // the Xs in L that pass F: the items F gives yes for
+    APPLY_COMBINE,  // L combined using F [, starting from S]: F of what's combined so far and each item
+    APPLY_SORT,     // L sorted by F [biggest first]: the items ordered by F of each
+} ApplyKind;
 
 typedef struct Expr Expr;
 
@@ -274,6 +283,13 @@ struct Expr {
             const struct Stmt *target;  // the definition (set by the checker)
         } ref;  // EXPR_FUNCTION_REF
         struct Stmt *lambda;  // EXPR_LAMBDA: a STMT_FUNCTION (function.lambda set) holding its inputs and body
+        struct {
+            ApplyKind kind;
+            Expr *function;   // a value holding a function (a function's name means the function itself)
+            Expr *list;
+            Expr *start;      // APPLY_COMBINE: ", starting from S" (NULL: the first item)
+            bool descending;  // APPLY_SORT: "biggest first"
+        } apply;
     } as;
 };
 
@@ -358,6 +374,9 @@ typedef enum {
     LIST_SET_ITEM,  // set item N of L to E (or the first or last item)
     LIST_SORT,      // sort L [by their length] [, biggest/smallest/longest/shortest first]
     LIST_REMOVE_KEY,  // remove K from M (M a map; K is `value`, M is `list`)
+    LIST_APPLY,     // apply F to every X in L: `value` is the new list (an EXPR_APPLY reading `hidden`)
+    LIST_KEEP,      // keep only the Xs in L where C / that pass F: `value` is EXPR_ONLY or EXPR_APPLY
+    LIST_SORT_BY,   // sort L by F [, biggest first]: `value` is an EXPR_APPLY
 } ListChange;
 
 // A block is a list of statements, in order. A program is a block.
@@ -478,6 +497,8 @@ struct Stmt {
             Expr *position;   // LIST_INSERT, and ITEM_AT for LIST_REMOVE, LIST_SET_ITEM
             bool by_length;   // LIST_SORT: "by their length"
             bool descending;  // LIST_SORT: "biggest first" / "longest first"
+            Expr *hidden;     // LIST_APPLY, LIST_KEEP, LIST_SORT_BY: an EXPR_NAME ("0listN") holding the list
+                              // while `value` works out its new items, which then replace the list's
         } list;
         struct {
             Name name;

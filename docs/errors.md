@@ -634,6 +634,26 @@ Keep it in a name of its own first, like "let current maybe be maybe", and check
 | Inputs nothing decides | "I can't tell what kind of value "thing" is." with "Say which kind where the function is made, like "a function taking thing (a number)"." ([`func_value_undecided.es`](../tests/errors/func_value_undecided.es)) |
 | A function inside a function with `to` | "Functions can only be defined at the top level, not inside another function." with "To make a function inside another one, write "let inside be a function taking ...:" ..." |
 
+**Built-ins given the wrong kind of function**: [`func_builtin_errors.es`](../tests/errors/func_builtin_errors.es)
+
+```
+Line 8: This has to be a function taking a number and giving back a yes/no value, but it's a function taking a number and giving back a number.
+    say the numbers in scores that pass double.
+                                        ^^^^^^
+It's given each item, and the items it gives back yes for are kept.
+```
+
+| Problem | Message (summary) |
+|---|---|
+| Not a function, or one that takes the wrong inputs | "This has to be a function taking a number, but it's a number." with what the built-in gives it |
+| `apply` with a function that changes the kind | ""scores" is a list of numbers, so the function applied to its items has to give back a number, but this gives back text." with a note suggesting `applied to every` |
+| Sorting by something that isn't a number or text | "To sort by it, the function has to give back numbers or text, but this is a yes/no value." |
+| A function that gives back nothing | "The function has to give back a value, but this is nothing." |
+| Not a list | "I can only choose items from a list, but this is a number." / "I can only go through the items of a list, ..." |
+| Combining an empty list without `starting from` (while the program runs) | "There's nothing to combine: the list is empty." with "Say what to start from, like ", starting from 0"." ([`err_combine_empty.es`](../tests/run/err_combine_empty.es)) |
+
+Mistakes in how they're written are parser errors, like "I expected "to every" here, but found "to scores"." and "I expected "where", "that pass" or "combined using" here, but found "twice"."; the full set is in [`err_func_builtins.err`](../tests/ast/err_func_builtins.err).
+
 Mistakes in how a function value or its kind is written are parser errors, like "I expected "that gives back" or a colon here, but found "gives".", "Nothing is indented under this function." and "A function can't be "or nothing"." The full set is in [`err_func_values.err`](../tests/ast/err_func_values.err).
 
 **A function that keeps itself alive** is reported by the memory check at the end (`ES_DEBUG_MEMORY=1`, exit 70): [`err_closure_cycle.es`](../tests/memory/err_closure_cycle.es)

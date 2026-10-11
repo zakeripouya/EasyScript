@@ -251,6 +251,7 @@ static Stmt *parse_call_form(Parser *p, const Token *verb, const StmtForm *form)
 // "keep doing this until" is a loop; any other "keep" makes a constant.
 static Stmt *parse_keep_form(Parser *p, const Token *verb, const StmtForm *form) {
     (void)form;
+    if (parser_at_keep_only(p)) return parser_parse_keep_only(p, verb);
     return parser_at_word(p, 0, "doing") ? parse_loop(p, verb) : parse_constant(p, verb);
 }
 
@@ -277,6 +278,11 @@ static Stmt *parse_insert_form(Parser *p, const Token *verb, const StmtForm *for
 static Stmt *parse_sort_form(Parser *p, const Token *verb, const StmtForm *form) {
     (void)form;
     return parser_parse_sort(p, verb);
+}
+
+static Stmt *parse_apply_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parser_parse_apply(p, verb);
 }
 
 static const StmtForm forms[] = {
@@ -320,6 +326,7 @@ static const StmtForm forms[] = {
     {"remove", parse_remove_form, true, 0, NULL, "remove item 2 from scores"},
     {"insert", parse_insert_form, true, 0, NULL, "insert 7 at position 1 of scores"},
     {"sort", parse_sort_form, false, 0, NULL, "sort scores"},
+    {"apply", parse_apply_form, false, 0, NULL, "apply double to every number in scores"},
 };
 
 // --- Sentences ---------------------------------------------------------------

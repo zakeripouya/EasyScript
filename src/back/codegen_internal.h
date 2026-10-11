@@ -218,6 +218,10 @@ void cg_emit_function(Codegen *g, const Stmt *fn, StrBuf *out);
 // The wrappers of the functions used as values (es_w_NAME, es_fv_NAME).
 void cg_emit_function_refs(Codegen *g, StrBuf *out);
 
+// codegen_apply.c: built-ins that take a function
+void cg_emit_apply(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_APPLY
+const char *cg_replace_stmt(Codegen *g, const Stmt *stmt);      // apply F to every X in L, keep only, sort L by F
+
 // codegen_text.c
 void cg_emit_text_op(Codegen *g, const Expr *expr, StrBuf *out);       // EXPR_TEXT_OP
 void cg_emit_characters(Codegen *g, const Expr *expr, StrBuf *out);    // EXPR_ITEM/EXPR_SLICE of text
