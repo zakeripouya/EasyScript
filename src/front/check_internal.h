@@ -1,7 +1,7 @@
 #ifndef FRONT_CHECK_INTERNAL_H
 #define FRONT_CHECK_INTERNAL_H
 
-// Shared by the checker's source files (check.c, check_expr.c, check_types.c,
+// Shared by the checker's source files (check.c, check_names.c, check_expr.c, check_types.c,
 // check_const.c, check_list.c, check_text.c, check_record.c, check_map.c).
 // Not for use outside src/front/.
 
@@ -152,7 +152,7 @@ void types_defer_one_of(Checker *c, const Expr *expr, TypeVar var, TypeVar shown
 // was reported since first_error), and writes every kind into the program.
 void types_finish(Checker *c, size_t first_error);
 
-// check.c
+// check_names.c (and check.c)
 const char *checker_type_name(Checker *c, Type type);  // "a number", "a dog or nothing", ...
 const char *checker_kind(Checker *c, TypeVar var);  // "a number", "a list of text", ...
 const Symbol *checker_find_made(const Checker *c, const char *name);
@@ -168,6 +168,8 @@ const Constant *checker_find_constant(const Checker *c, const char *name);
 void checker_report_unknown(Checker *c, const char *name, const char *display, SourcePos pos);
 // A variable, input, or loop number named like a function or constant: reports and returns true.
 bool checker_clashes(Checker *c, const Name *name);
+// Makes a variable (unless the name is taken or clashes, which is reported).
+void checker_make(Checker *c, const Name *name, TypeVar var);
 // "to area with width and height"
 const char *checker_function_header(Checker *c, const Function *f);
 
@@ -205,37 +207,6 @@ TypeVar checker_check_contains(Checker *c, const Expr *expr, TypeVar left, TypeV
 TypeVar checker_check_starts(Checker *c, const Expr *expr, TypeVar left, TypeVar right);  // starts/ends with
 // Settles a DEFER_SEARCH once the kinds are known enough; true when settled.
 bool checker_settle_search(Checker *c, const Deferred *d);
-
-// check_record.c
-void checker_collect_records(Checker *c, const Block *program);  // reports kinds defined twice
-void checker_check_record(Checker *c, Stmt *stmt);               // STMT_RECORD: its fields and starting values
-TypeVar checker_check_field(Checker *c, const Expr *expr);       // EXPR_FIELD
-TypeVar checker_check_new(Checker *c, const Expr *expr);         // EXPR_NEW
-// A value that may be "nothing" (stored, given to a function, given back):
-// "nothing" gets the kind nothing (TYPE_NOTHING), which only fits a record
-// or nothing; anything else is checked as usual.
-TypeVar checker_check_value(Checker *c, const Expr *expr);
-// Whether a value of kind `value` can go where `target` is kept: the same
-// kind, or a record (or nothing) where a record or nothing is kept.
-bool checker_fits(Checker *c, TypeVar target, TypeVar value, size_t line);
-// "X is nothing" / "X is not nothing": checks it and sets *result; false if the comparison isn't one.
-bool checker_check_nothing_test(Checker *c, const Expr *expr, TypeVar *result);
-// A name or field read where it was checked not to be nothing: its record.
-TypeVar checker_narrow(Checker *c, const Expr *expr, TypeVar var);
-// What a condition being `when` (true or false) says isn't nothing, added to c->present.
-void checker_narrow_condition(Checker *c, const Expr *condition, bool when);
-// Forgets that a name or field (and everything under it) was checked: it's being set.
-void checker_kill_path(Checker *c, const Expr *target, const char *name);
-// Forgets every check of something a block sets (before a loop body that sets it).
-void checker_kill_set_in(Checker *c, const Block *block);
-// "rex", "the order's customer"; NULL for any other value.
-const char *checker_path(Checker *c, const Expr *expr);
-// "\"node's next\" could be nothing, so check it first." for a record-or-nothing used as a record.
-void checker_report_maybe(Checker *c, const Expr *at, TypeVar var);
-bool checker_settle_field(Checker *c, const Deferred *d);
-bool checker_settle_present(Checker *c, const Deferred *d);
-// A kind of record that has a field called `name`, for suggestions (NULL if none).
-const RecordKind *checker_field_owner(const Checker *c, const char *name);
 
 // check_record.c
 void checker_collect_records(Checker *c, const Block *program);  // reports kinds defined twice
