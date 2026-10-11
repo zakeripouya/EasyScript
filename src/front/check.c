@@ -109,15 +109,18 @@ static void check_change(Checker *c, const Stmt *stmt) {
 
 // "ask ... and call the answer X" and "read file ... and call it X" make X as
 // text, or store text in it.
-static void make_text(Checker *c, const Name *name) {
-    TypeVar text = types_new(c, TYPE_TEXT, name->pos.line);
+void checker_make_or_store(Checker *c, const Name *name, TypeVar value) {
     const Symbol *existing = checker_find_made(c, name->text);
     if (existing) {
         checker_use(c, existing, true);
-        store(c, existing, text, NULL, name->pos.span);
+        store(c, existing, value, NULL, name->pos.span);
     } else {
-        checker_make(c, name, text);
+        checker_make(c, name, value);
     }
+}
+
+static void make_text(Checker *c, const Name *name) {
+    checker_make_or_store(c, name, types_new(c, TYPE_TEXT, name->pos.line));
 }
 
 static void check_let(Checker *c, const Stmt *stmt) {
@@ -371,6 +374,8 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
     case STMT_SET: check_set(c, stmt); break;
     case STMT_CHANGE: check_change(c, stmt); break;
     case STMT_SAY: checker_check_expr(c, stmt->as.value); break;
+    case STMT_USE: checker_check_use(c, stmt); break;
+    case STMT_LIBRARY: checker_check_library_stmt(c, stmt); break;
     case STMT_ASK:
         checker_check_expr(c, stmt->as.ask.prompt);
         make_text(c, &stmt->as.ask.answer);
@@ -424,6 +429,7 @@ static void collect_names(Checker *c, const Block *program) {
         const Name *name = stmt->kind == STMT_LET    ? &stmt->as.assign.name
                            : stmt->kind == STMT_ASK  ? &stmt->as.ask.answer
                            : stmt->kind == STMT_READ_FILE ? &stmt->as.read_file.name
+                           : stmt->kind == STMT_LIBRARY && stmt->as.library.op == DO_READ_CSV ? &stmt->as.library.name
                                                           : NULL;
         if (name && !checker_find_later(c, name->text)) {
             Symbol symbol = {name->text, name->display, name->pos.line, NULL, false, 0, false, NULL, 0};
@@ -473,14 +479,16 @@ static Type method_kind(const Stmt *def) {
 static bool reject_duplicate(Checker *c, Stmt *stmt) {
     const Name *name = &stmt->as.function.name;
     Type kind = method_kind(stmt);
+    c->file = stmt->pos.file;
     for (size_t i = 0; i < c->functions.len; i++) {
         const Function *existing = &c->functions.items[i];
         if (strcmp(existing->name, name->text) != 0) continue;
         Type other = method_kind(existing->definition);
         if (kind && other && kind != other) continue;
+        if (existing->file != c->file && !(kind && kind == other)) continue;  // each file has its own names
         if (kind && kind == other) {
-            diag_error(c->diag, name->pos.span, "You already defined \"%s\" for %s on line %zu.", existing->display,
-                       ast_type_name(c->arena, c->records, kind), existing->definition->pos.line);
+            diag_error(c->diag, name->pos.span, "You already defined \"%s\" for %s on %s.", existing->display,
+                       ast_type_name(c->arena, c->records, kind), checker_where(c, existing->definition->pos));
             diag_note(c->diag, "Each kind of record can have one method called \"%s\".", existing->display);
         } else {
             diag_error(c->diag, name->pos.span, "You already defined \"%s\" on line %zu.", existing->display,
@@ -510,7 +518,7 @@ static void collect_functions(Checker *c, const Block *program) {
         if (stmt->kind != STMT_FUNCTION) continue;
         const Name *name = &stmt->as.function.name;
         if (reject_duplicate(c, stmt)) continue;
-        Function f = {name->text, name->display, stmt, {0}, 0};
+        Function f = {name->text, name->display, stmt->pos.file, stmt->as.function.private, stmt, {0}, 0};
         function_types(c, &f);
         vec_push(c->arena, &c->functions, f);
     }
@@ -524,6 +532,7 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
     c.diag = diag;
     c.records = &whole->records;
     c.program = whole;
+    c.main_file = whole->files.len ? (unsigned)whole->files.len - 1 : 0;
     size_t first_error = diag_count(diag);
     checker_collect_records(&c, program);
     checker_collect_sums(&c, program);
@@ -536,9 +545,12 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
             const Stmt *stmt = program->items[i];
             int kind_pass = stmt->kind == STMT_CONSTANT ? 0 : stmt->kind == STMT_RECORD || stmt->kind == STMT_SUM || stmt->kind == STMT_INTERFACE ? 1
                             : stmt->kind == STMT_FUNCTION ? 2 : 3;
-            if (kind_pass == (int)pass) check_stmt(&c, stmt);
+            c.file = stmt->pos.file;
+            if (kind_pass == (int)pass && checker_check_module_stmt(&c, stmt)) check_stmt(&c, stmt);
         }
     }
     types_finish(&c, first_error);
+    if (diag_count(diag) == first_error) checker_reject_dates(&c);
     diag_sort(diag, first_error);
+    if (diag_count(diag) == first_error) checker_rename_modules(&c);
 }

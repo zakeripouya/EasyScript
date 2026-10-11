@@ -1,0 +1,4 @@
+Line 1: main.es can't use itself.
+    use main.
+    ^^^^^^^^
+Everything a file defines can already be used in it.

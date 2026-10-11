@@ -1,0 +1,9 @@
+Read 6 sales.
+North: 25.75 from 3 sales
+South: 11.75 from 2 sales
+East: 7 from 1 sales
+Saved report.csv:
+region,total,average
+North,25.75,8.58
+South,11.75,5.88
+East,7,7

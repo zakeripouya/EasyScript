@@ -1,0 +1,94 @@
+Line 1: Something is missing after "square root of".
+    say the square root of
+            ^^^^^^^^^^^^^^
+Write a value after it, like "square root of 9".
+
+Line 2: I expected "and" here, but found "4".
+    say the bigger of 3 4
+                        ^
+Write it like "the bigger of 3 and 4".
+
+Line 3: I expected "to" here, but found "6".
+    say a random number from 1 6
+                               ^
+Write it like "a random number from 1 to 6".
+
+Line 4: I expected "exists" here, but found "is".
+    say file "a.txt" is there
+                     ^^
+Write it like "if file "notes.txt" exists:".
+
+Line 5: I expected "decimal places" here, but found "places".
+    say 2.5 rounded to 2 places
+                         ^^^^^^
+Write it like "price rounded to 2 decimal places".
+
+Line 6: "to the power of" twice could mean two things.
+    say 2 to the power of 3 to the power of 2
+                            ^^^^^^^^^^^^^^^
+Use parentheses to say which: "(2 to the power of 3) to the power of 2" or "2 to the power of (3 to the power of 2)".
+
+Line 7: Say how long to wait: seconds, milliseconds or minutes.
+    wait 2
+         ^
+Write it like "wait 2 seconds".
+
+Line 8: I expected "seconds", "milliseconds" or "minutes" here, but found "hours".
+    wait 2 hours
+           ^^^^^
+Write it like "wait 2 seconds".
+
+Line 9: Something is missing after "wait".
+    wait
+    ^^^^
+Write it like "wait 2 seconds".
+
+Line 10: I expected "called" here, but found the text "x.txt".
+    make a new file "x.txt"
+                    ^^^^^^^
+Write it like "make a new file called "notes.txt"".
+
+Line 11: I expected "to" here, but found the text "b".
+    rename the file "a" "b"
+                        ^^^
+Write it like "rename the file "a.txt" to "b.txt"".
+
+Line 12: I expected "to the folder" here, but found "to "b"".
+    move the file "a" to "b"
+                      ^^^^^^
+Write it like "move the file "a.txt" to the folder "Old"".
+
+Line 13: Only a folder has everything in it.
+    delete the file "a" and everything in it
+                        ^^^^^^^^^^^^^^^^^^^^
+To delete a folder and what's in it, write "delete the folder "Old" and everything in it".
+
+Line 14: I expected "and call it" here, but found "and keep".
+    read csv file "a.csv" and keep it as rows
+                          ^^^^^^^^
+Write it like "read csv file "sales.csv" and call it rows".
+
+Line 15: Something is missing after "same random numbers".
+    use the same random numbers
+            ^^^^^^^^^^^^^^^^^^^
+Write it like "use the same random numbers every time".
+
+Line 16: Something is missing after "shuffle".
+    shuffle
+    ^^^^^^^
+Write it like "shuffle cards".
+
+Line 17: I expected "as csv file" here, but found "as "out.csv"".
+    save rows as "out.csv"
+              ^^^^^^^^^^^^
+Write it like "save rows as csv file "out.csv"".
+
+Line 18: Something is missing after "put".
+    put in file "x"
+    ^^^
+Write it like "put "hello" in file "notes.txt"".
+
+Line 19: I expected "in file" here, but found "into".
+    put "x" into "y"
+            ^^^^
+Write it like "put "hello" in file "notes.txt"".

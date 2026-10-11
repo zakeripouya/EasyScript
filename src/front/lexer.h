@@ -48,6 +48,7 @@ typedef struct {
     // the same line, if any (length 0 if none). Lets the parser explain
     // `let a be 5`. INDENT and DEDENT never carry one.
     Span filler;
+    unsigned file;  // which file it's in (lex_files), with `line` counted from that file's start
 } Token;
 
 typedef struct {
@@ -68,6 +69,12 @@ typedef struct {
 // records where, in Token.filler). No word is treated
 // as a keyword here; the parser decides what words mean.
 TokenList lex(Arena *arena, Diag *diag, const char *source, size_t source_len);
+
+// The same for several files joined into one source (each ending with a
+// newline): file i starts at starts[i]. Lines count from 1 in each file, and
+// each file's blocks close where it ends.
+TokenList lex_files(Arena *arena, Diag *diag, const char *source, size_t source_len, const size_t *starts,
+                    size_t files);
 
 const char *token_kind_name(TokenKind kind);
 

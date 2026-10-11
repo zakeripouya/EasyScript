@@ -1,0 +1,19 @@
+4
+"region" is "North", "amount" is "10" and "note" is "plain"
+two
+lines
+say "hi"
+"North" is 17, "South" is 5 and "East" is 3
+total
+17
+5
+3
+name,says
+"Ann, the first","""hi"""
+Bo," spaced "
+("name" is "Ann, the first" and "says" is ""hi"") and ("name" is "Bo" and "says" is " spaced ")
+done
+yes
+no
+0
+0

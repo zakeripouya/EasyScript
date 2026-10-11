@@ -345,7 +345,7 @@ static Expr *parse_empty_list(Parser *p) {
     Type item;
     if (!parser_parse_items_kind(p, &item)) return parser_error_expr(p);
     list->as.list_type = type_list_of(item);
-    list->pos = ast_pos_join(list->pos, (SourcePos){p->prev_span, 0, 0});
+    list->pos = ast_pos_join(list->pos, (SourcePos){p->prev_span, 0, 0, 0});
     return list;
 }
 
@@ -392,6 +392,14 @@ Expr *parser_parse_list_word(Parser *p) {
 
 Stmt *parser_finish_add_end(Parser *p, Stmt *stmt, Expr *value) {
     parser_consume(p, 2);  // end of
+    if (parser_at_word(p, 0, "file") && parser_starts_operand(parser_peek(p, 1))) {  // add X to the end of file F
+        parser_advance(p);
+        stmt->kind = STMT_APPEND_FILE;
+        memset(&stmt->as, 0, sizeof stmt->as);
+        stmt->as.file_write.text = value;
+        stmt->as.file_write.path = parse_expression(p);
+        return stmt;
+    }
     stmt->kind = STMT_LIST;
     memset(&stmt->as, 0, sizeof stmt->as);
     stmt->as.list.op = LIST_ADD_END;

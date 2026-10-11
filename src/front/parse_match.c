@@ -41,7 +41,7 @@ Expr *parser_parse_kind_test(Parser *p, Expr *left) {
     expr->as.kind_test.variant = (size_t)variant;
     expr->as.kind_test.negated = negated;
     expr->as.kind_test.op_span = op_span;
-    expr->pos = ast_pos_join(left->pos, (SourcePos){op_span, 0, 0});
+    expr->pos = ast_pos_join(left->pos, (SourcePos){op_span, 0, 0, 0});
     return expr;
 }
 

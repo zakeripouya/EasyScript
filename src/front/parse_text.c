@@ -90,7 +90,7 @@ Expr *parser_parse_text_postfix(Parser *p, Expr *expr) {
     if (upper || parser_match_words(p, "in lowercase")) {
         Span op_span = parser_consume(p, 2);
         Expr *result = new_text_op(p, upper ? TEXT_UPPERCASE : TEXT_LOWERCASE, expr->pos, op_span, expr);
-        result->pos = ast_pos_join(expr->pos, (SourcePos){op_span, 0, 0});
+        result->pos = ast_pos_join(expr->pos, (SourcePos){op_span, 0, 0, 0});
         return result;
     }
     if (parser_at_replace(p)) return parse_replace(p, expr);
@@ -99,7 +99,7 @@ Expr *parser_parse_text_postfix(Parser *p, Expr *expr) {
     if (!op) return NULL;
     Span op_span = parser_consume(p, len);
     Expr *result = new_text_op(p, (TextOp)op->value, expr->pos, op_span, expr);
-    result->pos = ast_pos_join(expr->pos, (SourcePos){op_span, 0, 0});
+    result->pos = ast_pos_join(expr->pos, (SourcePos){op_span, 0, 0, 0});
     if (op->value == TEXT_TRIM) return result;
     result->as.text_op.arg = parse_primary(p);
     result->pos = ast_pos_join(expr->pos, result->as.text_op.arg->pos);
@@ -127,7 +127,7 @@ Expr *parser_parse_char_test(Parser *p, Expr *left) {
         bool negated = verb == 2 || parser_at_word(p, 0, "isn't");
         Span op_span = parser_consume(p, verb + 1);
         Expr *expr = new_text_op(p, tests[i].op, left->pos, op_span, left);
-        expr->pos = ast_pos_join(left->pos, (SourcePos){op_span, 0, 0});
+        expr->pos = ast_pos_join(left->pos, (SourcePos){op_span, 0, 0, 0});
         expr->as.text_op.negated = negated;
         return expr;
     }

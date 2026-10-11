@@ -1,0 +1,3 @@
+Line 2: "a.txt" is a file, not a folder.
+    say the files in "a.txt"
+            ^^^^^^^^^^^^^^^^

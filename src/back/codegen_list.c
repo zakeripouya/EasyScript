@@ -230,6 +230,11 @@ static void collect(Codegen *g, const Expr *expr, Names *bound, Codegen *helper)
         collect_all(g, parts, 3, bound, helper);
         return;
     }
+    case EXPR_LIBRARY: {
+        Expr *parts[] = {expr->as.library.a, expr->as.library.b};
+        collect_all(g, parts, 2, bound, helper);
+        return;
+    }
     case EXPR_SLICE: {
         Expr *parts[] = {expr->as.slice.from, expr->as.slice.to, expr->as.slice.list};
         collect_all(g, parts, 3, bound, helper);

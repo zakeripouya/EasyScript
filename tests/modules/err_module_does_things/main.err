@@ -1,0 +1,9 @@
+Line 2 of setup.es: setup.es is used by another file, so it can only define things.
+    say "setting up"
+    ^^^
+Only the file you run can do things. Move this sentence into main.es, or into something defined with "to".
+
+Line 3 of setup.es: setup.es is used by another file, so it can only define things.
+    let x be 5
+    ^^^
+Only the file you run can do things. Move this sentence into main.es, or into something defined with "to".

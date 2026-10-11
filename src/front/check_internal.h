@@ -100,6 +100,8 @@ typedef struct {
 typedef struct {
     const char *name;
     const char *display;   // as written in the definition
+    unsigned file;         // the file it's defined in
+    bool private;          // "privately to ...": only that file can use it
     Stmt *definition;      // STMT_FUNCTION: params and line; the checker stores the kinds in it
     Vec(TypeVar) params;   // the kind of each input
     TypeVar result;        // what it gives back (decided as nothing if it never gives back a value)
@@ -119,6 +121,8 @@ struct LambdaScope {
 typedef struct {
     const char *name;
     const char *display;  // as written where it's kept
+    unsigned file;        // the file it's kept in
+    bool private;         // "privately keep ...": only that file can use it
     Stmt *definition;  // STMT_CONSTANT; the checker stores the worked-out value in it
     size_t index;      // order in the program: a constant may only use earlier ones
     bool ok;           // its value was worked out
@@ -159,7 +163,57 @@ typedef struct {
     Vec(Function *) lambdas;          // every function made inside a value
     Program *program;                 // its cells (names functions made inside the main program use)
     Vec(Type) assumed;                // kinds and interfaces being matched (pairs), assumed to fit meanwhile
+    unsigned file;                    // the file of the statement being checked (Program.files)
+    unsigned main_file;               // the file that's run: the last one
+    unsigned only_file;               // "helpers's double": names are looked up only in this file (1 + its index), or 0
+    Vec(struct ModuleUse) module_uses;  // names used from other files, renamed once the program is checked
 } Checker;
+
+// A name in a value that means another file's function or constant.
+struct ModuleUse {
+    Expr *expr;
+    const Stmt *definition;
+};
+
+// What checker_enter_names changed, put back by checker_leave_names.
+typedef struct {
+    unsigned only_file;
+    size_t floor;
+} NameContext;
+
+// "ask ... and call the answer X", "read csv file ... and call it X": makes X, or (if it exists) sets it.
+void checker_make_or_store(Checker *c, const Name *name, TypeVar value);
+
+// check_library.c: the standard library
+TypeVar checker_check_library(Checker *c, const Expr *expr);  // EXPR_LIBRARY
+void checker_check_library_stmt(Checker *c, const Stmt *stmt);  // STMT_LIBRARY
+// pi, today, tomorrow, yesterday where the program hasn't made the name: turns expr into its EXPR_LIBRARY.
+bool checker_library_name(Checker *c, const Expr *expr, TypeVar *result);
+// D's year (a field of a date): turns expr into LIB_DATE_PART. `base` is D, a date.
+TypeVar checker_date_field(Checker *c, const Expr *expr, TypeVar base);
+// The part of a date a field's name means (DATE_YEAR, ...), or -1.
+int checker_date_part(const char *name);
+// Once kinds are decided: a list, map, record or variant that would hold a date is reported (not yet supported).
+void checker_reject_dates(Checker *c);
+
+// check_module.c: files that use other files
+// Whether the current file can use a definition in `file` (private: only its own file can).
+bool checker_visible(const Checker *c, unsigned file, bool private);
+// Before looking up a name in a value (expr: EXPR_NAME or EXPR_CALL): "helpers's double" looks only in
+// helpers.es, and a name two used files both define is reported. False if that was reported.
+bool checker_enter_names(Checker *c, const Expr *expr, const char *name, NameContext *saved);
+void checker_leave_names(Checker *c, const NameContext *saved);
+// expr turned out to name a definition: one in another file is renamed when the program is checked.
+void checker_resolved(Checker *c, const Expr *expr, const Stmt *definition);
+// An unknown name some other file defines (privately, or a file this one doesn't use): reports and returns true.
+bool checker_report_hidden(Checker *c, const char *name, const char *display, SourcePos pos);
+// "line 4", or "line 4 of helpers.es" for a place in another file.
+const char *checker_where(Checker *c, SourcePos pos);
+// A top-level statement of a file another file uses: only definitions are allowed. Reports and returns false.
+bool checker_check_module_stmt(Checker *c, const Stmt *stmt);
+void checker_check_use(Checker *c, const Stmt *stmt);  // STMT_USE
+// Gives the definitions in files other than the one that's run names of their own, so two files can use one name.
+void checker_rename_modules(Checker *c);
 
 // check_types.c
 TypeVar types_new(Checker *c, Type type, size_t line);  // a list type gets a variable for its items

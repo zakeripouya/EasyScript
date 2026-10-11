@@ -1,0 +1,4 @@
+Line 4 of main.es: "size" is defined in several of the files this one uses.
+    say size
+        ^^^^
+Say which one you mean, like "first's size" or "second's size".

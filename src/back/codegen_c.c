@@ -410,6 +410,8 @@ void cg_emit_stmt(Codegen *g, const Stmt *stmt) {
     case STMT_RECORD: break;    // a C struct, before the functions
     case STMT_SUM: break;       // a C struct per variant, likewise
     case STMT_INTERFACE: break; // nothing: a way is called through es_wayN_NAME
+    case STMT_USE: break;           // nothing: the file's definitions are part of the program
+    case STMT_LIBRARY: cg_emit_library_stmt(g, stmt); break;
     case STMT_MATCH: cg_emit_match(g, stmt); break;
     case STMT_RETURN: emit_return(g, stmt); break;
     case STMT_CALL: emit_call_statement(g, stmt); break;

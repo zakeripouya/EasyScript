@@ -107,7 +107,7 @@ static void emit_number(const Expr *expr, StrBuf *out) {
 // {line, column, length}: a new entry in es_sites.
 size_t cg_site(Codegen *g, SourcePos pos) {
     size_t id = ++g->sites->count;
-    sb_appendf(&g->sites->code, "    {%zu, %zu, %zu},\n", pos.line, pos.column, pos.span.length);
+    sb_appendf(&g->sites->code, "    {%zu, %zu, %zu, %u},\n", pos.line, pos.column, pos.span.length, pos.file);
     return id;
 }
 
@@ -139,6 +139,7 @@ bool cg_has_effects(const Codegen *g, const Expr *expr) {
     case EXPR_ITEM:
     case EXPR_SLICE: return true;  // can fail (a position past the end), for text too
     case EXPR_TEXT_OP: return cg_text_op_effects(g, expr);
+    case EXPR_LIBRARY: return cg_library_effects(g, expr);
     case EXPR_LIST:
     case EXPR_MAP:
         for (size_t i = 0; i < expr->as.items.len; i++) {
@@ -436,6 +437,7 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     case EXPR_FUNCTION_REF: cg_emit_function_ref(g, expr, out); break;
     case EXPR_LAMBDA: cg_emit_lambda(g, expr, out); break;
     case EXPR_APPLY: cg_emit_apply(g, expr, out); break;
+    case EXPR_LIBRARY: cg_emit_library(g, expr, out); break;
     case EXPR_LENGTH:
         if (type_is_list(expr->as.operand->type)) {
             sb_appendf(out, "es_list_length(%s)", cg_list_operand(g, expr->as.operand));
@@ -493,6 +495,7 @@ void cg_emit_text(Codegen *g, const Expr *expr, StrBuf *out) {
     case TYPE_TEXT: cg_emit_expr(g, expr, out); break;
     case TYPE_NUMBER: sb_appendf(out, "es_number_text(%s)", cg_operand(g, expr, false)); break;
     case TYPE_YESNO: sb_appendf(out, "es_yesno_text(%s)", cg_operand(g, expr, false)); break;
+    case TYPE_DATE: sb_appendf(out, "es_date_text(%s)", cg_operand(g, expr, false)); break;
     default: assert(!"a value without a kind reached codegen"); break;
     }
 }

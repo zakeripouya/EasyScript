@@ -1,0 +1,38 @@
+note: files and folders, all inside the folder the test runs in
+put "first line" in file "notes.txt"
+add "second line" to the end of file "notes.txt"
+write "third line" to file "other.txt"
+say the lines of file "notes.txt"
+say the contents of file "other.txt"
+if file "notes.txt" exists, say "notes.txt exists"
+if not (folder "notes.txt" exists), say "but it isn't a folder"
+if not (file "nothing.txt" exists), say "nothing.txt doesn't"
+say the size of file "notes.txt"
+let changed be the last change of file "notes.txt"
+say changed's year is at least 2026
+make a folder called "box"
+make a new folder called "box/inner"
+make a new file called "box/empty.txt"
+say folder "box" exists
+say the size of file "box/empty.txt"
+copy the file "notes.txt" to "box/copy.txt"
+rename the file "box/copy.txt" to "box/renamed.txt"
+move the file "other.txt" to the folder "box"
+say the files in the folder "box"
+say the folders in "box"
+say the files in "."
+say the lines of file "box/renamed.txt"
+rename the folder "box/inner" to "box/deeper"
+make a folder called "attic"
+move the folder "box/deeper" to the folder "attic"
+say the folders in "attic"
+delete the file "box/empty.txt"
+say the files in "box"
+delete the folder "attic/deeper"
+delete the folder "attic"
+delete the folder "box" and everything in it
+delete the file "notes.txt"
+say the files in "."
+say the folders in "."
+for each name in the files in ".":
+    say name

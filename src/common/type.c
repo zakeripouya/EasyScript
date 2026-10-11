@@ -107,6 +107,10 @@ static const char *plural_name(Arena *arena, const Records *records, Type type) 
     for (Type t = type; type_is_list(t); t = type_item(t)) sb_append(&sb, "lists of ");
     Type base = type_base(type);
     Type present = type_present(base);
+    if (present == TYPE_DATE) {
+        sb_append(&sb, "dates");
+        return sb.data;
+    }
     if (present == TYPE_NUMBER || present == TYPE_TEXT || present == TYPE_YESNO) {
         sb_appendf(&sb, "%s%s", plural[present], type_is_maybe(base) ? " or nothing" : "");
         return sb.data;
@@ -195,6 +199,7 @@ const char *ast_type_name(Arena *arena, const Records *records, Type type) {
     case TYPE_NUMBER: return "a number";
     case TYPE_TEXT: return "text";
     case TYPE_YESNO: return "a yes/no value";
+    case TYPE_DATE: return "a date";
     case TYPE_NOTHING: return "nothing";
     default: return "an unknown kind of value";
     }

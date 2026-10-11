@@ -1,0 +1,8 @@
+Before: budget.csv, cat.jpg, dog.jpg, notes.txt and todo.txt
+After: csv, jpg and txt
+  csv: budget.csv
+  jpg: cat.jpg and dog.jpg
+  txt: notes.txt and todo.txt
+Renamed and copied: done.txt and notes.txt; budget backup.csv
+The backup has 24 bytes.
+Cleaned up.

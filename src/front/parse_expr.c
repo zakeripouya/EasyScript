@@ -192,7 +192,7 @@ static Expr *new_unary(Parser *p, UnaryOp op, const Token *op_token, Expr *opera
 }
 
 static Expr *new_list_op(Parser *p, ListOp op, Span op_span, Expr *operand) {
-    SourcePos end = {op_span, 0, 0};
+    SourcePos end = {op_span, 0, 0, 0};
     Expr *expr = ast_new_expr(p->arena, EXPR_LIST_OP, ast_pos_join(operand->pos, end));
     expr->as.list_op.op = op;
     expr->as.list_op.op_span = op_span;
@@ -357,6 +357,7 @@ static Expr *parse_comparison(Parser *p) {
     Expr *empty = parse_empty_test(p, left, 0, 3);
     if (!empty) empty = parser_parse_char_test(p, left);
     if (!empty) empty = parser_parse_kind_test(p, left);
+    if (!empty) empty = parser_parse_library_test(p, left);
     if (empty && parser_match_phrase(p, comparison_ops, COUNT(comparison_ops), &len)) {
         Span op = parser_consume(p, len);
         if (parser_error(p, op, "Comparisons can't be chained like this.")) {
@@ -408,7 +409,7 @@ static Expr *parse_postfix(Parser *p) {
         const Phrase *without = parser_match_phrase(p, without_phrases, COUNT(without_phrases), &len);
         if (without) {
             Span op_span = parser_consume(p, len);
-            Expr *slice = ast_new_expr(p->arena, EXPR_SLICE, ast_pos_join(expr->pos, (SourcePos){op_span, 0, 0}));
+            Expr *slice = ast_new_expr(p->arena, EXPR_SLICE, ast_pos_join(expr->pos, (SourcePos){op_span, 0, 0, 0}));
             slice->as.slice.kind = (SliceKind)(without->value & ~WITHOUT_CHARACTER);
             slice->as.slice.characters = (without->value & WITHOUT_CHARACTER) != 0;
             slice->as.slice.list = expr;
@@ -418,6 +419,11 @@ static Expr *parse_postfix(Parser *p) {
         if (parser_at_word(p, 0, "without") && (parser_at_word(p, 1, "item") || parser_at_word(p, 1, "character"))) {
             expr = parser_parse_without_at(p, expr);  // L without item N / T without character N
             if (p->sentence_failed) return expr;
+            continue;
+        }
+        Expr *library = p->sentence_failed ? NULL : parser_parse_library_postfix(p, expr);
+        if (library) {
+            expr = library;
             continue;
         }
         Expr *applied = p->sentence_failed ? NULL : parser_parse_apply_postfix(p, expr);
@@ -456,7 +462,7 @@ static Expr *parse_postfix(Parser *p) {
         const Phrase *conversion = parser_match_phrase(p, conversions, COUNT(conversions), &len);
         if (!conversion) return expr;
         Span op_span = parser_consume(p, len);
-        SourcePos end = {op_span, 0, 0};
+        SourcePos end = {op_span, 0, 0, 0};
         Expr *converted = ast_new_expr(p->arena, EXPR_CONVERT, ast_pos_join(expr->pos, end));
         converted->as.convert.target = (ConvertTarget)conversion->value;
         converted->as.convert.op_span = op_span;

@@ -42,10 +42,19 @@ typedef struct {
     int line;    /* from 1 */
     int column;  /* from 1, in characters (a tab counts as one) */
     int length;  /* in bytes */
+    int file;    /* which file of the program (es_source_files), 0 when it has one */
 } EsSite;
 
+/* A file of a program made of several ("use helpers."): its name, and the
+ * index in es_source of its first line. A program of one file has one,
+ * named NULL, and its errors don't name it. */
+typedef struct {
+    const char *name;
+    int first;
+} EsSourceFile;
+
 /* The call stack. Every EasyScript function call pushes a frame holding the
- * function (its name and its inputs' names and kinds: 'n' number, 'b'
+ * function (its name and its inputs' names and kinds: 'n' number, 'd' date, 'b'
  * yes/no, 't' text, 'l' list, 'r' record, 'm' map), the values it was given, and the site of the
  * call. Errors print the chain. The frames are an array as deep as the
  * recursion limit, so pushing is a few stores and popping is the depth
@@ -91,11 +100,13 @@ static int es_depth;                   /* calls in progress */
 static const EsSite *es_site_table;
 static const char *const *es_source_table;
 static int es_source_lines;
+static const EsSourceFile *es_files;
 
-static void es_init(const EsSite *sites, const char *const *source, int source_lines) {
+static void es_init(const EsSite *sites, const char *const *source, int source_lines, const EsSourceFile *files) {
     es_site_table = sites;
     es_source_table = source;
     es_source_lines = source_lines;
+    es_files = files;
 #ifdef ES_HOOKS
     const char *skip = getenv("ES_SKIP_OUTPUT");
     if (skip) es_skip_output = (size_t)strtoull(skip, NULL, 10);
@@ -153,9 +164,20 @@ static bool es_continuation_byte(char c) {
 /* The site's source line, indented, and carets under it: the same layout as
  * compile errors (tabs copied into the padding, one caret per character,
  * clamped to the line, at least one). */
+static const char *es_site_text(const EsSite *site) {
+    int index = es_files[site->file].first + site->line - 1;
+    return site->line >= 1 && index < es_source_lines ? es_source_table[index] : NULL;
+}
+
+/* "line 4", or "line 4 of helpers.es" in a program of several files. */
+static void es_print_line(const char *word, const EsSite *site) {
+    fprintf(stderr, "%s %d", word, site->line);
+    if (es_files[site->file].name) fprintf(stderr, " of %s", es_files[site->file].name);
+}
+
 static void es_show_source(const EsSite *site) {
-    if (site->line < 1 || site->line > es_source_lines) return;
-    const char *text = es_source_table[site->line - 1];
+    const char *text = es_site_text(site);
+    if (!text) return;
     size_t end = strlen(text);
     fprintf(stderr, "    %s\n    ", text);
     size_t offset = 0;
@@ -187,6 +209,7 @@ static void es_print_count(long n) {
  * nothing if there are none of those. */
 static EsText *es_number_text(double x);
 static EsText *es_record_short_text(const EsRecord *r); /* es_record.h */
+static EsText *es_date_text(double date);               /* es_time.h */
 
 static void es_print_cut(const EsText *t, size_t most, bool quoted) {
     size_t shown = 0, chars = 0;
@@ -204,8 +227,8 @@ static void es_print_inputs(const EsFrame *frame) {
         if (kind == 'l' || kind == 'm') continue;
         fprintf(stderr, "%s%s was ", open ? ", " : " (", frame->fn->input_names[i]);
         open = true;
-        if (kind == 'n') {
-            EsText *t = es_number_text(es_frame_input(frame, i).n);
+        if (kind == 'n' || kind == 'd') {
+            EsText *t = (kind == 'd' ? es_date_text : es_number_text)(es_frame_input(frame, i).n);
             fputs(t->chars, stderr);
             es_release(t);
         } else if (kind == 'b') {
@@ -238,18 +261,19 @@ static void es_show_calls(void) {
     es_print_inputs(&es_stack[es_depth - 1]);
     fputc('\n', stderr);
     for (int i = es_depth - 1; i >= 0; i--) {
-        int line = es_site_table[es_stack[i].call].line;
+        const EsSite *call = &es_site_table[es_stack[i].call];
         if (i == 0) {
-            fprintf(stderr, "called from line %d", line);
-            if (line >= 1 && line <= es_source_lines) {
-                const char *text = es_source_table[line - 1];
+            es_print_line("called from line", call);
+            const char *text = es_site_text(call);
+            if (text) {
                 while (*text == ' ' || *text == '\t') text++;
                 fprintf(stderr, ": %s", text);
             }
             fputc('\n', stderr);
             break;
         }
-        fprintf(stderr, "called from \"%s\" on line %d", es_stack[i - 1].fn->name, line);
+        fprintf(stderr, "called from \"%s\" on", es_stack[i - 1].fn->name);
+        es_print_line(" line", call);
         es_print_inputs(&es_stack[i - 1]);
         fputc('\n', stderr);
         long repeats = 0;
@@ -258,7 +282,8 @@ static void es_show_calls(void) {
             repeats++;
         }
         if (repeats == 1) { /* two the same: show both */
-            fprintf(stderr, "called from \"%s\" on line %d", es_stack[i - 1].fn->name, line);
+            fprintf(stderr, "called from \"%s\" on", es_stack[i - 1].fn->name);
+            es_print_line(" line", call);
             es_print_inputs(&es_stack[i - 1]);
             fputc('\n', stderr);
         } else if (repeats > 1) {
@@ -274,7 +299,8 @@ static void es_show_calls(void) {
 static _Noreturn void es_fail(int site, const char *hint, const char *fmt, ...) {
     va_list args;
     fflush(stdout);
-    fprintf(stderr, "Line %d: ", es_site_table[site].line);
+    es_print_line("Line", &es_site_table[site]);
+    fputs(": ", stderr);
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
     va_end(args);

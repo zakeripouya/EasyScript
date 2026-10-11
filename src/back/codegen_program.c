@@ -163,7 +163,7 @@ static void emit_function_info(const Stmt *fn, StrBuf *out) {
     for (size_t i = 0; i < n; i++) {
         Type type = fn->as.function.param_types.items[i];
         sb_append_char(out, type_is_list(type) ? 'l' : type_is_object(type) ? 'r' : type_is_map(type) ? 'm'
-                            : type == TYPE_TEXT ? 't' : type == TYPE_YESNO ? 'b' : 'n');
+                            : type == TYPE_TEXT ? 't' : type == TYPE_YESNO ? 'b' : type == TYPE_DATE ? 'd' : 'n');
     }
     sb_append(out, "\"};\n");
 }
@@ -341,7 +341,7 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     sb_append_char(out, '\n');
     sb_append_n(out, closures.head.data, closures.head.len);  // functions kept as values
     cg_emit_function_refs(&g, out);
-    sb_append(out, "static const EsSite es_sites[] = {\n    {0, 0, 0},\n");  // where runtime calls come from
+    sb_append(out, "static const EsSite es_sites[] = {\n    {0, 0, 0, 0},\n");  // where runtime calls come from
     sb_append_n(out, sites.code.data, sites.code.len);
     sb_append(out, "};\n\n");
     sb_append_n(out, helpers.code.data, helpers.code.len);  // "every" and "only", before the functions that use them
@@ -354,7 +354,7 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
         cg_append_prefixed(out, "es_k_", g.constants.items[i]->as.constant.name.text);
         sb_append(out, ";\n");
     }
-    sb_append(out, "    es_init(es_sites, es_source, es_source_line_count);\n");
+    sb_append(out, "    es_init(es_sites, es_source, es_source_line_count, es_source_files);\n");
     sb_append_n(out, inits.data, inits.len);  // the fixed maps
     sb_append_n(out, g.body.data, g.body.len);
     if (g.stops) sb_append(out, "es_end:\n");

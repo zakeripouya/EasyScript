@@ -104,6 +104,15 @@ Each exception exists because following the rule would cost more than it gives. 
 - **An interface's name is every word before `is anything with`,** stop words included, so `something that can speak` reads as English. Other names can't contain words like `that`, because there they'd end a name; here the sentence's own words mark where the name ends. Its plural turns `something`/`anything` into `things` (`a list of things that can speak`).
 - **`call F` is a value as well as a sentence** (`let n be call next`), although values don't start with a verb. A name alone is the function itself (`let f be next` keeps it), so a function with no inputs needs a word that calls it, and `call` is the one sentences already use.
 
+- **A file's own definitions come before those of the files it uses.** Two used files defining one name is an error only where it's used (with a note suggesting `helpers's double`), but a file can always define a name a used file also defines: otherwise adding a definition to a shared file could break every file that uses it.
+- **Kinds of record, kinds with variants and interfaces share one set of names across files,** unlike functions and constants. A kind's name is used inside other phrases (`a new circle`, `a list of dogs`, `for a dog`) where `helpers's` couldn't go, so two kinds with one name couldn't be told apart.
+- **`FILE's NAME` uses the possessive for a file,** so a file's name (one word) is special before `'s` in every file of the program, even where it's also a name: the file wins.
+
+- **`pick one of L` and `roll a die` are values that start with a verb,** because that's how people say them; `a random item of L` and `a random number from 1 to 6` are the noun forms, and work too.
+- **`pi`, `today`, `tomorrow` and `yesterday` are names, not reserved words:** they mean the library's value only where the program hasn't made the name itself, so programs written before the library still work. Every other library phrase starts with its own words (`the square root of`, `a random number from`, `file F exists`).
+- **File and folder sentences say `file` or `folder`:** `delete the file F`, `the lines of file F`, `add X to the end of file F`. Without the word, `the lines of F` and `add X to the end of F` would mean the text tool or the list sentence, depending on what F is.
+- **Dates can't be kept in lists, maps or records yet:** printing, comparing and copying them inside those would need a kind of item of their own in the runtime. The error suggests keeping the date's text or its parts.
+
 ## Open questions
 
 None at the moment. Phrasings that may not follow these rules go here until they're decided.

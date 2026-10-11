@@ -17,7 +17,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [5. Decisions](#5-decisions) | Available |
 | [6. Loops](#6-loops) | Available |
 | [7. Functions](#7-functions) | Available |
-| [8. Files](#8-files) | Available, except `file X exists` |
+| [8. Files](#8-files) | Available |
 | [9. Types](#9-types) | Available |
 | [10. Lists](#10-lists) | Available |
 | [11. Text](#11-text) | Available |
@@ -26,6 +26,8 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [14. Kinds with variants](#14-kinds-with-variants) | Available |
 | [15. Functions as values](#15-functions-as-values) | Available |
 | [16. Interfaces](#16-interfaces) | Available |
+| [17. Programs in several files](#17-programs-in-several-files) | Available |
+| [18. The standard library](#18-the-standard-library) | Available |
 
 ---
 
@@ -568,7 +570,7 @@ Try it: `./easyscript run examples/programs/factorial.es` and `examples/programs
 
 ## 8. Files
 
-**Status: Available, except `file X exists` (coming in Phase 2).**
+**Status: Available.**
 
 ```
 write "first line" to file "notes.txt".
@@ -581,12 +583,14 @@ say notes.
 
 `write X to file F` replaces the file's contents, and `append` adds to the end; both end what they write with a new line, so each one is a line of the file. Reading gives back the whole file without its last new line, so the example prints the two lines. If a file can't be read, the program stops with a message like `Line 3: I couldn't read the file "notes.txt": it doesn't exist.` Inside an expression, `contents of file "notes.txt"` gives the whole file as text.
 
-Coming soon: checking whether a file exists.
+`put "hello" in file "notes.txt"` is the same as `write ... to file`, and `add "more" to the end of file "notes.txt"` the same as `append`. To check first:
 
 ```
 if file "settings.txt" exists:
     say "Found the settings.".
 ```
+
+Folders, and making, renaming, copying, moving and deleting files, are in the [standard library](#18-the-standard-library).
 
 Try it: `./easyscript run examples/programs/files.es`
 
@@ -1650,3 +1654,147 @@ Its ways are called like methods: `speak animal`, `greet animal with "Ann"`. Whi
 A list written out holds one kind, so `a list of rex and tom` is an error that says which interface both fit; start with an empty list of the interface and add each one instead.
 
 Try it: `./easyscript run examples/programs/zoo.es`
+
+## 17. Programs in several files
+
+**Available.** A longer program can be split into files. The file you run says which other files it **uses**; those files only define things (functions, constants, kinds), and everything they define can be used as if it were written in the file that uses them.
+
+`shapes.es`:
+
+```
+a shape is one of:
+    a circle with a radius (a number).
+    a rectangle with a width (a number) and a height (a number).
+
+to area of s (a shape), giving back a number:
+    check which kind s is:
+        when it's a circle:
+            give back its radius times its radius times 3.14159
+        when it's a rectangle:
+            give back its width times its height
+```
+
+`main.es`:
+
+```
+use shapes.
+
+let bed be a new rectangle with width 4 and height 3
+say area of bed
+```
+
+```
+12
+```
+
+### Using a file
+
+`use shapes.` (or `use the shapes file.`) reads `shapes.es` from the same folder as the file that says it. A used file can use other files too. Each file is read and checked once, however many files use it, but files can't use each other in a circle: that's an error showing the circle ("These files use each other in a circle: first.es uses second.es and second.es uses first.es.").
+
+A file that's used can only define things. A sentence that does something, like `say "hi"`, is an error in it ("shapes.es is used by another file, so it can only define things."): only the file you run does things.
+
+### Whose name is it?
+
+A file sees its own definitions first, then those of the files it uses. Two used files can both define `double`; that's fine until `double` is used, which is then an error that names both files. Say which one you mean with the file's name and `'s`, which also works anytime:
+
+```
+say helpers's double with 3
+say math's double with 3
+```
+
+Kinds of record, kinds with variants and interfaces are different: they share one set of names across the whole program, so two files can't both define a `circle`.
+
+### Keeping a definition to its file
+
+Put `privately` before `to` or `keep` to keep a helper to its own file:
+
+```
+privately to tidy with text:
+    give back text without extra spaces
+```
+
+Another file using `tidy` gets an error saying where it's defined ("\"tidy\" is private to helpers.es, so only that file can use it.").
+
+### When something goes wrong
+
+Errors name the file as well as the line, before the program runs and while it runs:
+
+```
+Line 5 of calc.es: You divided by zero.
+        give back (numbers added together) divided by (the number of items in numbers)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+while working out "average"
+called from line 5 of main.es: say average of (an empty list of numbers)
+```
+
+Try it: `./easyscript run examples/programs/multi_file/main.es`
+
+## 18. The standard library
+
+**Available.** These phrases work in every program, without `use`. The full list, with the exact meaning of each, is in [stdlib.md](stdlib.md).
+
+### Math
+
+```
+say the square root of 16.               # 4
+say 2 to the power of 10.                # 1024
+say the absolute value of -3.            # 3
+say 2.5 rounded.                         # 3
+say 2.1 rounded up.                      # 3
+say pi rounded to 2 decimal places.      # 3.14
+say the bigger of 3 and 4.               # 4
+```
+
+`the square root of` a number below zero, a number below zero to a power that isn't whole, and 0 to a power below zero are errors while the program runs. `pi` is a name the program can still make for itself.
+
+### Random numbers
+
+```
+say a random number from 1 to 6.
+say a random decimal between 0 and 1.
+say pick one of cards.
+say cards shuffled.
+shuffle cards.
+say roll a die.
+```
+
+Each run gives different numbers. `use the same random numbers every time.` makes every run give the same ones, for testing a game. Try `./easyscript run examples/programs/dice.es`.
+
+### Dates
+
+```
+say today.                               # Sunday, October 11, 2026
+say the time now.                        # Sunday, October 11, 2026, 2:05 PM
+say 3 days ago.
+say today's weekday.                     # Sunday
+if the last change of file "log.txt" is in this month:
+    say "The log is fresh.".
+say the number of days between today and (30 days from now).
+wait 2 seconds.
+```
+
+A date is a kind of its own, written `(a date)` in a definition. Dates compare with `is`, `is before` and `is after`, and become text when printed or joined. They can't be kept in lists, maps or records yet; keep `today as text` or `today's year` instead. `clear the screen.` and `wait` make a countdown: `./easyscript run examples/programs/countdown.es`.
+
+### Files and folders
+
+```
+make a folder called "box".
+put "hello" in file "box/a.txt".
+copy the file "box/a.txt" to "box/b.txt".
+rename the file "box/b.txt" to "box/c.txt".
+say the files in "box".                  # a.txt and c.txt
+delete the folder "box" and everything in it.
+```
+
+Paths are text. Nothing is ever replaced: making, renaming, copying or moving onto a name that's taken is an error. Deleting a folder that isn't empty needs `and everything in it`. Try `./easyscript run examples/programs/tidy_folder.es`.
+
+### CSV files
+
+```
+read csv file "sales.csv" and call it rows.
+for each row in rows:
+    say the value for "region" in row.
+save totals as csv file "totals.csv".
+```
+
+Each row is a map from the column's name (from the header line) to its text. Mistakes in the file say where: "In sales.csv, line 14 has 3 values, but the header has 4." Try `./easyscript run examples/programs/sales_report.es`.

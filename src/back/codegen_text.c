@@ -168,6 +168,7 @@ static bool reads(const Expr *expr, const char *name) {
     switch (expr->kind) {
     case EXPR_NAME: return strcmp(expr->as.name, name) == 0;
     case EXPR_FUNCTION_REF: return false;
+    case EXPR_LIBRARY: return reads(expr->as.library.a, name) || reads(expr->as.library.b, name);
     case EXPR_LAMBDA: return true;  // it could use the name (in place building isn't worth working that out)
     case EXPR_APPLY:
         return reads(expr->as.apply.function, name) || reads(expr->as.apply.list, name) ||

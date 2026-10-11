@@ -1,0 +1,4 @@
+Line 3: The folder "box" isn't empty.
+    delete the folder "box"
+                      ^^^^^
+To delete it with everything in it, add "and everything in it".

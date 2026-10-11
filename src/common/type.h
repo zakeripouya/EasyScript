@@ -33,6 +33,7 @@ enum {
     TYPE_YESNO,
     TYPE_NOTHING,  // what a function gives back when it gives back no value, and the value "nothing"
     TYPE_ERROR,    // stands in after a type error, so one mistake gives one message
+    TYPE_DATE,     // a day, and maybe a time of day ("today", "the time now"); a number of seconds while running
     TYPE_RECORD = 16,       // TYPE_RECORD + n: the program's record kind n
     TYPE_IFACE = 1u << 10,  // TYPE_IFACE + n: the program's interface n (Records.interfaces)
     TYPE_SUM = 1u << 11,    // TYPE_SUM + n: the program's kind with variants n (Records.sums)

@@ -1,0 +1,4 @@
+Line 3 of main.es: "use" goes at the top of a file, not inside a block.
+        use helpers.
+        ^^^^^^^^^^^
+Move "use helpers." to the start of the file, with no spaces before it.

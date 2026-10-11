@@ -44,6 +44,7 @@ typedef struct {
     size_t lambdas;         // functions made inside values so far (their C names: 0l1, 0l2, ...)
     size_t block_end;       // 1 + the token after a block that ended a value ("a function taking x:"), or 0
     size_t hidden_lists;    // lists sentences like "apply F to every X in L" hold in hidden names so far
+    NameList modules;       // the files "use" sentences name ("helpers"), so "helpers's double" names one
 } Parser;
 
 // A word or symbol sequence with a meaning, e.g. "is greater than".
@@ -326,6 +327,36 @@ Expr *parser_parse_without_at(Parser *p, Expr *list);
 bool parser_at_replace(const Parser *p);
 // After a value: "is a letter", "is not a digit", "isn't a space"; NULL if none is next.
 Expr *parser_parse_char_test(Parser *p, Expr *left);
+
+// parse_module.c: files that use other files
+// Fills p->modules from every "use NAME" sentence.
+void parser_find_modules(Parser *p);
+// tokens[i] ("to") comes straight after "privately" (and maybe a comma) at the start of a line.
+bool parser_after_privately(const Parser *p, size_t i);
+// "helpers's": a file "use" names, then 's, `ahead` tokens from here.
+bool parser_at_module(const Parser *p, size_t ahead);
+// "helpers's double with 3" (a value), at "helpers"; `parse_name` parses what's after the 's.
+Expr *parser_parse_module_value(Parser *p, Expr *(*parse_name)(Parser *p));
+Stmt *parser_parse_module_call(Parser *p);                  // "helpers's greet with "Ann"", at "helpers"
+Stmt *parser_parse_use(Parser *p, const Token *verb);        // use helpers
+Stmt *parser_parse_privately(Parser *p, const Token *verb);  // privately to ... / privately keep ...
+
+// parse_library.c: the standard library's values
+// A value starting with its words ("the square root of", "a random number from", "file F exists", ...); NULL if none.
+Expr *parser_parse_library_word(Parser *p);
+// After a value: "rounded", "to the power of Y", "shuffled", "days ago", ...; NULL if none is next.
+Expr *parser_parse_library_postfix(Parser *p, Expr *expr);
+// After a value: "is before E", "is after E", "is in this month", ...; NULL if none is next.
+Expr *parser_parse_library_test(Parser *p, Expr *left);
+// parse_library_stmt.c: the standard library's sentences
+// "make a new file", "rename the file", "copy the file", "move the file", "delete the file", "clear the
+// screen", "read csv file", "use the same random numbers": a sentence of the library starts here.
+bool parser_at_library_sentence(const Parser *p);
+Stmt *parser_parse_library_sentence(Parser *p);
+Stmt *parser_parse_wait(Parser *p, const Token *verb);     // wait 2 seconds
+Stmt *parser_parse_shuffle(Parser *p, const Token *verb);  // shuffle L
+Stmt *parser_parse_save(Parser *p, const Token *verb);     // save L as csv file F
+Stmt *parser_parse_put(Parser *p, const Token *verb);      // put X in file F
 
 // parse_loop.c: a loop starting with `verb` (count, go, for, do, repeat,
 // while, as, keep, forever), and stop/break/skip/continue/move on.

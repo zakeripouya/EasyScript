@@ -1,0 +1,4 @@
+Line 2 of main.es: I couldn't find the file "nothere.es" in the same folder as main.es.
+    use nothere.
+    ^^^^^^^^^^^
+"use nothere" reads nothere.es from the folder main.es is in. Check the spelling of its name.

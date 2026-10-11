@@ -94,7 +94,7 @@ static bool parse_method_record(Parser *p, Stmt *stmt) {
     SourcePos start = parser_token_pos(parser_peek(p, 0));
     Type type;
     if (!parser_parse_kind(p, false, &type)) return false;
-    record.pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0});
+    record.pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0, 0});
     if (!(type_is_record(type) || type_is_sum(type)) || type_is_maybe(type)) {
         if (parser_error(p, record.pos.span, "A method is for a kind of record, but this is %s.",
                          ast_type_name(p->arena, p->records, type))) {

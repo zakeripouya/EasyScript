@@ -61,8 +61,8 @@ Line 19: "area of 3 and 4 plus 1" could mean two things.
 Use parentheses to say which: "(area of 3 and 4) plus 1" or "area of 3 and (4 plus 1)".
 
 Line 22: Something is missing after "for".
-    to wait for:
-            ^^^
+    to pause for:
+             ^^^
 Name the inputs, like "to area with width and height:", or leave out "for".
 
 Line 26: "pause" takes its inputs after "with" or "for", not "from".

@@ -1,0 +1,39 @@
+Line 2: Something is missing after "use".
+    use.
+    ^^^
+Write the name of the file to use, without ".es", like "use helpers.".
+
+Line 3: The name of a file to use is one word.
+    use shape tools.
+              ^^^^^
+Use one file per sentence, named with one word, like "use shapes.".
+
+Line 4: I expected the sentence to end after the name of the file, but found ",".
+    use helpers, tools.
+               ^
+Use one file per sentence, named with one word, like "use shapes.".
+
+Line 5: Something is missing after "privately".
+    privately.
+    ^^^^^^^^^
+Write "privately to tidy with text:" or "privately keep rate at 0.2.".
+
+Line 6: Only definitions can be kept private, but this is "say".
+    privately say 1
+              ^^^
+Write "privately to tidy with text:" or "privately keep rate at 0.2.".
+
+Line 7: Something is missing after "helpers's".
+    say helpers's
+        ^^^^^^^^^
+Write the name of something helpers.es defines, like "helpers's double with 3".
+
+Line 8: Something is missing after "helpers's".
+    say helpers's 5
+        ^^^^^^^^^
+Write the name of something helpers.es defines, like "helpers's double with 3".
+
+Line 9: I don't know a sentence that starts with "helpers's nope".
+    helpers's nope there.
+              ^^^^
+A sentence can start with something another file defines with "to", like "helpers's greet with "Ann"".

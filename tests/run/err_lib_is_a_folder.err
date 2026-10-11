@@ -1,0 +1,3 @@
+Line 2: "box" is a folder, not a file.
+    say the size of file "box"
+            ^^^^^^^^^^^^^^^^^^

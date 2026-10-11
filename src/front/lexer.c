@@ -25,6 +25,7 @@ typedef struct {
     Vec(size_t) indents;   // open block indentation widths, bottom is 0
     Span pending_filler;   // a filler word dropped since the last token (length 0 if none)
     Vec(Token) tokens;
+    unsigned file;         // the file being lexed (lex_files)
 } Lexer;
 
 // --- Character classes (ASCII only, independent of locale) -----------------
@@ -85,7 +86,7 @@ static size_t column(Lexer *lx, size_t offset) {
 }
 
 static void emit(Lexer *lx, TokenKind kind, size_t start, size_t end, const char *text, size_t text_len) {
-    Token token = {kind, text, text_len, {start, end - start}, lx->line, column(lx, start), {0, 0}};
+    Token token = {kind, text, text_len, {start, end - start}, lx->line, column(lx, start), {0, 0}, lx->file};
     if (kind != TOK_INDENT && kind != TOK_DEDENT) {
         token.filler = lx->pending_filler;
         lx->pending_filler.length = 0;
@@ -491,7 +492,23 @@ static void finish(Lexer *lx) {
     emit_layout(lx, TOK_EOF, lx->len, lx->len);
 }
 
+// At the end of a file: its last line's NEWLINE, and a DEDENT for each block still open.
+static void close_blocks(Lexer *lx, size_t at) {
+    if (lx->line_has_tokens) emit_layout(lx, TOK_NEWLINE, at, at);
+    lx->line_has_tokens = false;
+    while (lx->indents.len > 1) {
+        (void)vec_pop(&lx->indents);
+        emit_layout(lx, TOK_DEDENT, at, at);
+    }
+}
+
 TokenList lex(Arena *arena, Diag *diag, const char *source, size_t source_len) {
+    size_t start = 0;
+    return lex_files(arena, diag, source, source_len, &start, 1);
+}
+
+TokenList lex_files(Arena *arena, Diag *diag, const char *source, size_t source_len, const size_t *starts,
+                    size_t files) {
     Lexer lx = {0};
     lx.arena = arena;
     lx.diag = diag;
@@ -501,7 +518,13 @@ TokenList lex(Arena *arena, Diag *diag, const char *source, size_t source_len) {
     lx.col = 1;
     vec_push(arena, &lx.indents, (size_t)0);
 
+    size_t next = 1;  // the next file to start
     while (lx.pos < lx.len) {
+        if (next < files && lx.pos >= starts[next]) {
+            close_blocks(&lx, lx.pos);
+            lx.file = (unsigned)next++;
+            lx.line = 1;
+        }
         begin_line(&lx);
         lex_line(&lx);
         if (lx.pos < lx.len) end_line(&lx);

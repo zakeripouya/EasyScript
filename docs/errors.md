@@ -686,6 +686,67 @@ Give it one, like "to speak, for a fish:".
 
 Mistakes in how a definition is written are parser errors, like "Say what kind of value "name" is, in parentheses after it.", "Each line of an interface is a way, but this starts with "speak"." and "The ways of "speaker" go on the lines below, indented."; the full set is in [`err_iface.err`](../tests/ast/err_iface.err).
 
+### Programs in several files
+
+In a program of several files, every error names its file as well as its line. A name two used files both define is caught where it's used: [`err_names`](../tests/modules/err_names/main.es)
+
+```
+Line 4 of main.es: "double" is defined in both helpers.es and math.es.
+    say double with 21.
+        ^^^^^^^^^^^^^^
+Say which one you mean, like "helpers's double" or "math's double".
+```
+
+| Problem | Message (summary) |
+|---|---|
+| A file that isn't there | "I couldn't find the file "nothere.es" in the same folder as main.es." ([`err_missing`](../tests/modules/err_missing/main.es)) |
+| Files that use each other | "These files use each other in a circle: first.es uses second.es, second.es uses third.es, and third.es uses first.es." ([`err_circle`](../tests/modules/err_circle/main.es)), and "main.es can't use itself." |
+| A used file that does things | "setup.es is used by another file, so it can only define things." ([`err_module_does_things`](../tests/modules/err_module_does_things/main.es)) |
+| A private definition used from another file | ""tidy" is private to helpers.es, so only that file can use it." with the line of its "privately" |
+| A definition of a file this one doesn't use | ""helper" is defined in tools.es, which this file doesn't use." with "Add "use tools." at the top of this file." |
+| `FILE's NAME` mistakes | "This file doesn't use tools.es, so "tools's" doesn't name anything here." / "helpers.es doesn't define anything called "nope"." |
+| `use` inside a block | ""use" goes at the top of a file, not inside a block." ([`err_use_in_block`](../tests/modules/err_use_in_block/main.es)) |
+
+Mistakes in how `use` and `privately` are written are parser errors, like "The name of a file to use is one word." and "Only definitions can be kept private, but this is "say"."; the full set is in [`err_modules.err`](../tests/ast/err_modules.err).
+
+### The standard library
+
+Kind mistakes with the library's phrases are caught before the program runs, in the same words: [`library_errors.es`](../tests/errors/library_errors.es)
+
+```
+Line 2: "the square root of" needs a number, but this is text.
+    say the square root of "nine"
+                           ^^^^^^
+```
+
+| Problem | Message (summary) |
+|---|---|
+| A part of a date that isn't one | "A date has no "season"." with the parts it has |
+| A date in a list, map or record | "Dates can't be kept in a list yet." with "Keep the date as text instead, ..." ([`library_dates_kept.es`](../tests/errors/library_dates_kept.es)) |
+| Saving something that isn't rows | "I can only save a list of maps as csv, but this is a number." / "The values saved in a csv file have to be numbers, text or yes/no values, but this is a list of numbers." |
+| A path that isn't text | "The name of a file has to be text, like "notes.txt", but this is a number." |
+| A library phrase in a constant | "A constant can't use "square root of", because it's worked out while the program runs." |
+
+While the program runs, each mistake has its own message (one test each, `tests/run/err_lib_*.es`):
+
+```
+Line 3: The folder "box" isn't empty.
+    delete the folder "box"
+                      ^^^^^
+To delete it with everything in it, add "and everything in it".
+```
+
+| Problem | Message (summary) |
+|---|---|
+| Math | "I can't take the square root of -4, because it's below zero." / "I can't raise -8 to the power of 0.3333333333: a number below zero can only be raised to a whole power." / "I can't raise 0 to the power of -1, because that divides by zero." / "The number of decimal places has to be a whole number from 0 to 15, but it's 2.5." |
+| Random numbers | "I can't pick a random number from 6 to 1: the first number has to be the smaller one." / "A random number from 1 to 6.5 can't be worked out: both have to be whole numbers." / "I can't pick one of the items of an empty list." |
+| Dates and waiting | "The number of days has to be a whole number, but it's 1.5." / "I can only wait from 0 seconds to a year, but this is -2 seconds." |
+| Files and folders | "I couldn't find the file "nothere.txt"." / ""a.txt" is a file, not a folder." / "There's already a folder called "box"." with "Nothing is ever replaced this way. ..." / "I couldn't make the folder "no/such/folder": the folder it should go in doesn't exist." / "I won't delete "." and everything in it, because that's more than one folder of yours." |
+| Reading csv | "In a.csv, line 3 has 3 values, but the header has 2." / "In a.csv, the quote on line 2 never ends." / "In a.csv, line 2 has more after a closing quote." / "The header of a.csv has the column "name" twice." / "a.csv is empty, so it has no header row." |
+| Saving csv | "Row 2 of the list has 3 values, but the first row has 2." / "Row 2 of the list has no value for "b", but the first row does." |
+
+Mistakes in how the sentences are written are parser errors, like "Say how long to wait: seconds, milliseconds or minutes.", "Only a folder has everything in it." and ""to the power of" twice could mean two things."; the full set is in [`err_library.err`](../tests/ast/err_library.err).
+
 ### While the program runs
 
 Runtime errors look like compile errors: `Line N:` and what went wrong, the line with carets under the part that failed, and sometimes a hint. Anything the program printed before the error stays printed. Only mistakes that kinds can't catch are left for this.

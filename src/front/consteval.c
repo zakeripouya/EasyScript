@@ -538,6 +538,9 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
     case EXPR_LAMBDA:
         return fail(ev, span, fixed_note, "A constant can't be a function, because functions are kept as values while "
                                           "the program runs.");
+    case EXPR_LIBRARY:
+        return fail(ev, span, fixed_note, "A constant can't use \"%s\", because it's worked out while the program runs.",
+                    ast_library_op_name(expr->as.library.op));
     case EXPR_ERROR: return false;
     }
     return false;

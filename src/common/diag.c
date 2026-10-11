@@ -19,6 +19,9 @@ struct Diag {
     Vec(DiagError) errors;
     Vec(DiagError) warnings;
     bool warned_last;  // diag_note adds to the latest warning, not the latest error
+    const char *const *file_names;  // diag_set_files: several files joined into one source
+    const size_t *file_starts;
+    size_t files;
 };
 
 static void index_lines(Diag *diag) {
@@ -109,8 +112,30 @@ static size_t line_index(const Diag *diag, size_t offset) {
     return lo;
 }
 
+void diag_set_files(Diag *diag, const char *const *names, const size_t *starts, size_t files) {
+    diag->file_names = names;
+    diag->file_starts = starts;
+    diag->files = files;
+}
+
+// Which file holds `offset` (0 when there's one).
+static size_t file_of(const Diag *diag, size_t offset) {
+    size_t file = 0;
+    while (file + 1 < diag->files && diag->file_starts[file + 1] <= offset) file++;
+    return file;
+}
+
+size_t diag_file(const Diag *diag, size_t offset) {
+    return file_of(diag, offset);
+}
+
+const char *diag_file_name(const Diag *diag, size_t file) {
+    return file < diag->files ? diag->file_names[file] : NULL;
+}
+
 size_t diag_line(const Diag *diag, size_t offset) {
-    return line_index(diag, offset) + 1;
+    size_t first = diag->files ? line_index(diag, diag->file_starts[file_of(diag, offset)]) : 0;
+    return line_index(diag, offset) - first + 1;
 }
 
 // Offset just past the visible text of the line starting at `start`
@@ -163,7 +188,9 @@ static void render_error(const Diag *diag, const DiagError *error, StrBuf *out) 
     size_t carets = count_chars(diag->source + offset, length);
     if (carets == 0) carets = 1;
 
-    sb_appendf(out, "Line %zu%s: %s\n", index + 1, error->warning ? " (a warning)" : "", error->message);
+    sb_appendf(out, "Line %zu", diag_line(diag, error->span.offset));
+    if (diag->files > 1) sb_appendf(out, " of %s", diag->file_names[file_of(diag, error->span.offset)]);
+    sb_appendf(out, "%s: %s\n", error->warning ? " (a warning)" : "", error->message);
     sb_append(out, SOURCE_INDENT);
     sb_append_n(out, diag->source + start, end - start);
     sb_append_char(out, '\n');
@@ -187,7 +214,7 @@ void diag_render_warnings(const Diag *diag, size_t from_line, StrBuf *out) {
     bool first = true;
     for (size_t i = 0; i < diag->warnings.len; i++) {
         const DiagError *warning = &diag->warnings.items[i];
-        if (line_index(diag, warning->span.offset) + 1 < from_line) continue;
+        if (diag_line(diag, warning->span.offset) < from_line) continue;
         if (!first) sb_append_char(out, '\n');
         render_error(diag, warning, out);
         first = false;

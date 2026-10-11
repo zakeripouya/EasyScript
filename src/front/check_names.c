@@ -21,24 +21,43 @@ const Symbol *checker_find_later(const Checker *c, const char *name) {
     return c->later.len ? find(c->later.items, c->later.len, name) : NULL;
 }
 
+// Whether a definition in `file` can be used here: only from that file while
+// a name like "helpers's double" is looked up, otherwise from this file or
+// one it uses.
+static bool usable(const Checker *c, unsigned file, bool private) {
+    return c->only_file ? file + 1 == c->only_file : checker_visible(c, file, private);
+}
+
+// This file's own definition comes first, then one from a file it uses.
 const Function *checker_find_function(const Checker *c, const char *name) {
+    const Function *found = NULL;
     for (size_t i = 0; i < c->functions.len; i++) {
-        if (strcmp(c->functions.items[i].name, name) == 0) return &c->functions.items[i];
+        const Function *f = &c->functions.items[i];
+        if (strcmp(f->name, name) != 0 || !usable(c, f->file, f->private)) continue;
+        if (f->file == c->file) return f;
+        if (!found) found = f;
     }
-    return NULL;
+    return found;
 }
 
 bool checker_shared_method(const Checker *c, const char *name) {
     size_t count = 0;
-    for (size_t i = 0; i < c->functions.len; i++) count += strcmp(c->functions.items[i].name, name) == 0;
+    for (size_t i = 0; i < c->functions.len; i++) {
+        const Function *f = &c->functions.items[i];
+        count += strcmp(f->name, name) == 0 && f->definition->as.function.method;
+    }
     return count > 1;
 }
 
 const Constant *checker_find_constant(const Checker *c, const char *name) {
+    const Constant *found = NULL;
     for (size_t i = 0; i < c->constants.len; i++) {
-        if (strcmp(c->constants.items[i].name, name) == 0) return &c->constants.items[i];
+        const Constant *k = &c->constants.items[i];
+        if (strcmp(k->name, name) != 0 || !usable(c, k->file, k->private)) continue;
+        if (k->file == c->file) return k;
+        if (!found) found = k;
     }
-    return NULL;
+    return found;
 }
 
 // A variable can't share a name with a function or a constant. Reports and
@@ -46,15 +65,15 @@ const Constant *checker_find_constant(const Checker *c, const char *name) {
 bool checker_clashes(Checker *c, const Name *name) {
     const Constant *k = checker_find_constant(c, name->text);
     if (k) {
-        diag_error(c->diag, name->pos.span, "\"%s\" is a constant, made on line %zu.", name->display,
-                   k->definition->pos.line);
+        diag_error(c->diag, name->pos.span, "\"%s\" is a constant, made on %s.", name->display,
+                   checker_where(c, k->definition->pos));
         diag_note(c->diag, "Give the variable a different name.");
         return true;
     }
     const Function *f = checker_find_function(c, name->text);
     if (!f) return false;
-    diag_error(c->diag, name->pos.span, "\"%s\" is the name of a function, defined on line %zu.", name->display,
-               f->definition->pos.line);
+    diag_error(c->diag, name->pos.span, "\"%s\" is the name of a function, defined on %s.", name->display,
+               checker_where(c, f->definition->pos));
     diag_note(c->diag, "Give the variable a different name.");
     return true;
 }
@@ -104,6 +123,7 @@ static void note_choices(Checker *c, const char *name, size_t limit) {
 
 
 void checker_report_unknown(Checker *c, const char *name, const char *display, SourcePos pos) {
+    if (checker_report_hidden(c, name, display, pos)) return;
     diag_error(c->diag, pos.span, "I don't know anything called \"%s\".", display);
     size_t count;
     const Symbol *near = closest(c, name, &count);

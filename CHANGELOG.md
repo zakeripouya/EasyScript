@@ -6,11 +6,30 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Breaking
 
+- **`wait`, `shuffle`, `save` and `put` start sentences** (the standard library), so they can no longer be the one-word name of a function. `tests/ast/err_func_header.es` renamed its `to wait for:` to `to pause for:`. `pi`, `today`, `tomorrow` and `yesterday` are still names a program can make; `rename`, `copy`, `move`, `delete`, `make` and `clear` only start library sentences with `the file`, `the folder` or `the screen` after them.
+
 - **`apply` starts sentences** (`apply double to every number in scores.`), so it can no longer be the one-word name of a function (`to apply with f:`). A name of several words starting with it still works. `lambda.es` renamed its `apply` to `evaluate application`.
 
 - **`the position of X in T` (and `in L`) is `a number or nothing`,** and gives **nothing** instead of 0 when X isn't there, following the design rule that "not found" results use `or nothing`. Using it as a number now needs a check first: `if at is not nothing:`, `if at is nothing, ...`, or `check which kind at is:`. Programs that compared it with 0 (`if the position of "@" in address is 0`) write `is nothing` instead. The exception for it is gone from the design principles.
 
 ### Added
+
+- **The standard library** (Phase 2, step 21), with no `use` needed. See [stdlib.md](docs/stdlib.md) and the new [chapter](docs/language-guide.md#18-the-standard-library).
+  - **Math:** `the square root of X`, `X to the power of Y`, `the absolute value of X`, `X rounded` (half away from zero), `rounded up`, `rounded down`, `rounded to N decimal places`, `the bigger of X and Y`, `the smaller of X and Y`, `pi` (also in constants), with errors for square roots of negatives and impossible powers.
+  - **Random numbers:** `a random number from A to B`, `a random decimal between A and B`, `pick one of L` (or `a random item of L`), `L shuffled` and `shuffle L`, `roll a die`, and `use the same random numbers every time.`; xoshiro256** seeded from the clock.
+  - **Dates:** a new kind, `a date`: `the time now`, `today`, `tomorrow`, `yesterday`, `N days ago`, `N days from now`, `the year of D` / `D's year` (and month, day, weekday, hour, minute), `D is before E`, `D is after E`, `D is in this month` (last/next month, this/last/next year), `the number of days between D and E`, printed like "Sunday, October 11, 2026". Not in lists, maps or records yet (an error says so). `wait N seconds` (milliseconds, minutes).
+  - **Files and folders:** `file F exists` (planned since Phase 1) and `folder F exists`, `put X in file F`, `write X in file F`, `add X to the end of file F`, `the lines of file F`, `make a new file called F`, `make a folder called F`, `rename`/`copy`/`move the file F ...`, `delete the file F`, `delete the folder D [and everything in it]`, `the files in D`, `the folders in D`, `the size of file F`, `the last change of file F`. Nothing is replaced, a folder with things in it needs `and everything in it`, and paths like `"/"` are refused.
+  - **CSV:** `read csv file F and call it rows` (a list of maps from column name to text, with full quoting, `\r\n` and blank lines) and `save L as csv file F`, with errors that name the file's line.
+  - **The screen:** `clear the screen.` (only when the output is a terminal).
+  - **Tests and benchmarks:** under `ES_HOOKS`, `ES_NOW` fixes the clock (and `wait` moves it on instead of sleeping) and `ES_RANDOM_SEED` fixes the random numbers; `tests/run.sh` sets both. A `sales` benchmark reads a csv file of 100,000 rows (0.04 s against Python's `csv` module at 0.09 s, in more memory: every row is kept); `benchmarks/run.sh` runs a benchmark's `setup.sh` first, in `build/bench`.
+  - Examples `dice.es`, `countdown.es`, `tidy_folder.es` and `sales_report.es`; `multi_file/` uses `rounded to 1 decimal place` and `pi`.
+  - Inside the compiler: `EXPR_LIBRARY` (`LibraryOp`) and `STMT_LIBRARY` (`LibraryAction`), `TYPE_DATE`; new files `src/front/parse_library.c`, `parse_library_stmt.c`, `check_library.c`, `src/back/codegen_library.c`, `src/common/library.c`, and four runtime parts, `runtime/es_math.h`, `es_time.h`, `es_files.h` and `es_csv.h`.
+- **Programs in several files** (Phase 2, step 21). See the new [chapter](docs/language-guide.md#17-programs-in-several-files).
+  - `use helpers.` (or `use the helpers file.`) reads `helpers.es` from the same folder; a used file can only define things (functions, methods, constants, kinds, interfaces) and can use other files. Each file is read and checked once; files using each other in a circle is an error that shows the circle.
+  - A file sees its own definitions first, then those of the files it uses. A name two used files define is an error only where it's used, naming both files and suggesting `helpers's double`, which works anytime. `privately to ...` and `privately keep ...` keep a definition to its file.
+  - Errors name the file and its line (`Line 4 of helpers.es: ...`), at compile time and in runtime errors and call chains.
+  - Tests in `tests/modules/NAME/` folders (`main.es` plus the files it uses, with `main.out`/`main.err`); examples can be folders too: `examples/programs/multi_file/`.
+  - Inside the compiler: `src/modules.c` finds and joins the files before lexing (`lex_files` restarts line numbers per file; `Token.file`, `SourcePos.file`, `diag_set_files`); `STMT_USE`, `Expr.module`, `private` on functions and constants; `src/front/parse_module.c` and `src/front/check_module.c`; the checker renames other files' functions and constants so the C names stay apart. The runtime's sites carry a file (`EsSite.file`, `es_source_files`).
 
 - **Interfaces** (Phase 2, step 20). See the new [chapter](docs/language-guide.md#16-interfaces).
   - **Defining one:** `something that can speak is anything with:` (or `a speaker is anything with:`) with ways indented below: `a way to speak.`, `a way to greet with name (text), giving back text.`
