@@ -57,6 +57,16 @@ static inline Type type_record(size_t index) { return TYPE_RECORD + (Type)index;
 static inline size_t type_record_index(Type type) { return type_present(type) - TYPE_RECORD; }
 static inline Type type_sum(size_t index) { return TYPE_SUM + (Type)index; }
 static inline size_t type_sum_index(Type type) { return type_present(type) - TYPE_SUM; }
+// A kind that can be "or nothing": a number, text, yes/no, a record kind or
+// a kind with variants (not a list or a map, which can be empty instead).
+static inline bool type_can_be_nothing(Type type) {
+    return !type_is_maybe(type) && (type == TYPE_NUMBER || type == TYPE_TEXT || type == TYPE_YESNO ||
+                                    type_is_record(type) || type_is_sum(type));
+}
+// Kept in a box while the program runs when it's "or nothing": a number, text or yes/no.
+static inline bool type_boxed(Type present) {
+    return present == TYPE_NUMBER || present == TYPE_TEXT || present == TYPE_YESNO;
+}
 // Kept as a record while the program runs (an EsRecord *, NULL for nothing):
 // records, values of kinds with variants, and anything that can be nothing.
 static inline bool type_is_object(Type type) {

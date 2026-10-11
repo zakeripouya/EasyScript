@@ -94,11 +94,38 @@ static void es_buf_add_text(EsBuf *b, const char *s) {
     es_buf_add(b, s, strlen(s));
 }
 
+/* What a box holds, as text: in quotes when `quoted` (inside a record or a
+ * map, where text is quoted), on its own otherwise. Only looks. */
+static void es_box_render(EsBuf *b, const EsRecord *r, bool quoted) {
+    size_t at = r->type->offsets[0];
+    switch (r->type->kinds[0]) {
+    case 'n': {
+        EsText *t = es_number_text(ES_FIELD(r, double, at));
+        es_buf_add(b, t->chars, t->len);
+        es_release(t);
+        break;
+    }
+    case 'b': es_buf_add_text(b, ES_FIELD(r, bool, at) ? "yes" : "no"); break;
+    default: {
+        const EsText *t = ES_FIELD(r, EsText *, at);
+        if (quoted) es_buf_add(b, "\"", 1);
+        es_buf_add(b, t->chars, t->len);
+        if (quoted) es_buf_add(b, "\"", 1);
+        break;
+    }
+    }
+}
+
 /* `a dog with name "Rex" and age 3`; a record, list or map in a field is in
- * parentheses, text in quotes, nothing as "nothing". Only looks. */
+ * parentheses, text in quotes, nothing as "nothing". A box shows what it
+ * holds (quoted text inside records). Only looks. */
 static void es_record_render(EsBuf *b, const EsRecord *r, int depth) {
     if (!r) {
         es_buf_add_text(b, "nothing");
+        return;
+    }
+    if (r->type->style == ES_BOX) {
+        es_box_render(b, r, depth > 0);
         return;
     }
     const EsRecordType *type = r->type;
@@ -145,9 +172,10 @@ static void es_record_render(EsBuf *b, const EsRecord *r, int depth) {
         }
         default: {
             const EsRecord *inner = ES_FIELD(r, EsRecord *, at);
-            if (inner) es_buf_add(b, "(", 1);
+            bool parenthesized = inner && inner->type->style != ES_BOX;
+            if (parenthesized) es_buf_add(b, "(", 1);
             es_record_render(b, inner, depth + 1);
-            if (inner) es_buf_add(b, ")", 1);
+            if (parenthesized) es_buf_add(b, ")", 1);
             break;
         }
         }

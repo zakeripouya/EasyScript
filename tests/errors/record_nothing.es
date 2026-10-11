@@ -21,7 +21,7 @@ set first to later.
 set first's value to nothing.
 
 to twice with x:
-    if x is not nothing, give back x plus 1.
+    if x is not nothing, give back item 1 of x.
     give back 0
 
 note: setting what was checked undoes the check, and so does a loop that sets it

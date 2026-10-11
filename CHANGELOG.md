@@ -4,8 +4,13 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Breaking
+
+- **`the position of X in T` (and `in L`) is `a number or nothing`,** and gives **nothing** instead of 0 when X isn't there, following the design rule that "not found" results use `or nothing`. Using it as a number now needs a check first: `if at is not nothing:`, `if at is nothing, ...`, or `check which kind at is:`. Programs that compared it with 0 (`if the position of "@" in address is 0`) write `is nothing` instead. The exception for it is gone from the design principles.
+
 ### Added
 
+- **`or nothing` for numbers, text and yes/no:** `a number or nothing`, `text or nothing`, `yes or no or nothing`, for fields, inputs and results, like `a dog or nothing`. Such a value has to be checked before it's used as its kind (the same checks as for records, and `check which kind X is:` with `when it's nothing:` and `otherwise:`); kind mistakes with one say so ("It could be nothing. Check it first, like "if at is not nothing:"."). A number, text or yes/no goes wherever one that can be nothing is kept; printing shows the value or `nothing`. Lists and maps can't be nothing ("A list can't be "or nothing"."): an empty one says there's nothing. While the program runs, such a value is kept in a small box (like a record; nothing is no box at all).
 - **Kinds with variants** (Phase 2, step 19). See the new [chapter](docs/language-guide.md#14-kinds-with-variants).
   - **Defining one:** `a shape is one of:` with its variants indented below, each with its fields and their kinds in parentheses: `a circle with a radius (a number).`, `a rectangle with a width (a number) and a height (a number).`, or none: `a point.` Kinds can be recursive (`a sum with a left (an expression) and a right (an expression).`); one that could never be made is an error.
   - **Making values:** `a new circle with radius 3`, like records. A value never changes after it's made, and two are equal (`is`, `contains`, map values) when they're the same variant with equal fields.

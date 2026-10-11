@@ -84,6 +84,8 @@ void cg_emit_text(Codegen *g, const Expr *expr, StrBuf *out);
 // dividing, "as a number" on text). Two such values keep their order through
 // a temporary, because C doesn't fix the order of operands.
 bool cg_has_effects(const Codegen *g, const Expr *expr);
+// The kind of C value cg_emit_expr gives: the expression's, or "or nothing" when it's put in a box.
+Type cg_value_type(const Expr *expr);
 const char *cg_ctype(Type type);  // "double", "bool", "EsText *", "EsList *", "EsMap *", "void"
 // For text and lists (type_counted): the runtime functions that retain,
 // release, store into and drop a variable, and what an empty variable holds.

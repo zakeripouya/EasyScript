@@ -149,7 +149,7 @@ TypeVar checker_check_text_op(Checker *c, const Expr *expr) {
         TypeVar wanted = checker_check_expr(c, expr->as.text_op.arg);  // written first
         TypeVar in = checker_check_expr(c, expr->as.text_op.operand);
         defer_search(c, expr, in, wanted);
-        return types_new(c, TYPE_NUMBER, line);
+        return types_new(c, TYPE_MAYBE + TYPE_NUMBER, line);  // nothing when it isn't there
     }
     case TEXT_FROM_CODE:
         checker_require(c, checker_check_expr(c, expr->as.text_op.operand), TYPE_NUMBER, expr->as.text_op.operand,

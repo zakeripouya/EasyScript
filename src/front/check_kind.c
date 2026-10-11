@@ -253,7 +253,7 @@ TypeVar checker_check_new_variant(Checker *c, const Expr *expr) {
             continue;
         }
         given[index] = true;
-        if (!checker_fits(c, types_new(c, field->type, field->pos.line), value, v->value->pos.line)) {
+        if (!checker_fits(c, types_new(c, field->type, field->pos.line), value, v->value, v->value->pos.line)) {
             diag_error(c->diag, v->value->pos.span, "The field \"%s\" of %s is %s, but this is %s.", field->name.display,
                        variant_name(c, id), checker_type_name(c, field->type), checker_kind(c, value));
         }
@@ -421,15 +421,23 @@ static void check_complete(Checker *c, const Stmt *stmt, Type type, const size_t
         if (variant_kind(c, v)->sum == type_sum_index(type) && !seen[v]) ids[missing++] = v;
     }
     bool nothing_missing = type_is_maybe(type) && !seen[n];
+    bool value_missing = type_is_maybe(type) && !type_is_sum(type);  // "a number or nothing": only "otherwise" covers it
     const MatchBranch *last = &vec_last(&stmt->as.match.branches);
     const char *subject = checker_path(c, stmt->as.match.subject);
-    if (last->otherwise && missing == 0 && !nothing_missing) {
+    if (last->otherwise && missing == 0 && !nothing_missing && !value_missing) {
         diag_warning(c->diag, last->pos.span, "This \"otherwise\" can never run: the \"when\"s above it cover every "
                                               "kind %s can be.", subject ? subject : "the value");
         diag_note(c->diag, "Take it out, or the sentences in it will never be used.");
         return;
     }
-    if (last->otherwise || (missing == 0 && !nothing_missing)) return;
+    if (last->otherwise || (missing == 0 && !nothing_missing && !value_missing)) return;
+    if (value_missing && !nothing_missing) {  // "when it's nothing:" alone
+        diag_error(c->diag, stmt->pos.span, "This doesn't say what to do when %s isn't nothing.",
+                   subject ? subject : "the value");
+        diag_note(c->diag, "Add an \"otherwise:\" at the end, for when it's %s.",
+                  checker_type_name(c, type_present(type)));
+        return;
+    }
     const char *names = missing ? join_names(c, ids, missing) : "nothing";
     if (missing && nothing_missing) names = arena_sprintf(c->arena, "%s or nothing", names);
     diag_error(c->diag, stmt->pos.span, "This doesn't say what to do when %s is %s.", subject ? subject : "the value",

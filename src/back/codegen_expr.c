@@ -406,11 +406,23 @@ static void emit_binary(Codegen *g, const Expr *expr, StrBuf *out) {
     }
 }
 
+// The runtime's letter for a number, text or yes/no in a box: es_box_n, es_unbox_t, ...
+static char box_letter(Type present) {
+    return present == TYPE_TEXT ? 't' : present == TYPE_YESNO ? 'b' : 'n';
+}
+
 // "it": the number of the innermost count or times loop, or the item of a
-// for-each loop or helper (the checker made sure there is one).
-static void emit_it(Codegen *g, StrBuf *out) {
+// for-each loop or helper, or the value of a "when" (out of its box where
+// it's checked not to be nothing). The checker made sure there is one.
+static void emit_it(Codegen *g, const Expr *expr, StrBuf *out) {
     for (size_t i = g->loops.len; i > 0; i--) {
         const LoopCode *loop = &g->loops.items[i - 1];
+        if (loop->item && type_is_maybe(loop->item_type) && type_boxed(expr->type)) {
+            sb_appendf(out, "es_unbox_%c(%zu, ", box_letter(expr->type), cg_site(g, expr->pos));
+            cg_emit_var(out, loop->item, loop->item_type);
+            sb_append_char(out, ')');
+            return;
+        }
         if (loop->item) {
             cg_emit_var(out, loop->item, loop->item_type);
             return;
@@ -439,7 +451,7 @@ bool cg_ordered(Codegen *g, Expr *const *exprs, size_t n, const char **values, S
         if (!exprs[i]) continue;
         values[i] = cg_operand(g, exprs[i], false);
         if (effects < 2) continue;
-        size_t t = cg_new_temp(g, exprs[i]->type);
+        size_t t = cg_new_temp(g, cg_value_type(exprs[i]));
         sb_appendf(out, "es_t%zu = %s, ", t, values[i]);
         values[i] = arena_sprintf(g->arena, "es_t%zu", t);
     }
@@ -487,16 +499,29 @@ static void emit_convert(Codegen *g, const Expr *expr, StrBuf *out) {
 
 static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out);
 
-// A record or nothing that the checker saw checked is checked again here
-// (another name for the same record could have changed it since).
+// A value that can be nothing, checked not to be: a record or a value of a
+// kind is checked again (another name for the same record could have
+// changed it since), and a number, text or yes/no comes out of its box. A
+// value given where "or nothing" is kept goes into a box.
 void cg_emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
+    bool box = expr->lifted && type_boxed(expr->type);
+    if (box) sb_appendf(out, "es_box_%c(", box_letter(expr->type));
     if (!expr->narrowed) {
         emit_expr(g, expr, out);
-        return;
+    } else if (type_boxed(expr->type)) {
+        sb_appendf(out, "es_unbox_%c(%zu, ", box_letter(expr->type), cg_site(g, expr->pos));
+        emit_expr(g, expr, out);
+        sb_append_char(out, ')');
+    } else {
+        sb_appendf(out, "es_present(%zu, ", cg_site(g, expr->pos));
+        emit_expr(g, expr, out);
+        sb_append_char(out, ')');
     }
-    sb_appendf(out, "es_present(%zu, ", cg_site(g, expr->pos));
-    emit_expr(g, expr, out);
-    sb_append_char(out, ')');
+    if (box) sb_append_char(out, ')');
+}
+
+Type cg_value_type(const Expr *expr) {
+    return expr->lifted && type_boxed(expr->type) ? expr->type + TYPE_MAYBE : expr->type;
 }
 
 static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
@@ -524,7 +549,7 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
         break;
     case EXPR_BINARY: emit_binary(g, expr, out); break;
     case EXPR_CONVERT: emit_convert(g, expr, out); break;
-    case EXPR_IT: emit_it(g, out); break;
+    case EXPR_IT: emit_it(g, expr, out); break;
     case EXPR_LIST:
     case EXPR_EMPTY_LIST:
     case EXPR_ITEM:

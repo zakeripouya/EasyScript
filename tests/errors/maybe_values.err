@@ -1,0 +1,44 @@
+Line 4: I can't add a number to a number or nothing.
+    say at plus 1.
+        ^^^^^^^^^
+It could be nothing. Check it first, like "if at is not nothing:".
+
+Line 5: I can't multiply a number or nothing by a number.
+    say (the position of "b" in word) times 2.
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+It could be nothing. Give it a name with "let" and check it first with "is not nothing".
+
+Line 6: I can't compare a number or nothing with a number.
+    if at is 3, say "three".
+       ^^^^^^^
+It could be nothing. Check it first, like "if at is not nothing:".
+
+Line 7: I can't compare a number or nothing with a number.
+    if at is more than 2, say "far".
+       ^^^^^^^^^^^^^^^^^
+It could be nothing. Check it first, like "if at is not nothing:".
+
+Line 8: The position of a character has to be a number, but this is a number or nothing.
+    say character at of word.
+                  ^^
+It could be nothing. Check it first, like "if at is not nothing:".
+
+Line 9: This doesn't say what to do when at isn't nothing.
+    check which kind at is:
+    ^^^^^^^^^^^^^^^^^^^^^^^
+Add an "otherwise:" at the end, for when it's a number.
+
+Line 14: "bigger" needs a number for "n", but this is a number or nothing.
+    say bigger with at.
+                    ^^
+It could be nothing. Check it first, like "if at is not nothing:".
+
+Line 17: "maybe" gives back a number (since line 16), but this is nothing.
+        give back nothing.
+                  ^^^^^^^
+To give back nothing too, say so in the definition, like "giving back a number or nothing".
+
+Line 19: "flag" is a yes/no value, which has no variants to check.
+    check which kind flag is:
+                     ^^^^
+"check which kind" tells apart the variants of a kind defined with "is one of:" (like "a shape is one of:"), or a value that can be nothing.

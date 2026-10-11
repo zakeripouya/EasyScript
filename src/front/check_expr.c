@@ -64,7 +64,11 @@ const char *checker_function_header(Checker *c, const Function *f) {
 void checker_require(Checker *c, TypeVar var, Type type, const Expr *at, const char *message, const char *hint) {
     if (types_require(c, var, type, at->pos.line)) return;
     diag_error(c->diag, at->pos.span, "%s, but this is %s.", message, checker_kind(c, var));
-    if (hint) diag_note(c->diag, "%s", hint);
+    if (type_is_maybe(types_of(c, var)) && type_present(types_of(c, var)) == type) {
+        checker_note_maybe(c, var, at);
+    } else if (hint) {
+        diag_note(c->diag, "%s", hint);
+    }
 }
 
 void checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Span span, size_t line) {
@@ -91,6 +95,10 @@ static void report_compare(Checker *c, const Expr *expr, TypeVar left, TypeVar r
     diag_error(c->diag, expr->pos.span, "I can't compare %s with %s.", checker_kind(c, left), checker_kind(c, right));
     if ((l == TYPE_TEXT && r == TYPE_NUMBER) || (l == TYPE_NUMBER && r == TYPE_TEXT)) {
         diag_note(c->diag, "Turn the text into a number first with \"as a number\".");
+    } else if (type_is_maybe(l) && type_present(l) == r) {
+        checker_note_maybe(c, left, expr->as.binary.left);
+    } else if (type_is_maybe(r) && type_present(r) == l) {
+        checker_note_maybe(c, right, expr->as.binary.right);
     }
 }
 
@@ -153,9 +161,15 @@ static TypeVar check_binary(Checker *c, const Expr *expr) {
     case BINARY_NOT_ENDS_WITH: return checker_check_starts(c, expr, left, right);
     case BINARY_HAS:
     case BINARY_NOT_HAS: return checker_check_has(c, expr, left, right);
-    default:
+    default: {
+        size_t before = diag_count(c->diag);
         checker_arithmetic(c, op, left, right, expr->pos.span, line);
+        if (diag_count(c->diag) > before) {  // "p plus 1" where p could be nothing
+            checker_note_maybe(c, types_of(c, left) == TYPE_NUMBER ? right : left,
+                               types_of(c, left) == TYPE_NUMBER ? expr->as.binary.right : expr->as.binary.left);
+        }
         return types_new(c, TYPE_NUMBER, line);
+    }
     }
 }
 
@@ -270,7 +284,8 @@ static TypeVar finish_call(Checker *c, const Function *f, const Expr *expr, cons
         return error_var(c);
     }
     for (size_t i = 0; i < n; i++) {
-        if (!checker_fits(c, f->params.items[i], args[i], expr->as.call.args.items[i]->pos.line)) {
+        const Expr *arg = expr->as.call.args.items[i];
+        if (!checker_fits(c, f->params.items[i], args[i], arg, arg->pos.line)) {
             report_argument_kind(c, f, i, expr->as.call.args.items[i], args[i]);
         }
     }

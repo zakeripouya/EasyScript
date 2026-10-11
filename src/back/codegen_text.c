@@ -96,10 +96,12 @@ void cg_emit_text_search(Codegen *g, const Expr *expr, StrBuf *out) {
 }
 
 // "the position of X in T" (or in a list): X is written first, so it's worked out first.
+// es_found(es_text_position(X, T)): a number or nothing (the runtime's 0 is nothing).
 static void emit_position(Codegen *g, const Expr *expr, StrBuf *out) {
     const Expr *in = expr->as.text_op.operand;
     Expr *parts[] = {expr->as.text_op.arg, expr->as.text_op.operand};
     const char *v[2];
+    sb_append(out, "es_found(");
     bool opened = cg_ordered(g, parts, 2, v, out);
     if (!opened && type_is_list(in->type) && in->kind == EXPR_NAME) v[1] = cg_list_operand(g, in);
     if (type_is_list(in->type)) {
@@ -107,7 +109,7 @@ static void emit_position(Codegen *g, const Expr *expr, StrBuf *out) {
     } else {
         sb_appendf(out, "es_text_position(%s, %s)", v[0], v[1]);
     }
-    if (opened) sb_append_char(out, ')');
+    sb_append(out, opened ? "))" : ")");
 }
 
 // The forms with more than one part: split, joined, replaced.
@@ -224,6 +226,7 @@ bool cg_emit_append(Codegen *g, const Stmt *stmt) {
         value = value->as.binary.left;
     }
     if (parts.len == 0 || value->kind != EXPR_NAME || strcmp(value->as.name, name) != 0 || value->type != TYPE_TEXT ||
+        value->narrowed || stmt->as.assign.type != TYPE_TEXT ||
         cg_is_constant(g, name) || cg_find_function(g, name)) {
         return false;
     }

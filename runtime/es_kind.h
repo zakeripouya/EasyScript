@@ -52,7 +52,7 @@ static bool es_is_variant(EsRecord *r, const EsRecordType *type) {
  * with equal fields (records in them the same record). Only looks. */
 static bool es_record_equal(const EsRecord *a, const EsRecord *b) {
     if (a == b) return true;
-    if (!a || !b || a->type != b->type || a->type->style != ES_VARIANT) return false;
+    if (!a || !b || a->type != b->type || a->type->style == ES_RECORD) return false;
     const EsRecordType *type = a->type;
     for (int i = 0; i < type->fields; i++) {
         size_t at = type->offsets[i];
@@ -68,6 +68,77 @@ static bool es_record_equal(const EsRecord *a, const EsRecord *b) {
         if (!same) return false;
     }
     return true;
+}
+
+/* --- Boxes: a number, text or yes/no that can be nothing ---------------------- */
+
+typedef struct {
+    EsRecord base;
+    double v;
+} EsBoxN;
+
+typedef struct {
+    EsRecord base;
+    EsText *v;
+} EsBoxT;
+
+typedef struct {
+    EsRecord base;
+    bool v;
+} EsBoxB;
+
+static const char *const es_box_names[] = {"value"};
+static const size_t es_box_at_n[] = {offsetof(EsBoxN, v)};
+static const size_t es_box_at_t[] = {offsetof(EsBoxT, v)};
+static const size_t es_box_at_b[] = {offsetof(EsBoxB, v)};
+static const EsRecordType es_box_type_n = {"a number", 1, es_box_names, "n", es_box_at_n, sizeof(EsBoxN), ES_BOX};
+static const EsRecordType es_box_type_t = {"text", 1, es_box_names, "t", es_box_at_t, sizeof(EsBoxT), ES_BOX};
+static const EsRecordType es_box_type_b = {"a yes/no value", 1, es_box_names, "b", es_box_at_b, sizeof(EsBoxB), ES_BOX};
+
+/* A value given where "or nothing" is kept: put in a box (takes text). */
+static EsRecord *es_box_n(double v) {
+    EsBoxN *r = (EsBoxN *)es_record_new(&es_box_type_n);
+    r->v = v;
+    return &r->base;
+}
+
+static EsRecord *es_box_t(EsText *v) {
+    EsBoxT *r = (EsBoxT *)es_record_new(&es_box_type_t);
+    r->v = v;
+    return &r->base;
+}
+
+static EsRecord *es_box_b(bool v) {
+    EsBoxB *r = (EsBoxB *)es_record_new(&es_box_type_b);
+    r->v = v;
+    return &r->base;
+}
+
+/* A box the compiler saw checked not to be nothing: what it holds (owned),
+ * then the box is released. Another name for a record holding it can have
+ * set it to nothing since; then it's a runtime error, as for records. */
+static double es_unbox_n(int site, EsRecord *r) {
+    double v = ((EsBoxN *)es_present(site, r))->v;
+    es_record_release(r);
+    return v;
+}
+
+static EsText *es_unbox_t(int site, EsRecord *r) {
+    EsText *v = es_retain(((EsBoxT *)es_present(site, r))->v);
+    es_record_release(r);
+    return v;
+}
+
+static bool es_unbox_b(int site, EsRecord *r) {
+    bool v = ((EsBoxB *)es_present(site, r))->v;
+    es_record_release(r);
+    return v;
+}
+
+/* "the position of X in T": the runtime's searches give 0 when X isn't
+ * there, which is nothing. */
+static EsRecord *es_found(double position) {
+    return position > 0 ? es_box_n(position) : NULL;
 }
 
 /* "a copy of s": the same variant, with its own copies of the lists and maps

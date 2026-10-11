@@ -98,7 +98,8 @@ void cg_emit_new_variant(Codegen *g, const Expr *expr, StrBuf *out) {
 // es_vfield_n(SITE, R, &es_wt0, offsetof(es_W0, f0)), which releases R.
 void cg_emit_variant_field(Codegen *g, const Expr *expr, StrBuf *out) {
     size_t id = expr->as.field.variant;
-    sb_appendf(out, "es_vfield_%c(%zu, %s, &es_wt%zu, offsetof(es_W%zu, f%zu))", cg_field_kind(expr->type),
+    Type kept = expr->narrowed ? expr->type + TYPE_MAYBE : expr->type;  // as the field keeps it
+    sb_appendf(out, "es_vfield_%c(%zu, %s, &es_wt%zu, offsetof(es_W%zu, f%zu))", cg_field_kind(kept),
                cg_site(g, expr->pos), cg_operand(g, expr->as.field.record, false), id, id, expr->as.field.index);
 }
 

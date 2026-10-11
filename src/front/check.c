@@ -31,8 +31,8 @@ static const Symbol *check_target(Checker *c, const Name *name) {
 }
 
 // A variable keeps the kind it was made with.
-static void store(Checker *c, const Symbol *symbol, TypeVar value, Span span) {
-    if (checker_fits(c, symbol->var, value, diag_line(c->diag, span.offset))) return;
+static void store(Checker *c, const Symbol *symbol, TypeVar value, const Expr *expr, Span span) {
+    if (checker_fits(c, symbol->var, value, expr, diag_line(c->diag, span.offset))) return;
     diag_error(c->diag, span, "\"%s\" is %s (made on line %zu), but this is %s.", symbol->display,
                checker_kind(c, symbol->var), symbol->line, checker_kind(c, value));
     diag_note(c->diag, "A variable keeps the kind of value it was made with. To keep %s, make a new variable for it.",
@@ -67,7 +67,7 @@ static void check_set(Checker *c, const Stmt *stmt) {
     }
     if (field) {
         TypeVar var = check_field_target(c, field);
-        if (!checker_fits(c, var, value, value_expr->pos.line)) {
+        if (!checker_fits(c, var, value, value_expr, value_expr->pos.line)) {
             diag_error(c->diag, value_expr->pos.span, "The field \"%s\" is %s, but this is %s.",
                        field->as.field.name.display, checker_kind(c, var), checker_kind(c, value));
         }
@@ -76,7 +76,7 @@ static void check_set(Checker *c, const Stmt *stmt) {
     }
     const Symbol *symbol = check_target(c, &stmt->as.assign.name);
     if (symbol) {
-        store(c, symbol, value, value_expr->pos.span);
+        store(c, symbol, value, value_expr, value_expr->pos.span);
         TypedSlot slot = {(Type *)&stmt->as.assign.type, symbol->var};
         vec_push(c->arena, &c->slots, slot);
     }
@@ -112,7 +112,7 @@ static void make_text(Checker *c, const Name *name) {
     TypeVar text = types_new(c, TYPE_TEXT, name->pos.line);
     const Symbol *existing = checker_find_made(c, name->text);
     if (existing) {
-        store(c, existing, text, name->pos.span);
+        store(c, existing, text, NULL, name->pos.span);
     } else {
         checker_make(c, name, text);
     }
@@ -154,10 +154,15 @@ static void check_return(Checker *c, const Stmt *stmt) {
         diag_error(c->diag, stmt->as.returned->pos.span, "\"%s\" gives back nothing, so it can't give back a value.",
                    f->display);
         diag_note(c->diag, "It's defined on line %zu: \"%s\".", f->definition->pos.line, checker_function_header(c, f));
-    } else if (!checker_fits(c, f->result, value, stmt->pos.line)) {
+    } else if (!checker_fits(c, f->result, value, stmt->as.returned, stmt->pos.line)) {
         diag_error(c->diag, stmt->as.returned->pos.span, "\"%s\" gives back %s (since line %zu), but this is %s.",
                    f->display, checker_type_name(c, result), types_line(c, f->result), checker_kind(c, value));
-        diag_note(c->diag, "A function gives back the same kind of value every time.");
+        if (types_of(c, value) == TYPE_NOTHING && type_can_be_nothing(result)) {
+            diag_note(c->diag, "To give back nothing too, say so in the definition, like \"giving back %s or "
+                               "nothing\".", checker_type_name(c, result));
+        } else {
+            diag_note(c->diag, "A function gives back the same kind of value every time.");
+        }
     }
 }
 

@@ -21,12 +21,12 @@ Only a value that's "a node or nothing" can be nothing.
 Line 17: I can't compare a number with nothing.
     if 5 is not nothing, say "never".
        ^^^^^^^^^^^^^^^^
-Only a record can be nothing: a field or input whose kind is like "a dog or nothing".
+Only a value whose kind ends in "or nothing" can be nothing, like a field or input that's "a number or nothing".
 
 Line 18: I can't compare nothing with nothing.
     if nothing is nothing, say "always".
        ^^^^^^^^^^^^^^^^^^
-Compare a record or nothing with it, like "if the node's next is nothing".
+Compare something that can be nothing with it, like "if the node's next is nothing".
 
 Line 20: "first" is a node (made on line 12), but this is a node or nothing.
     set first to later.
@@ -37,9 +37,10 @@ Line 21: The field "value" is a number, but this is nothing.
     set first's value to nothing.
                          ^^^^^^^
 
-Line 24: This is a record or nothing, but it's used as a number here.
-        if x is not nothing, give back x plus 1.
-                                       ^
+Line 24: This can be nothing, but it's used as a list of numbers here, which can't be.
+        if x is not nothing, give back item 1 of x.
+                                                 ^
+Only a number, text, a yes/no value, a record or a kind with variants can be nothing. To say a list or map has nothing in it, make it empty.
 
 Line 31: "later" could be nothing, so check it first.
         say later's value.

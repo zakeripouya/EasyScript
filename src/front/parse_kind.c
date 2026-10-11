@@ -105,13 +105,13 @@ static bool parse_or_nothing(Parser *p, Type *type) {
     size_t words = parser_match_words(p, "or nothing");
     if (words == 0) return true;
     Span span = parser_consume(p, words);
-    if (type_is_record(*type) || type_is_sum(*type)) {
+    if (type_can_be_nothing(*type)) {
         *type += TYPE_MAYBE;
         return true;
     }
-    if (parser_error(p, span, "Only a record can be \"or nothing\", not %s.", ast_type_name(p->arena, p->records, *type))) {
-        diag_note(p->diag, "A number, text, yes/no value or list always has a value. To say there's none, use 0, "
-                           "empty text (\"\"), no, or an empty list.");
+    if (parser_error(p, span, "%s can't be \"or nothing\".", type_is_map(*type) ? "A map" : "A list")) {
+        diag_note(p->diag, "To say there's nothing in it, use an empty one, like \"%s\".",
+                  type_is_map(*type) ? "an empty map from text to numbers" : "an empty list of numbers");
     }
     return false;
 }
@@ -122,7 +122,7 @@ bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type) {
         parser_consume(p, 2);
         if (!parser_parse_items_kind(p, type)) return false;
         *type = type_list_of(*type);
-        return true;
+        return parse_or_nothing(p, type);
     }
     if (parser_at_map_kind(p, false)) return parser_parse_map_kind(p, type) && parse_or_nothing(p, type);
     if (parser_at_word(p, 0, "number")) {

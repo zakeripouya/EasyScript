@@ -413,8 +413,8 @@ A position that isn't in the text (0, past the end, or not whole) stops the prog
 | `T starts with X` / `T ends with X` | Yes if T begins or ends with X | `word starts with "un"`, `word ends with "ing"` |
 | `T does not start with X` / `T doesn't start with X` | The opposite | `line doesn't start with "#"` |
 | `T does not end with X` / `T doesn't end with X` | The opposite | `file does not end with ".txt"` |
-| `the position of X in T` | The position of the character where X first starts, or **0 if it isn't there** (positions start at 1, so 0 is never a real one). Empty text is found at position 1 | `the position of "x" in word` |
-| `the position of X in L` | The same for a list: the position of the first item equal to X, or 0 | `the position of 95 in scores` |
+| `the position of X in T` | The position of the character where X first starts, or **nothing if it isn't there**: it's `a number or nothing`, so check it before using it as a number. Empty text is found at position 1 | `the position of "x" in word` |
+| `the position of X in L` | The same for a list: the position of the first item equal to X, or nothing | `the position of 95 in scores` |
 
 These are comparisons, like `contains` for lists: `word starts with "un" and word ends with "able"` works. `X` and `T` in `the position of X in T` are single values (names, text, numbers, or something in parentheses).
 
@@ -466,7 +466,7 @@ All record words are **Available**. A record holds named values, its **fields**,
 | `NAME is a kind of thing with:` + indented fields | Defines a kind of record called NAME (one or more words). Only at the top level | `a dog is a kind of thing with:` |
 | `NAME, which is KIND.` | A field, one per line (or sentence). KIND is any kind: `a number`, `text`, `yes or no`, a list, or a kind of record | `a name, which is text.`<br>`a start time, which is a number.` |
 | `NAME, which is KIND, starting at X.` | A field with a starting value, used when `new` doesn't give one. X is fixed before the program runs, like a constant: numbers, text, yes or no, constants, fixed lists, or an empty list | `an age, which is a number, starting at 0.` |
-| `NAME, which is KIND or nothing.` | A field that can be nothing (only a kind of record can). It starts as nothing | `a next, which is a node or nothing.` |
+| `NAME, which is KIND or nothing.` | A field that can be nothing (any kind but a list or map). It starts as nothing | `a next, which is a node or nothing.`<br>`a nickname, which is text or nothing.` |
 
 A kind of record is written like any other kind: `(a dog)` for an input, `giving back a dog or nothing`, `a list of dogs` (the plural adds `s`, or `es` after `s`, `x`, `z`, `ch` and `sh`; `y` after a consonant becomes `ies`). A field can't always hold a record of its own kind (`a next, which is a node.`), because then no node could ever be made; make it `a node or nothing`.
 
@@ -492,9 +492,9 @@ A kind of record is written like any other kind: `(a dog)` for an input, `giving
 
 | Pattern | Meaning | Example |
 |---|---|---|
-| `X is nothing` / `X is not nothing` / `X isn't nothing` | Yes if X (a record or nothing) is nothing, or isn't | `if the node's next is not nothing:` |
+| `X is nothing` / `X is not nothing` / `X isn't nothing` | Yes if X (a value that can be nothing) is nothing, or isn't | `if the node's next is not nothing:` |
 | `set R's FIELD to nothing` | Empties a field that can be nothing | `set ann's friend to nothing` |
-| `give back nothing` | In a function that gives back a record or nothing (or in one that gives back nothing at all, where it's `return`) | `give back nothing` |
+| `give back nothing` | In a function that gives back something or nothing (or in one that gives back nothing at all, where it's `return`) | `give back nothing` |
 
 A value that can be nothing (a field, a variable made from one, or an input) **can't be used as a record until it's checked**: its fields, and giving it where a record is needed, are compile errors outside a check. Checks:
 
@@ -608,7 +608,7 @@ Every value has a kind, worked out by the compiler before the program runs (**Av
 
 | Kind | Written in a definition as | Comes from |
 |---|---|---|
-| number | `(a number)`, `giving back a number` | number values, arithmetic, `length of`, `as a number`, `it`, counting loops, `the position of`, `the code of` |
+| number | `(a number)`, `giving back a number` | number values, arithmetic, `length of`, `as a number`, `it`, counting loops, `the code of` |
 | text | `(text)`, `giving back text` | text values, `followed by`, `and` with text, `as text`, `ask`, reading a file, characters, `in uppercase`, `joined with`, ... |
 | yes/no | `(yes or no)` or `(yes/no)`, `giving back yes or no` | `yes`/`no`, comparisons, `and`/`or`/`not` between yes/no values |
 | nothing | `giving back nothing` | a function with no `give back X` (only as what a function gives back) |
@@ -616,6 +616,7 @@ Every value has a kind, worked out by the compiler before the program runs (**Av
 | record | `(a dog)`, `giving back a dog` | `a new dog`, a field holding one, `a copy of` |
 | record or nothing | `(a dog or nothing)`, `giving back a dog or nothing` | a field `which is a dog or nothing`, `nothing` where one goes |
 | kind with variants | `(a shape)`, `(a shape or nothing)`, `giving back an expression` | `a new circle ...`, a field holding one, `a copy of` |
+| number, text or yes/no that can be nothing | `(a number or nothing)`, `(text or nothing)`, `(yes or no or nothing)`, `giving back a number or nothing` | `the position of` (nothing when it isn't there), a field or input of that kind, `nothing` where one goes. It has to be checked (`if X is not nothing:`, `check which kind X is:`) before it's used as a number, text or yes/no. A list or map can't be nothing |
 | map | `(a map from text to numbers)`, `(a map from numbers to lists of text)`, `giving back a map from text to numbers`; in a list or map: `maps from text to numbers` | `a map of ...`, `an empty map from ...`, `a copy of` |
 
 ## Later phases

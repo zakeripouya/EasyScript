@@ -181,7 +181,7 @@ TypeVar checker_check_new(Checker *c, const Expr *expr) {
             continue;
         }
         given[index] = true;
-        if (!checker_fits(c, types_new(c, field->type, field->pos.line), value, v->value->pos.line)) {
+        if (!checker_fits(c, types_new(c, field->type, field->pos.line), value, v->value, v->value->pos.line)) {
             diag_error(c->diag, v->value->pos.span, "The field \"%s\" of %s is %s, but this is %s.", field->name.display,
                        checker_type_name(c, type), checker_type_name(c, field->type), checker_kind(c, value));
         }

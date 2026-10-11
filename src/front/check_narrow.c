@@ -145,6 +145,17 @@ void checker_kill_set_in(Checker *c, const Block *block) {
 
 // --- Values that can be nothing ------------------------------------------------------------
 
+void checker_note_maybe(Checker *c, TypeVar var, const Expr *at) {
+    if (!type_is_maybe(types_of(c, var))) return;
+    const char *path = checker_path(c, at);
+    if (path) {
+        diag_note(c->diag, "It could be nothing. Check it first, like \"if %s is not nothing:\".",
+                  at->kind == EXPR_NAME ? at->display : path);
+    } else {
+        diag_note(c->diag, "It could be nothing. Give it a name with \"let\" and check it first with \"is not nothing\".");
+    }
+}
+
 TypeVar checker_check_value(Checker *c, const Expr *expr) {
     if (expr->kind != EXPR_NOTHING) return checker_check_expr(c, expr);
     TypeVar var = types_new(c, TYPE_NOTHING, expr->pos.line);
@@ -153,15 +164,18 @@ TypeVar checker_check_value(Checker *c, const Expr *expr) {
     return var;
 }
 
-bool checker_fits(Checker *c, TypeVar target, TypeVar value, size_t line) {
+bool checker_fits(Checker *c, TypeVar target, TypeVar value, const Expr *expr, size_t line) {
     Type t = types_of(c, target), v = types_of(c, value);
     if (v == TYPE_NOTHING) {
         if (t == TYPE_UNKNOWN) return types_require(c, target, TYPE_MAYBE, line);
         return t == TYPE_MAYBE || type_is_maybe(t) || t == TYPE_ERROR;
     }
-    bool present = (type_is_record(v) || type_is_sum(v)) && !type_is_maybe(v);
-    if (present && type_is_maybe(t) && type_present(t) == v) return true;  // a dog where a dog or nothing goes
-    if (present && t == TYPE_MAYBE) return types_require(c, target, v + TYPE_MAYBE, line);
+    // A dog where a dog or nothing goes, a number where a number or nothing goes.
+    if (expr && type_can_be_nothing(v) && ((type_is_maybe(t) && type_present(t) == v) || t == TYPE_MAYBE)) {
+        if (t == TYPE_MAYBE) types_require(c, target, v + TYPE_MAYBE, line);
+        ((Expr *)expr)->lifted = true;  // codegen puts a number, text or yes/no in a box
+        return true;
+    }
     return types_unify(c, target, value);
 }
 
@@ -176,7 +190,7 @@ bool checker_check_nothing_test(Checker *c, const Expr *expr, TypeVar *result) {
     checker_check_value(c, left->kind == EXPR_NOTHING ? left : right);
     if (other->kind == EXPR_NOTHING) {
         diag_error(c->diag, expr->pos.span, "I can't compare nothing with nothing.");
-        diag_note(c->diag, "Compare a record or nothing with it, like \"if the node's next is nothing\".");
+        diag_note(c->diag, "Compare something that can be nothing with it, like \"if the node's next is nothing\".");
         return true;
     }
     const Expr *saved = c->unnarrowed;
@@ -193,7 +207,8 @@ bool checker_check_nothing_test(Checker *c, const Expr *expr, TypeVar *result) {
         diag_note(c->diag, "Only a value that's \"%s or nothing\" can be nothing.", checker_kind(c, var));
     } else if (type != TYPE_MAYBE && !type_is_maybe(type) && type != TYPE_ERROR) {
         diag_error(c->diag, expr->pos.span, "I can't compare %s with nothing.", checker_kind(c, var));
-        diag_note(c->diag, "Only a record can be nothing: a field or input whose kind is like \"a dog or nothing\".");
+        diag_note(c->diag, "Only a value whose kind ends in \"or nothing\" can be nothing, like a field or input that's "
+                           "\"a number or nothing\".");
     }
     return true;
 }
@@ -202,10 +217,12 @@ bool checker_settle_present(Checker *c, const Deferred *d) {
     Type maybe = types_of(c, d->left), present = types_of(c, d->right);
     if (maybe == TYPE_ERROR || present == TYPE_ERROR) return true;
     if (type_is_maybe(maybe)) return types_require(c, d->right, type_present(maybe), d->expr->pos.line) || true;
-    if (type_is_record(present) || type_is_sum(present)) return types_require(c, d->left, present + TYPE_MAYBE, d->expr->pos.line) || true;
+    if (type_can_be_nothing(present)) return types_require(c, d->left, present + TYPE_MAYBE, d->expr->pos.line) || true;
     if (present == TYPE_UNKNOWN) return false;
-    diag_error(c->diag, d->expr->pos.span, "This is a record or nothing, but it's used as %s here.",
+    diag_error(c->diag, d->expr->pos.span, "This can be nothing, but it's used as %s here, which can't be.",
                checker_kind(c, d->right));
+    diag_note(c->diag, "Only a number, text, a yes/no value, a record or a kind with variants can be nothing. To say a "
+                       "list or map has nothing in it, make it empty.");
     return true;
 }
 

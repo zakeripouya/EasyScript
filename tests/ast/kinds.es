@@ -1,7 +1,7 @@
 note: Every form of kinds with variants.
 a shape is one of:
     a circle with a radius (a number).
-    a rectangle with a width (a number), a height (a number) and a label (text).
+    a rectangle with a width (a number), a height (a number) and a label (text or nothing).
     a point.
 an expression is one of:
     a number value with an amount (a number).
@@ -31,3 +31,5 @@ to scale with s (a shape) and factor, giving back a shape or nothing:
 let shapes be an empty list of shapes.
 let its be 5.
 say its.
+to half of n (a number or nothing), giving back yes or no or nothing:
+    give back nothing.

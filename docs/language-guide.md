@@ -594,7 +594,7 @@ Try it: `./easyscript run examples/programs/files.es`
 
 **Status: Available.**
 
-Every value has a **kind** (its type): a number, text, yes/no, or a list of one of these (see [Lists](#10-lists)). The compiler works out the kind of every value before the program runs, so mistakes like adding text to a number are reported with the line and a caret, the same way as a misspelled name, instead of stopping the program halfway. The program then runs faster too, because it never has to check kinds while it runs.
+Every value has a **kind** (its type): a number, text, yes/no, a list of one of these (see [Lists](#10-lists)), or one that can be nothing (`a number or nothing`). The compiler works out the kind of every value before the program runs, so mistakes like adding text to a number are reported with the line and a caret, the same way as a misspelled name, instead of stopping the program halfway. The program then runs faster too, because it never has to check kinds while it runs.
 
 Most programs never mention kinds. They come from:
 
@@ -642,7 +642,7 @@ to both with first (yes or no) and second (yes or no):
     give back first and second.
 ```
 
-The kinds are `a number`, `text`, `yes or no` (or `yes/no`), and lists like `a list of numbers`; `giving back nothing` says the function gives back no value. Kinds are optional, and you can write some and leave out others; whatever you write is checked like everything else.
+The kinds are `a number`, `text`, `yes or no` (or `yes/no`), lists like `a list of numbers`, and any of these except lists and maps followed by `or nothing` ([below](#values-that-can-be-nothing)); `giving back nothing` says the function gives back no value. Kinds are optional, and you can write some and leave out others; whatever you write is checked like everything else.
 
 **Why this wording?** It had to read like English and not look like the `as a number` / `as text` conversions, which change a value. Other choices that were considered:
 
@@ -653,6 +653,33 @@ The kinds are `a number`, `text`, `yes or no` (or `yes/no`), and lists like `a l
 | `to area with width: number` | The colon already opens the function's block |
 | `to area with width which is a number:` | Long, and "is" already compares values |
 | `to area ... gives back a number:` / `returns a number` | "to area ... gives back" doesn't read as a sentence; `giving back` matches `give back` |
+
+### Values that can be nothing
+
+A kind can end in `or nothing`: `a number or nothing`, `text or nothing`, `yes or no or nothing`, and also `a dog or nothing` ([records](#fields-that-can-be-nothing)) and `a shape or nothing` ([kinds with variants](#14-kinds-with-variants)). Such a value is either a value of that kind or nothing. `the position of X in T` gives one (nothing when X isn't there), and fields, inputs and results can be one:
+
+```
+a person is a kind of thing with:
+    a name, which is text.
+    a nickname, which is text or nothing.
+
+to half of n (a number or nothing), giving back a number:
+    if n is nothing, give back 0.
+    give back n divided by 2.
+```
+
+**It has to be checked before it's used as its kind.** Using it unchecked is an error before the program runs:
+
+```
+Line 4: I can't add a number to a number or nothing.
+    say at plus 1.
+        ^^^^^^^^^
+It could be nothing. Check it first, like "if at is not nothing:".
+```
+
+The checks are the same as for records: `if X is not nothing:`, `while X is not nothing:`, the right side of `X is not nothing and ...`, the rest of a block after `if X is nothing, give back 0.`, and `check which kind X is:` with `when it's nothing:` and `otherwise:` (where `it` is the number). A number, text or yes/no value can go wherever one that can be nothing is kept (`set nickname to "Annie"`, `half of 10`), and `nothing` too. Printing one shows its value, or `nothing`.
+
+A function that gives back a value and also nothing needs to say so in its definition (`giving back a number or nothing`) if it gives back the value first; giving back nothing first works it out.
 
 ### What's still checked while the program runs
 
@@ -870,10 +897,18 @@ say word starts with "un".            # yes
 say word ends with "ing".             # no
 say word doesn't start with "re".     # yes
 say the position of "break" in word.  # 3
-say the position of "x" in word.      # 0
+say the position of "x" in word.      # nothing
 ```
 
-`contains`, `starts with` and `ends with` (and their `does not` / `doesn't` forms) are comparisons, so they combine with `and`, `or` and `not`. **`the position of` gives 0 when the text isn't there:** positions start at 1, so 0 can only mean "not found", and you can check for it: `if the position of "@" in address is 0, say "That's not an email address."`. It works for lists too: `the position of 95 in scores` is the position of the first item equal to 95, or 0.
+`contains`, `starts with` and `ends with` (and their `does not` / `doesn't` forms) are comparisons, so they combine with `and`, `or` and `not`. **`the position of` is `a number or nothing`:** nothing when the text isn't there. Check it before using it as a number (see [values that can be nothing](#values-that-can-be-nothing)):
+
+```
+let at be the position of "@" in address.
+if at is nothing, say "That's not an email address."
+if at is not nothing, say "The name ends at " followed by (at minus 1).
+```
+
+It works for lists too: `the position of 95 in scores` is the position of the first item equal to 95, or nothing.
 
 ### Splitting and joining
 
@@ -1047,7 +1082,7 @@ to sum of start:
     give back start's value plus (sum of start's next)
 ```
 
-Only a record can be nothing: a number, text, yes/no value or list always has a value.
+Numbers, text and yes/no values can be nothing too: see [values that can be nothing](#values-that-can-be-nothing). A list or map can't; an empty one says there's nothing in it.
 
 ### Methods
 

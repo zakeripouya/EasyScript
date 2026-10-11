@@ -89,10 +89,13 @@ typedef struct {
     const char *kinds;
     const size_t *offsets;
     size_t size;
-    char style; /* ES_RECORD or ES_VARIANT */
+    char style; /* ES_RECORD, ES_VARIANT, or ES_BOX (es_kind.h) */
 } EsRecordType;
 
-enum { ES_RECORD, ES_VARIANT };
+/* A box holds a number, text or yes/no that can be nothing ("a number or
+ * nothing"): NULL is nothing, like a record that can be nothing. It never
+ * changes, and is equal to another box holding an equal value. */
+enum { ES_RECORD, ES_VARIANT, ES_BOX };
 
 /* A record. Its fields come after this header and own the text, lists and
  * records in them. `prev` and `next` link every record alive while

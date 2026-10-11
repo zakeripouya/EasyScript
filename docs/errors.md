@@ -454,14 +454,15 @@ Give it after "with", like "with name ...", or give the field a starting value w
 | A record or nothing given where a record is needed | ""value" needs a node for "start", but this is a node or nothing." with "It could be nothing. Check it first, like "if first's next is not nothing:"." |
 | A value (not a name or field) that could be nothing | "This is a node or nothing, so check it first." with a note to give it a name first |
 | Checking a record that can't be nothing | ""first" is a node, so it's never nothing." |
-| Comparing something that isn't a record with nothing | "I can't compare a number with nothing." / "I can't compare nothing with nothing." |
+| Comparing something that can't be nothing with nothing | "I can't compare a number with nothing." / "I can't compare nothing with nothing." |
+| Something that can be nothing, used as a list or map | "This can be nothing, but it's used as a list of numbers here, which can't be." |
 | A field that always holds its own kind | "Every chain link would need another chain link inside it, so none could ever be made." with a suggestion to make it "or nothing" |
 | A kind of record defined twice, or inside a block | "You already defined "box" on line 3." / "Kinds of record can only be defined at the top level, not inside an "if" or a loop." |
 | A field defined twice | "A box already has a field called "width", on line 4." |
 | A starting value that isn't fixed, or of the wrong kind | ""size" isn't a constant, so a field can't start at it." / "The field "weight" is a number, but its starting value is text." / "Only a field that can be nothing can start at nothing." / "A field that holds a record can't have a starting value, because records are made while the program runs." |
 | A record in a constant | "A constant can't be a record, because records are made while the program runs." |
 
-Mistakes in how a definition or a field is written are parser errors, like "I expected "," here, but found "which"." (a field without its comma), "Only a record can be "or nothing", not a number.", "A new record inside another one needs parentheses.", ""let" makes a new name, so it can't change a field." and "A method is for a kind of record, but this is a number.". The full set is in [`err_records.err`](../tests/ast/err_records.err) and the `record_*.err` files in [`tests/errors/`](../tests/errors/).
+Mistakes in how a definition or a field is written are parser errors, like "I expected "," here, but found "which"." (a field without its comma), "A list can't be "or nothing"." (or a map), "A new record inside another one needs parentheses.", ""let" makes a new name, so it can't change a field." and "A method is for a kind of record, but this is a number.". The full set is in [`err_records.err`](../tests/ast/err_records.err) and the `record_*.err` files in [`tests/errors/`](../tests/errors/).
 
 ### Maps
 
@@ -521,6 +522,28 @@ Use parentheses to say which: "(the value for "x" in ages, or 0) plus 1" or "the
 | `remove from ages` | "Something is missing after "remove"." with both kinds of `remove` |
 
 The full, tested set is the `map_*.err` files in [`tests/errors/`](../tests/errors/) and [`err_map_forms.err`](../tests/ast/err_map_forms.err).
+
+### Values that can be nothing
+
+A number, text or yes/no value that can be nothing (like `the position of X in T`) has to be checked before it's used as one.
+
+**Using it unchecked**: [`maybe_values.es`](../tests/errors/maybe_values.es)
+
+```
+Line 4: I can't add a number to a number or nothing.
+    say at plus 1.
+        ^^^^^^^^^
+It could be nothing. Check it first, like "if at is not nothing:".
+```
+
+The same note follows every kind mistake where the value could be nothing (comparing it, giving it to a function, using it as a position), and "Give it a name with "let" and check it first with "is not nothing"." when it isn't a name. Others:
+
+| Problem | Message (summary) |
+|---|---|
+| `check which kind` with only `when it's nothing:` | "This doesn't say what to do when at isn't nothing." with "Add an "otherwise:" at the end, for when it's a number." |
+| Giving back nothing from a function that gave back a value before | ""maybe" gives back a number (since line 16), but this is nothing." with "To give back nothing too, say so in the definition, like "giving back a number or nothing"." |
+
+While the program runs, a value reached through a record's field, checked not to be nothing and set to nothing through another name before it's used, stops the program with "This was checked not to be nothing, but something has set it to nothing since then.", as for records.
 
 ### Kinds with variants
 

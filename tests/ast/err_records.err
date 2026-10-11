@@ -8,10 +8,10 @@ Line 3: Something is missing after "plus".
                                                  ^^^^
 Add a value there, like a number, some text in quotes, or a name.
 
-Line 4: Only a record can be "or nothing", not a number.
-        a size, which is a number or nothing.
-                                  ^^^^^^^^^^
-A number, text, yes/no value or list always has a value. To say there's none, use 0, empty text (""), no, or an empty list.
+Line 4: A list can't be "or nothing".
+        a size, which is a list of numbers or nothing.
+                                           ^^^^^^^^^^
+To say there's nothing in it, use an empty one, like "an empty list of numbers".
 
 Line 5: I expected "which is" here, but found "is".
         a weight, is a number.

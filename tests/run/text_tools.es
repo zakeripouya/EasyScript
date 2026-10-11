@@ -16,6 +16,12 @@ say the position of "x" in word
 say the position of "" in word
 say the position of "é" in "café crème"
 say the position of "crème" in "café crème"
+note: Not there is nothing, so it has to be checked before it's used as a number.
+let where be the position of "x" in word
+say where is nothing
+if where is nothing, say "no x"
+let at be the position of "break" in word
+if at is not nothing, say "break starts at " followed by at followed by ", ends at " followed by (at plus 4)
 note: Positions in lists too.
 let scores be a list of 72, 95 and 88
 say the position of 95 in scores

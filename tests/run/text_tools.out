@@ -10,12 +10,15 @@ no
 no
 yes
 3
-0
+nothing
 1
 4
 6
+yes
+no x
+break starts at 3, ends at 7
 2
-0
+nothing
 2
 the, quick, brown and fox
 0

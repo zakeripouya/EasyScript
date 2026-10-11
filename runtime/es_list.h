@@ -543,11 +543,13 @@ static void es_list_render(EsBuf *b, const EsList *l, int depth) {
             es_list_render(b, l->at.l[i], depth);
             es_buf_add(b, ")", 1);
             break;
-        case ES_ITEMS_RECORD:  /* "(a dog with name "Rex" and age 3) and (...)" */
-            if (l->at.r[i]) es_buf_add(b, "(", 1);
+        case ES_ITEMS_RECORD: { /* "(a dog with name "Rex" and age 3) and (...)"; boxes as what they hold */
+            bool parenthesized = l->at.r[i] && l->at.r[i]->type->style != ES_BOX;
+            if (parenthesized) es_buf_add(b, "(", 1);
             es_record_render(b, l->at.r[i], depth);
-            if (l->at.r[i]) es_buf_add(b, ")", 1);
+            if (parenthesized) es_buf_add(b, ")", 1);
             break;
+        }
         case ES_ITEMS_MAP: /* "("a" is 1) and ("b" is 2)" */
             es_buf_add(b, "(", 1);
             es_map_render(b, l->at.m[i], depth);

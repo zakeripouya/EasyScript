@@ -517,6 +517,10 @@ static void es_value_render(EsBuf *b, EsItems kind, EsValue v, int depth) {
         es_buf_add(b, ")", 1);
         break;
     case ES_ITEMS_RECORD:
+        if (v.r && v.r->type->style == ES_BOX) {
+            es_box_render(b, v.r, true);
+            break;
+        }
         if (v.r) es_buf_add(b, "(", 1);
         es_record_render(b, v.r, depth);
         if (v.r) es_buf_add(b, ")", 1);

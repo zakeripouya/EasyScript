@@ -1,7 +1,7 @@
 a dog is a kind of thing with:
     a name which is text.
     an age, which is a number, starting at 0 plus.
-    a size, which is a number or nothing.
+    a size, which is a list of numbers or nothing.
     a weight, is a number.
     a color, which is text and more.
         a tail, which is text.

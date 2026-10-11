@@ -67,8 +67,9 @@ static const char *plural_name(Arena *arena, const Records *records, Type type) 
     sb_init(&sb, arena);
     for (Type t = type; type_is_list(t); t = type_item(t)) sb_append(&sb, "lists of ");
     Type base = type_base(type);
-    if (base == TYPE_NUMBER || base == TYPE_TEXT || base == TYPE_YESNO) {
-        sb_append(&sb, plural[base]);
+    Type present = type_present(base);
+    if (present == TYPE_NUMBER || present == TYPE_TEXT || present == TYPE_YESNO) {
+        sb_appendf(&sb, "%s%s", plural[present], type_is_maybe(base) ? " or nothing" : "");
         return sb.data;
     }
     const RecordKind *kind = record_kind(records, base);
@@ -105,7 +106,10 @@ static const char *map_name(Arena *arena, const Records *records, Type type) {
 const char *ast_type_name(Arena *arena, const Records *records, Type type) {
     if (type_is_list(type)) return list_name(arena, records, type);
     if (type_is_map(type)) return map_name(arena, records, type);
-    if (type == TYPE_MAYBE) return "a record or nothing";
+    if (type == TYPE_MAYBE) return "something or nothing";
+    if (type_is_maybe(type) && type_boxed(type_present(type))) {
+        return arena_sprintf(arena, "%s or nothing", ast_type_name(arena, records, type_present(type)));
+    }
     const RecordKind *kind = record_kind(records, type);
     if (kind) {
         return arena_sprintf(arena, "%s %s%s", article(kind->display), kind->display,

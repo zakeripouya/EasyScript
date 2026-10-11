@@ -14,7 +14,9 @@ repeat 100000 times:
     let tail be characters 10 to the end of line
     let joined be parts joined with "|"
     if joined contains "crème", add 1 to found
-    if the position of "naïve" in line is 0, add 1 to found
+    if the position of "naïve" in line is nothing, add 1 to found
+    let where be the position of "crème" in line
+    if where is not nothing, add where to found
     if character 3 of line is a letter, add 1 to found
     if the code of (character 3 of line) is 82, add 1 to found
     set built to built followed by (the character with code (65 plus it mod 26))

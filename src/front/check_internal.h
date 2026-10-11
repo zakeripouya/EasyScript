@@ -231,7 +231,11 @@ const char *checker_capitalized(Checker *c, Type type);           // "A dog", fo
 TypeVar checker_check_value(Checker *c, const Expr *expr);
 // Whether a value of kind `value` can go where `target` is kept: the same
 // kind, or a record (or nothing) where a record or nothing is kept.
-bool checker_fits(Checker *c, TypeVar target, TypeVar value, size_t line);
+// `expr` is the value (marked `lifted` when it goes where "or nothing" is
+// kept); NULL when there's no expression to mark, and then it must be the same kind.
+bool checker_fits(Checker *c, TypeVar target, TypeVar value, const Expr *expr, size_t line);
+// After a kind mistake: "It could be nothing. Check it first, ..." when `var` can be nothing.
+void checker_note_maybe(Checker *c, TypeVar var, const Expr *at);
 // "X is nothing" / "X is not nothing": checks it and sets *result; false if the comparison isn't one.
 bool checker_check_nothing_test(Checker *c, const Expr *expr, TypeVar *result);
 // A name or field read where it was checked not to be nothing: its record.

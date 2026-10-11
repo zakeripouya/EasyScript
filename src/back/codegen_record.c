@@ -142,7 +142,7 @@ void cg_emit_field(Codegen *g, const Expr *expr, StrBuf *out) {
         return;
     }
     size_t kind = type_record_index(record->type), index = expr->as.field.index;
-    Type type = expr->type;
+    Type type = expr->narrowed ? expr->type + TYPE_MAYBE : expr->type;  // as the field keeps it
     if (is_plain_variable(g, record)) {
         if (type_counted(type)) sb_appendf(out, "%s(", cg_retain(type));
         sb_appendf(out, "((es_R%zu *)", kind);
@@ -172,7 +172,7 @@ const char *cg_field_stmt(Codegen *g, const Stmt *stmt) {
     const char *code = cg_operand(g, value, false);
     bool value_first = !set && value->pos.span.offset < field->pos.span.offset;
     if (value_first) {  // "add V to R's F": V is written first, so it's worked out first
-        Type value_type = value->type;
+        Type value_type = cg_value_type(value);
         sb_appendf(&out, "{ %s%ses_value = %s; ", cg_ctype(value_type), type_counted(value_type) ? "" : " ", code);
         code = "es_value";
     } else {
