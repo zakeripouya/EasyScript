@@ -11,7 +11,7 @@ To share it, take out "privately" on line 4 of helpers.es.
 Line 7 of main.es: math.es doesn't define anything called "tidy".
     say math's tidy with 3
         ^^^^^^^^^^^^^^^^^^
-"math's" can only name a function or a constant made in math.es.
+"math's" can only name something defined with "to" or kept with "keep" in math.es.
 
 Line 8 of main.es: This file doesn't use tools.es, so "tools's" doesn't name anything here.
     say tools's helper
@@ -21,7 +21,7 @@ Add "use tools." at the top of this file.
 Line 9 of main.es: helpers.es doesn't define anything called "nope".
     say helpers's nope
         ^^^^^^^^^^^^^^
-"helpers's" can only name a function or a constant made in helpers.es.
+"helpers's" can only name something defined with "to" or kept with "keep" in helpers.es.
 
 Line 10 of main.es: "helper" is defined in tools.es, which this file doesn't use.
     say helper of 2

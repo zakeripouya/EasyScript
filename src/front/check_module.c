@@ -73,7 +73,7 @@ static bool enter_module(Checker *c, const Expr *expr, const char *name) {
     if (!def) {
         diag_error(c->diag, expr->pos.span, "%s doesn't define anything called \"%s\".", file_display(c, (unsigned)file),
                    expr->display);
-        diag_note(c->diag, "\"%s's\" can only name a function or a constant made in %s.", expr->module,
+        diag_note(c->diag, "\"%s's\" can only name something defined with \"to\" or kept with \"keep\" in %s.", expr->module,
                   file_display(c, (unsigned)file));
         return false;
     }
