@@ -32,3 +32,5 @@ add grid to the end of grid
 let total be 0
 set total to scores
 say length of 5
+say (a list of yes) sorted
+say (a list of 1) sorted by their length

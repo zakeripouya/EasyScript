@@ -511,7 +511,7 @@ static EsText *es_extreme_t(int site, EsList *l, bool biggest) {
 
 /* "L reversed": a new list, unless nobody else holds this one. */
 static EsList *es_list_reversed(EsList *l) {
-    EsList *r = es_list_snapshot(l);
+    EsList *r = es_list_copy(l); /* lists inside belong to the new list */
     size_t size = es_item_size(r->items);
     char *a = r->at.any;
     for (size_t i = 0, j = r->len; i + 1 < j; i++, j--) {

@@ -181,6 +181,10 @@ typedef enum {
     LIST_BIGGEST,    // the biggest of L
     LIST_SMALLEST,   // the smallest of L
     LIST_REVERSED,   // L reversed
+    LIST_SORTED,     // L sorted [smallest first]
+    LIST_SORTED_DOWN,          // L sorted biggest first
+    LIST_SORTED_LENGTH,        // L sorted by their length [shortest first]
+    LIST_SORTED_LENGTH_DOWN,   // L sorted by their length longest first
     LIST_COPY,       // a copy of L
     LIST_IS_EMPTY,   // L is empty (lists and text)
     LIST_NOT_EMPTY,  // L is not empty / isn't empty

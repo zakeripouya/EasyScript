@@ -463,7 +463,7 @@ Try it: `./easyscript run examples/programs/loops.es`
 
 **Status: Available.**
 
-A function is a named set of steps. It's defined with `to`, like a recipe ("to make tea: ..."), and its sentences are indented below. Its name is every word up to `with`, `of`, `using`, or `to`, which introduce its inputs:
+A function is a named set of steps. It's defined with `to`, like a recipe ("to make tea: ..."), and its sentences are indented below. Its name is every word up to `with`, `of`, `using`, `to`, `for`, `from` or `in`, which introduce its inputs:
 
 ```
 to make tea:
@@ -478,15 +478,25 @@ greet with "Alan".
 call greet with "Grace".
 ```
 
-So `to make tea:` is a function called `make tea` with no inputs, and `to greet with someone:` is `greet` with the input `someone`. (Writing `to greet someone:` makes a function called `greet someone`; the error you get when you then use `someone` explains how to make it an input.) A function's name can be several words, and if its inputs are introduced with `to`, it's called with `to` too:
+So `to make tea:` is a function called `make tea` with no inputs, and `to greet with someone:` is `greet` with the input `someone`. (Writing `to greet someone:` makes a function called `greet someone`; the error you get when you then use `someone` explains how to make it an input.) A function's name can be several words, and if its inputs are introduced with `to`, `for`, `from` or `in`, it's called with that word too (or with `with`, `of` or `using`, which work for every function):
 
 ```
 to add tax to amount:
     give back amount plus amount times 0.25.
 
+to pause for seconds:
+    say "Waiting " followed by seconds followed by " seconds".
+
+to busiest artist from names:
+    give back the first item of names.
+
 say add tax to 100.
 add tax to 100.
+pause for 3.
+say busiest artist from a list of "Nina" and "Ray".
 ```
+
+Calling a function with another of these words (`pause from 3`) is an error that says which words it takes. `for` followed by a kind of record makes a method instead (see [Methods](#methods)), and `for` always ends a function's name, so `to print receipt for customer:` is `print receipt` with the input `customer`.
 
 A sentence that starts with a function's name calls it, even if its first word usually starts other sentences (like `add`).
 
@@ -723,7 +733,7 @@ Line 2: "scores" is a list of numbers, so this could mean two things.
 To put it at the end of the list, write "add ... to the end of scores". To add it to every item, write "set scores to every n in scores plus ...".
 ```
 
-**Sorting** puts numbers smallest first ("not a number", which only comes from sums like infinity minus infinity, goes last) and text in alphabetical order (by character codes, so capital letters come first). Add `, biggest first` (or `smallest first`) to choose the order, and sort text, or lists of lists, by their length with `sort names by their length` (`, longest first` or `shortest first`). Items that are equal stay in the order they were in. Sorting changes the list itself.
+**Sorting** puts numbers smallest first ("not a number", which only comes from sums like infinity minus infinity, goes last) and text in alphabetical order (by character codes, so capital letters come first). Add `, biggest first` (or `smallest first`) to choose the order, and sort text, or lists of lists, by their length with `sort names by their length` (`, longest first` or `shortest first`). Items that are equal stay in the order they were in. Sorting changes the list itself; `scores sorted` gives a sorted copy instead (see [New lists from old ones](#new-lists-from-old-ones)).
 
 ### Going through a list
 
@@ -754,6 +764,7 @@ And to sum up a list:
 - `scores added together`: the total of a list of numbers
 - `the biggest of scores`, `the smallest of scores`: for numbers or text
 - `scores reversed`: a new list, last item first
+- `scores sorted`: a new list, sorted like `sort scores` would (`scores sorted biggest first`, `names sorted by their length`, `names sorted by their length longest first`), leaving `scores` as it was
 - `morning slots followed by evening slots`: a new list with the first list's items, then the second's. Both must be lists of the same kind; with anything else, `followed by` joins text, as always (`"Slots: " followed by morning slots`).
 
 ### Sharing and copying

@@ -28,9 +28,17 @@ to show menu:
     say "2. Tea"
 show menu
 call show menu
-to print receipt for with customer name:
+note: "for", "from" and "in" introduce inputs too, and calls use the same word
+to print receipt for customer name:
     say "Receipt for " followed by customer name
-print receipt for with "Ada"
+print receipt for "Ada"
+print receipt with "Bo"
+to busiest artist from artist names:
+    give back the first item of artist names
+say busiest artist from a list of "Cy" and "Di"
+to count vowels in word:
+    give back the number of items in only (the characters of word) that are "a"
+say count vowels in "banana"
 note: a sentence starting with a function's name calls it, even when its first word starts sentences
 add tax to 4
 say add tax to (add tax to 4)

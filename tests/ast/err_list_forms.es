@@ -17,3 +17,6 @@ to f with x (a list of banana):
 to g with y (a list of):
     say y
 say "end"
+say n sorted longest first
+say n sorted by their length biggest first
+say n sorted biggest

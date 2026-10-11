@@ -76,3 +76,17 @@ Line 17: Something is missing after "list of".
     to g with y (a list of):
                    ^^^^^^^
 Say what the list holds, like "a list of numbers".
+
+Line 20: "longest first" sorts by length, so it needs "by their length".
+    say n sorted longest first
+                 ^^^^^^^^^^^^^
+Write it like "names sorted by their length longest first".
+
+Line 21: With "by their length", say "longest first" or "shortest first".
+    say n sorted by their length biggest first
+                                 ^^^^^^^^^^^^^
+
+Line 22: Something is missing after "sorted biggest".
+    say n sorted biggest
+          ^^^^^^^^^^^^^^
+Did you mean "sorted biggest first"?

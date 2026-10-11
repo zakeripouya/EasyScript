@@ -19,3 +19,12 @@ if area of 1 and 2 is 2, say "yes"
 say area of (area of 1 and 2) and 3
 say fib of (n minus 1) plus fib of (n minus 2)
 say (fib of n) followed by " "
+to pause for seconds:
+    say seconds
+to busiest artist from names:
+    give back the first item of names
+to count vowels in word:
+    give back 0
+pause for 2
+say busiest artist from names
+say count vowels in "banana"

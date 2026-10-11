@@ -84,6 +84,12 @@ static void emit_list_op(Codegen *g, const Expr *expr, StrBuf *out) {
                    expr->as.list_op.op == LIST_BIGGEST);
         break;
     case LIST_REVERSED: sb_appendf(out, "es_list_reversed(%s)", code); break;
+    case LIST_SORTED:  // ES_SORT_UP, ES_SORT_DOWN, ES_SORT_LENGTH_UP, ES_SORT_LENGTH_DOWN, in the same order
+    case LIST_SORTED_DOWN:
+    case LIST_SORTED_LENGTH:
+    case LIST_SORTED_LENGTH_DOWN:
+        sb_appendf(out, "es_list_sorted(%s, %d)", code, (int)(expr->as.list_op.op - LIST_SORTED));
+        break;
     case LIST_COPY: sb_appendf(out, "%s(%s)", type_is_record(operand->type) ? "es_record_copy" : "es_list_copy", code); break;
     case LIST_IS_EMPTY:
     case LIST_NOT_EMPTY:

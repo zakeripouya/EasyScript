@@ -13,17 +13,17 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 
 - **A statement starts with a verb and does something:** `say X`, `set X to Y`, `sort L`, `remove K from M`. Statements change things in place or have effects.
 - **A value is a noun phrase or a value with a describing word after it:** `the length of T`, `the keys of M`, `L reversed`, `T in uppercase`. Values never change anything; they make something new.
-- **A statement that changes something in place has a value form that gives a changed copy, where both are useful:** `remove the first item from L` and `L without the first item`; `add X to the end of L` and `L followed by M`. The value form uses the past participle (`reversed`, `added together`) or a describing phrase (`without ...`, `with X replaced by Y`).
+- **A statement that changes something in place has a value form that gives a changed copy, where both are useful:** `sort L` and `L sorted`; `remove the first item from L` and `L without the first item`; `add X to the end of L` and `L followed by M`. The value form uses the past participle (`sorted`, `reversed`, `added together`) or a describing phrase (`without ...`, `with X replaced by Y`).
 - **Text never changes,** so text tools are only values; `set T to T followed by X` is how text grows.
 - **Expressions can't stand alone as sentences,** so a sentence that starts with a value is always an error, never silently dropped.
 
 ## 3. Inputs
 
-- **A function's inputs come after a connector word,** the way English introduces what a verb acts on: `with` (the usual one), `of`, `using` and `to`. `to area with width and height:`, `to add tax to amount:`.
-- **A call uses the same connector as the definition,** or `with`, `of` and `using`, which work for every function: `add tax to 100`, `area with 3 and 4`.
+- **A function's inputs come after a connector word,** the way English introduces what a verb acts on: `with` (the usual one), `of`, `using`, `to`, `for`, `from` and `in`. `to area with width and height:`, `to add tax to amount:`, `to pause for seconds:`, `to busiest artist from names:`, `to count vowels in word:`.
+- **A call uses the same connector as the definition,** or `with`, `of` and `using`, which work for every function: `add tax to 100`, `pause for 2`, `busiest artist from names`, `area with 3 and 4`. Another connector is an error that names the ones it takes.
 - **Inputs are separated by `and`** (and by commas after `using`). Each input is a single value; anything longer goes in parentheses.
 - **The same shape everywhere:** records take their fields the same way (`a new dog with name "Rex" and age 3`), and methods put the record first (`rename rex with "Max"`).
-- **A connector only introduces inputs where it can't mean anything else.** `for` before a kind of record makes a method (`to bark for a dog:`); `to` only starts a call's inputs for a function defined with it.
+- **A connector only introduces inputs where it can't mean anything else.** `for` before a kind of record makes a method (`to bark for a dog:`), and `for` always ends a function's name. `to`, `for`, `from` and `in` only start a call's inputs for a function defined with them, because elsewhere they belong to the sentence around the call (`subtract X from Y`, `the value for K in M`).
 
 ## 4. `of` and `in`
 
@@ -80,5 +80,8 @@ Each exception exists because following the rule would cost more than it gives. 
 
 Phrasings that may not follow these rules, left as they are until they're decided:
 
-- **Function inputs only take `with`, `of`, `using` and `to`.** Natural connectors like `for` (`to pause for seconds:`) and `from` (`to busiest artist from names:`) aren't accepted yet.
-- **`sort L` has no value form.** There's no `L sorted` to get a sorted copy without changing L.
+- **`ask X and call the answer NAME` and `read file F and call it NAME`** name their result with different words. Accepting both `call the answer` and `call it` in both sentences would be more regular, but each reads naturally as it is.
+- **Only the first and last item have a value form for removing.** `remove item N from L` changes L; there's `L without the first item` and `L without the last item`, but no `L without item N`.
+- **Maps have no value forms for changes.** `remove K from M` and `set the value for K in M to X` have no `M without K` or `M with K as X`. Copying a map and changing the copy works today.
+- **`L followed by M` needs two lists.** Adding one item as a value (`L followed by X`) would read naturally, but `followed by` with a list and text already joins text (`"Slots: " followed by slots`), so it would depend on kinds in a way that's easy to misread.
+- **`a copy of R` is shallow for records but deep for lists and maps.** This follows from records having identity (see [sharing and copying](#8-sharing-and-copying)); a deep copy phrase is an [idea](ideas.md#a-deep-copy).

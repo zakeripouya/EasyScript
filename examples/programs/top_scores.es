@@ -8,7 +8,7 @@ let top points be an empty list of numbers
 
 note: where a new score goes: after every score that's at least as good,
 note: so a tie keeps the earlier game first
-to place_for with score and table:
+to find a place for score and table:
     let place be 1
     for each entry in table:
         if entry is at least score, increase place by 1
@@ -16,7 +16,7 @@ to place_for with score and table:
 
 count from 1 to the length of games as game:
     let score be item game of points
-    let place be place_for with score and top points
+    let place be find a place for score and top points
     if place is at most 3:
         insert score at position place of top points
         insert item game of games at position place of top names
@@ -34,9 +34,7 @@ say ""
 say "Total of the top three: " followed by top points added together
 if top names contains "Oz", say "Oz tied Lee, but Lee got there first."
 say "Everyone but the winner: " followed by only the games that are not item 1 of top names
-let sorted names be a copy of games
-sort sorted names by their length
-say "Shortest name first: " followed by sorted names
+say "Shortest name first: " followed by games sorted by their length
 say "From the bottom: " followed by top points reversed
 let late games be a list of "Quinn" and "Rae"
 say "Everyone who played, late arrivals too: " followed by (games followed by late games)

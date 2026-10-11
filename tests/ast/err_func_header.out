@@ -4,3 +4,7 @@ define area (width, height) [20:1]
       multiply [21:15]
         name width [21:15]
         name height [21:27]
+define pause (seconds) [24:1]
+  do
+    say [25:5]
+      name seconds [25:9]

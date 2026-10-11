@@ -66,25 +66,25 @@ static bool word_at(const Parser *p, size_t i, const char *word) {
     return i < p->count && p->tokens[i].kind == TOK_WORD && strcmp(p->tokens[i].text, word) == 0;
 }
 
-static void add_known(Parser *p, const char *text, size_t n, bool function, bool to_inputs, bool method) {
+static void add_known(Parser *p, const char *text, size_t n, bool function, unsigned intros, bool method) {
     for (size_t i = 0; i < p->names.len; i++) {
         KnownName *known = &p->names.items[i];
         if (strcmp(known->text, text) == 0) {
             if (function && !known->function) vec_push(p->arena, &p->functions, text);
             known->function |= function;
-            known->to_inputs |= to_inputs;
+            known->intros |= intros;
             known->method |= method;
             return;
         }
     }
-    KnownName known = {text, n, function, to_inputs, method};
+    KnownName known = {text, n, function, intros, method};
     vec_push(p->arena, &p->names, known);
     if (function) vec_push(p->arena, &p->functions, text);
 }
 
-static void add_name(Parser *p, size_t at, size_t n, bool function, bool to_inputs) {
+static void add_name(Parser *p, size_t at, size_t n, bool function) {
     if (n == 0 || (n == 1 && !function)) return;  // one-word variables need no recognizing
-    add_known(p, join_words(p, at, n, false, ' '), n, function, to_inputs, false);
+    add_known(p, join_words(p, at, n, false, ' '), n, function, 0, false);
 }
 
 static bool at_line_start(const Parser *p, size_t index) {
@@ -102,8 +102,8 @@ static bool at_sentence_end_index(const Parser *p, size_t i) {
 // to NAME [[,] for KIND] [with | of | using | to] INPUT [(KIND)] [and | ,] INPUT ...
 static void find_function(Parser *p, size_t i) {
     size_t n = name_words(p, i + 1), words;
-    for (size_t k = 1; k < n; k++) {  // a method's name ends before "for" and a kind of record
-        if (word_at(p, i + 1 + k, "for") && parser_match_record(p, i + 2 + k, false, &words) >= 0) {
+    for (size_t k = 1; k < n; k++) {  // the name ends before "for" (a method's kind, or inputs)
+        if (word_at(p, i + 1 + k, "for")) {
             n = k;
             break;
         }
@@ -113,19 +113,20 @@ static void find_function(Parser *p, size_t i) {
     bool method = (word_at(p, j, "for") && parser_match_record(p, j + 1, false, &words) >= 0) ||
                   (p->tokens[j].kind == TOK_COMMA && word_at(p, j + 1, "for"));
     if (method) {  // skip "for KIND" and a comma after it
+        j += p->tokens[j].kind == TOK_COMMA ? 2 : 1;
         while (j < p->count && p->tokens[j].kind != TOK_COLON && !at_sentence_end_index(p, j) &&
-               !word_at(p, j, "with") && !word_at(p, j, "of") && !word_at(p, j, "using") && !word_at(p, j, "to")) {
+               (word_at(p, j, "for") || !word_among(&p->tokens[j], parser_input_intros))) {
             j++;
         }
     }
-    static const char *const intros[] = {"with", "of", "using", "to", NULL};
-    bool introduced = word_among(&p->tokens[j], intros);
-    add_known(p, join_words(p, i + 1, n, false, ' '), n, true, introduced && word_at(p, j, "to"), method);
+    bool introduced = word_among(&p->tokens[j], parser_input_intros);
+    add_known(p, join_words(p, i + 1, n, false, ' '), n, true, introduced ? parser_intro_bit(p->tokens[j].text) : 0,
+              method);
     if (!introduced) return;
     j++;
     for (;;) {
         size_t m = name_words(p, j);
-        add_name(p, j, m, false, false);
+        add_name(p, j, m, false);
         j += m;
         if (j < p->count && p->tokens[j].kind == TOK_LPAREN) {  // (KIND)
             while (j < p->count && p->tokens[j].kind != TOK_RPAREN && p->tokens[j].kind != TOK_NEWLINE) j++;
@@ -195,27 +196,27 @@ void parser_find_names(Parser *p) {
         if (strcmp(word, "to") == 0 && at_line_start(p, i)) {
             find_function(p, i);
         } else if (strcmp(word, "let") == 0 && (word_at(p, after, "be") || word_at(p, after, "equal"))) {
-            add_name(p, i + 1, n, false, false);
+            add_name(p, i + 1, n, false);
         } else if (strcmp(word, "keep") == 0 && (word_at(p, after, "as") || word_at(p, after, "at"))) {
-            add_name(p, i + 1, n, false, false);
+            add_name(p, i + 1, n, false);
         } else if (strcmp(word, "as") == 0 && after < p->count && p->tokens[after].kind == TOK_COLON) {
-            add_name(p, i + 1, n, false, false);  // count ... as NAME:
+            add_name(p, i + 1, n, false);  // count ... as NAME:
         } else if (strcmp(word, "each") == 0 && i > 0 && word_at(p, i - 1, "for") && word_at(p, after, "and") &&
                    word_at(p, after + 1 + name_words(p, after + 1), "in")) {  // for each NAME and NAME in
-            add_name(p, i + 1, n, false, false);
-            add_name(p, after + 1, name_words(p, after + 1), false, false);
+            add_name(p, i + 1, n, false);
+            add_name(p, after + 1, name_words(p, after + 1), false);
         } else if ((strcmp(word, "each") == 0 && i > 0 && word_at(p, i - 1, "for") &&
                     (word_at(p, after, "in") || word_at(p, after, "from"))) ||
                    (strcmp(word, "every") == 0 && word_at(p, after, "in") &&
                     !(n == 2 && word_at(p, i + 2, "item")))) {  // not "every other item in" (a slice)
-            add_name(p, i + 1, n, false, false);
+            add_name(p, i + 1, n, false);
         } else if (strcmp(word, "call") == 0) {  // and call the answer / call it / call each number NAME
             size_t skip = word_at(p, i + 1, "answer") || word_at(p, i + 1, "it")          ? 1
                           : word_at(p, i + 1, "each") && word_at(p, i + 2, "number") ? 2
                                                                                       : 0;
             size_t m = skip ? name_words(p, i + 1 + skip) : 0;
             if (m && (at_sentence_end_index(p, i + 1 + skip + m) || p->tokens[i + 1 + skip + m].kind == TOK_COLON)) {
-                add_name(p, i + 1 + skip, m, false, false);
+                add_name(p, i + 1 + skip, m, false);
             }
         }
     }

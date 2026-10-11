@@ -16,7 +16,8 @@ typedef struct {
     const char *text;  // lowercased, one space between words
     size_t words;
     bool function;
-    bool to_inputs;    // a function whose definition introduces its inputs with "to"
+    unsigned intros;   // the words its definitions introduce inputs with, besides "with", "of"
+                       // and "using" (which every call can use): bits of parser_intro_bit
     bool method;       // a function "for" a kind of record ("to bark, for a dog:")
 } KnownName;
 
@@ -174,8 +175,14 @@ Expr *parser_finish_call(Parser *p, Expr *call);
 bool parser_is_statement_word(const char *word);
 
 // parse_func.c
-// "with", "of", "using", or "to" for a function defined with "to".
+// "with", "of", "using", or "to", "for", "from" or "in" for a function
+// defined with that word.
 bool parser_at_call_intro(const Parser *p, const char *function);
+// The words that introduce a definition's inputs (NULL-terminated), and the
+// bit for one that only calls of a function defined with it can use (0 for
+// "with", "of" and "using").
+extern const char *const parser_input_intros[];
+unsigned parser_intro_bit(const char *word);
 Stmt *parse_function(Parser *p, const Token *verb);   // to NAME ...:
 Stmt *parse_return(Parser *p, const Token *verb);     // give back / return
 Stmt *parse_constant(Parser *p, const Token *verb);   // keep NAME as E

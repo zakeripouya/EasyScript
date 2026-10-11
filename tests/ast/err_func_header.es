@@ -19,3 +19,9 @@ say area of 3 and
 say area of 3 and 4 plus 1
 to area with width and height:
     give back width times height
+to wait for:
+    say 1
+to pause for seconds:
+    say seconds
+pause from 2
+pause to 2

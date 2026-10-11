@@ -115,7 +115,30 @@ static const Phrase without_phrases[] = {
 static const Phrase list_postfix[] = {
     {"added together", "added together", LIST_SUM, false},
     {"reversed", "reversed", LIST_REVERSED, false},
+    {"sorted", "sorted", LIST_SORTED, false},
+    {"sorted smallest first", "sorted smallest first", LIST_SORTED, false},
+    {"sorted biggest first", "sorted biggest first", LIST_SORTED_DOWN, false},
+    {"sorted by their length", "sorted by their length", LIST_SORTED_LENGTH, false},
+    {"sorted by their length shortest first", "sorted by their length shortest first", LIST_SORTED_LENGTH, false},
+    {"sorted by their length longest first", "sorted by their length longest first", LIST_SORTED_LENGTH_DOWN, false},
 };
+
+// "L sorted longest first" (needs "by their length") and "L sorted by their
+// length biggest first" (needs "longest"/"shortest"), like the sort sentence.
+static bool reject_sort_order(Parser *p, ListOp op) {
+    bool length = op == LIST_SORTED_LENGTH;
+    const Token *word = parser_peek(p, 0);
+    bool wrong = length ? parser_at_word(p, 0, "smallest") || parser_at_word(p, 0, "biggest")
+                        : parser_at_word(p, 0, "shortest") || parser_at_word(p, 0, "longest");
+    if (!wrong || !parser_at_word(p, 1, "first")) return false;
+    Span span = parser_consume(p, 2);
+    if (length) {
+        parser_error(p, span, "With \"by their length\", say \"longest first\" or \"shortest first\".");
+    } else if (parser_error(p, span, "\"%s first\" sorts by length, so it needs \"by their length\".", word->text)) {
+        diag_note(p->diag, "Write it like \"names sorted by their length %s first\".", word->text);
+    }
+    return true;
+}
 
 static const Phrase additive_ops[] = {
     {"plus", "plus", BINARY_ADD, false},
@@ -394,6 +417,8 @@ static Expr *parse_postfix(Parser *p) {
         const Phrase *list_op = parser_match_phrase(p, list_postfix, COUNT(list_postfix), &len);
         if (list_op) {
             expr = new_list_op(p, (ListOp)list_op->value, parser_consume(p, len), expr);
+            bool unordered = list_op->value == LIST_SORTED || list_op->value == LIST_SORTED_LENGTH;
+            if (unordered && len <= 4 && reject_sort_order(p, (ListOp)list_op->value)) return parser_error_expr(p);
             continue;
         }
         Expr *text_op = p->sentence_failed ? NULL : parser_parse_text_postfix(p, expr);

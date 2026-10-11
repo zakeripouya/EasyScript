@@ -125,7 +125,7 @@ These take a single value, so `length of name plus 1` means `(length of name) pl
 |---|---|---|---|
 | `NAME of X and Y` | Call a function and use the value it gives back | `area of 3 and 4` | Available |
 | `NAME with X and Y` | Same as `of` | `area with 3 and 4` | Available |
-| `NAME to X` | Same, for a function whose definition introduced its inputs with `to` | `add tax to 100` | Available |
+| `NAME to X` | Same, for a function whose definition introduced its inputs with `to` (and likewise `for`, `from`, `in`) | `add tax to 100`, `busiest artist from names` | Available |
 | `NAME using X, Y` | Same, with the inputs separated by commas (or `and`) | `area using 3, 4` | Available |
 | `NAME` | Call a function that takes no inputs (written like a variable) | `say pi times 2` | Available |
 
@@ -272,13 +272,13 @@ All function sentences are **Available**.
 | Pattern | Meaning | Example |
 |---|---|---|
 | `to NAME:` | Define a function with no inputs. NAME is every word before the colon | `to cheer:`, `to make tea:` |
-| `to NAME with INPUT and INPUT:` | Define a function with inputs (`of`, `using` and `to` work like `with`; commas work like `and`). NAME is every word before them | `to area with width and height:`, `to add tax to amount:` |
+| `to NAME with INPUT and INPUT:` | Define a function with inputs (`of`, `using`, `to`, `for`, `from` and `in` work like `with`; commas work like `and`). NAME is every word before them | `to area with width and height:`, `to add tax to amount:`, `to pause for seconds:`, `to busiest artist from names:`, `to count vowels in word:` |
 | `give back X` / `return X` | End the function and hand X back to whoever called it | `give back width times height` |
 | `return` | End the function early, handing back nothing (`give back nothing` is the same) | `return` |
 | `INPUT (KIND)` | Say what kind of value an input is (optional) | `to area with width (a number) and height (a number):`<br>`to average of scores (a list of numbers):` |
 | `, giving back KIND` | Say what kind of value the function gives back (optional; the comma is optional) | `to roll, giving back a number:` |
 | `NAME X and Y` | Call a function as a sentence | `greet "Paris".` |
-| `NAME with X and Y` | Same (`of` and `using` too, and `to` for a function defined with `to`) | `greet with "Paris".`, `add tax to 100.` |
+| `NAME with X and Y` | Same (`of` and `using` too, and `to`, `for`, `from` or `in` for a function defined with that word) | `greet with "Paris".`, `add tax to 100.`, `pause for 3.` |
 | `call NAME [with X and Y]` | Same | `call greet with "Paris".` |
 
 Rules:
@@ -287,7 +287,7 @@ Rules:
 - **Its own names:** a function sees only its inputs and the names it makes, not the program's other variables (pass those in as inputs). Names made inside it follow the same block rules as `if`s and loops.
 - **Giving back:** a function with no `give back X` gives back nothing, and can only be called as a sentence of its own. One that gives back a value always gives back the same kind, and stops with an error if it reaches its end without `give back`. `give back` outside a function is an error.
 - **Kinds:** an input's kind comes from how the function uses it and what it's given; what it gives back comes from its `give back`s. When nothing decides a kind, write it (see below).
-- **Names:** a function's name is every word before the word that introduces its inputs (`with`, `of`, `using`, `to`), so `to greet someone:` is a function called `greet someone` with no inputs (`to greet with someone:` gives it one). A one-word name can't be a sentence word (like `say` or `count`), but a name of several words can start with one (`add tax`), and then a sentence starting with it calls the function. Functions and variables share names, so `area` can't be both. Each input needs its own name.
+- **Names:** a function's name is every word before the word that introduces its inputs (`with`, `of`, `using`, `to`, `for`, `from`, `in`; `for` always ends the name), so `to greet someone:` is a function called `greet someone` with no inputs (`to greet with someone:` gives it one). A one-word name can't be a sentence word (like `say` or `count`), but a name of several words can start with one (`add tax`), and then a sentence starting with it calls the function. Functions and variables share names, so `area` can't be both. Each input needs its own name.
 - **Checks before running:** calling a function that doesn't exist suggests the closest one; giving it the wrong number of inputs says how many it needs and where it's defined.
 - **Deep recursion** stops with "Functions are calling each other too deeply (more than 10000 calls inside each other)." instead of crashing.
 
@@ -342,9 +342,12 @@ Each of these gives back a **new list** (changing it doesn't change the original
 | `L is not empty` / `L isn't empty` | The opposite | `while queue isn't empty:` |
 | `L added together` | The total of a list of numbers (0 for an empty list) | `scores added together` |
 | `the biggest of L` / `the smallest of L` | The biggest or smallest item of a list of numbers or text (an empty list is an error) | `the biggest of scores` |
-| `L reversed` | A new list, last item first | `scores reversed` |
+| `L reversed` | A new list, last item first (lists inside are copied) | `scores reversed` |
+| `L sorted` | A new sorted list, sorted like `sort L` (lists inside are copied); L doesn't change | `scores sorted` |
+| `L sorted biggest first` / `L sorted smallest first` | Choose the order | `scores sorted biggest first` |
+| `L sorted by their length` / `... by their length longest first` / `... shortest first` | Text by how many characters, lists by how many items | `names sorted by their length longest first` |
 
-`contains`, `is empty` and the other questions are comparisons, so `scores contains 95 and scores is not empty` works. `added together` and `reversed` bind tightly, like `as text`: `scores added together divided by 2` halves the total.
+`contains`, `is empty` and the other questions are comparisons, so `scores contains 95 and scores is not empty` works. `added together`, `reversed` and `sorted` bind tightly, like `as text`: `scores added together divided by 2` halves the total.
 
 ### Changing lists
 
@@ -505,9 +508,9 @@ X is a name or a chain of fields (`node`, `the node's next`). Setting X (or anyt
 | Pattern | Meaning | Example |
 |---|---|---|
 | `to NAME, for a KIND:` / `to NAME for a KIND:` | A method: a function whose first input is a record of that kind, called like its kind inside (`the dog`). Its name is every word before `for` | `to bark, for a dog:`<br>`to have a birthday for a dog:` |
-| `to NAME, for a KIND, with INPUTS:` | A method with more inputs (also `using`, `of`, `to`, and `giving back`) | `to rename, for a dog, with new name:` |
+| `to NAME, for a KIND, with INPUTS:` | A method with more inputs (also `using`, `of`, `to`, `from`, `in`, and `giving back`) | `to rename, for a dog, with new name:` |
 | `NAME R` / `NAME for R` | Calls a method, as a sentence or as a value | `bark rex.`, `have a birthday for rex.` |
-| `NAME R with X and Y` | Calls a method with more inputs | `rename rex with "Max".` |
+| `NAME R with X and Y` | Calls a method with more inputs (or with the word its definition used: `rename rex to "Max".`) | `rename rex with "Max".` |
 
 A method is a function, so `call bark with rex`, `bark of rex` and `describe for rex followed by "!"` (an ambiguity: use parentheses) work as for any function. Two kinds of record can't have methods with the same name yet.
 

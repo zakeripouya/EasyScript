@@ -117,3 +117,11 @@ A variable keeps the kind of value it was made with. To keep a list of numbers, 
 Line 34: I can only find the length of text or a list, but this is a number.
     say length of 5
                   ^
+
+Line 35: I can only sort a list of numbers or text, but this is a list of yes/no values.
+    say (a list of yes) sorted
+        ^^^^^^^^^^^^^^^
+
+Line 36: I can only sort a list of text or lists by their length, but this is a list of numbers.
+    say (a list of 1) sorted by their length
+        ^^^^^^^^^^^^^

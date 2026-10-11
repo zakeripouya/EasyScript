@@ -306,4 +306,12 @@ static void es_sort(EsList *l, int how) {
     es_list_release(l);
 }
 
+/* "L sorted": a new list (reusing L when nobody else holds it), with copies
+ * of the lists inside it, like "a copy of". */
+static EsList *es_list_sorted(EsList *l, int how) {
+    EsList *r = es_list_copy(l);
+    es_sort(es_list_retain(r), how); /* es_sort consumes the list */
+    return r;
+}
+
 #endif

@@ -47,3 +47,10 @@ for each d in list of rex, fido:
     have a birthday for d.
     bark it.
 say (describe rex) followed by " and " followed by (describe fido).
+note: a method's inputs can be introduced with "to", "from" or "in", and called with the same word
+to retitle, for a dog, to new name:
+    set the dog's name to new name.
+to fetch, for a dog, from place:
+    say the dog's name followed by " fetches from " followed by place.
+retitle rex to "Rexy".
+fetch rex from "the park".

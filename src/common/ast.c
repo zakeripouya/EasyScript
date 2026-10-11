@@ -153,7 +153,8 @@ const char *ast_change_op_name(ChangeOp op) {
 
 const char *ast_list_op_name(ListOp op) {
     static const char *const names[] = {
-        "added together", "biggest of", "smallest of", "reversed", "copy of", "is empty", "is not empty",
+        "added together", "biggest of", "smallest of", "reversed", "sorted", "sorted biggest first",
+        "sorted by length", "sorted by length longest first", "copy of", "is empty", "is not empty",
         "number of entries in", "keys of", "values of",
     };
     return names[op];

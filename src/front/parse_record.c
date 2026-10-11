@@ -310,7 +310,7 @@ void parser_parse_method_args(Parser *p, Expr *call) {
     if (parser_at_word(p, 0, "and") && !parser_at_word(p, 1, "call")) {
         parser_advance(p);
         parser_parse_call_args(p, call, false);
-    } else if (parser_at_word(p, 0, "with") || parser_at_word(p, 0, "using") || parser_at_word(p, 0, "of")) {
+    } else if (parser_at_call_intro(p, call->as.call.name)) {  // with/using/of, or the definition's word
         bool commas = parser_at_word(p, 0, "using");
         parser_advance(p);
         parser_parse_call_args(p, call, commas);

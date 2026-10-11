@@ -6,6 +6,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **More ways to introduce a function's inputs:** `for`, `from` and `in` work like `to`: `to pause for seconds:` is called `pause for 3`, `to busiest artist from names:` is called `busiest artist from names`, and `to count vowels in word:` is called `count vowels in "banana"` (or with `with`, `of` or `using`, as always). Methods take them after the record too (`fetch rex from "the park"`), and so does `to` (`rename rex to "Max"`, which didn't work before). Calling a function with a word it doesn't take is an error that names the ones it does.
+- **`L sorted`:** a sorted copy of a list, leaving it as it was, the value form of `sort L`: `scores sorted`, `scores sorted biggest first`, `names sorted by their length`, `names sorted by their length longest first`.
 - **Design principles** ([docs/design-principles.md](docs/design-principles.md)): the rules every phrasing follows (statements and values, how inputs are introduced, `of` and `in`, optional and "not found" results, errors, equality, copying), the known exceptions and why each exists, and open questions. Future ideas, starting with a deep copy, are in [docs/ideas.md](docs/ideas.md).
 - **Maps** (Phase 2, step 18). See the new [Maps chapter](docs/language-guide.md#13-maps).
   - **Making them:** `a map of "coffee" to 3, "tea" to 2` and `an empty map from text to numbers`. Keys are text or numbers; values any kind (lists, records and other maps too), one kind each per map. A key written out twice is a compile error.
@@ -36,6 +38,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- **`for` always ends a function's name** in its definition, because it now introduces inputs: `to print receipt for customer:` is `print receipt` with the input `customer` (it was a function called `print receipt for customer` with no inputs).
+- **`L reversed` copies the lists inside it,** like slices and `a copy of`, so changing the reversed list never changes the original (they were shared).
 - `a copy of` works on records and maps too, so its message is now "I can only copy a list, a map or a record, but this is text."; `is empty` works on maps, so its message is now "I can only check whether text, a list or a map is empty, but this is a number."
 - `remove 95 from scores` is now read as removing a key from a map (a compile error for a list, which suggests `remove item 2 from scores`) instead of the parse error "I expected "item" here".
 - The notes for unknown kinds mention maps ("... lists like "a list of numbers", and maps like "a map from text to numbers"."; "Lists and maps hold ...").

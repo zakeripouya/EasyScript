@@ -86,6 +86,17 @@ static TypeVar check_list_op(Checker *c, const Expr *expr) {
         return item;
     }
     case LIST_REVERSED: checker_require_list(c, var, operand, "I can only reverse a list"); return var;
+    case LIST_SORTED:
+    case LIST_SORTED_DOWN:
+    case LIST_SORTED_LENGTH:
+    case LIST_SORTED_LENGTH_DOWN: {
+        bool length = expr->as.list_op.op >= LIST_SORTED_LENGTH;
+        const char *message = length ? "I can only sort a list of text or lists by their length"
+                                     : "I can only sort a list of numbers or text";
+        TypeVar item = checker_require_list(c, var, operand, message);
+        types_defer_one_of(c, operand, item, var, length ? KIND_TEXT | KIND_LIST : KIND_NUMBER | KIND_TEXT, message);
+        return var;
+    }
     case LIST_COPY:  // a record or map when it's known to be one, otherwise a list
         if (type_is_map(types_of(c, var)) || (type_is_record(types_of(c, var)) && !type_is_maybe(types_of(c, var)))) {
             return var;

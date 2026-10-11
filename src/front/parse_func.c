@@ -62,10 +62,33 @@ static bool parse_param_kind(Parser *p, Type *type) {
     return false;
 }
 
-// [,] for KIND: a method, whose first input is the record, called like its kind.
+const char *const parser_input_intros[] = {"with", "of", "using", "to", "for", "from", "in", NULL};
+
+unsigned parser_intro_bit(const char *word) {
+    for (unsigned i = 3; parser_input_intros[i]; i++) {
+        if (strcmp(word, parser_input_intros[i]) == 0) return 1u << i;
+    }
+    return 0;
+}
+
+// A word that introduces inputs (after a method's kind, not "for").
+static bool at_intro(const Parser *p, size_t ahead) {
+    for (size_t i = 0; parser_input_intros[i]; i++) {
+        if (parser_at_word(p, ahead, parser_input_intros[i])) return !parser_at_word(p, ahead, "for");
+    }
+    return false;
+}
+
+// ", for KIND" or "for" and a kind of record: a method, whose first input is
+// the record, called like its kind. Without a comma or a kind of record,
+// "for" introduces inputs ("to pause for seconds:").
 static bool parse_method_record(Parser *p, Stmt *stmt) {
-    if (parser_at(p, 0, TOK_COMMA) && parser_at_word(p, 1, "for")) parser_advance(p);
-    if (!parser_at_word(p, 0, "for")) return true;
+    size_t words;
+    if (parser_at(p, 0, TOK_COMMA) && parser_at_word(p, 1, "for")) {
+        parser_advance(p);
+    } else if (!parser_at_word(p, 0, "for") || parser_match_record(p, 1, false, &words) < 0) {
+        return true;
+    }
     parser_advance(p);
     Name record = {0};
     SourcePos start = parser_token_pos(parser_peek(p, 0));
@@ -85,14 +108,8 @@ static bool parse_method_record(Parser *p, Stmt *stmt) {
     stmt->as.function.method = true;
     vec_push(p->arena, &stmt->as.function.params, record);
     vec_push(p->arena, &stmt->as.function.declared, type);
-    static const char *const intros[] = {"with", "using", "of", "to", "giving", NULL};
-    for (size_t i = 0; parser_at(p, 0, TOK_COMMA) && intros[i]; i++) {
-        if (parser_at_word(p, 1, intros[i])) parser_advance(p);
-    }
-    if (parser_at(p, 0, TOK_COLON) || parser_at_word(p, 0, "giving") || parser_at_word(p, 0, "with") ||
-        parser_at_word(p, 0, "using") || parser_at_word(p, 0, "of") || parser_at_word(p, 0, "to")) {
-        return true;
-    }
+    if (parser_at(p, 0, TOK_COMMA) && (parser_at_word(p, 1, "giving") || at_intro(p, 1))) parser_advance(p);
+    if (parser_at(p, 0, TOK_COLON) || parser_at_word(p, 0, "giving") || at_intro(p, 0)) return true;
     const Token *token = parser_peek(p, 0);
     if (parser_error(p, token->span, "I expected \":\" or \"with\" here, but found %s.", parser_describe(p, token))) {
         diag_note(p->diag, "Write it like \"to rename, for a dog, with new name:\".");
@@ -104,8 +121,7 @@ static bool parse_method_record(Parser *p, Stmt *stmt) {
 static bool parse_params(Parser *p, Stmt *stmt) {
     static const char *const after_param[] = {"and", "giving", NULL};
     if (!parse_method_record(p, stmt)) return false;
-    bool introduced = parser_at_word(p, 0, "with") || parser_at_word(p, 0, "using") || parser_at_word(p, 0, "of") ||
-                      parser_at_word(p, 0, "to");
+    bool introduced = at_intro(p, 0) || (!stmt->as.function.method && parser_at_word(p, 0, "for"));
     if (introduced) stmt->as.function.intro = parser_advance(p)->text;
     const Token *next = parser_peek(p, 0);
     if (!introduced && next->kind == TOK_LPAREN) {  // "to greet who (text):"
@@ -143,21 +159,10 @@ static bool parse_params(Parser *p, Stmt *stmt) {
     return true;
 }
 
-// "for" and a kind of record among the next words: the name ends before it
-// ("to have a birthday for a dog:"). Otherwise "for" can be part of a name.
-static bool at_method_for(const Parser *p) {
-    size_t words;
-    for (size_t i = 0; parser_is_name_word(parser_peek(p, i)); i++) {
-        if (parser_at_word(p, i, "for") && parser_match_record(p, i + 1, false, &words) >= 0) return true;
-    }
-    return false;
-}
-
 Stmt *parse_function(Parser *p, const Token *verb) {
-    static const char *const after_name[] = {"with", "using", "of", "to", "giving", NULL};
-    static const char *const after_method_name[] = {"with", "using", "of", "to", "giving", "for", NULL};
+    static const char *const after_name[] = {"with", "using", "of", "to", "for", "from", "in", "giving", NULL};
     Stmt *stmt = parser_new_stmt(p, STMT_FUNCTION, verb);
-    bool ok = parser_parse_name(p, &stmt->as.function.name, at_method_for(p) ? after_method_name : after_name) &&
+    bool ok = parser_parse_name(p, &stmt->as.function.name, after_name) &&
               (strchr(stmt->as.function.name.text, ' ') || !reject_statement_word_name(p, &stmt->as.function.name)) &&
               parse_params(p, stmt);
     if (!ok) {
@@ -197,15 +202,38 @@ Stmt *parse_return(Parser *p, const Token *verb) {
 
 bool parser_at_call_intro(const Parser *p, const char *function) {
     if (parser_at_word(p, 0, "with") || parser_at_word(p, 0, "using") || parser_at_word(p, 0, "of")) return true;
-    if (!parser_at_word(p, 0, "to")) return false;
+    const Token *token = parser_peek(p, 0);
+    unsigned bit = token->kind == TOK_WORD ? parser_intro_bit(token->text) : 0;
+    if (bit == 0) return false;
     for (size_t i = 0; i < p->names.len; i++) {
-        if (strcmp(p->names.items[i].text, function) == 0) return p->names.items[i].to_inputs;
+        if (strcmp(p->names.items[i].text, function) == 0) return (p->names.items[i].intros & bit) != 0;
     }
     return false;
 }
 
+// "pause from 2" for a function defined as "to pause for seconds:".
+static bool reject_wrong_intro(Parser *p, const char *function) {
+    const Token *token = parser_peek(p, 0);
+    if (token->kind != TOK_WORD || parser_intro_bit(token->text) == 0) return false;
+    unsigned intros = 0;
+    for (size_t i = 0; i < p->names.len; i++) {
+        if (strcmp(p->names.items[i].text, function) == 0) intros = p->names.items[i].intros;
+    }
+    StrBuf words;
+    sb_init(&words, p->arena);
+    sb_append(&words, "\"with\"");
+    for (unsigned i = 3; parser_input_intros[i]; i++) {
+        if (intros & (1u << i)) sb_appendf(&words, " or \"%s\"", parser_input_intros[i]);
+    }
+    if (parser_error(p, token->span, "\"%s\" takes its inputs after %s, not \"%s\".", function, words.data,
+                     token->text)) {
+        diag_note(p->diag, "A call introduces the inputs with the word its definition used, or with \"with\".");
+    }
+    return true;
+}
+
 Stmt *parse_call_statement(Parser *p, const Token *verb, const KnownName *function) {
-    static const char *const after_name[] = {"with", "using", "of", "to", NULL};
+    static const char *const after_name[] = {"with", "using", "of", "to", "for", "from", "in", NULL};
     Name name = {0};
     if (function) {
         parser_take_name(p, function->words, &name);  // the function's name starts the sentence
@@ -224,6 +252,7 @@ Stmt *parse_call_statement(Parser *p, const Token *verb, const KnownName *functi
     }
     bool commas = false;
     bool introduced = parser_at_call_intro(p, name.text);
+    if (!introduced && reject_wrong_intro(p, name.text)) return NULL;
     if (introduced) {
         commas = parser_at_word(p, 0, "using");
         parser_advance(p);

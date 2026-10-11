@@ -50,3 +50,8 @@ say item plus 1
 say first
 say only
 let every be 1
+say scores sorted
+say scores sorted biggest first
+say names sorted by their length longest first
+let sorted be 1
+say sorted
