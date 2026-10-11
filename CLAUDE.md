@@ -232,6 +232,7 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 
 ## Parser rules
 
+- **New syntax must follow `docs/design-principles.md`** (statements vs values, how inputs are introduced, `of`/`in`, optional and "not found" results, errors, equality, copying). A phrase that can't follow them is added to its "Known exceptions" with the reason, in the same commit; a doubt goes under "Open questions" instead of into the parser.
 - The parser must be **deterministic**. Never guess what the user meant, and never use heuristics, "best match", or silent fallbacks.
 - If a sentence is ambiguous or doesn't match any grammar rule, **report an error**. Include the line and column, what was expected, and concrete suggestions (for example, the closest valid sentence forms). Don't pick one reading.
 - Because a period ends a statement, it can't also be part of an identifier. The current lexer accepts `.` in identifiers so that `myfile.txt` works. That conflicts with the new syntax, so filenames have to become string literals.
