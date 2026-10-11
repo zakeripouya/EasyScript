@@ -37,7 +37,14 @@ size_t diag_warning_count(const Diag *diag);
 // their spans start), keeping the order of errors at the same place.
 void diag_sort(Diag *diag, size_t first);
 
-// 1-based line number containing `offset`.
+// The source is several files joined (modules): file i, called names[i]
+// ("helpers.es"), starts at starts[i]. Errors then say which file they're in
+// ("Line 4 of helpers.es: ..."), and lines count from each file's start.
+void diag_set_files(Diag *diag, const char *const *names, const size_t *starts, size_t files);
+size_t diag_file(const Diag *diag, size_t offset);            // 0 when there's one file
+const char *diag_file_name(const Diag *diag, size_t file);    // NULL when there's one file
+
+// 1-based line number containing `offset` (in its file).
 size_t diag_line(const Diag *diag, size_t offset);
 
 // Formats all errors in the order they were reported:

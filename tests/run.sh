@@ -16,7 +16,9 @@
 #                         (see the Memory section below)
 #   tests/shell/NAME.in   typed into the interactive shell; stdout must match
 #                         NAME.out and stderr NAME.err (empty if none)
-#   examples/programs/    like tests/run
+#   tests/modules/NAME/   a program of several files: main.es and the files
+#                         it uses, checked like tests/run (main.out, main.err)
+#   examples/programs/    like tests/run (also NAME/main.es folders)
 #   tests/ast/NAME.es     like tests/tokens, but with `easyscript ast`
 #   examples/lexer/       like tests/tokens, expected stdout in NAME.tokens
 #   examples/parser/      like tests/ast, expected stdout in NAME.ast
@@ -101,10 +103,13 @@ fi
 # a NAME.err the program must exit 1 with exactly that stderr (a runtime
 # error); without one it must exit 0 with empty stderr. Programs run with
 # ES_DEBUG_MEMORY=1, so one that ends with heap text still alive fails.
+# A folder DIR/NAME/ holding main.es is a program of several files (main.es
+# uses the others), checked the same way with main.out, main.in and main.err.
 check_run() {
-    for src in "$1"/*.es; do
+    for src in "$1"/*.es "$1"/*/main.es; do
         [ -e "$src" ] || continue
         name="$2/$(basename "$src" .es)"
+        case $src in "$1"/*/main.es) name="$2/$(basename "$(dirname "$src")")" ;; esac
         expected="${src%.es}.out"
         expected_err="${src%.es}.err"
         input="${src%.es}.in"
@@ -224,6 +229,7 @@ $(cat "$WORK/stderr")"
 }
 
 check_run "$ROOT/tests/run" run
+check_run "$ROOT/tests/modules" modules
 check_errors "$ROOT/tests/errors" errors
 check_warnings "$ROOT/tests/warnings" warnings
 check_dump tokens "$ROOT/tests/tokens" tokens out
@@ -482,7 +488,7 @@ if [ "${ES_SANITIZE:-0}" = 1 ]; then
 else
     strict_failed=""
     for src in "$ROOT"/tests/run/*.es "$ROOT"/tests/memory/*.es "$ROOT"/examples/programs/*.es \
-        "$ROOT"/benchmarks/*/*.es; do
+        "$ROOT"/tests/modules/*/main.es "$ROOT"/examples/programs/*/main.es "$ROOT"/benchmarks/*/*.es; do
         [ -e "$src" ] || continue
         "$ES" emit "$src" >"$WORK/strict.c" 2>/dev/null || continue
         if ! out=$(cc -std=c11 -Wall -Wextra -Wpedantic -Werror -O2 -c "$WORK/strict.c" \

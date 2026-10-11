@@ -1,7 +1,7 @@
 """Checks that every error message in the compiler and runtime is tested.
 
 Each message format (see messages.py) must match the text of at least one
-expected-error file (tests/*/*.err, examples/*/*.err) or a CLI check in
+expected-error file (tests/*/*.err, examples/*/*.err, and the folders of programs of several files) or a CLI check in
 tests/run.sh. Messages that can only happen when the system itself fails
 (out of memory, a process that can't start) are listed in EXEMPT with the
 reason. Prints one line per untested message and exits 1 if there are any.
@@ -35,7 +35,7 @@ def pattern(fmt):
 
 def tested_text():
     text = ''
-    for path in glob.glob(os.path.join(ROOT, 'tests', '*', '*.err')) + glob.glob(os.path.join(ROOT, 'examples', '*', '*.err')):
+    for path in glob.glob(os.path.join(ROOT, 'tests', '*', '*.err')) + glob.glob(os.path.join(ROOT, 'examples', '*', '*.err')) + glob.glob(os.path.join(ROOT, 'tests', 'modules', '*', '*.err')) + glob.glob(os.path.join(ROOT, 'examples', 'programs', '*', '*.err')):
         text += open(path, encoding='utf-8', errors='replace').read() + '\n'
     run_sh = open(os.path.join(ROOT, 'tests', 'run.sh'), encoding='utf-8').read()
     # CLI checks: the expected first line of stderr is a quoted argument of expect_failure

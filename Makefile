@@ -6,14 +6,14 @@ RELEASE_FLAGS = -O2
 DEBUG_FLAGS = -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all
 
 COMMON_SRC = src/common/arena.c src/common/util.c src/common/diag.c src/common/ast.c src/common/type.c
-FRONT_SRC = src/front/lexer.c src/front/parse_util.c src/front/parse_expr.c src/front/parse_value.c src/front/parse_stmt.c src/front/parse_if.c src/front/parse_loop.c src/front/parse_func.c src/front/parse_list.c src/front/parse_kind.c src/front/parse_match.c src/front/parse_text.c src/front/parse_names.c src/front/parse_record.c src/front/parse_map.c src/front/parse_func_value.c src/front/parse_apply.c src/front/parse_iface.c src/front/consteval.c src/front/check.c src/front/check_names.c src/front/check_expr.c src/front/check_types.c src/front/check_narrow.c src/front/check_kind.c src/front/check_const.c src/front/check_list.c src/front/check_text.c src/front/check_record.c src/front/check_map.c src/front/check_func_value.c src/front/check_apply.c src/front/check_iface.c
+FRONT_SRC = src/front/lexer.c src/front/parse_util.c src/front/parse_expr.c src/front/parse_value.c src/front/parse_stmt.c src/front/parse_if.c src/front/parse_loop.c src/front/parse_func.c src/front/parse_list.c src/front/parse_kind.c src/front/parse_match.c src/front/parse_text.c src/front/parse_names.c src/front/parse_record.c src/front/parse_map.c src/front/parse_func_value.c src/front/parse_apply.c src/front/parse_iface.c src/front/parse_module.c src/front/consteval.c src/front/check.c src/front/check_names.c src/front/check_expr.c src/front/check_types.c src/front/check_narrow.c src/front/check_kind.c src/front/check_const.c src/front/check_list.c src/front/check_text.c src/front/check_record.c src/front/check_map.c src/front/check_func_value.c src/front/check_apply.c src/front/check_iface.c src/front/check_module.c
 BACK_SRC = src/back/codegen_c.c src/back/codegen_program.c src/back/codegen_expr.c src/back/codegen_list.c src/back/codegen_text.c src/back/codegen_record.c src/back/codegen_map.c src/back/codegen_kind.c src/back/codegen_closure.c src/back/codegen_apply.c src/back/codegen_iface.c src/back/codegen_names.c src/back/source_table.c
 # The runtime (its files in order), embedded into the compiler as a byte
 # array by tools/embed.c.
 RUNTIME = runtime/es_memory.h runtime/es_program.h runtime/es_runtime.h runtime/es_list.h runtime/es_sort.h runtime/es_text.h runtime/es_record.h runtime/es_map.h runtime/es_kind.h runtime/es_closure.h
 GEN_RUNTIME = build/gen/es_runtime_embed.c
 EMBED = build/tools/embed
-COMPILER_SRC = src/main.c src/shell.c $(FRONT_SRC) $(BACK_SRC) $(COMMON_SRC) $(GEN_RUNTIME)
+COMPILER_SRC = src/main.c src/modules.c src/shell.c $(FRONT_SRC) $(BACK_SRC) $(COMMON_SRC) $(GEN_RUNTIME)
 UNIT_SRC = $(wildcard tests/unit/*.c) $(FRONT_SRC) $(COMMON_SRC)
 
 RELEASE_DIR = build/release

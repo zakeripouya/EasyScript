@@ -1,0 +1,5 @@
+Line 5 of calc.es: You divided by zero.
+        give back (numbers added together) divided by (the number of items in numbers)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+while working out "average"
+called from line 5 of main.es: say average of (an empty list of numbers)

@@ -55,7 +55,8 @@ sweep() {  # sweep MODE FOLDER...
 
 sweep tokens "$ROOT/tests/tokens" "$ROOT/examples/lexer"
 sweep ast "$ROOT/tests/ast" "$ROOT/examples/parser"
-sweep emit "$ROOT/tests/errors" "$ROOT/tests/warnings" "$ROOT/tests/run" "$ROOT/examples/programs"
+sweep emit "$ROOT/tests/errors" "$ROOT/tests/warnings" "$ROOT/tests/run" "$ROOT/examples/programs" \
+    "$ROOT"/tests/modules/*
 
 # Generated programs (the runtime and its reference counting), and the
 # million-round memory tests. Programs that stop with a runtime error (they
@@ -63,7 +64,8 @@ sweep emit "$ROOT/tests/errors" "$ROOT/tests/warnings" "$ROOT/tests/run" "$ROOT/
 # so whether `leaks` still finds a pointer to a variable's list or text
 # depends only on which registers the C compiler reused before exit. Their
 # compiler runs are still checked above.
-for src in "$ROOT"/tests/run/*.es "$ROOT"/examples/programs/*.es "$ROOT"/tests/memory/*.es "$ROOT"/tests/warnings/*.es; do
+for src in "$ROOT"/tests/run/*.es "$ROOT"/examples/programs/*.es "$ROOT"/tests/memory/*.es "$ROOT"/tests/warnings/*.es \
+    "$ROOT"/tests/modules/*/main.es "$ROOT"/examples/programs/*/main.es; do
     case $src in */tests/warnings/*) ;; *) [ -f "${src%.es}.err" ] && continue ;; esac  # a warning's .err is its warnings
     ES_SANITIZE=0 "$ES" build "$src" -o "$WORK/program" 2>/dev/null || continue
     check "program ${src#$ROOT/}" "$(input_for "$src")" "$WORK/program"

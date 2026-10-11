@@ -109,7 +109,7 @@ static Expr *parse_empty_map(Parser *p) {
         return parser_error_expr(p);
     }
     if (!parser_parse_map_kind(p, &map->as.list_type)) return parser_error_expr(p);
-    map->pos = ast_pos_join(map->pos, (SourcePos){p->prev_span, 0, 0});
+    map->pos = ast_pos_join(map->pos, (SourcePos){p->prev_span, 0, 0, 0});
     return map;
 }
 

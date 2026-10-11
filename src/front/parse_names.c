@@ -337,7 +337,7 @@ void parser_find_names(Parser *p) {
         if (p->tokens[i].kind != TOK_WORD) continue;
         const char *word = p->tokens[i].text;
         size_t n = name_words(p, i + 1), after = i + 1 + n;
-        if (strcmp(word, "to") == 0 && at_line_start(p, i)) {
+        if (strcmp(word, "to") == 0 && (at_line_start(p, i) || parser_after_privately(p, i))) {
             find_function(p, i);
         } else if (strcmp(word, "let") == 0 && (word_at(p, after, "be") || word_at(p, after, "equal"))) {
             add_name(p, i + 1, n, false);
@@ -397,7 +397,7 @@ void parser_take_name(Parser *p, size_t words, Name *name) {
     name->display = join_words(p, at, words, true, ' ');
     SourcePos first = parser_token_pos(parser_peek(p, 0));
     parser_consume(p, words);
-    name->pos = ast_pos_join(first, (SourcePos){p->prev_span, 0, 0});
+    name->pos = ast_pos_join(first, (SourcePos){p->prev_span, 0, 0, 0});
 }
 
 // --- Names where a sentence introduces or changes one --------------------------------

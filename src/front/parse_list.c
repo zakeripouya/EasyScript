@@ -345,7 +345,7 @@ static Expr *parse_empty_list(Parser *p) {
     Type item;
     if (!parser_parse_items_kind(p, &item)) return parser_error_expr(p);
     list->as.list_type = type_list_of(item);
-    list->pos = ast_pos_join(list->pos, (SourcePos){p->prev_span, 0, 0});
+    list->pos = ast_pos_join(list->pos, (SourcePos){p->prev_span, 0, 0, 0});
     return list;
 }
 

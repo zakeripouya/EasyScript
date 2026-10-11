@@ -192,7 +192,7 @@ static Expr *new_unary(Parser *p, UnaryOp op, const Token *op_token, Expr *opera
 }
 
 static Expr *new_list_op(Parser *p, ListOp op, Span op_span, Expr *operand) {
-    SourcePos end = {op_span, 0, 0};
+    SourcePos end = {op_span, 0, 0, 0};
     Expr *expr = ast_new_expr(p->arena, EXPR_LIST_OP, ast_pos_join(operand->pos, end));
     expr->as.list_op.op = op;
     expr->as.list_op.op_span = op_span;
@@ -408,7 +408,7 @@ static Expr *parse_postfix(Parser *p) {
         const Phrase *without = parser_match_phrase(p, without_phrases, COUNT(without_phrases), &len);
         if (without) {
             Span op_span = parser_consume(p, len);
-            Expr *slice = ast_new_expr(p->arena, EXPR_SLICE, ast_pos_join(expr->pos, (SourcePos){op_span, 0, 0}));
+            Expr *slice = ast_new_expr(p->arena, EXPR_SLICE, ast_pos_join(expr->pos, (SourcePos){op_span, 0, 0, 0}));
             slice->as.slice.kind = (SliceKind)(without->value & ~WITHOUT_CHARACTER);
             slice->as.slice.characters = (without->value & WITHOUT_CHARACTER) != 0;
             slice->as.slice.list = expr;
@@ -456,7 +456,7 @@ static Expr *parse_postfix(Parser *p) {
         const Phrase *conversion = parser_match_phrase(p, conversions, COUNT(conversions), &len);
         if (!conversion) return expr;
         Span op_span = parser_consume(p, len);
-        SourcePos end = {op_span, 0, 0};
+        SourcePos end = {op_span, 0, 0, 0};
         Expr *converted = ast_new_expr(p->arena, EXPR_CONVERT, ast_pos_join(expr->pos, end));
         converted->as.convert.target = (ConvertTarget)conversion->value;
         converted->as.convert.op_span = op_span;

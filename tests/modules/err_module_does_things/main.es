@@ -1,0 +1,2 @@
+use setup.
+say greeting

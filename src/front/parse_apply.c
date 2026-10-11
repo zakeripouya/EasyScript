@@ -25,7 +25,7 @@ static Expr *parse_function_operand(Parser *p) {
 }
 
 static Expr *new_apply(Parser *p, ApplyKind kind, Expr *function, Expr *list, SourcePos start) {
-    Expr *expr = ast_new_expr(p->arena, EXPR_APPLY, ast_pos_join(start, (SourcePos){p->prev_span, 0, 0}));
+    Expr *expr = ast_new_expr(p->arena, EXPR_APPLY, ast_pos_join(start, (SourcePos){p->prev_span, 0, 0, 0}));
     expr->as.apply.kind = kind;
     expr->as.apply.function = function;
     expr->as.apply.list = list;
@@ -145,7 +145,7 @@ Expr *parser_parse_apply_postfix(Parser *p, Expr *expr) {
         parser_consume(p, 2);
         Expr *f = parse_function_operand(p);
         Expr *sorted = new_apply(p, APPLY_SORT, f, expr, expr->pos);
-        if (parse_order(p, &sorted->as.apply.descending)) sorted->pos = ast_pos_join(sorted->pos, (SourcePos){p->prev_span, 0, 0});
+        if (parse_order(p, &sorted->as.apply.descending)) sorted->pos = ast_pos_join(sorted->pos, (SourcePos){p->prev_span, 0, 0, 0});
         return sorted;
     }
     return NULL;

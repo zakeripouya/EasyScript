@@ -201,6 +201,7 @@ static Expr *parse_word(Parser *p) {
         return parser_error_expr(p);
     }
     if (parser_is_operator_word(word)) return expected_value(p);
+    if (parser_at_module(p, 0)) return parser_parse_module_value(p, parse_name_or_call);  // helpers's double
     if (parser_at_new(p)) return parser_parse_new(p);
     size_t words;
     if (strcmp(word, "make") == 0 && !parser_match_name(p, 0, false) &&

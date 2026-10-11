@@ -41,7 +41,10 @@ static const char *const keep_note =
 static bool lookup_constant(void *context, const Expr *expr, ConstValue *out) {
     Checker *c = context;
     const char *name = expr->as.name;
+    NameContext saved;
+    if (!checker_enter_names(c, expr, name, &saved)) return false;
     const Constant *k = checker_find_constant(c, name);
+    checker_leave_names(c, &saved);
     if (k && k->index < c->constant->index) {
         *out = k->definition->as.constant.folded;
         return k->ok;  // if it failed, its own error was already reported
@@ -89,8 +92,11 @@ void checker_collect_constants(Checker *c, const Block *program) {
         Stmt *stmt = program->items[i];
         if (stmt->kind != STMT_CONSTANT) continue;
         const Name *name = &stmt->as.constant.name;
+        c->file = stmt->pos.file;
         const Constant *existing = checker_find_constant(c, name->text);
         const Function *function = checker_find_function(c, name->text);
+        if (existing && existing->file != c->file) existing = NULL;  // another file's: this file's comes first
+        if (function && function->file != c->file) function = NULL;
         if (existing) {
             diag_error(c->diag, name->pos.span, "You already made the constant \"%s\" on line %zu.", existing->display,
                        existing->definition->pos.line);
@@ -103,7 +109,7 @@ void checker_collect_constants(Checker *c, const Block *program) {
             diag_note(c->diag, "Give the constant a different name.");
             continue;
         }
-        Constant k = {name->text, name->display, stmt, c->constants.len, false};
+        Constant k = {name->text, name->display, stmt->pos.file, stmt->as.constant.private, stmt, c->constants.len, false};
         vec_push(c->arena, &c->constants, k);
     }
 }

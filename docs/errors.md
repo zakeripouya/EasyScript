@@ -686,6 +686,29 @@ Give it one, like "to speak, for a fish:".
 
 Mistakes in how a definition is written are parser errors, like "Say what kind of value "name" is, in parentheses after it.", "Each line of an interface is a way, but this starts with "speak"." and "The ways of "speaker" go on the lines below, indented."; the full set is in [`err_iface.err`](../tests/ast/err_iface.err).
 
+### Programs in several files
+
+In a program of several files, every error names its file as well as its line. A name two used files both define is caught where it's used: [`err_names`](../tests/modules/err_names/main.es)
+
+```
+Line 4 of main.es: "double" is defined in both helpers.es and math.es.
+    say double with 21.
+        ^^^^^^^^^^^^^^
+Say which one you mean, like "helpers's double" or "math's double".
+```
+
+| Problem | Message (summary) |
+|---|---|
+| A file that isn't there | "I couldn't find the file "nothere.es" in the same folder as main.es." ([`err_missing`](../tests/modules/err_missing/main.es)) |
+| Files that use each other | "These files use each other in a circle: first.es uses second.es, second.es uses third.es, and third.es uses first.es." ([`err_circle`](../tests/modules/err_circle/main.es)), and "main.es can't use itself." |
+| A used file that does things | "setup.es is used by another file, so it can only define things." ([`err_module_does_things`](../tests/modules/err_module_does_things/main.es)) |
+| A private definition used from another file | ""tidy" is private to helpers.es, so only that file can use it." with the line of its "privately" |
+| A definition of a file this one doesn't use | ""helper" is defined in tools.es, which this file doesn't use." with "Add "use tools." at the top of this file." |
+| `FILE's NAME` mistakes | "This file doesn't use tools.es, so "tools's" doesn't name anything here." / "helpers.es doesn't define anything called "nope"." |
+| `use` inside a block | ""use" goes at the top of a file, not inside a block." ([`err_use_in_block`](../tests/modules/err_use_in_block/main.es)) |
+
+Mistakes in how `use` and `privately` are written are parser errors, like "The name of a file to use is one word." and "Only definitions can be kept private, but this is "say"."; the full set is in [`err_modules.err`](../tests/ast/err_modules.err).
+
 ### While the program runs
 
 Runtime errors look like compile errors: `Line N:` and what went wrong, the line with carets under the part that failed, and sometimes a hint. Anything the program printed before the error stays printed. Only mistakes that kinds can't catch are left for this.

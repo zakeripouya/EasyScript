@@ -12,6 +12,13 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Programs in several files** (Phase 2, step 21). See the new [chapter](docs/language-guide.md#17-programs-in-several-files).
+  - `use helpers.` (or `use the helpers file.`) reads `helpers.es` from the same folder; a used file can only define things (functions, methods, constants, kinds, interfaces) and can use other files. Each file is read and checked once; files using each other in a circle is an error that shows the circle.
+  - A file sees its own definitions first, then those of the files it uses. A name two used files define is an error only where it's used, naming both files and suggesting `helpers's double`, which works anytime. `privately to ...` and `privately keep ...` keep a definition to its file.
+  - Errors name the file and its line (`Line 4 of helpers.es: ...`), at compile time and in runtime errors and call chains.
+  - Tests in `tests/modules/NAME/` folders (`main.es` plus the files it uses, with `main.out`/`main.err`); examples can be folders too: `examples/programs/multi_file/`.
+  - Inside the compiler: `src/modules.c` finds and joins the files before lexing (`lex_files` restarts line numbers per file; `Token.file`, `SourcePos.file`, `diag_set_files`); `STMT_USE`, `Expr.module`, `private` on functions and constants; `src/front/parse_module.c` and `src/front/check_module.c`; the checker renames other files' functions and constants so the C names stay apart. The runtime's sites carry a file (`EsSite.file`, `es_source_files`).
+
 - **Interfaces** (Phase 2, step 20). See the new [chapter](docs/language-guide.md#16-interfaces).
   - **Defining one:** `something that can speak is anything with:` (or `a speaker is anything with:`) with ways indented below: `a way to speak.`, `a way to greet with name (text), giving back text.`
   - **Fitting:** any kind of record or kind with variants with a method of the same name, inputs and result for every way fits, without saying so; a way giving back an interface accepts a method giving back any kind that fits it. Giving one that doesn't is an error naming the missing way ("A fish can't be used as something that can speak: it has no way to speak.").

@@ -18,6 +18,7 @@
 #include "front/check.h"
 #include "back/codegen_c.h"
 #include "back/source_table.h"
+#include "modules.h"
 #include "shell.h"
 
 static Arena *arena;
@@ -114,11 +115,11 @@ static char *read_file(const char *path, size_t *length_out) {
 // Compiles an EasyScript source file to C at temp_c_path. On errors, prints
 // them all and exits with status 1.
 static void generate_c(const char *source_path) {
-    size_t length;
-    char *source = read_file(source_path, &length);
-    Diag *diag = diag_new(arena, source, length);
-    TokenList tokens = lex(arena, diag, source, length);
-    Program *program = parse_program(arena, diag, source, &tokens);
+    Sources *sources = sources_load(arena, source_path, getenv("ES_MODULE_DIR"));  // the shell's folder
+    Diag *diag = sources->diag;
+    TokenList tokens = lex_files(arena, diag, sources->source, sources->len, sources->starts, sources->count);
+    Program *program = parse_program(arena, diag, sources->source, &tokens);
+    program->files = sources->files;
     if (diag_count(diag) == 0) {
         check_program(arena, diag, program);  // only on a cleanly parsed program
     }
@@ -133,7 +134,7 @@ static void generate_c(const char *source_path) {
 
     StrBuf lines;  // the source lines, for runtime errors to show
     sb_init(&lines, arena);
-    source_table_c(arena, source, length, &lines);
+    source_table_c(arena, sources->source, sources->len, sources->names, sources->starts, sources->count, &lines);
     StrBuf code;
     sb_init(&code, arena);
     codegen_c(arena, program, lines.data, &code);

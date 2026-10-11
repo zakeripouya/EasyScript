@@ -15,6 +15,7 @@ typedef struct {
     Span span;
     size_t line;
     size_t column;
+    unsigned file;  // which file of the program (0 when it has one), with `line` counted in that file
 } SourcePos;
 
 // --- Expressions -----------------------------------------------------------
@@ -178,6 +179,7 @@ struct Expr {
     bool narrowed;        // filled in by the checker: "a dog or nothing" checked not to be nothing here
     bool lifted;          // filled in by the checker: given where "<its kind> or nothing" is kept
     const char *display;  // EXPR_NAME, EXPR_CALL: the name as written here, for messages
+    const char *module;   // EXPR_NAME, EXPR_CALL: "helpers's double": the file it's from ("helpers"), or NULL
     union {
         struct {
             const char *text;  // as written, e.g. "19.99"
@@ -318,6 +320,7 @@ typedef enum {
     STMT_SUM,          // a shape is one of: (variants indented below; top level only)
     STMT_MATCH,        // check which kind S is: (when it's a circle: ... otherwise: ...)
     STMT_INTERFACE,    // something that can speak is anything with: (ways indented below; top level only)
+    STMT_USE,          // use helpers (another file's definitions; loaded before parsing)
 } StmtKind;
 
 // A constant's value, worked out by the compiler (see front/consteval.h).
@@ -482,6 +485,7 @@ struct Stmt {
             Vec(Type) param_types; // filled in by the checker
             Type result;           // filled in by the checker (TYPE_NOTHING: gives back no value)
             Block body;
+            bool private;          // "privately to ...": only its own file can use it
             bool lambda;           // made inside a value ("a function taking x ..."); name.text is "0lN"
             Vec(Capture) captures; // a lambda: the names it uses from around it (checker)
             NameList cells;           // the names it makes (or its inputs) that functions made inside use (checker)
@@ -492,7 +496,9 @@ struct Stmt {
             Name name;
             Expr *value;
             ConstValue folded;  // filled in by the checker
+            bool private;       // "privately keep ...": only its own file can use it
         } constant;
+        Name module;  // STMT_USE: the file's name without ".es"
         struct {
             LoopKind kind;
             Expr *from, *to, *step;  // LOOP_COUNT (step NULL: 1)
@@ -539,9 +545,21 @@ struct Stmt {
     } as;
 };
 
+// One file of a program made of several (modules): "helpers.es" is used
+// with "use helpers". The program's statements are all its files', each
+// statement's pos.file saying which. The file that's run is the last.
+typedef struct {
+    const char *name;     // as "use" names it: "helpers" (lowercased)
+    const char *display;  // "helpers.es"
+    Vec(size_t) uses;     // the files it uses
+} SourceFile;
+
+typedef Vec(SourceFile) SourceFiles;
+
 // A parsed program: its statements, and the record kinds it defines.
 typedef struct {
     Block body;
+    SourceFiles files;  // empty for a program of one file
     Records records;
     NameList cells;           // names the main program makes that functions made inside it use (checker)
 } Program;

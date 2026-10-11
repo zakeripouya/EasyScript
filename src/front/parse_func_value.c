@@ -109,7 +109,7 @@ static Expr *parse_lambda(Parser *p) {
         return parser_error_expr(p);
     }
     Expr *expr = ast_new_expr(p->arena, EXPR_LAMBDA, def->pos);
-    expr->pos = ast_pos_join(def->pos, (SourcePos){p->prev_span, 0, 0});
+    expr->pos = ast_pos_join(def->pos, (SourcePos){p->prev_span, 0, 0, 0});
     expr->as.lambda = def;
     return expr;
 }

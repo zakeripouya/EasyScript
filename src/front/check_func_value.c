@@ -87,6 +87,7 @@ TypeVar checker_check_function_ref(Checker *c, const Expr *expr) {
         return error_var(c);
     }
     ((Expr *)expr)->as.ref.target = f->definition;
+    checker_resolved(c, expr, f->definition);
     return types_new_func(c, f->params.items, f->params.len, f->result, expr->pos.line);
 }
 

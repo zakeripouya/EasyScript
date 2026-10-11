@@ -661,6 +661,23 @@ Rules:
 - **Mixed lists:** `an empty list of things that can speak`, then add dogs, cats and birds. A list written out (`a list of rex and tom`) still holds one kind; the error says which interface both fit.
 - **Only ways:** a value of an interface has no fields, and only its ways can be called on it. It can be compared (`is`: the same record, or equal values of a kind with variants), printed, kept in lists, maps and fields, and be `or nothing`.
 
+## Files that use other files
+
+All of these are **Available**. A program can be split into files: the file you run uses others, which only define things. See the [language guide](language-guide.md#17-programs-in-several-files).
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `use NAME.` (or `use the NAME file.`) | Reads `NAME.es` from the same folder as the file that says it, so its definitions can be used here. A file is read once however many files use it; files can't use each other in a circle | `use helpers.`, `use the shapes file.` |
+| `privately to NAME ...:` / `privately keep NAME as X.` | A function or constant only its own file can use (an optional comma can follow `privately`) | `privately to tidy with text:`, `privately, keep rate at 0.2.` |
+| `FILE's NAME` | A function or constant of a file this one uses, by the file's name: needed when two used files define the same name, and allowed anytime | `helpers's double with 3`, `say shapes's unit`, `helpers's greet with "Ann".` |
+
+Rules:
+
+- **What a file sees:** its own definitions, then those of the files it uses directly (not the files they use). Its own come first, so a file can define a name another file also defines. A name two used files both define is only a mistake where it's used without `FILE's`.
+- **Only definitions:** a file that's used can only hold `use`, `to`, `keep`, kinds of record, kinds with variants and interfaces. Only the file you run does things.
+- **Kinds share one set of names:** kinds of record, kinds with variants, their variants and interfaces are named once across the whole program, and every file sees them.
+- **Errors** name the file as well as the line (`Line 4 of helpers.es: ...`), both before and while the program runs.
+
 ## Kinds of values
 
 Every value has a kind, worked out by the compiler before the program runs (**Available**). Kind mistakes are compile errors with the line and a caret. See the [language guide](language-guide.md#9-types).

@@ -107,7 +107,7 @@ static void emit_number(const Expr *expr, StrBuf *out) {
 // {line, column, length}: a new entry in es_sites.
 size_t cg_site(Codegen *g, SourcePos pos) {
     size_t id = ++g->sites->count;
-    sb_appendf(&g->sites->code, "    {%zu, %zu, %zu},\n", pos.line, pos.column, pos.span.length);
+    sb_appendf(&g->sites->code, "    {%zu, %zu, %zu, %u},\n", pos.line, pos.column, pos.span.length, pos.file);
     return id;
 }
 

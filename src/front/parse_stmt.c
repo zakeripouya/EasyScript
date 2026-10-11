@@ -285,6 +285,16 @@ static Stmt *parse_apply_form(Parser *p, const Token *verb, const StmtForm *form
     return parser_parse_apply(p, verb);
 }
 
+static Stmt *parse_use_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parser_parse_use(p, verb);
+}
+
+static Stmt *parse_privately_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parser_parse_privately(p, verb);
+}
+
 static const StmtForm forms[] = {
     {"let", parse_let, false, 0, NULL, "let total be 0"},
     {"set", parse_set, false, 0, NULL, "set total to 10"},
@@ -327,6 +337,8 @@ static const StmtForm forms[] = {
     {"insert", parse_insert_form, true, 0, NULL, "insert 7 at position 1 of scores"},
     {"sort", parse_sort_form, false, 0, NULL, "sort scores"},
     {"apply", parse_apply_form, false, 0, NULL, "apply double to every number in scores"},
+    {"use", parse_use_form, true, 0, NULL, "use helpers"},
+    {"privately", parse_privately_form, false, 0, NULL, "privately to tidy with text:"},
 };
 
 // --- Sentences ---------------------------------------------------------------
@@ -411,13 +423,18 @@ Stmt *parse_statement(Parser *p) {
     if (parser_at_record_definition(p)) return parse_record(p);
     if (parser_at_sum_definition(p)) return parse_sum(p);
     if (parser_interface_words(p, p->pos) > 0) return parse_interface(p);
+    if (parser_at_module(p, 0)) {  // helpers's greet with "Ann"
+        Stmt *call = parser_parse_module_call(p);
+        if (call) call->pos = ast_pos_join(call->pos, (SourcePos){p->prev_span, 0, 0, 0});
+        return call;
+    }
     const StmtForm *form = find_form(verb);
     // A function's name starts a call: one of several words even if its first
     // word starts sentences ("add tax to 100"), a one-word one otherwise.
     const KnownName *function = parser_match_name(p, 0, true);
     if (function && (function->words > 1 || !form)) {
         Stmt *call = parse_call_statement(p, verb, function);
-        if (call) call->pos = ast_pos_join(call->pos, (SourcePos){p->prev_span, 0, 0});
+        if (call) call->pos = ast_pos_join(call->pos, (SourcePos){p->prev_span, 0, 0, 0});
         return call;
     }
     if (!form) {
@@ -428,7 +445,7 @@ Stmt *parse_statement(Parser *p) {
     p->ends_with_name = form->ends_with_name;  // a one-line if's inner statement overrides this
     Stmt *stmt = form->parse(p, verb, form);
     if (stmt) {
-        SourcePos end = {p->prev_span, 0, 0};
+        SourcePos end = {p->prev_span, 0, 0, 0};
         stmt->pos = ast_pos_join(stmt->pos, end);
     }
     return stmt;
@@ -545,6 +562,7 @@ Program *parse_program(Arena *arena, Diag *diag, const char *source, const Token
 
     Program *program = arena_alloc(arena, sizeof(Program));
     p.records = &program->records;
+    parser_find_modules(&p);
     parser_find_names(&p);
     parse_statements(&p, &program->body, false);
     return program;

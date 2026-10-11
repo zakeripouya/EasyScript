@@ -1,0 +1,4 @@
+Line 1 of third.es: These files use each other in a circle: first.es uses second.es, second.es uses third.es, and third.es uses first.es.
+    use first.
+    ^^^^^^^^^
+Move what they share into another file that each of them uses.

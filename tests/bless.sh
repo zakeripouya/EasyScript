@@ -45,7 +45,7 @@ bless_run() {
     error_status=${2:-1}
     limit=""
     [ "$error_status" -eq 70 ] && limit=100000
-    for src in "$1"/*.es; do
+    for src in "$1"/*.es "$1"/*/main.es; do  # a folder NAME/ with main.es: a program of several files
         [ -e "$src" ] || continue
         input="${src%.es}.in"
         [ -f "$input" ] || input=/dev/null
@@ -133,6 +133,7 @@ bless_shell() {
 
 bless_shell
 bless_run "$ROOT/tests/run"
+bless_run "$ROOT/tests/modules"
 bless_run "$ROOT/tests/memory" 70
 bless_errors "$ROOT/tests/errors"
 bless_warnings "$ROOT/tests/warnings"

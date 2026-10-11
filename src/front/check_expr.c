@@ -207,6 +207,7 @@ static TypeVar check_it(Checker *c, const Expr *expr) {
 }
 
 static void report_unknown_function(Checker *c, const char *name, const char *display, SourcePos pos) {
+    if (checker_report_hidden(c, name, display, pos)) return;
     const Constant *k = checker_find_constant(c, name);
     if (k) {
         diag_error(c->diag, pos.span, "\"%s\" is a constant, not a function.", k->display);
@@ -225,7 +226,7 @@ static void report_unknown_function(Checker *c, const char *name, const char *di
         }
     }
     if (best) {
-        diag_note(c->diag, "Did you mean \"%s\"? It's defined on line %zu.", best->display, best->definition->pos.line);
+        diag_note(c->diag, "Did you mean \"%s\"? It's defined on %s.", best->display, checker_where(c, best->definition->pos));
     } else {
         diag_note(c->diag, "Define it first, like \"to %s with someone:\" with its sentences indented below.", display);
     }
@@ -348,7 +349,20 @@ void checker_report_unsettled_method(Checker *c, const Deferred *d) {
               ast_type_name(c->arena, c->records, example));
 }
 
+static TypeVar check_call(Checker *c, const Expr *expr, bool as_value);
+
 TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value) {
+    NameContext saved;
+    if (!expr->as.call.callee && !checker_enter_names(c, expr, expr->as.call.name, &saved)) {
+        for (size_t i = 0; i < expr->as.call.args.len; i++) checker_check_expr(c, expr->as.call.args.items[i]);
+        return error_var(c);
+    }
+    TypeVar result = check_call(c, expr, as_value);
+    if (!expr->as.call.callee) checker_leave_names(c, &saved);
+    return result;
+}
+
+static TypeVar check_call(Checker *c, const Expr *expr, bool as_value) {
     if (!expr->as.call.callee && !checker_find_function(c, expr->as.call.name) &&
         checker_find_made(c, expr->as.call.name)) {  // "f with 3": f holds a function
         Expr *name = ast_new_expr(c->arena, EXPR_NAME, expr->pos);
@@ -360,7 +374,10 @@ TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value) {
     if (expr->as.call.callee) return checker_check_value_call(c, expr, as_value);
     size_t n = expr->as.call.args.len;
     TypeVar *args = arena_alloc(c->arena, (n + 1) * sizeof(TypeVar));
+    unsigned only_file = c->only_file;  // "helpers's double with x": x is a name here, not in helpers.es
+    c->only_file = 0;
     for (size_t i = 0; i < n; i++) args[i] = checker_check_value(c, expr->as.call.args.items[i]);
+    c->only_file = only_file;
     TypeVar dispatched;
     if (checker_dispatch(c, expr, args, as_value, &dispatched)) return dispatched;  // "speak pet": an interface's way
     const Function *f = checker_find_function(c, expr->as.call.name);
@@ -368,6 +385,7 @@ TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value) {
         report_unknown_function(c, expr->as.call.name, expr->display, expr->pos);
         return error_var(c);
     }
+    checker_resolved(c, expr, f->definition);
     if (n == 0 || !checker_shared_method(c, expr->as.call.name)) return finish_call(c, f, expr, args, as_value);
     TypeVar result = types_new(c, TYPE_UNKNOWN, 0);  // which method depends on the record's kind
     Deferred d = {DEFER_METHOD, expr, args[0], 0, result, false, as_value, NULL, args};
@@ -376,8 +394,18 @@ TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value) {
     return result;
 }
 
+static TypeVar check_bare_name(Checker *c, const Expr *expr);
+
 // A bare name: a variable, a constant, or a function that takes no values.
 static TypeVar check_name(Checker *c, const Expr *expr) {
+    NameContext saved;
+    if (!checker_enter_names(c, expr, expr->as.name, &saved)) return error_var(c);
+    TypeVar result = check_bare_name(c, expr);
+    checker_leave_names(c, &saved);
+    return result;
+}
+
+static TypeVar check_bare_name(Checker *c, const Expr *expr) {
     const Symbol *symbol = checker_find_made(c, expr->as.name);
     if (symbol) {
         checker_use(c, symbol, false);
@@ -385,6 +413,7 @@ static TypeVar check_name(Checker *c, const Expr *expr) {
     }
     const Constant *k = checker_find_constant(c, expr->as.name);
     if (k) {
+        checker_resolved(c, expr, k->definition);
         if (!k->ok) return error_var(c);
         return types_new(c, checker_const_type(c, &k->definition->as.constant.folded), k->definition->pos.line);
     }
@@ -397,6 +426,7 @@ static TypeVar check_name(Checker *c, const Expr *expr) {
         report_argument_count(c, f, 0, expr->pos);
         return error_var(c);
     }
+    checker_resolved(c, expr, f->definition);
     return call_result(c, f, expr, true);
 }
 

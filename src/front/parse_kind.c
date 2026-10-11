@@ -260,7 +260,7 @@ static bool parse_variant_field(Parser *p, Field *field) {
         return report_variant(p, "I expected \")\" after the kind of value, but found %s.", parser_peek(p, 0)->span);
     }
     parser_advance(p);
-    field->pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0});
+    field->pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0, 0});
     return true;
 }
 
@@ -285,7 +285,7 @@ static bool parse_variant(Parser *p, VariantDef *variant, size_t sum) {
             vec_push(p->arena, &variant->fields, field);
         } while ((parser_at_word(p, 0, "and") || parser_at(p, 0, TOK_COMMA)) && parser_advance(p));
     }
-    variant->pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0});
+    variant->pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0, 0});
     if (parser_at_sentence_end(p)) return true;
     return report_variant(p, variant->fields.len > 0 ? "I expected the variant to end here, but found %s."
                                                      : "I expected \"with\" or the end of the variant here, but "
@@ -333,7 +333,7 @@ Stmt *parse_sum(Parser *p) {
     bool ok = parser_parse_name(p, &stmt->as.sum.name, is);
     if (ok) {
         parser_consume(p, 4);  // is one of :
-        stmt->pos = ast_pos_join(stmt->pos, (SourcePos){p->prev_span, 0, 0});
+        stmt->pos = ast_pos_join(stmt->pos, (SourcePos){p->prev_span, 0, 0, 0});
         if (!parser_at(p, 0, TOK_NEWLINE) || !parser_at(p, 1, TOK_INDENT)) {
             Span span = parser_at(p, 0, TOK_NEWLINE) ? p->prev_span : parser_peek(p, 0)->span;
             if (parser_error(p, span, "The variants of \"%s\" go on the lines below, indented.",

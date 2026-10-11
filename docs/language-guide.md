@@ -26,6 +26,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [14. Kinds with variants](#14-kinds-with-variants) | Available |
 | [15. Functions as values](#15-functions-as-values) | Available |
 | [16. Interfaces](#16-interfaces) | Available |
+| [17. Programs in several files](#17-programs-in-several-files) | Available |
 
 ---
 
@@ -1650,3 +1651,77 @@ Its ways are called like methods: `speak animal`, `greet animal with "Ann"`. Whi
 A list written out holds one kind, so `a list of rex and tom` is an error that says which interface both fit; start with an empty list of the interface and add each one instead.
 
 Try it: `./easyscript run examples/programs/zoo.es`
+
+## 17. Programs in several files
+
+**Available.** A longer program can be split into files. The file you run says which other files it **uses**; those files only define things (functions, constants, kinds), and everything they define can be used as if it were written in the file that uses them.
+
+`shapes.es`:
+
+```
+a shape is one of:
+    a circle with a radius (a number).
+    a rectangle with a width (a number) and a height (a number).
+
+to area of s (a shape), giving back a number:
+    check which kind s is:
+        when it's a circle:
+            give back its radius times its radius times 3.14159
+        when it's a rectangle:
+            give back its width times its height
+```
+
+`main.es`:
+
+```
+use shapes.
+
+let bed be a new rectangle with width 4 and height 3
+say area of bed
+```
+
+```
+12
+```
+
+### Using a file
+
+`use shapes.` (or `use the shapes file.`) reads `shapes.es` from the same folder as the file that says it. A used file can use other files too. Each file is read and checked once, however many files use it, but files can't use each other in a circle: that's an error showing the circle ("These files use each other in a circle: first.es uses second.es and second.es uses first.es.").
+
+A file that's used can only define things. A sentence that does something, like `say "hi"`, is an error in it ("shapes.es is used by another file, so it can only define things."): only the file you run does things.
+
+### Whose name is it?
+
+A file sees its own definitions first, then those of the files it uses. Two used files can both define `double`; that's fine until `double` is used, which is then an error that names both files. Say which one you mean with the file's name and `'s`, which also works anytime:
+
+```
+say helpers's double with 3
+say math's double with 3
+```
+
+Kinds of record, kinds with variants and interfaces are different: they share one set of names across the whole program, so two files can't both define a `circle`.
+
+### Keeping a definition to its file
+
+Put `privately` before `to` or `keep` to keep a helper to its own file:
+
+```
+privately to tidy with text:
+    give back text without extra spaces
+```
+
+Another file using `tidy` gets an error saying where it's defined ("\"tidy\" is private to helpers.es, so only that file can use it.").
+
+### When something goes wrong
+
+Errors name the file as well as the line, before the program runs and while it runs:
+
+```
+Line 5 of calc.es: You divided by zero.
+        give back (numbers added together) divided by (the number of items in numbers)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+while working out "average"
+called from line 5 of main.es: say average of (an empty list of numbers)
+```
+
+Try it: `./easyscript run examples/programs/multi_file/main.es`

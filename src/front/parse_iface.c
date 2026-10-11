@@ -70,7 +70,7 @@ static bool parse_way(Parser *p, Way *way) {
         parser_consume(p, skip + 2);
         if (!parser_parse_kind(p, true, &way->result)) return false;
     }
-    way->pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0});
+    way->pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0, 0});
     if (parser_at_sentence_end(p)) return true;
     return report_way(p, parser_peek(p, 0)->span, "I expected the way to end here, but found %s.");
 }
@@ -115,7 +115,7 @@ Stmt *parse_interface(Parser *p) {
         if (strcmp(p->records->interfaces.items[i].name, stmt->as.iface.name.text) == 0) stmt->as.iface.index = i;
     }
     parser_consume(p, 4);  // is anything with :
-    stmt->pos = ast_pos_join(stmt->pos, (SourcePos){p->prev_span, 0, 0});
+    stmt->pos = ast_pos_join(stmt->pos, (SourcePos){p->prev_span, 0, 0, 0});
     p->ended_with_block = true;
     if (!parser_at(p, 0, TOK_NEWLINE) || !parser_at(p, 1, TOK_INDENT)) {
         Span span = parser_at(p, 0, TOK_NEWLINE) ? p->prev_span : parser_peek(p, 0)->span;

@@ -37,7 +37,7 @@ Span parser_consume(Parser *p, size_t n) {
 }
 
 SourcePos parser_token_pos(const Token *token) {
-    SourcePos pos = {token->span, token->line, token->column};
+    SourcePos pos = {token->span, token->line, token->column, token->file};
     return pos;
 }
 

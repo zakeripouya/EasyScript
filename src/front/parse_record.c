@@ -78,7 +78,7 @@ static bool parse_field(Parser *p, Field *field) {
         field->initial = parse_expression(p);
         if (p->sentence_failed) return false;
     }
-    field->pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0});
+    field->pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0, 0});
     if (parser_at_sentence_end(p)) return true;
     if (parser_error(p, parser_peek(p, 0)->span, "I expected the field to end after %s.",
                      parser_quoted(p, p->prev_span))) {
@@ -151,7 +151,7 @@ Stmt *parse_record(Parser *p) {
     bool ok = parser_parse_name(p, &stmt->as.record.name, is);
     if (ok) {
         parser_consume(p, 4);  // is kind of thing
-        stmt->pos = ast_pos_join(stmt->pos, (SourcePos){p->prev_span, 0, 0});
+        stmt->pos = ast_pos_join(stmt->pos, (SourcePos){p->prev_span, 0, 0, 0});
         ok = parse_record_body(p, stmt);
     }
     if (!ok) parser_skip_line_and_block(p);
@@ -307,7 +307,7 @@ Expr *parser_parse_new(Parser *p) {
         } while (((parser_at_word(p, 0, "and") && !parser_at_word(p, 1, "call")) || parser_at(p, 0, TOK_COMMA)) &&
                  parser_advance(p));
     }
-    expr->pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0});
+    expr->pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0, 0});
     return expr;
 }
 
