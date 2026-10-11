@@ -385,6 +385,10 @@ typedef Vec(Stmt *) Block;
 
 // One variant in the definition of a kind with variants: "a rectangle with
 // a width (a number) and a height (a number)".
+// Names, as matched (a named type, so a pointer to one can be a parameter:
+// an anonymous Vec(...) in a parameter list is a different type everywhere).
+typedef Vec(const char *) NameList;
+
 // A name a function made inside another uses from around it ("count" in a
 // counter): it's shared, kept in a cell (es_closure.h).
 typedef struct {
@@ -480,7 +484,7 @@ struct Stmt {
             Block body;
             bool lambda;           // made inside a value ("a function taking x ..."); name.text is "0lN"
             Vec(Capture) captures; // a lambda: the names it uses from around it (checker)
-            Vec(const char *) cells;  // the names it makes (or its inputs) that functions made inside use (checker)
+            NameList cells;           // the names it makes (or its inputs) that functions made inside use (checker)
         } function;
         Expr *returned;  // STMT_RETURN; NULL for a bare "return"
         Expr *call;      // STMT_CALL: an EXPR_CALL
@@ -539,7 +543,7 @@ struct Stmt {
 typedef struct {
     Block body;
     Records records;
-    Vec(const char *) cells;  // names the main program makes that functions made inside it use (checker)
+    NameList cells;           // names the main program makes that functions made inside it use (checker)
 } Program;
 
 // --- Helpers ---------------------------------------------------------------

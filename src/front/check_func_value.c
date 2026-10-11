@@ -32,7 +32,7 @@ const char *checker_function_label(Checker *c, const Function *f) {
 
 // --- Captures ------------------------------------------------------------------------
 
-static void add_name(Arena *arena, Vec(const char *) *names, const char *name) {
+static void add_name(Arena *arena, NameList *names, const char *name) {
     for (size_t i = 0; i < names->len; i++) {
         if (strcmp(names->items[i], name) == 0) return;
     }
@@ -56,7 +56,7 @@ void checker_use(Checker *c, const Symbol *symbol, bool setting) {
     }
     if (!captured) return;
     Stmt *owner = (Stmt *)symbol->owner;
-    add_name(c->arena, owner ? (void *)&owner->as.function.cells : (void *)&c->program->cells, symbol->name);
+    add_name(c->arena, owner ? &owner->as.function.cells : &c->program->cells, symbol->name);
     if (setting && !symbol->set_inside) ((Symbol *)symbol)->set_inside = c->lambda->definition->pos.line;
 }
 
