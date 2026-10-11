@@ -1,4 +1,4 @@
-/* EasyScript runtime, part 7: maps. Parts 1 to 6 come first.
+/* EasyScript runtime, part 8: maps. Parts 1 to 7 come first.
  *
  * A map (EsMap, in es_memory.h) finds a value by its key. Keys are text or
  * numbers; values can be any kind, one kind per map. The entries stay in the

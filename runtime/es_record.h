@@ -1,4 +1,4 @@
-/* EasyScript runtime, part 6: records. Parts 1 to 5 come first.
+/* EasyScript runtime, part 7: records. Parts 1 to 6 come first.
  *
  * A record (EsRecord, in es_memory.h) is a header followed by its fields, laid
  * out by a C struct the compiler writes for each kind of record, with an

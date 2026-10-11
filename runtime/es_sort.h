@@ -1,5 +1,5 @@
-/* EasyScript runtime, part 4: sorting lists. Parts 1 to 3 (es_memory.h,
- * es_runtime.h, es_list.h) come first.
+/* EasyScript runtime, part 5: sorting lists. Parts 1 to 4 (es_memory.h,
+ * es_program.h, es_runtime.h, es_list.h) come first.
  *
  * Numbers are sorted in place with pdqsort (pattern-defeating quicksort, the
  * algorithm by Orson Peters): no extra memory, and fast on lists that are

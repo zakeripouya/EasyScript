@@ -1,5 +1,5 @@
-/* EasyScript runtime, part 2: what values can do (text, numbers, comparisons,
- * loops, functions, files, input). Part 1, es_memory.h, comes first.
+/* EasyScript runtime, part 3: what values can do (text, numbers, comparisons,
+ * loops, functions, files, input). Parts 1 and 2 come first.
  *
  * The compiler has already checked every kind, so nothing here checks kinds.
  * What's left are the mistakes only the values can show: dividing by zero,
@@ -8,8 +8,8 @@
 #ifndef ES_RUNTIME_H
 #define ES_RUNTIME_H
 
-#ifndef ES_MEMORY_H
-#include "es_memory.h"
+#ifndef ES_PROGRAM_H
+#include "es_program.h"
 #endif
 
 #include <limits.h>

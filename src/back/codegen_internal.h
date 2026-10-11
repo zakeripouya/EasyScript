@@ -121,6 +121,12 @@ void cg_emit_var(StrBuf *out, const char *name, Type type);
 // codegen_c.c
 // Temporaries and hoisted variables, at the top of main(), a function, or a helper.
 void cg_emit_declarations(const Codegen *g, StrBuf *out);
+// codegen_c.c, for codegen_program.c: statements, the outermost scope, the
+// drops before leaving a function or the program, and leaving a frame.
+void cg_emit_stmt(Codegen *g, const Stmt *stmt);
+void cg_push_scope(Codegen *g);
+void cg_emit_drop_all(Codegen *g);
+const char *cg_leave_code(const Codegen *g);
 // A worked-out number as C: "0.20000000000000001", "NAN", "-HUGE_VAL".
 void cg_append_number(StrBuf *out, double x);
 // A fixed list (a constant, or a field's starting value) as a static immortal list es_k_NAME.

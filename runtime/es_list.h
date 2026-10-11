@@ -1,5 +1,5 @@
-/* EasyScript runtime, part 3: lists. Parts 1 (es_memory.h) and 2
- * (es_runtime.h) come first.
+/* EasyScript runtime, part 4: lists. Parts 1 to 3 (es_memory.h,
+ * es_program.h, es_runtime.h) come first.
  *
  * A list (EsList, in es_memory.h) holds one kind of item in an array that
  * grows; text and lists inside it are counted references it owns. Lists are

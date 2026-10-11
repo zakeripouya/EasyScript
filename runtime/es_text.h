@@ -1,5 +1,5 @@
-/* EasyScript runtime, part 5: text tools. Parts 1 to 4 (es_memory.h,
- * es_runtime.h, es_list.h, es_sort.h) come first.
+/* EasyScript runtime, part 6: text tools. Parts 1 to 5 (es_memory.h,
+ * es_program.h, es_runtime.h, es_list.h, es_sort.h) come first.
  *
  * A character is a Unicode code point, stored as UTF-8: "café" has 4
  * characters and 5 bytes. Positions count characters from 1, like list
