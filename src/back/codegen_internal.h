@@ -104,6 +104,7 @@ bool cg_is_constant(const Codegen *g, const char *name);
 // The site of a node, for a runtime call that can fail: its index in es_sites.
 size_t cg_site(Codegen *g, SourcePos pos);
 // A C name: prefix plus the name with "_" doubled, "'" as "_q", and spaces as "_".
+void cg_append_function(StrBuf *out, const char *prefix, const Stmt *fn);
 void cg_append_prefixed(StrBuf *out, const char *prefix, const char *name);
 void cg_append_var(StrBuf *out, const char *name, Type type);  // es_vn_total, es_vt_name, ...
 void cg_append_c_string(StrBuf *out, const char *s, size_t len);

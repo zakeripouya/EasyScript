@@ -41,6 +41,8 @@ typedef enum {
     DEFER_SEARCH,     // "contains", "the position of": `left` is text (and `right` text) or a list (of `right`)
     DEFER_FIELD,      // "R's NAME" when several kinds of record have NAME: `left` is R, `result` the field
     DEFER_PRESENT,    // a record or nothing (`left`) checked not to be nothing: `right` is the record
+    DEFER_METHOD,     // a call of a method several kinds of record have: `left` is the record, `args`
+                      // every input, `result` what it gives back, `allowed` 1 when used as a value
 } DeferKind;
 
 // Kinds for DEFER_ONE_OF.
@@ -53,6 +55,7 @@ typedef struct {
     bool done;
     unsigned allowed;     // DEFER_ONE_OF: KIND_ bits
     const char *message;  // DEFER_ONE_OF: "<message>, but this is <the kind of right>."
+    const TypeVar *args;  // DEFER_METHOD
 } Deferred;
 
 typedef struct {
@@ -156,6 +159,10 @@ const Symbol *checker_find_made(const Checker *c, const char *name);
 // A name the main program makes anywhere (with the line it's first made on).
 const Symbol *checker_find_later(const Checker *c, const char *name);
 const Function *checker_find_function(const Checker *c, const char *name);
+// Whether several methods (for different kinds of record) share the name.
+bool checker_shared_method(const Checker *c, const char *name);
+bool checker_settle_method(Checker *c, const Deferred *d);
+void checker_report_unsettled_method(Checker *c, const Deferred *d);
 const Constant *checker_find_constant(const Checker *c, const char *name);
 // "I don't know anything called …" with the most helpful note.
 void checker_report_unknown(Checker *c, const char *name, const char *display, SourcePos pos);

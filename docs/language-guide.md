@@ -1062,7 +1062,22 @@ rename rex with "Max".
 say (describe rex) followed by "!".
 ```
 
-A method is called with the record straight after its name (`bark rex`) or after `for`, as a sentence or inside a value. Two kinds of record can't have methods with the same name yet.
+A method is called with the record straight after its name (`bark rex`) or after `for`, as a sentence or inside a value.
+
+**Different kinds of record can have methods with the same name.** The call picks the one for the kind of its record:
+
+```
+to speak, for a dog:
+    say the dog's name followed by " says woof".
+
+to speak, for a cat:
+    say the cat's name followed by " says meow".
+
+speak rex.     # Rex says woof
+speak tom.     # Tom says meow
+```
+
+The record's kind can be worked out from anywhere in the program, as usual (`to introduce with pet:` calling `speak pet` works once `introduce` is given a dog). A kind of record can have only one method with each name, a plain function can't share a name with anything, and calling `speak` on a kind that has no `speak` is an error that lists the kinds that do. When nothing decides which kind the record is, the error asks you to say it, like `(a dog)` after an input.
 
 ### Records in lists, and lists in records
 

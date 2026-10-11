@@ -218,6 +218,7 @@ static bool settle(Checker *c, Deferred *d) {
     if (d->kind == DEFER_SEARCH) return checker_settle_search(c, d);
     if (d->kind == DEFER_FIELD) return checker_settle_field(c, d);
     if (d->kind == DEFER_PRESENT) return checker_settle_present(c, d);
+    if (d->kind == DEFER_METHOD) return checker_settle_method(c, d);
     Type type = types_of(c, d->left);
     if (type == TYPE_UNKNOWN) return false;
     const char *name = checker_type_name(c, type);
@@ -237,13 +238,13 @@ static void defer(Checker *c, Deferred d) {
 }
 
 void types_defer(Checker *c, DeferKind kind, const Expr *expr, TypeVar left, TypeVar right, TypeVar result) {
-    Deferred d = {kind, expr, left, right, result, false, 0, NULL};
+    Deferred d = {kind, expr, left, right, result, false, 0, NULL, NULL};
     defer(c, d);
 }
 
 void types_defer_one_of(Checker *c, const Expr *expr, TypeVar var, TypeVar shown, unsigned allowed,
                         const char *message) {
-    Deferred d = {DEFER_ONE_OF, expr, var, shown, var, false, allowed, message};
+    Deferred d = {DEFER_ONE_OF, expr, var, shown, var, false, allowed, message, NULL};
     defer(c, d);
 }
 
@@ -351,6 +352,11 @@ void types_finish(Checker *c, size_t first_error) {
     settle_all(c);
     // A kind left undecided is usually a side effect of another mistake, so
     // it's only reported once everything else is right.
+    for (size_t i = 0; diag_count(c->diag) == first_error && i < c->deferred.len; i++) {
+        if (!c->deferred.items[i].done && c->deferred.items[i].kind == DEFER_METHOD) {
+            checker_report_unsettled_method(c, &c->deferred.items[i]);
+        }
+    }
     for (size_t i = 0; diag_count(c->diag) == first_error && i < c->functions.len; i++) {
         report_undecided(c, &c->functions.items[i]);
     }

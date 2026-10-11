@@ -1,0 +1,28 @@
+Line 11: You already defined "speak" for a dog on line 7.
+    to speak, for a dog:
+       ^^^^^
+Each kind of record can have one method called "speak".
+
+Line 15: You already defined "describe" on line 13.
+    to describe with x:
+       ^^^^^^^^
+Each function needs its own name. Only methods for different kinds of record can share one.
+
+Line 17: "speak" is a method for a dog and a cat, but this is a fish.
+    speak (a new fish with name "Nemo").
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Define one for it too, like "to speak, for a fish:".
+
+Line 18: "speak" is a method for a dog and a cat, but this is a number.
+    speak 5.
+          ^
+
+Line 20: "speak" doesn't give back a value, so it can't be used here.
+    say speak tom.
+        ^^^^^^^^^
+It's defined on line 9. To use what it works out, end it with "give back ...".
+
+Line 21: "speak" needs 1 value, but this gives it 2.
+    speak tom with 3.
+    ^^^^^^^^^^^^^^^^
+It's defined on line 9: "to speak, for a cat".

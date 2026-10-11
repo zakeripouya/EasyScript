@@ -263,6 +263,7 @@ struct Expr {
         struct {
             const char *name;
             Vec(Expr *) args;
+            const struct Stmt *target;  // the definition called (set by the checker)
         } call;
         Expr *operand;  // EXPR_LENGTH, EXPR_FILE_CONTENTS
         struct {
@@ -471,6 +472,7 @@ struct Stmt {
             Name name;
             const char *intro;     // the word before the inputs: "with", "of", "using" or "to" (NULL: none)
             bool method;           // "to bark, for a dog:": the first input is the dog
+            size_t overload;       // a method sharing its name with another kind's: 1 + its kind's index (checker)
             Vec(Name) params;
             Vec(Type) declared;    // per input: the kind written in "(a number)", or TYPE_UNKNOWN
             Type declared_result;  // "giving back a number", or TYPE_UNKNOWN

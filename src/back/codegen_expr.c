@@ -18,6 +18,14 @@
 // A C name: the prefix plus the name with "_" doubled, "'" as "_q", and the
 // space between the words of a name as one "_", so different EasyScript
 // names can never collide ("late fee" is late_fee, "late_fee" late__fee).
+// A function's C name with a prefix: "es_f_speak", and "es_f_speak_0r1" for
+// a method sharing its name with another kind's ("_0" can't come from a
+// name, whose words start with a letter).
+void cg_append_function(StrBuf *out, const char *prefix, const Stmt *fn) {
+    cg_append_prefixed(out, prefix, fn->as.function.name.text);
+    if (fn->as.function.overload) sb_appendf(out, "_0r%zu", fn->as.function.overload - 1);
+}
+
 void cg_append_prefixed(StrBuf *out, const char *prefix, const char *name) {
     sb_append(out, prefix);
     for (const char *c = name; *c; c++) {
@@ -427,10 +435,10 @@ bool cg_ordered(Codegen *g, Expr *const *exprs, size_t n, const char **values, S
     return effects >= 2;
 }
 
-static void emit_call(Codegen *g, const char *name, Expr *const *args, size_t n, SourcePos pos, StrBuf *out) {
+static void emit_call(Codegen *g, const Stmt *fn, Expr *const *args, size_t n, SourcePos pos, StrBuf *out) {
     const char **values = arena_alloc(g->arena, (n + 1) * sizeof(char *));
     bool opened = cg_ordered(g, args, n, values, out);
-    cg_append_prefixed(out, "es_f_", name);
+    cg_append_function(out, "es_f_", fn);
     sb_appendf(out, "(%zu", cg_site(g, pos));
     for (size_t i = 0; i < n; i++) sb_appendf(out, ", %s", values[i]);
     sb_append(out, opened ? "))" : ")");
@@ -449,7 +457,7 @@ static void emit_name(Codegen *g, const Expr *expr, StrBuf *out) {
     } else if (cg_is_constant(g, name)) {
         cg_append_prefixed(out, "es_k_", name);  // text constants are immortal: no retain
     } else if (cg_find_function(g, name)) {
-        emit_call(g, name, NULL, 0, expr->pos, out);  // a function that takes no values
+        emit_call(g, cg_find_function(g, name), NULL, 0, expr->pos, out);  // a function that takes no values
     } else {  // a record or nothing checked not to be nothing is still kept as one
         cg_emit_var(out, name, expr->narrowed ? expr->type + TYPE_MAYBE : expr->type);
     }
@@ -487,7 +495,7 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     case EXPR_BOOLEAN: sb_append(out, expr->as.boolean ? "true" : "false"); break;
     case EXPR_NAME: emit_name(g, expr, out); break;
     case EXPR_CALL:
-        emit_call(g, expr->as.call.name, expr->as.call.args.items, expr->as.call.args.len, expr->pos, out);
+        emit_call(g, expr->as.call.target, expr->as.call.args.items, expr->as.call.args.len, expr->pos, out);
         break;
     case EXPR_LENGTH:
         if (type_is_list(expr->as.operand->type)) {

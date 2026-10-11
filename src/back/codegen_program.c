@@ -90,7 +90,7 @@ static void emit_constant(Codegen *g, const Stmt *stmt, StrBuf *out) {
 // (es_call is the site of the call, for the call stack)
 static void append_signature(StrBuf *out, const Stmt *fn) {
     sb_appendf(out, "static %s ", cg_ctype(fn->as.function.result));
-    cg_append_prefixed(out, "es_f_", fn->as.function.name.text);
+    cg_append_function(out, "es_f_", fn);
     sb_append(out, "(int es_call");
     for (size_t i = 0; i < fn->as.function.params.len; i++) {
         Type type = fn->as.function.param_types.items[i];
@@ -129,7 +129,7 @@ void cg_emit_declarations(const Codegen *g, StrBuf *out) {
 static void emit_function_info(const Stmt *fn, StrBuf *out) {
     size_t n = fn->as.function.params.len;
     if (n > 0) {
-        cg_append_prefixed(out, "static const char *const es_in_", fn->as.function.name.text);
+        cg_append_function(out, "static const char *const es_in_", fn);
         sb_append(out, "[] = {");
         for (size_t i = 0; i < n; i++) {
             const char *display = fn->as.function.params.items[i].display;
@@ -138,12 +138,12 @@ static void emit_function_info(const Stmt *fn, StrBuf *out) {
         }
         sb_append(out, "};\n");
     }
-    cg_append_prefixed(out, "static const EsFunction es_fn_", fn->as.function.name.text);
+    cg_append_function(out, "static const EsFunction es_fn_", fn);
     sb_append(out, " = {");
     cg_append_c_string(out, fn->as.function.name.display, strlen(fn->as.function.name.display));
     sb_appendf(out, ", %zu, ", n);
     if (n > 0) {
-        cg_append_prefixed(out, "es_in_", fn->as.function.name.text);
+        cg_append_function(out, "es_in_", fn);
     } else {
         sb_append(out, "NULL");
     }
@@ -172,18 +172,18 @@ static void append_input(const Stmt *fn, size_t i, StrBuf *out) {
 static void emit_frame(const Stmt *fn, StrBuf *out) {
     size_t n = fn->as.function.params.len;
     if (n == 0) {
-        cg_append_prefixed(out, "    es_enter(&es_fn_", fn->as.function.name.text);
+        cg_append_function(out, "    es_enter(&es_fn_", fn);
         sb_append(out, ", es_call);\n");
         return;
     }
     if (n == 1) {
-        cg_append_prefixed(out, "    es_enter_one(&es_fn_", fn->as.function.name.text);
+        cg_append_function(out, "    es_enter_one(&es_fn_", fn);
         sb_append(out, ", es_call, (EsArg)");
         append_input(fn, 0, out);
         sb_append(out, ");\n");
         return;
     }
-    cg_append_prefixed(out, "    es_enter_many(&es_fn_", fn->as.function.name.text);
+    cg_append_function(out, "    es_enter_many(&es_fn_", fn);
     sb_append(out, ", es_call, (EsArg[]){");
     for (size_t i = 0; i < n; i++) {
         sb_append(out, i > 0 ? ", " : "");

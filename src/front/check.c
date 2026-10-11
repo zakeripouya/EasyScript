@@ -38,6 +38,12 @@ const Function *checker_find_function(const Checker *c, const char *name) {
     return NULL;
 }
 
+bool checker_shared_method(const Checker *c, const char *name) {
+    size_t count = 0;
+    for (size_t i = 0; i < c->functions.len; i++) count += strcmp(c->functions.items[i].name, name) == 0;
+    return count > 1;
+}
+
 const Constant *checker_find_constant(const Checker *c, const char *name) {
     for (size_t i = 0; i < c->constants.len; i++) {
         if (strcmp(c->constants.items[i].name, name) == 0) return &c->constants.items[i];
@@ -350,8 +356,11 @@ static void check_function(Checker *c, const Stmt *stmt) {
                   stmt->as.function.name.display);
         return;
     }
-    const Function *f = checker_find_function(c, stmt->as.function.name.text);
-    if (!f || f->definition != stmt) return;  // a duplicate, already reported
+    const Function *f = NULL;
+    for (size_t i = 0; i < c->functions.len && !f; i++) {
+        if (c->functions.items[i].definition == stmt) f = &c->functions.items[i];
+    }
+    if (!f) return;  // a duplicate, already reported
     size_t saved_floor = c->floor;
     size_t saved_loops = c->loops.len;
     c->floor = c->made.len;
@@ -556,23 +565,59 @@ static void function_types(Checker *c, Function *f) {
     f->result = types_new(c, result, result ? line : 0);
 }
 
+// The kind of record a method is for (0 for a function that isn't one).
+static Type method_kind(const Stmt *def) {
+    return def->as.function.method ? def->as.function.declared.items[0] : 0;
+}
+
+// A second function with a name already taken. Methods for different kinds
+// of record can share a name ("speak" for a dog and for a cat); the call
+// picks one by the kind of its record.
+static bool reject_duplicate(Checker *c, Stmt *stmt) {
+    const Name *name = &stmt->as.function.name;
+    Type kind = method_kind(stmt);
+    for (size_t i = 0; i < c->functions.len; i++) {
+        const Function *existing = &c->functions.items[i];
+        if (strcmp(existing->name, name->text) != 0) continue;
+        Type other = method_kind(existing->definition);
+        if (kind && other && kind != other) continue;
+        if (kind && kind == other) {
+            diag_error(c->diag, name->pos.span, "You already defined \"%s\" for %s on line %zu.", existing->display,
+                       ast_type_name(c->arena, c->records, kind), existing->definition->pos.line);
+            diag_note(c->diag, "Each kind of record can have one method called \"%s\".", existing->display);
+        } else {
+            diag_error(c->diag, name->pos.span, "You already defined \"%s\" on line %zu.", existing->display,
+                       existing->definition->pos.line);
+            diag_note(c->diag, "Each function needs its own name. Only methods for different kinds of record "
+                               "can share one.");
+        }
+        return true;
+    }
+    return false;
+}
+
+// Methods that share a name get told apart in the C program by their kind.
+static void mark_shared_methods(Checker *c) {
+    for (size_t i = 0; i < c->functions.len; i++) {
+        Stmt *def = c->functions.items[i].definition;
+        if (checker_shared_method(c, def->as.function.name.text)) {
+            def->as.function.overload = 1 + type_record_index(method_kind(def));
+        }
+    }
+}
+
 // Every top-level function, so calls can come before definitions.
 static void collect_functions(Checker *c, const Block *program) {
     for (size_t i = 0; i < program->len; i++) {
         Stmt *stmt = program->items[i];
         if (stmt->kind != STMT_FUNCTION) continue;
         const Name *name = &stmt->as.function.name;
-        const Function *existing = checker_find_function(c, name->text);
-        if (existing) {
-            diag_error(c->diag, name->pos.span, "You already defined \"%s\" on line %zu.", existing->display,
-                       existing->definition->pos.line);
-            diag_note(c->diag, "Each function needs its own name.");
-            continue;
-        }
+        if (reject_duplicate(c, stmt)) continue;
         Function f = {name->text, name->display, stmt, {0}, 0};
         function_types(c, &f);
         vec_push(c->arena, &c->functions, f);
     }
+    mark_shared_methods(c);
 }
 
 void check_program(Arena *arena, Diag *diag, Program *whole) {

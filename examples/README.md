@@ -32,6 +32,7 @@ Small programs, one per feature. **Every example is checked by `make test`** aga
 | [graph.es](programs/graph.es) | Maps: a network of stations as a map from each station to a list of its neighbours, the shortest way between two stations with a breadth-first search (a map of where each station was reached from), and how many stops every station is from the start (see [Maps](../docs/language-guide.md#13-maps)) |
 | [linked_list.es](programs/linked_list.es) | Records: a linked list of nodes whose `next` can be nothing, with methods (`push`, `pop`, `reverse`, `describe`), a `while ... is not nothing` walk, and recursion that stops at nothing (see [Records](../docs/language-guide.md#12-records)) |
 | [binary_tree.es](programs/binary_tree.es) | Records: a binary search tree with `left` and `right` that can be nothing, inserting, walking in order, searching, and its depth (see [Records](../docs/language-guide.md#12-records)) |
+| [pets.es](programs/pets.es) | Records: a dog and a cat with methods of the same name (`speak`, `describe`); each call picks the one for its record's kind |
 | [million_lines.es](programs/million_lines.es) | A million lines of text made one at a time, in flat memory (see [memory](../docs/memory.md)) |
 | [ask_name.es](programs/ask_name.es) | `ask … and call the answer …` (input from `ask_name.in`) |
 | [files.es](programs/files.es) | `write`, `append`, and `read file` |

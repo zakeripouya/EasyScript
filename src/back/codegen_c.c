@@ -311,8 +311,7 @@ static void emit_return(Codegen *g, const Stmt *stmt) {
 
 // A call written as a sentence: text it gives back is released, other values ignored.
 static void emit_call_statement(Codegen *g, const Stmt *stmt) {
-    const Stmt *fn = cg_find_function(g, stmt->as.call->as.call.name);
-    Type result = fn ? fn->as.function.result : TYPE_NOTHING;
+    Type result = stmt->as.call->as.call.target->as.function.result;
     const char *call = expr_code(g, stmt->as.call);
     indent(g);
     if (type_counted(result)) {

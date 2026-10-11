@@ -512,7 +512,7 @@ X is a name or a chain of fields (`node`, `the node's next`). Setting X (or anyt
 | `NAME R` / `NAME for R` | Calls a method, as a sentence or as a value | `bark rex.`, `have a birthday for rex.` |
 | `NAME R with X and Y` | Calls a method with more inputs (or with the word its definition used: `rename rex to "Max".`) | `rename rex with "Max".` |
 
-A method is a function, so `call bark with rex`, `bark of rex` and `describe for rex followed by "!"` (an ambiguity: use parentheses) work as for any function. Two kinds of record can't have methods with the same name yet.
+A method is a function, so `call bark with rex`, `bark of rex` and `describe for rex followed by "!"` (an ambiguity: use parentheses) work as for any function. **Different kinds of record can have methods with the same name** (`to speak, for a dog:` and `to speak, for a cat:`): the call picks the one for its record's kind. A kind can't have two methods with the same name, and a plain function can't share its name.
 
 ### Memory
 

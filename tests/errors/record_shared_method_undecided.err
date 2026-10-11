@@ -1,0 +1,4 @@
+Line 10: I can't tell which "speak" this is, because I can't tell what kind of record this is.
+        speak pet.
+              ^^^
+Several kinds of record have a method called "speak". Say which kind this is where it's made, like "(a dog)" after an input.

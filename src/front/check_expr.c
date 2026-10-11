@@ -260,15 +260,9 @@ static TypeVar call_result(Checker *c, const Function *f, const Expr *expr, bool
     return error_var(c);
 }
 
-TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value) {
+// The inputs given to f (checked already), and what the call gives back.
+static TypeVar finish_call(Checker *c, const Function *f, const Expr *expr, const TypeVar *args, bool as_value) {
     size_t n = expr->as.call.args.len;
-    TypeVar *args = arena_alloc(c->arena, (n + 1) * sizeof(TypeVar));
-    for (size_t i = 0; i < n; i++) args[i] = checker_check_value(c, expr->as.call.args.items[i]);
-    const Function *f = checker_find_function(c, expr->as.call.name);
-    if (!f) {
-        report_unknown_function(c, expr->as.call.name, expr->display, expr->pos);
-        return error_var(c);
-    }
     if (param_count(f) != n) {
         report_argument_count(c, f, n, expr->pos);
         return error_var(c);
@@ -278,7 +272,78 @@ TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value) {
             report_argument_kind(c, f, i, expr->as.call.args.items[i], args[i]);
         }
     }
+    ((Expr *)expr)->as.call.target = f->definition;
     return call_result(c, f, expr, as_value);
+}
+
+// "speak, for a dog" and "speak, for a cat", and this is a fish: lists the kinds.
+static void report_no_method(Checker *c, const Expr *expr, Type kind) {
+    StrBuf kinds;
+    sb_init(&kinds, c->arena);
+    size_t count = 0, total = 0;
+    for (size_t i = 0; i < c->functions.len; i++) total += strcmp(c->functions.items[i].name, expr->as.call.name) == 0;
+    const Function *first = NULL;
+    for (size_t i = 0; i < c->functions.len; i++) {
+        const Function *f = &c->functions.items[i];
+        if (strcmp(f->name, expr->as.call.name) != 0) continue;
+        if (!first) first = f;
+        if (count++ > 0) sb_append(&kinds, count == total ? " and " : ", ");
+        sb_append(&kinds, ast_type_name(c->arena, c->records, f->definition->as.function.declared.items[0]));
+    }
+    const Expr *record = expr->as.call.args.items[0];
+    diag_error(c->diag, record->pos.span, "\"%s\" is a method for %s, but this is %s.", first->display, kinds.data,
+               ast_type_name(c->arena, c->records, kind));
+    if (type_is_record(kind)) {
+        diag_note(c->diag, "Define one for it too, like \"to %s, for %s:\".", first->display,
+                  ast_type_name(c->arena, c->records, kind));
+    }
+}
+
+bool checker_settle_method(Checker *c, const Deferred *d) {
+    Type kind = types_of(c, d->left);
+    if (kind == TYPE_ERROR) return true;
+    if (type_is_maybe(kind)) kind = type_present(kind);
+    if (!type_is_record(kind)) {
+        if (kind == TYPE_UNKNOWN || kind == TYPE_MAYBE) return false;
+        report_no_method(c, d->expr, kind);
+        return true;
+    }
+    for (size_t i = 0; i < c->functions.len; i++) {
+        const Function *f = &c->functions.items[i];
+        if (strcmp(f->name, d->expr->as.call.name) == 0 && f->definition->as.function.declared.items[0] == kind) {
+            types_unify(c, d->result, finish_call(c, f, d->expr, d->args, d->allowed));
+            return true;
+        }
+    }
+    report_no_method(c, d->expr, kind);
+    return true;
+}
+
+void checker_report_unsettled_method(Checker *c, const Deferred *d) {
+    const Expr *record = d->expr->as.call.args.items[0];
+    Type example = checker_find_function(c, d->expr->as.call.name)->definition->as.function.declared.items[0];
+    diag_error(c->diag, record->pos.span, "I can't tell which \"%s\" this is, because I can't tell what kind of record "
+               "this is.", d->expr->display);
+    diag_note(c->diag, "Several kinds of record have a method called \"%s\". Say which kind this is where it's made, "
+                       "like \"(%s)\" after an input.", d->expr->display,
+              ast_type_name(c->arena, c->records, example));
+}
+
+TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value) {
+    size_t n = expr->as.call.args.len;
+    TypeVar *args = arena_alloc(c->arena, (n + 1) * sizeof(TypeVar));
+    for (size_t i = 0; i < n; i++) args[i] = checker_check_value(c, expr->as.call.args.items[i]);
+    const Function *f = checker_find_function(c, expr->as.call.name);
+    if (!f) {
+        report_unknown_function(c, expr->as.call.name, expr->display, expr->pos);
+        return error_var(c);
+    }
+    if (n == 0 || !checker_shared_method(c, expr->as.call.name)) return finish_call(c, f, expr, args, as_value);
+    TypeVar result = types_new(c, TYPE_UNKNOWN, 0);  // which method depends on the record's kind
+    Deferred d = {DEFER_METHOD, expr, args[0], 0, result, false, as_value, NULL, args};
+    if (checker_settle_method(c, &d)) return result;
+    vec_push(c->arena, &c->deferred, d);
+    return result;
 }
 
 // A bare name: a variable, a constant, or a function that takes no values.
