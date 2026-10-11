@@ -102,7 +102,7 @@ Line 2: "yes" can't be used as a name.
     let yes be 1
         ^^^
 "yes" already means something in EasyScript.
-Try a different name, like "my_yes".
+Try a name that says what it holds, like "total" or "answer".
 ```
 
 **A comparison with a word missing**: [`err_missing_than.es`](../examples/parser/err_missing_than.es)
@@ -168,7 +168,7 @@ Other `if` mistakes the parser explains: a missing colon (or comma, or `then`), 
 Line 1: "plus" can't be part of a name, because it already means something in EasyScript.
     let price plus tax be 5
               ^^^^
-Try a name without it, like "price_plus_tax".
+Try a name without it, like "price tax".
 ```
 
 Also: a mistyped name of several words ("I don't understand "fees" here." with "Did you mean "late fee"?"), a kind in parentheses straight after a function's name ("A kind in parentheses goes after an input, and inputs come after "with"."), and a sentence starting with the first word of a function's name ("I don't know a sentence that starts with "greet"." with a note that the function is called "greet someone" and how to give it an input).

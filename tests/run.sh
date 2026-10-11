@@ -484,6 +484,22 @@ audit() {
 }
 
 audit "audit/every-error-message-tested" error_coverage.py
+
+# Suggestions never invent underscore names: a quoted example with an
+# underscore in a note ("like ...", "Did you mean ...") must be a name the
+# program itself wrote.
+check_no_underscore_suggestions() {
+    bad=""
+    for err in "$ROOT"/tests/*/*.err "$ROOT"/examples/*/*.err; do
+        es="${err%.err}.es"
+        [ -f "$es" ] || continue
+        for word in $(grep -E 'like |Try |mean ' "$err" | grep -oE '"[^"]*_[^"]*"' | tr -d '"' | tr ' ' '\n'); do
+            case "$word" in *_*) grep -qF -- "$word" "$es" || bad="$bad ${err#$ROOT/}:$word" ;; esac
+        done
+    done
+    if [ -z "$bad" ]; then ok "audit/no-underscore-suggestions"; else not_ok "audit/no-underscore-suggestions" "$bad"; fi
+}
+check_no_underscore_suggestions
 audit "audit/every-phrase-documented" vocab_coverage.py
 
 # --- Summary ----------------------------------------------------------------

@@ -28,7 +28,7 @@ static bool reject_statement_word_name(Parser *p, const Name *name) {
     if (!parser_is_statement_word(name->text)) return false;
     if (parser_error(p, name->pos.span, "\"%s\" starts sentences in EasyScript, so it can't be the name of a function.",
                      name->text)) {
-        diag_note(p->diag, "Pick another name, like \"%s_it\".", name->text);
+        diag_note(p->diag, "Add a word to it, like \"%s something\", or pick another name.", name->text);
     }
     return true;
 }
@@ -181,7 +181,7 @@ Stmt *parse_function(Parser *p, const Token *verb) {
 // is checked (and E worked out) by the checker.
 Stmt *parse_constant(Parser *p, const Token *verb) {
     static const char *const as_at[] = {"as", "at", NULL};
-    static const char *const example = "keep tax_rate as 0.2";
+    static const char *const example = "keep tax rate as 0.2";
     Stmt *stmt = parser_new_stmt(p, STMT_CONSTANT, verb);
     if (!parser_parse_name(p, &stmt->as.constant.name, as_at) || !parser_expect_word(p, as_at, example)) return NULL;
     stmt->as.constant.value = parse_expression(p);

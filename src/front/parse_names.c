@@ -269,7 +269,7 @@ static void report_filler_name(Parser *p, Span filler) {
 static void report_reserved_name(Parser *p, const Token *token) {
     if (parser_error(p, token->span, "\"%s\" can't be used as a name.", token->text)) {
         diag_note(p->diag, "\"%s\" already means something in EasyScript.", token->text);
-        diag_note(p->diag, "Try a different name, like \"my_%s\".", token->text);
+        diag_note(p->diag, "Try a name that says what it holds, like \"total\" or \"answer\".");
     }
 }
 
@@ -281,7 +281,8 @@ static void report_name_missing_after_prev(Parser *p) {
 
 // The name's n words are followed by a word that means something else and
 // then more name words ("let price plus tax be", "rate of pay"): the name
-// can't contain it. Suggests the words joined with underscores.
+// can't contain it. Suggests the name's other words: "pay rate" for "rate of
+// pay", as English puts it, and "price tax" for "price plus tax".
 static bool reject_reserved_inside(Parser *p, size_t n, const char *const *next) {
     const Token *word = parser_peek(p, n);
     if (word->kind != TOK_WORD || word_among(word, next) || is_inner_word(word) || !is_inner_word(parser_peek(p, n + 1))) {
@@ -291,7 +292,10 @@ static bool reject_reserved_inside(Parser *p, size_t n, const char *const *next)
     while (is_inner_word(parser_peek(p, total)) && !word_among(parser_peek(p, total), next)) total++;
     if (parser_error(p, word->span, "\"%s\" can't be part of a name, because it already means something in EasyScript.",
                      word->text)) {
-        diag_note(p->diag, "Try a name without it, like \"%s\".", join_words(p, p->pos, total, true, '_'));
+        const char *before = join_words(p, p->pos, n, true, ' ');
+        const char *after = join_words(p, p->pos + n + 1, total - n - 1, true, ' ');
+        bool of = strcmp(word->text, "of") == 0;
+        diag_note(p->diag, "Try a name without it, like \"%s %s\".", of ? after : before, of ? before : after);
     }
     return true;
 }
@@ -317,7 +321,7 @@ bool parser_parse_name(Parser *p, Name *name, const char *const *next) {
     } else if (is_next_word || parser_at_sentence_end(p) || parser_at(p, 0, TOK_COLON)) {
         report_name_missing_after_prev(p);
     } else if (parser_error(p, token->span, "I expected a name here, but found %s.", parser_describe(p, token))) {
-        diag_note(p->diag, "A name is a single word, like \"total\" or \"player_2\", or several, like \"late fee\".");
+        diag_note(p->diag, "A name is a single word, like \"total\", or several, like \"late fee\".");
     }
     return false;
 }

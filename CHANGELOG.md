@@ -38,6 +38,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- **Error messages never suggest underscore names.** A word that can't be a name suggests a name that says what it holds (`"total"`), a word inside a name suggests the other words (`"price tax"`, `"pay rate"` for `rate of pay`), a function named like a sentence word suggests adding a word (`"say something"`), and a taken item name suggests `"current score"`. A new audit in `make test` checks that suggestions only show underscores the program itself wrote.
 - **`for` always ends a function's name** in its definition, because it now introduces inputs: `to print receipt for customer:` is `print receipt` with the input `customer` (it was a function called `print receipt for customer` with no inputs).
 - **`L reversed` copies the lists inside it,** like slices and `a copy of`, so changing the reversed list never changes the original (they were shared).
 - `a copy of` works on records and maps too, so its message is now "I can only copy a list, a map or a record, but this is text."; `is empty` works on maps, so its message is now "I can only check whether text, a list or a map is empty, but this is a number."

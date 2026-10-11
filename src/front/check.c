@@ -388,7 +388,7 @@ void checker_make_item_name(Checker *c, const Name *name, TypeVar item) {
     const Symbol *existing = checker_find_made(c, name->text);
     if (existing) {
         diag_error(c->diag, name->pos.span, "You already made \"%s\" on line %zu.", existing->display, existing->line);
-        diag_note(c->diag, "Give the items a name that isn't taken yet, like \"each_%s\".", name->display);
+        diag_note(c->diag, "Give the items a name that isn't taken yet, like \"current %s\".", name->display);
         return;
     }
     if (checker_clashes(c, name)) return;

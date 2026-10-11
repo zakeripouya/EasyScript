@@ -1,27 +1,27 @@
 Line 1: "plus" can't be part of a name, because it already means something in EasyScript.
     let price plus tax be 5
               ^^^^
-Try a name without it, like "price_plus_tax".
+Try a name without it, like "price tax".
 
 Line 2: "of" can't be part of a name, because it already means something in EasyScript.
     let rate of pay be 1
              ^^
-Try a name without it, like "rate_of_pay".
+Try a name without it, like "pay rate".
 
 Line 3: "is" can't be part of a name, because it already means something in EasyScript.
     keep top is big as 3
              ^^
-Try a name without it, like "top_is_big".
+Try a name without it, like "top big".
 
 Line 4: "and" can't be part of a name, because it already means something in EasyScript.
     add 5 to price and tax
                    ^^^
-Try a name without it, like "price_and_tax".
+Try a name without it, like "price tax".
 
 Line 5: "and" can't be part of a name, because it already means something in EasyScript.
     to add tax and fees to amount:
                ^^^
-Try a name without it, like "add_tax_and_fees".
+Try a name without it, like "add tax fees".
 
 Line 8: I don't understand "fees" here.
     say late fees

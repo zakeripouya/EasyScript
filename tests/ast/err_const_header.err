@@ -1,7 +1,7 @@
 Line 1: I expected "as" here, but found "0.2".
     keep rate 0.2
               ^^^
-Write it like "keep tax_rate as 0.2".
+Write it like "keep tax rate as 0.2".
 
 Line 2: "a" can't be used as a name.
     keep a as 1
@@ -13,7 +13,7 @@ Line 3: "yes" can't be used as a name.
     keep yes as 1
          ^^^
 "yes" already means something in EasyScript.
-Try a different name, like "my_yes".
+Try a name that says what it holds, like "total" or "answer".
 
 Line 4: Something is missing after "as".
     keep rate as

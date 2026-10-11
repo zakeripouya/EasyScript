@@ -1,7 +1,7 @@
 Line 3: You already made "score" on line 1.
     for each score in scores:
              ^^^^^
-Give the items a name that isn't taken yet, like "each_score".
+Give the items a name that isn't taken yet, like "current score".
 
 Line 7: I don't know anything called "mark".
     say mark
@@ -11,4 +11,4 @@ Line 7: I don't know anything called "mark".
 Line 8: You already made "score" on line 1.
     say every score in scores plus 1
               ^^^^^
-Give the items a name that isn't taken yet, like "each_score".
+Give the items a name that isn't taken yet, like "current score".

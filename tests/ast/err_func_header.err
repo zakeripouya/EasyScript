@@ -6,7 +6,7 @@ Add a name there, like "total".
 Line 3: "say" starts sentences in EasyScript, so it can't be the name of a function.
     to say with x:
        ^^^
-Pick another name, like "say_it".
+Add a word to it, like "say something", or pick another name.
 
 Line 5: "a" can't be used as a name.
     to greet a:
@@ -18,7 +18,7 @@ Line 7: "yes" can't be used as a name.
     to greet with yes:
                   ^^^
 "yes" already means something in EasyScript.
-Try a different name, like "my_yes".
+Try a name that says what it holds, like "total" or "answer".
 
 Line 9: Something is missing after "with".
     to greet with:
@@ -48,7 +48,7 @@ Add a name there, like "total".
 Line 16: I expected a name here, but found "5".
     call 5
          ^
-A name is a single word, like "total" or "player_2", or several, like "late fee".
+A name is a single word, like "total", or several, like "late fee".
 
 Line 17: Something is missing after "with".
     greet with

@@ -33,7 +33,7 @@ Line 12: "yes" can't be used as a name.
     count from 1 to 10 as yes:
                           ^^^
 "yes" already means something in EasyScript.
-Try a different name, like "my_yes".
+Try a name that says what it holds, like "total" or "answer".
 
 Line 14: Something is missing after "by".
     count from 1 to 10 by:

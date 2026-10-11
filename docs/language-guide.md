@@ -74,7 +74,7 @@ Try it: [`examples/lexer/sentences.es`](../examples/lexer/sentences.es). The out
 
 ### Names
 
-A name starts with a letter and can contain letters, digits, and underscores: `total`, `player_2`, `clientName`. An apostrophe can sit between letters, so `guest's` and `isn't` are single words.
+A name starts with a letter and can contain letters, digits, and underscores: `total`, `player2`, `clientName`. You never need underscores, though: a name can be several words (see below), and error messages always suggest names in plain words. An apostrophe can sit between letters, so `guest's` and `isn't` are single words.
 
 A name can also be **several words**: `let late fee be 25.`, `keep hourly rate as 150.`, `count from 1 to 3 as session number:`. Once the program makes a name like that (with `let`, `keep`, `to`, `as`, `call`, or `for each`), EasyScript recognizes it everywhere, always taking the longest name it knows: if the program has both `total` and `total cost`, then `total cost plus 1` uses `total cost`. Words that already mean something in a sentence (like `plus`, `is`, `and`, `of`, `with`, `to`, `in`, `be`) can't be part of a name of several words; trying it is an error that suggests another name:
 
@@ -82,7 +82,7 @@ A name can also be **several words**: `let late fee be 25.`, `keep hourly rate a
 Line 1: "plus" can't be part of a name, because it already means something in EasyScript.
     let price plus tax be 5
               ^^^^
-Try a name without it, like "price_plus_tax".
+Try a name without it, like "price tax".
 ```
 
 Names are matched without caring about capitals, so `clientName`, `clientname` and `CLIENTNAME` are the same name; messages show a name the way you first wrote it.
