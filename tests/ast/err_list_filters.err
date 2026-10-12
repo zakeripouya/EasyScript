@@ -1,0 +1,19 @@
+Line 2: "whose" needs a field after it, but no kind of record has one called "colour".
+    say the dogs whose colour is "red".
+                       ^^^^^^
+Write it like "the dogs whose age is over 3".
+
+Line 3: Something is missing after "are".
+    say the scores that are.
+                        ^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 4: Something is missing after "where".
+    say the scores where.
+                   ^^^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 5: "each" has to start the value, because everything after it is worked out for each item.
+    say 1 plus each score in scores.
+               ^^^^
+Put it in parentheses, like "(each score in scores plus 5)".

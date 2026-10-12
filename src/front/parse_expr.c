@@ -214,9 +214,10 @@ static Expr *parse_left_assoc(Parser *p, const Phrase *ops, size_t n, ParseFn op
     }
 }
 
-// "every NAME in", where NAME may be several words ("every guest name in").
+// "each NAME in" (or "every NAME in"), where NAME may be several words ("each guest name in").
 bool parser_at_every(const Parser *p) {
-    if (!parser_at_word(p, 0, "every") || !parser_is_name_word(parser_peek(p, 1)) || parser_at_every_nth(p)) return false;
+    bool each = parser_at_word(p, 0, "each") || parser_at_word(p, 0, "every");
+    if (!each || !parser_is_name_word(parser_peek(p, 1)) || parser_at_every_nth(p)) return false;
     for (size_t i = 2; parser_peek(p, i)->kind == TOK_WORD; i++) {
         if (parser_at_word(p, i, "in")) return true;
         if (!parser_is_name_word(parser_peek(p, i))) return false;
@@ -224,8 +225,8 @@ bool parser_at_every(const Parser *p) {
     return false;
 }
 
-// every NAME in L <the rest>: the rest of the value is worked out for each
-// item, as if it started with NAME ("every score in scores plus 5").
+// each NAME in L <the rest> (or "every"): the rest of the value is worked
+// out for each item, as if it started with NAME ("each score in scores plus 5").
 static Expr *parse_every(Parser *p) {
     static const char *const in[] = {"in", NULL};
     Expr *every = ast_new_expr(p->arena, EXPR_EVERY, parser_token_pos(parser_advance(p)));
@@ -480,14 +481,9 @@ Expr *parse_unary(Parser *p) {
 
 // --- only --------------------------------------------------------------------
 
-// only L that are <comparison>: the items of L for which the comparison is
-// yes. The item is the comparison's left side (an "it").
-Expr *parser_parse_only(Parser *p) {
-    static const char *const that[] = {"that", NULL};
-    static const char *const example = "only the scores that are at least 70";
-    Expr *only = ast_new_expr(p->arena, EXPR_ONLY, parser_token_pos(parser_advance(p)));
-    only->as.only.list = parse_primary(p);
-    if (p->sentence_failed || !parser_expect_word(p, that, example)) return parser_error_expr(p);
+// After "that" in "only L that are ..." and "the L that are ...": "are
+// COMPARISON V" or "are [not] empty", with the item (an "it") on the left.
+Expr *parser_parse_item_test(Parser *p, const char *example) {
     Expr *it = ast_new_expr(p->arena, EXPR_IT, parser_token_pos(parser_peek(p, 0)));
     Expr *condition = parse_empty_test(p, it, 3, 3);
     if (!condition) {
@@ -509,6 +505,32 @@ Expr *parser_parse_only(Parser *p) {
         it->pos.span = op_span;
         condition = new_binary(p, kind, op_span, it, parse_join(p));
     }
+    return condition;
+}
+
+// Every item test starts with "are" or "aren't".
+bool parser_at_item_test(const Parser *p, size_t ahead) {
+    return parser_at_word(p, ahead, "are") || parser_at_word(p, ahead, "aren't");
+}
+
+// A condition whose first value is `first` ("whose age is over 3": the item's age).
+Expr *parser_parse_condition_after(Parser *p, Expr *first) {
+    p->pending_item = first;
+    Expr *condition = parse_or(p);
+    p->pending_item = NULL;
+    return condition;
+}
+
+// only L that are <comparison>: the items of L for which the comparison is
+// yes. The item is the comparison's left side (an "it").
+Expr *parser_parse_only(Parser *p) {
+    static const char *const that[] = {"that", NULL};
+    static const char *const example = "only the scores that are at least 70";
+    Expr *only = ast_new_expr(p->arena, EXPR_ONLY, parser_token_pos(parser_advance(p)));
+    only->as.only.list = parse_primary(p);
+    if (p->sentence_failed || !parser_expect_word(p, that, example)) return parser_error_expr(p);
+    Expr *condition = parser_parse_item_test(p, example);
+    if (!condition) return parser_error_expr(p);
     only->as.only.condition = condition;
     only->pos = ast_pos_join(only->pos, condition->pos);
     return only;

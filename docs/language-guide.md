@@ -826,18 +826,22 @@ Inside the loop, `it` is the item too. `stop the loop` and `skip this one` work 
 
 ### New lists from old ones
 
-`every NAME in L` works out the rest of the value for each item and gives the results as a new list:
+`each NAME in L` (or `every NAME in L`) works out the rest of the value for each item and gives the results as a new list:
 
 ```
-say every score in scores plus 5.          # 77, 100 and 93
-say every name in names followed by "!".
+say each score in scores plus 5.           # 77, 100 and 93
+say each name in names followed by "!".
 ```
 
-`only L that are ...` keeps the items for which a comparison is yes. The comparisons are the usual ones with `are` instead of `is` (`are at least`, `are less than`, `are not`, `are empty`, ...):
+`the scores that are ...` keeps the items for which a comparison is yes. The comparisons are the usual ones with `are` instead of `is` (`are at least`, `are less than`, `are not`, `are empty`, ...). `whose` does the same with a field of each record, and `where` takes any condition about `it`, the item:
 
 ```
-let passing be only the scores that are at least 70.
+let passing be the scores that are at least 70.
+let older be the dogs whose age is over 3.
+let low be the scores where it is below 50 or it is 100.
 ```
+
+A filter goes after a single value, so the count of a filtered list needs parentheses: `the number of items in (the dogs whose age is over 3)`. (`only the scores that are at least 70` is the older form, and still works.)
 
 And to sum up a list:
 

@@ -133,7 +133,62 @@ Expr *parser_parse_selection(Parser *p) {
     return parser_error_expr(p);
 }
 
+// L where C / L that pass F / L that are COMPARISON V / L whose FIELD ...:
+// the items of L the condition is yes for (in the condition, "it" is the item).
+static Expr *parse_filter(Parser *p, Expr *list) {
+    SourcePos start = list->pos;
+    if (parser_at_word(p, 0, "where")) {
+        parser_advance(p);
+        Expr *only = ast_new_expr(p->arena, EXPR_ONLY, start);
+        only->as.only.list = list;
+        only->as.only.condition = parse_expression(p);
+        only->pos = ast_pos_join(start, only->as.only.condition->pos);
+        return only;
+    }
+    size_t that = parser_match_words(p, "that passes");
+    if (!that) that = parser_match_words(p, "that pass");
+    if (that) {
+        parser_consume(p, that);
+        Expr *f = parse_function_operand(p);
+        return new_apply(p, APPLY_FILTER, f, list, start);
+    }
+    Expr *only = ast_new_expr(p->arena, EXPR_ONLY, start);
+    only->as.only.list = list;
+    if (parser_at_word(p, 0, "that")) {
+        parser_advance(p);
+        only->as.only.condition = parser_parse_item_test(p, "the scores that are at least 70");
+    } else {
+        Span whose = parser_advance(p)->span;
+        if (parser_known_field_words(p, 0) == 0) {
+            const Token *token = parser_peek(p, 0);
+            if (parser_error(p, token->kind == TOK_WORD ? token->span : whose,
+                             "\"whose\" needs a field after it, but no kind of record has one called %s.",
+                             parser_describe(p, token))) {
+                diag_note(p->diag, "Write it like \"the dogs whose age is over 3\".");
+            }
+            return parser_error_expr(p);
+        }
+        Expr *it = ast_new_expr(p->arena, EXPR_IT, (SourcePos){whose, 0, 0, 0});
+        it->pos = parser_token_pos(&p->tokens[p->pos - 1]);
+        Expr *field = ast_new_expr(p->arena, EXPR_FIELD, it->pos);
+        field->as.field.record = it;
+        parser_take_name(p, parser_known_field_words(p, 0), &field->as.field.name);
+        field->pos = field->as.field.name.pos;
+        only->as.only.condition = parser_parse_condition_after(p, field);
+    }
+    only->pos = ast_pos_join(start, only->as.only.condition->pos);
+    return only;
+}
+
+// Where a filter starts: "where", "that pass", "that are ...", or "whose" and a field.
+static bool at_filter(const Parser *p) {
+    return parser_at_word(p, 0, "where") || parser_match_words(p, "that pass") || parser_match_words(p, "that passes") ||
+           (parser_at_word(p, 0, "that") && parser_at_item_test(p, 1)) ||
+           (parser_at_word(p, 0, "whose") && parser_peek(p, 1)->kind == TOK_WORD);
+}
+
 Expr *parser_parse_apply_postfix(Parser *p, Expr *expr) {
+    if (at_filter(p)) return parse_filter(p, expr);
     if (parser_match_words(p, "applied to every")) {
         parser_consume(p, 3);
         if (!skip_item_words(p, "double applied to every number in scores")) return parser_error_expr(p);

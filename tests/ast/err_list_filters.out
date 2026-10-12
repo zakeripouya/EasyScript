@@ -1,0 +1,4 @@
+record dog [1:3]
+  field name: text [1:13]
+say [6:1]
+  text "still checked" [6:5]

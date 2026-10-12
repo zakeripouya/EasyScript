@@ -175,6 +175,9 @@ bool parser_at_has_definition(const Parser *p);
 Stmt *parser_parse_has(Parser *p);
 bool parser_at_can_method(const Parser *p);
 Stmt *parser_parse_can(Parser *p);
+Expr *parser_parse_item_test(Parser *p, const char *example);
+bool parser_at_item_test(const Parser *p, size_t ahead);
+Expr *parser_parse_condition_after(Parser *p, Expr *first);
 Stmt *parse_if(Parser *p, const Token *verb);
 Stmt *parser_finish_condition_after(Parser *p, Stmt *stmt);
 // An "otherwise" that doesn't belong to an if just above it.

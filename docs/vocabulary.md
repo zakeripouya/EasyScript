@@ -437,11 +437,15 @@ Sorting text, and sorting by length, keeps equal items in the order they were in
 | Pattern | Meaning | Example |
 |---|---|---|
 | `for each N in L:` + indented lines | Run the lines once for each item, with N (and `it`) the item. Goes through the items the list had when it started | `for each score in scores:` |
-| `every N in L REST` | A new list: REST worked out for each item, as if it started with N. Only at the start of a value (or in parentheses) | `every score in scores plus 5` |
-| `only L that COMPARISON X` | A new list of the items for which the comparison is yes | `only the scores that are at least 70` |
+| `each N in L REST` / `every N in L REST` | A new list: REST worked out for each item, as if it started with N. Only at the start of a value (or in parentheses) | `each score in scores plus 5` |
+| `L that COMPARISON X` / `L that are [not] empty` | A new list of the items for which the comparison is yes (`only` before it is the same) | `the scores that are at least 70` |
+| `L whose FIELD REST` | The records (or values of a kind) whose field makes REST yes, REST read as if it started with the field | `the dogs whose age is over 3` |
+| `L where C` | The items for which C is yes; in C, `it` is the item | `the scores where it is below 70` |
+| `L that pass F` / `L that passes F` | The items F gives yes for (a function taking an item, giving back yes or no) | `the scores that pass is even` |
+| `only L that COMPARISON X` | Same as `L that COMPARISON X` | `only the scores that are at least 70` |
 | `only L that are empty` / `... that are not empty` / `... that aren't empty` | The items (text or lists) that are, or aren't, empty | `only the names that aren't empty` |
 
-The comparisons after `only L that` are the usual ones with `are` for `is`: `are`, `are not`, `aren't`, `are equal to`, `are not equal to`, `aren't equal to`, `are greater than`, `are more than`, `are bigger than`, `are above`, `are over`, `are less than`, `are smaller than`, `are below`, `are under`, `are at least`, `are at most`, `are greater than or equal to`, `are more than or equal to`, `are bigger than or equal to`, `are less than or equal to`, and `are smaller than or equal to`.
+These filters go after a single value, like `'s`, so a longer list goes in parentheses (`(item 1 of groups) where it is empty`), and `the number of items in (the dogs whose age is over 3)` needs them too. The comparisons after `that` are the usual ones with `are` for `is`: `are`, `are not`, `aren't`, `are equal to`, `are not equal to`, `aren't equal to`, `are greater than`, `are more than`, `are bigger than`, `are above`, `are over`, `are less than`, `are smaller than`, `are below`, `are under`, `are at least`, `are at most`, `are greater than or equal to`, `are more than or equal to`, `are bigger than or equal to`, `are less than or equal to`, and `are smaller than or equal to`.
 
 ### Sharing
 

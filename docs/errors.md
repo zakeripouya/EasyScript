@@ -396,6 +396,8 @@ Write it like "a list of (a list of 1 and 2) and (a list of 3 and 4)".
 
 The full, tested set is the `list_*.err` files in [`tests/errors/`](../tests/errors/) and [`err_list_forms.err`](../tests/ast/err_list_forms.err).
 
+**Filters:** `whose` with no kind of record having that field is ""whose" needs a field after it, but no kind of record has one called "colour"."; `each` (like `every`) inside a longer value has to be in parentheses ([`err_list_filters.err`](../tests/ast/err_list_filters.err)).
+
 ### Text
 
 Text tools need text (and lists where they say so), and the forms that take characters say how to take items instead, and the other way round.

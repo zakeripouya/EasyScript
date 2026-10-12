@@ -246,10 +246,10 @@ static Expr *parse_field_of(Parser *p, size_t words) {
 
 // "every NAME in" anywhere but the start of a value.
 static Expr *reject_inner_every(Parser *p) {
-    Span span = parser_advance(p)->span;
-    if (parser_error(p, span, "\"every\" has to start the value, because everything after it is worked out for "
-                              "each item.")) {
-        diag_note(p->diag, "Put it in parentheses, like \"(every score in scores plus 5)\".");
+    const Token *word = parser_advance(p);
+    if (parser_error(p, word->span, "\"%s\" has to start the value, because everything after it is worked out for "
+                                    "each item.", word->text)) {
+        diag_note(p->diag, "Put it in parentheses, like \"(%s score in scores plus 5)\".", word->text);
     }
     return parser_error_expr(p);
 }
