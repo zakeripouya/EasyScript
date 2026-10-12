@@ -160,6 +160,7 @@ make bench        # times the benchmarks against C, Go, and Python
 ./easyscript emit file.es            # print the generated C
 ./easyscript tokens file.es          # show how the lexer reads a file
 ./easyscript ast file.es             # show the syntax tree
+./easyscript errors file.es          # check a file and print its errors as data (JSON, one per line)
 ./easyscript                         # interactive shell
 ```
 

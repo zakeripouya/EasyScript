@@ -124,6 +124,9 @@ static TypeVar check_and(Checker *c, const Expr *expr, TypeVar left, TypeVar rig
         diag_error(c->diag, expr->pos.span, "\"and\" doesn't join text: it means both, for yes or no values.");
         diag_note(c->diag, "To join text, use commas in \"say\" (say \"Hello,\", name) or \"followed by\" (\"Hello, \" followed "
                            "by name).");
+        diag_info(c->diag, DIAG_NOT_ALLOWED, NULL, NULL);
+        diag_choice(c->diag, "say \"Hello,\", name");
+        diag_choice(c->diag, "\"Hello, \" followed by name");
         return types_new(c, TYPE_ERROR, line);
     }
     if (l == TYPE_NUMBER && r == TYPE_NUMBER) {
@@ -494,8 +497,10 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
         TypeVar operand = checker_check_expr(c, expr->as.convert.operand);
         if (expr->as.convert.target == CONVERT_TO_TEXT) return types_new(c, TYPE_TEXT, line);
         if (expr->as.convert.target == CONVERT_TO_EXACT_TEXT) {
+            size_t before = diag_count(c->diag);
             checker_require(c, operand, TYPE_NUMBER, expr->as.convert.operand, "\"as exact text\" needs a number",
                             NULL);
+            if (diag_count(c->diag) > before) diag_info(c->diag, DIAG_WRONG_KIND, NULL, "a number");
             return types_new(c, TYPE_TEXT, line);
         }
         types_defer(c, DEFER_TO_NUMBER, expr, operand, operand, operand);

@@ -72,6 +72,7 @@ static Expr *parse_text(Parser *p) {
                                     "There's no value between these brackets.")) {
                 diag_note(p->diag, "Put a value in them, like \"[name]\". To put a \"[\" in text, write it twice: "
                                    "\"[[\".");
+                diag_info(p->diag, DIAG_MISSING, "a value between the brackets", NULL);
             }
             return parser_error_expr(p);
         }
@@ -86,6 +87,7 @@ static Expr *parse_text(Parser *p) {
             if (parser_error(p, token->span, "I expected \"]\" to end the value in the text, but found %s.",
                              parser_describe(p, token))) {
                 diag_note(p->diag, "The brackets hold one value, like \"[total plus 1]\".");
+                diag_info(p->diag, DIAG_MISSING, "\"]\"", NULL);
             }
             return parser_error_expr(p);
         }
@@ -225,6 +227,7 @@ static Expr *parse_field_of(Parser *p, size_t words) {
     if (parser_at_sentence_end(p)) {
         if (parser_error(p, of, "Something is missing after \"of\".")) {
             diag_note(p->diag, "Say whose %s it is, like \"the %s of rex\".", name.display, name.display);
+            diag_info(p->diag, DIAG_MISSING, arena_sprintf(p->arena, "whose %s it is", name.display), NULL);
         }
         return parser_error_expr(p);
     }
@@ -236,6 +239,9 @@ static Expr *parse_field_of(Parser *p, size_t words) {
         if (parser_error(p, expr->pos.span, "\"%s\" could mean two things.", whole)) {
             diag_note(p->diag, "\"%s\" is a field and a definition. For the field, write \"%s's %s\"; for the definition, "
                                "write \"%s with %s\".", name.display, owner, name.display, name.display, owner);
+            diag_info(p->diag, DIAG_TWO_MEANINGS, arena_sprintf(p->arena, "which \"%s\" is meant", name.display), NULL);
+            diag_choice(p->diag, "%s's %s", owner, name.display);
+            diag_choice(p->diag, "%s with %s", name.display, owner);
         }
         return parser_error_expr(p);
     }

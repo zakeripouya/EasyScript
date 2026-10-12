@@ -146,6 +146,7 @@ bless_errors "$ROOT/tests/errors"
 bless_warnings "$ROOT/tests/warnings"
 bless_dump tokens "$ROOT/tests/tokens" out
 bless_dump ast "$ROOT/tests/ast" out
+bless_dump errors "$ROOT/tests/data" out
 bless_run "$ROOT/examples/programs"
 bless_dump tokens "$ROOT/examples/lexer" tokens
 bless_dump ast "$ROOT/examples/parser" ast

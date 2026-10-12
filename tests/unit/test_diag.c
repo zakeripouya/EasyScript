@@ -176,7 +176,45 @@ static void test_empty_source(TestContext *t) {
               "    ^\n");
 }
 
+static const char *render_data(TestContext *t, const Diag *diag) {
+    StrBuf out;
+    sb_init(&out, t->arena);
+    diag_render_data(diag, &out);
+    return out.data ? out.data : "";
+}
+
+static void test_errors_as_data(TestContext *t) {
+    Diag *diag = diag_for(t, "let x be 1.\nsay \"hi\" and x\n");
+    Span span = {16, 12};
+    diag_error(diag, span, "\"and\" doesn't join text.");
+    diag_note(diag, "Use commas.");
+    diag_info(diag, DIAG_NOT_ALLOWED, NULL, NULL);
+    diag_choice(diag, "say \"hi\", %s", "x");
+    diag_choice(diag, "%s", "\"hi\" followed by x");
+    Span first = {4, 1};
+    diag_warning(diag, first, "A warning.");
+    diag_info(diag, DIAG_MISSING, "a kind", "a number");
+    CHECK_STR(t, render_data(t, diag),
+              "{\"line\": 2, \"column\": 5, \"file\": null, \"warning\": false, \"message\": \"\\\"and\\\" doesn't join "
+              "text.\", \"notes\": [\"Use commas.\"], \"problem\": \"not allowed\", \"missing\": null, \"kind\": null, "
+              "\"choices\": [\"say \\\"hi\\\", x\", \"\\\"hi\\\" followed by x\"]}\n"
+              "{\"line\": 1, \"column\": 5, \"file\": null, \"warning\": true, \"message\": \"A warning.\", \"notes\": [], "
+              "\"problem\": \"missing\", \"missing\": \"a kind\", \"kind\": \"a number\", \"choices\": []}\n");
+}
+
+static void test_errors_without_data(TestContext *t) {
+    Diag *diag = diag_for(t, "say totl\n");
+    Span span = {4, 4};
+    diag_error(diag, span, "I don't know anything called \"totl\".");
+    CHECK_STR(t, render_data(t, diag),
+              "{\"line\": 1, \"column\": 5, \"file\": null, \"warning\": false, \"message\": \"I don't know anything "
+              "called \\\"totl\\\".\", \"notes\": [], \"problem\": null, \"missing\": null, \"kind\": null, "
+              "\"choices\": []}\n");
+}
+
 void diag_tests(TestRunner *runner) {
+    unit_run(runner, "diag/errors-as-data", test_errors_as_data);
+    unit_run(runner, "diag/errors-without-data", test_errors_without_data);
     unit_run(runner, "diag/spec-example", test_spec_example);
     unit_run(runner, "diag/no-errors", test_no_errors);
     unit_run(runner, "diag/warnings-kept-apart", test_warnings_are_kept_apart);

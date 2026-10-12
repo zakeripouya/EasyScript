@@ -133,6 +133,9 @@ void checker_report_undecided_fields(Checker *c) {
             diag_note(c->diag, "Say it in parentheses after the field, like \"%s (a number)\" or \"%s (text)\".",
                       field->name.display, field->name.display);
         }
+        diag_info(c->diag, DIAG_MISSING, arena_sprintf(c->arena, "the kind of \"%s\"", field->name.display), NULL);
+        static const char *const kinds[] = {"a number", "text", "yes or no"};
+        for (size_t k = 0; !nothing && k < 3; k++) diag_choice(c->diag, "%s (%s)", field->name.display, kinds[k]);
     }
 }
 

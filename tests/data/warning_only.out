@@ -1,0 +1,1 @@
+{"line": 1, "column": 12, "file": null, "warning": true, "message": "This count never runs: it starts above where it ends, and counting goes up.", "notes": ["To count down, write \"count down from 10 to 1\"."], "problem": "missing", "missing": "\"down\"", "kind": null, "choices": ["count down from 10 to 1:"]}

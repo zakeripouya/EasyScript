@@ -401,6 +401,9 @@ Stmt *parser_parse_made_of(Parser *p) {
         if (parser_error(p, token->span, "I expected \",\" or \"and\" before the next field, but found %s.",
                          parser_describe(p, token))) {
             diag_note(p->diag, "Write it like \"a point is made of an x (a number) and a y (a number).\".");
+            diag_info(p->diag, DIAG_MISSING, "\",\" or \"and\" between the fields", NULL);
+            diag_choice(p->diag, ",");
+            diag_choice(p->diag, "and");
         }
         return NULL;
     }

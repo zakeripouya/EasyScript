@@ -312,6 +312,9 @@ static void lex_text_value(Lexer *lx) {
                        "This \"[\" starts a value inside the text, but there's no \"]\" to end it.");
             diag_note(lx->diag, "End the value with \"]\", like \"Hello, [name]!\". To put a \"[\" in text, write it "
                                 "twice: \"[[\".");
+            diag_info(lx->diag, DIAG_MISSING, "\"]\"", NULL);
+            diag_choice(lx->diag, "]");
+            diag_choice(lx->diag, "[[");
             skip_to_line_end(lx);
             emit_content(lx, TOK_RBRACKET, lx->pos, lx->pos, "", 0);
             return;
@@ -349,6 +352,8 @@ static void lex_string(Lexer *lx) {
             diag_error(lx->diag, span_between(lx->pos, lx->pos + 1), "This \"]\" doesn't end a value.");
             diag_note(lx->diag, "To put a \"]\" in text, write it twice: \"]]\". A value in text goes between "
                                 "\"[\" and \"]\", like \"Hello, [name]!\".");
+            diag_info(lx->diag, DIAG_NOT_ALLOWED, NULL, NULL);
+            diag_choice(lx->diag, "]]");
             sb_append_char(&value, c);
             lx->pos++;
         } else if (c == '[') {

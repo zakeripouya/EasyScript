@@ -165,6 +165,8 @@ static Expr *parse_filter(Parser *p, Expr *list) {
                              "\"whose\" needs a field after it, but no kind of record has one called %s.",
                              parser_describe(p, token))) {
                 diag_note(p->diag, "Write it like \"the dogs whose age is over 3\".");
+                diag_info(p->diag, DIAG_UNKNOWN, "a field after \"whose\"", NULL);
+                for (size_t i = 0; i < p->fields.len; i++) diag_choice(p->diag, "whose %s", p->fields.items[i].text);
             }
             return parser_error_expr(p);
         }

@@ -360,10 +360,14 @@ static bool and_values(Eval *ev, const Expr *expr, ConstValue a, ConstValue b, C
                     a.kind == CONST_YESNO ? "right" : "left", kind_name(ev, a.kind == CONST_YESNO ? b : a));
     }
     if (a.kind == CONST_TEXT || b.kind == CONST_TEXT) {
-        return fail(ev, span,
+        fail(ev, span,
                     "To join text, use commas in \"say\" (say \"Hello,\", name) or \"followed by\" (\"Hello, \" "
                     "followed by name).",
                     "\"and\" doesn't join text: it means both, for yes or no values.");
+        diag_info(ev->diag, DIAG_NOT_ALLOWED, NULL, NULL);
+        diag_choice(ev->diag, "say \"Hello,\", name");
+        diag_choice(ev->diag, "\"Hello, \" followed by name");
+        return false;
     }
     return fail(ev, span, "To add numbers, use \"plus\".", "I can't use \"and\" between %s and %s.", kind_name(ev, a),
                 kind_name(ev, b));

@@ -1,0 +1,1 @@
+{"line": 1, "column": 13, "file": null, "warning": false, "message": "This \"[\" starts a value inside the text, but there's no \"]\" to end it.", "notes": ["End the value with \"]\", like \"Hello, [name]!\". To put a \"[\" in text, write it twice: \"[[\"."], "problem": "missing", "missing": "\"]\"", "kind": null, "choices": ["]", "[["]}

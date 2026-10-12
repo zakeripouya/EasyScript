@@ -147,6 +147,8 @@ static void check_return(Checker *c, const Stmt *stmt) {
         diag_error(c->diag, stmt->pos.span, "\"stop here\" only works inside a definition.");
         diag_note(c->diag, "It ends the definition and goes back to whoever used it. "
                            "To end the whole program, write \"stop the program\".");
+        diag_info(c->diag, DIAG_NOT_ALLOWED, NULL, NULL);
+        diag_choice(c->diag, "stop the program");
         return;
     }
     if (!f) {
@@ -354,6 +356,8 @@ static void warn_never_counts(Checker *c, const Stmt *stmt) {
     Span span = {start, stmt->as.loop.to->pos.span.offset + stmt->as.loop.to->pos.span.length - start};
     diag_warning(c->diag, span, "This count never runs: it starts above where it ends, and counting goes up.");
     diag_note(c->diag, "To count down, write \"count down from %s to %s\".", from_text, to_text);
+    diag_info(c->diag, DIAG_MISSING, "\"down\"", NULL);
+    diag_choice(c->diag, "count down from %s to %s:", from_text, to_text);
 }
 
 static void check_loop(Checker *c, const Stmt *stmt) {
@@ -377,6 +381,12 @@ static void check_loop(Checker *c, const Stmt *stmt) {
         diag_note(c->diag, "\"for each %s:\" goes through the list called \"%s\". Make that list first, or say which "
                            "list to go through, like \"for each %s in groceries:\".",
                   stmt->as.loop.var.display, implied->display, stmt->as.loop.var.display);
+        diag_info(c->diag, DIAG_MISSING, "the list to go through", "a list");
+        for (size_t i = c->floor; i < c->made.len; i++) {  // the lists it could mean
+            if (type_is_list(types_of(c, c->made.items[i].var))) {
+                diag_choice(c->diag, "for each %s in %s:", stmt->as.loop.var.display, c->made.items[i].display);
+            }
+        }
         item = types_new(c, TYPE_ERROR, stmt->pos.line);
     } else if (stmt->as.loop.list) {
         item = checker_check_each(c, stmt, &value);

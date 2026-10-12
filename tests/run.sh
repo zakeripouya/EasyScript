@@ -21,6 +21,7 @@
 #   examples/programs/    like tests/run (also NAME/main.es folders)
 #   tests/ast/NAME.es     like tests/tokens, but with `easyscript ast`
 #   examples/lexer/       like tests/tokens, expected stdout in NAME.tokens
+#   tests/data/NAME.es    like tests/tokens, but with `easyscript errors` (errors as data)
 #   examples/parser/      like tests/ast, expected stdout in NAME.ast
 #   unit tests            tests/unit/*.c, built into the UNIT binary
 #   CLI checks            at the bottom of this file
@@ -244,6 +245,7 @@ check_errors "$ROOT/tests/errors" errors
 check_warnings "$ROOT/tests/warnings" warnings
 check_dump tokens "$ROOT/tests/tokens" tokens out
 check_dump ast "$ROOT/tests/ast" ast out
+check_dump errors "$ROOT/tests/data" data out
 
 # Examples back the docs, so every one of them must be checked.
 check_run "$ROOT/examples/programs" examples/programs

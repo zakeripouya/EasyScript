@@ -30,6 +30,16 @@ That example is real output from today's compiler. It's [`examples/lexer/err_mis
 - **Every message is tested.** `make test` checks that each error message in the compiler and runtime is produced by at least one test.
 - **No AI required.** Every message and suggestion comes from deterministic rules in the compiler, such as edit distance for "did you mean". The same program always produces the same errors.
 
+## Errors as data
+
+Each error added since the English pass is also kept as data: what the problem is (`missing`, `unknown`, `two meanings`, `wrong kind` or `not allowed`), what's missing or unclear, the kind of value it should be, and the possible answers. `easyscript errors FILE` prints every error and warning as one JSON object per line, so other tools (and, later, the notebook, which will ask the error as a question with these choices) can use it:
+
+```
+{"line": 3, "column": 10, "file": null, "warning": false, "message": "There's no list called \"totals\" for this to go through.", "notes": [...], "problem": "missing", "missing": "the list to go through", "kind": "a list", "choices": ["for each total in scores:", "for each total in names:"]}
+```
+
+Examples are in [`tests/data/`](../tests/data/).
+
 ## Errors you can see today
 
 There are three kinds: the **lexer** and **parser** catch problems in how sentences are written, the **checker** catches problems with names, and **runtime errors** happen while a program runs. Compile-time errors (the first three) are all reported together, and the program isn't built. A runtime error stops the program.

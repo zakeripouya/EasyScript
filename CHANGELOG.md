@@ -31,6 +31,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **Errors as data:** `easyscript errors FILE` prints each error and warning as a JSON object per line. The errors added in this release also carry what the problem is, what's missing, the kind expected and the possible answers, so a later notebook can ask them as questions.
+
 - **`a point is made of an x (a number) and a y (a number).`** defines a kind with one variant of the same name: its values compare by their fields (so `contains` finds a position kept as a point), never change, and their fields need no check.
 
 - **`for each score:`** goes through the list named like the plural (`scores`); without such a list it's an error asking which list.

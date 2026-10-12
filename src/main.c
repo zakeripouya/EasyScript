@@ -37,6 +37,7 @@ static void print_usage(FILE *out) {
     fprintf(out, "  easyscript emit FILE          Print the C code generated for FILE\n");
     fprintf(out, "  easyscript tokens FILE        Print the tokens of FILE, one per line\n");
     fprintf(out, "  easyscript ast FILE           Print the syntax tree of FILE as an outline\n");
+    fprintf(out, "  easyscript errors FILE        Check FILE and print its errors as data, one per line\n");
     fprintf(out, "  easyscript                    Start the interactive shell\n");
 }
 
@@ -114,15 +115,23 @@ static char *read_file(const char *path, size_t *length_out) {
 
 // Compiles an EasyScript source file to C at temp_c_path. On errors, prints
 // them all and exits with status 1.
-static void generate_c(const char *source_path) {
-    Sources *sources = sources_load(arena, source_path, getenv("ES_MODULE_DIR"));  // the shell's folder
-    Diag *diag = sources->diag;
-    TokenList tokens = lex_files(arena, diag, sources->source, sources->len, sources->starts, sources->count);
-    Program *program = parse_program(arena, diag, sources->source, &tokens);
-    program->files = sources->files;
+// Reads, lexes, parses and (if that went well) checks the program.
+static Program *front_end(const char *source_path, Sources **sources) {
+    *sources = sources_load(arena, source_path, getenv("ES_MODULE_DIR"));  // the shell's folder
+    Diag *diag = (*sources)->diag;
+    TokenList tokens = lex_files(arena, diag, (*sources)->source, (*sources)->len, (*sources)->starts, (*sources)->count);
+    Program *program = parse_program(arena, diag, (*sources)->source, &tokens);
+    program->files = (*sources)->files;
     if (diag_count(diag) == 0) {
         check_program(arena, diag, program);  // only on a cleanly parsed program
     }
+    return program;
+}
+
+static void generate_c(const char *source_path) {
+    Sources *sources;
+    Program *program = front_end(source_path, &sources);
+    Diag *diag = sources->diag;
     if (diag_count(diag) > 0) {
         diag_print(diag, stderr);
         exit(1);
@@ -253,6 +262,18 @@ static int cmd_ast(const char *source_path) {
     return 0;
 }
 
+// Checks FILE and prints its errors and warnings as data, one JSON object per
+// line (for tools, and a later notebook). Exits 1 if there are errors.
+static int cmd_errors(const char *source_path) {
+    Sources *sources;
+    front_end(source_path, &sources);
+    StrBuf out;
+    sb_init(&out, arena);
+    diag_render_data(sources->diag, &out);
+    fwrite(out.data, 1, out.len, stdout);
+    return diag_count(sources->diag) > 0 ? 1 : 0;
+}
+
 static int cmd_build(const char *source_path, const char *output_path) {
     make_temp_dir();
     generate_c(source_path);
@@ -315,7 +336,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (strcmp(command, "run") == 0 || strcmp(command, "emit") == 0 || strcmp(command, "build") == 0 ||
-        strcmp(command, "tokens") == 0 || strcmp(command, "ast") == 0) {
+        strcmp(command, "tokens") == 0 || strcmp(command, "ast") == 0 || strcmp(command, "errors") == 0) {
         if (!source_path) {
             return usage_error("Tell me which .es file to use.");
         }
@@ -342,6 +363,9 @@ int main(int argc, char *argv[]) {
     }
     if (strcmp(command, "ast") == 0) {
         return cmd_ast(source_path);
+    }
+    if (strcmp(command, "errors") == 0) {
+        return cmd_errors(source_path);
     }
     return cmd_emit(source_path);
 }

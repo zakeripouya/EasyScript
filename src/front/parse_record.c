@@ -191,6 +191,7 @@ static bool parse_has_details(Parser *p, Field *field) {
     if (parser_error(p, token->span, "I expected \")\" to close the \"(\" on line %zu, but found %s.", open->line,
                      parser_describe(p, token))) {
         diag_note(p->diag, "Write a field's kind in parentheses after its name, like \"%s\".", has_example);
+        diag_info(p->diag, DIAG_MISSING, "\")\"", NULL);
     }
     return false;
 }
@@ -224,6 +225,9 @@ Stmt *parser_parse_has(Parser *p) {
             if (parser_error(p, token->span, "I expected \",\" or \"and\" before the next field, but found %s.",
                              parser_describe(p, token))) {
                 diag_note(p->diag, "Write the fields like \"%s\".", has_example);
+                diag_info(p->diag, DIAG_MISSING, "\",\" or \"and\" between the fields", NULL);
+                diag_choice(p->diag, ",");
+                diag_choice(p->diag, "and");
             }
             return NULL;
         }

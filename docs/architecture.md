@@ -144,6 +144,7 @@ These are the rules every module follows (the full list is in [CONTRIBUTING.md](
 | `easyscript build FILE -o OUT` | Compile and build an executable at `OUT` |
 | `easyscript emit FILE` | Print the generated C |
 | `easyscript tokens FILE` | Print the lexer's tokens (`KIND line:col text`), and any errors to stderr |
+| `easyscript errors FILE` | Check FILE and print each error and warning as data, one JSON object per line: `line`, `column`, `file`, `warning`, `message`, `notes`, and, for errors that have it, `problem` (`missing`, `unknown`, `two meanings`, `wrong kind`, `not allowed`), `missing`, `kind` and `choices` (`diag_info`, `diag_choice`). Exits 1 if there are errors |
 | `easyscript ast FILE` | Print the syntax tree as an indented outline (`node [line:col]`), and any errors to stderr |
 | `easyscript` | Interactive shell (`src/shell.c`): type sentences one at a time; a line ending in `:` starts a block that ends at a blank line. Each entry is run together with everything kept so far, without repeating earlier output (the runtime skips `ES_SKIP_OUTPUT` bytes) or asking earlier `ask` questions again (answers are replayed from `ES_ANSWERS`). Entries with errors are shown and dropped. `exit`, `quit`, or `stop the program` leaves. |
 

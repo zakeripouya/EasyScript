@@ -9,6 +9,10 @@ typedef struct {
     const char *message;
     Vec(const char *) notes;
     bool warning;
+    DiagProblem problem;  // DIAG_NO_INFO unless diag_info was called
+    const char *missing;
+    const char *kind;
+    Vec(const char *) choices;
 } DiagError;
 
 struct Diag {
@@ -73,6 +77,26 @@ void diag_note(Diag *diag, const char *fmt, ...) {
     va_end(args);
     DiagError *last = diag->warned_last ? &vec_last(&diag->warnings) : &vec_last(&diag->errors);
     vec_push(diag->arena, &last->notes, note);
+}
+
+static DiagError *latest(Diag *diag) {
+    assert((diag->warned_last || diag->errors.len > 0) && "diag_info needs a preceding diag_error");
+    return diag->warned_last ? &vec_last(&diag->warnings) : &vec_last(&diag->errors);
+}
+
+void diag_info(Diag *diag, DiagProblem problem, const char *missing, const char *kind) {
+    DiagError *last = latest(diag);
+    last->problem = problem;
+    last->missing = missing ? arena_strdup(diag->arena, missing) : NULL;
+    last->kind = kind ? arena_strdup(diag->arena, kind) : NULL;
+}
+
+void diag_choice(Diag *diag, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    const char *choice = arena_vsprintf(diag->arena, fmt, args);
+    va_end(args);
+    vec_push(diag->arena, &latest(diag)->choices, choice);
 }
 
 size_t diag_warning_count(const Diag *diag) {
@@ -233,4 +257,66 @@ void diag_print(const Diag *diag, FILE *out) {
     sb_init(&text, diag->arena);
     diag_render(diag, &text);
     fwrite(text.data, 1, text.len, out);
+}
+
+// --- Errors as data ------------------------------------------------------------------
+
+static void json_string(StrBuf *out, const char *s) {
+    if (!s) {
+        sb_append(out, "null");
+        return;
+    }
+    sb_append_char(out, '"');
+    for (; *s; s++) {
+        unsigned char c = (unsigned char)*s;
+        if (c == '"' || c == '\\') {
+            sb_append_char(out, '\\');
+            sb_append_char(out, (char)c);
+        } else if (c < 0x20) {
+            sb_appendf(out, "\\u%04x", c);
+        } else {
+            sb_append_char(out, (char)c);
+        }
+    }
+    sb_append_char(out, '"');
+}
+
+static void json_strings(StrBuf *out, const char *const *items, size_t n) {
+    sb_append_char(out, '[');
+    for (size_t i = 0; i < n; i++) {
+        if (i > 0) sb_append(out, ", ");
+        json_string(out, items[i]);
+    }
+    sb_append_char(out, ']');
+}
+
+static const char *problem_name(DiagProblem problem) {
+    static const char *const names[] = {NULL, "missing", "unknown", "two meanings", "wrong kind", "not allowed"};
+    return names[problem];
+}
+
+static void render_data(const Diag *diag, const DiagError *error, StrBuf *out) {
+    size_t start = diag->line_starts.items[line_index(diag, error->span.offset)];
+    size_t offset = error->span.offset < diag->source_len ? error->span.offset : diag->source_len;
+    sb_appendf(out, "{\"line\": %zu, \"column\": %zu, \"file\": ", diag_line(diag, error->span.offset),
+               count_chars(diag->source + start, offset - start) + 1);
+    json_string(out, diag->files > 1 ? diag->file_names[file_of(diag, error->span.offset)] : NULL);
+    sb_appendf(out, ", \"warning\": %s, \"message\": ", error->warning ? "true" : "false");
+    json_string(out, error->message);
+    sb_append(out, ", \"notes\": ");
+    json_strings(out, error->notes.items, error->notes.len);
+    sb_append(out, ", \"problem\": ");
+    json_string(out, problem_name(error->problem));
+    sb_append(out, ", \"missing\": ");
+    json_string(out, error->missing);
+    sb_append(out, ", \"kind\": ");
+    json_string(out, error->kind);
+    sb_append(out, ", \"choices\": ");
+    json_strings(out, error->choices.items, error->choices.len);
+    sb_append(out, "}\n");
+}
+
+void diag_render_data(const Diag *diag, StrBuf *out) {
+    for (size_t i = 0; i < diag->errors.len; i++) render_data(diag, &diag->errors.items[i], out);
+    for (size_t i = 0; i < diag->warnings.len; i++) render_data(diag, &diag->warnings.items[i], out);
 }

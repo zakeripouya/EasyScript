@@ -30,6 +30,27 @@ void diag_warning(Diag *diag, Span span, const char *fmt, ...) PRINTF_LIKE(3, 4)
 // error or warning. There must already be one.
 void diag_note(Diag *diag, const char *fmt, ...) PRINTF_LIKE(2, 3);
 
+// What an error is about, as data as well as words, so a notebook can later
+// ask it as a question with choices: the problem, what's missing or unclear,
+// the kind of value it should be (NULL if that doesn't apply), and the
+// possible answers (diag_choice, any number). Both add to the most recent
+// error or warning, like diag_note.
+typedef enum {
+    DIAG_NO_INFO,
+    DIAG_MISSING,       // something has to be added
+    DIAG_UNKNOWN,       // a name or word EasyScript doesn't know
+    DIAG_TWO_MEANINGS,  // it could mean two (or more) things: the choices are the readings
+    DIAG_WRONG_KIND,    // a value of another kind was needed
+    DIAG_NOT_ALLOWED,   // it can't be written that way here
+} DiagProblem;
+
+void diag_info(Diag *diag, DiagProblem problem, const char *missing, const char *kind);
+void diag_choice(Diag *diag, const char *fmt, ...) PRINTF_LIKE(2, 3);
+
+// Every error and warning as data, one JSON object per line: where it is,
+// its message and notes, and its info if it has any.
+void diag_render_data(const Diag *diag, StrBuf *out);
+
 size_t diag_count(const Diag *diag);  // errors only
 size_t diag_warning_count(const Diag *diag);
 

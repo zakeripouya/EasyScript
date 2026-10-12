@@ -153,6 +153,7 @@ static void reject_unless_otherwise(Parser *p) {
     if (parser_error(p, keyword->span, "An \"unless\" can't have an \"%s\".", keyword->text)) {
         diag_note(p->diag, "Turn it around: write \"if\" with the opposite condition, then the \"%s\".",
                   keyword->text);
+        diag_info(p->diag, DIAG_NOT_ALLOWED, NULL, NULL);
     }
     Stmt *ignored = ast_new_stmt(p->arena, STMT_IF, parser_token_pos(keyword));
     parse_otherwise_chain(p, ignored);

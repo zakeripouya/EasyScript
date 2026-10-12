@@ -174,6 +174,7 @@ Expr *parser_parse_pieces(Parser *p) {
         if (parser_at_sentence_end(p)) {
             if (parser_error(p, comma, "Something is missing after \",\".")) {
                 diag_note(p->diag, "Put the next piece after the comma, like \"say \"Hello,\", name\".");
+                diag_info(p->diag, DIAG_MISSING, "the next piece", NULL);
             }
             return parser_error_expr(p);
         }
