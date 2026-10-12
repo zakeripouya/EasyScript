@@ -481,6 +481,7 @@ struct Stmt {
             Name name;
             size_t index;  // in Records.sums
             Vec(VariantDef) variants;
+            bool made_of;  // "a point is made of an x (a number) and a y (a number).": one variant named like the kind
         } sum;
         struct {
             Expr *subject;

@@ -365,3 +365,47 @@ Stmt *parse_sum(Parser *p) {
     if (!kind->definition) kind->definition = stmt;
     return stmt;
 }
+
+// --- "a point is made of an x (a number) and a y (a number)." -----------------------------
+
+bool parser_at_made_of(const Parser *p) {
+    size_t n = parser_made_of_words(p, p->pos), words;
+    return n > 0 && match_sum(p, 0, false, &words) >= 0 && words == n;
+}
+
+// One sentence: a kind with a single variant of the same name, so its values
+// compare by their fields, never change, and their fields need no check.
+Stmt *parser_parse_made_of(Parser *p) {
+    static const char *const is[] = {"is", NULL};
+    Stmt *stmt = parser_new_stmt(p, STMT_SUM, parser_peek(p, 0));
+    size_t words;
+    stmt->as.sum.index = (size_t)match_sum(p, 0, false, &words);
+    stmt->as.sum.made_of = true;
+    if (!parser_parse_name(p, &stmt->as.sum.name, is)) return NULL;
+    parser_consume(p, 3);  // is made of
+    VariantDef variant = {0};
+    variant.name = stmt->as.sum.name;
+    variant.id = (size_t)-1;  // when the kind is defined twice (the checker says so)
+    for (size_t i = 0; i < p->records->variants.len; i++) {
+        const VariantKind *known = &p->records->variants.items[i];
+        if (known->sum == stmt->as.sum.index && strcmp(known->name, variant.name.text) == 0) variant.id = i;
+    }
+    do {
+        Field field = {0};
+        if (!parse_variant_field(p, &field)) return NULL;
+        vec_push(p->arena, &variant.fields, field);
+    } while ((parser_at_word(p, 0, "and") || parser_at(p, 0, TOK_COMMA)) && parser_advance(p));
+    variant.pos = stmt->pos = ast_pos_join(stmt->pos, (SourcePos){p->prev_span, 0, 0, 0});
+    if (!parser_at_sentence_end(p)) {
+        const Token *token = parser_peek(p, 0);
+        if (parser_error(p, token->span, "I expected \",\" or \"and\" before the next field, but found %s.",
+                         parser_describe(p, token))) {
+            diag_note(p->diag, "Write it like \"a point is made of an x (a number) and a y (a number).\".");
+        }
+        return NULL;
+    }
+    vec_push(p->arena, &stmt->as.sum.variants, variant);
+    RecordKind *kind = &p->records->sums.items[stmt->as.sum.index];
+    if (!kind->definition) kind->definition = stmt;
+    return stmt;
+}

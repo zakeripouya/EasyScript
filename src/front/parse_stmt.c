@@ -537,6 +537,7 @@ Stmt *parse_statement(Parser *p) {
     if (parser_at_has_definition(p)) return parser_parse_has(p);
     if (parser_at_can_method(p)) return parser_parse_can(p);
     if (parser_at_sum_definition(p)) return parse_sum(p);
+    if (parser_at_made_of(p)) return parser_parse_made_of(p);
     if (parser_interface_words(p, p->pos) > 0) return parse_interface(p);
     if (parser_at_library_sentence(p)) {  // "delete the file F", "clear the screen", "run "git"", ...
         Stmt *stmt = parser_parse_library_sentence(p);

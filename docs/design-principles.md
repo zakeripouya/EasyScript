@@ -60,7 +60,7 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 - **Text is equal when it's the same characters,** exactly (capitals matter).
 - **Lists are equal when their items are, in order. Maps are equal when they have the same keys with equal values, in any order.**
 - **Records are equal only when they're the same record:** two dogs with the same fields are still two dogs. **Functions** likewise: two function values are equal only when they're the same one.
-- **Values of kinds with variants are equal when they're the same variant with equal fields:** `s is a new point`. They never change, so they have no identity to compare.
+- **Values of kinds with variants are equal when they're the same variant with equal fields:** `s is a new point`. They never change, so they have no identity to compare. `a point is made of an x and a y` is such a kind with one variant, for small values that are compared and searched by their contents (positions, amounts with a unit); a record is for a thing with an identity that changes.
 - **Everything that searches uses the same equality:** `contains`, `the position of`, `has` and map keys, with the exception for map number keys below.
 
 ## 8. Sharing and copying

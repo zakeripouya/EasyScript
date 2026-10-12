@@ -1435,6 +1435,18 @@ Use it inside "if s is a circle:", or inside "when it's a circle:" after "check 
 
 These count as checks, exactly like the checks for nothing in [chapter 12](#fields-that-can-be-nothing): `if s is a circle:` (and the `otherwise` of `if s is not a circle:`), `while s is a circle:`, the right side of `s is a circle and ...`, the rest of a block after `if s isn't a circle, give back 0.`, a `when` of `check which kind`, and right after `let s be a new circle ...` (until s is set again). While the program runs the variant is checked once more, so if a field was set to another variant through another name for its record in between, the program stops with "This was checked to be a circle, but something has set it to a point since then." instead of crashing.
 
+### Values made of fields
+
+A kind with just one variant is written in one sentence: `a point is made of an x (a number) and a y (a number).` Its values are made with `a new point with x 1 and y 2`, and since there's no other variant, their fields need no check (`start's x`, `the y of start`). Like every kind's values they never change and are equal when their fields are, so a list of points can be searched by contents:
+
+```
+a point is made of an x (a number) and a y (a number).
+let visited be a list of (a new point with x 1 and y 2).
+say visited contains (a new point with x 1 and y 2).     # yes
+```
+
+A record (`has`) is the other way round: two dogs with the same fields are still two different dogs, and a dog can change.
+
 ### Equality and copies
 
 Two values are **equal** when they're the same variant with equal fields, so `s is a new point` and `shapes contains (a new circle with radius 1)` work as you'd expect. (Records inside are compared as records: the same record.)

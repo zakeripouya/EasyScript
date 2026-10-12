@@ -101,7 +101,7 @@ static bool check_kind_name(Checker *c, const Stmt *stmt) {
     return true;
 }
 
-static void check_variant_names(Checker *c, const VariantDef *variant) {
+static void check_variant_names(Checker *c, const VariantDef *variant, const Stmt *sum) {
     if (variant->id == NO_VARIANT) return;
     const char *name = variant->name.text;
     for (size_t r = 0; r < c->records->len; r++) {
@@ -111,6 +111,7 @@ static void check_variant_names(Checker *c, const VariantDef *variant) {
         }
     }
     for (size_t s = 0; s < c->records->sums.len; s++) {
+        if (sum->as.sum.made_of && s == sum->as.sum.index) continue;  // "a point is made of ...": its own name
         if (c->records->sums.items[s].definition && strcmp(c->records->sums.items[s].name, name) == 0) {
             report_taken(c, &variant->name, "the name of a kind", c->records->sums.items[s].definition->pos.line);
             return;
@@ -130,7 +131,9 @@ void checker_collect_sums(Checker *c, const Block *program) {
     for (size_t i = 0; i < program->len; i++) {
         const Stmt *stmt = program->items[i];
         if (stmt->kind != STMT_SUM || !check_kind_name(c, stmt)) continue;
-        for (size_t v = 0; v < stmt->as.sum.variants.len; v++) check_variant_names(c, &stmt->as.sum.variants.items[v]);
+        for (size_t v = 0; v < stmt->as.sum.variants.len; v++) {
+            check_variant_names(c, &stmt->as.sum.variants.items[v], stmt);
+        }
     }
 }
 
@@ -321,6 +324,10 @@ TypeVar checker_sum_field(Checker *c, const Expr *expr, TypeVar base, Type type)
         return error_var(c);
     }
     size_t variant = checker_narrowed_variant(c, expr->as.field.record);
+    const Stmt *def = c->records->sums.items[sum].definition;
+    if (variant == NO_VARIANT && def && def->as.sum.made_of && !type_is_maybe(type)) {
+        variant = holders[0];  // "a point is made of ...": its only variant, nothing to check
+    }
     const Field *field = variant == NO_VARIANT ? NULL : variant_field(c, variant, name, &index);
     if (variant == NO_VARIANT) {
         report_unchecked(c, expr, holders, n);

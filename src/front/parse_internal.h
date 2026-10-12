@@ -179,6 +179,9 @@ Expr *parser_parse_item_test(Parser *p, const char *example);
 bool parser_at_item_test(const Parser *p, size_t ahead);
 Expr *parser_parse_condition_after(Parser *p, Expr *first);
 const char *parser_plural_of(Arena *arena, const char *name);
+size_t parser_made_of_words(const Parser *p, size_t i);
+bool parser_at_made_of(const Parser *p);
+Stmt *parser_parse_made_of(Parser *p);
 Stmt *parse_if(Parser *p, const Token *verb);
 Stmt *parser_finish_condition_after(Parser *p, Stmt *stmt);
 // An "otherwise" that doesn't belong to an if just above it.

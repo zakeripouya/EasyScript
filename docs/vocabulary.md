@@ -662,6 +662,7 @@ All of these are **Available**. A kind with variants is a value that's one of se
 | Pattern | Meaning | Example |
 |---|---|---|
 | `NAME is one of:` + indented variants | Defines a kind with variants called NAME (one or more words). Only at the top level | `a shape is one of:` |
+| `NAME is made of FIELD (KIND) and FIELD (KIND).` | A kind with a single variant of the same name: its values are equal when their fields are, never change, and their fields can be used without a check. Good for small values like positions, which `contains` and `the position of` then find by their contents | `a point is made of an x (a number) and a y (a number).` |
 | `VARIANT.` | A variant without fields, one per line (or sentence) | `a point.` |
 | `VARIANT with FIELD (KIND) and FIELD (KIND).` | A variant with fields, separated by `and` or commas. KIND is any kind, also the kind being defined (`(an expression)`) or `... or nothing` | `a rectangle with a width (a number) and a height (a number).` |
 | `a new VARIANT with FIELD X and FIELD Y` / `a new VARIANT` | A new value of the variant's kind. Every field needs a value, unless it can be nothing. As for records, a `new` inside another needs parentheses | `a new circle with radius 3`, `a new point` |

@@ -1,0 +1,9 @@
+Line 3: The fields of a point can't change.
+    set start's x to 5.
+        ^^^^^^^^^
+Make a new one instead, like "set start to a new point with x ...".
+
+Line 5: A new point needs a value for "y".
+    let missing be a new point with x 1.
+                   ^^^^^^^^^^^^^^^^^^^^
+Give it after "with", like "a new point with y ...".

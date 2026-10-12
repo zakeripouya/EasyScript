@@ -234,6 +234,15 @@ static size_t sum_definition_words(const Parser *p, size_t i) {
     return sum ? n : 0;
 }
 
+// NAME is made of ...: a kind with one variant of the same name.
+size_t parser_made_of_words(const Parser *p, size_t i) {
+    if (!at_line_start(p, i)) return 0;
+    size_t n = name_words(p, i);
+    return n > 0 && word_at(p, i + n, "is") && word_at(p, i + n + 1, "made") && word_at(p, i + n + 2, "of") ? n : 0;
+}
+
+static void find_variant_fields(Parser *p, size_t j);
+
 // One variant's line: NAME [with FIELD (KIND) [and | ,] FIELD (KIND) ...].
 static void find_variant(Parser *p, size_t i, size_t sum) {
     size_t n = name_words(p, i);
@@ -242,8 +251,11 @@ static void find_variant(Parser *p, size_t i, size_t sum) {
     for (size_t v = 0; v < p->records->variants.len; v++) variant.index += p->records->variants.items[v].sum == sum;
     vec_push(p->arena, &p->records->variants, variant);
     size_t j = i + n;
-    if (!word_at(p, j, "with")) return;
-    j++;
+    if (word_at(p, j, "with")) find_variant_fields(p, j + 1);
+}
+
+// FIELD (KIND) [and | ,] FIELD (KIND) ...: the field names.
+static void find_variant_fields(Parser *p, size_t j) {
     for (;;) {
         size_t m = name_words(p, j);
         if (m == 0) return;
@@ -353,6 +365,16 @@ static void find_records(Parser *p) {
         if (n > 0) {
             add_kind(p, i, n, false);
             i = find_has_fields(p, i + n + 1) - 1;
+            continue;
+        }
+        n = parser_made_of_words(p, i);
+        if (n > 0) {  // a point is made of an x (a number) and a y (a number).
+            if (add_kind(p, i, n, true)) {
+                size_t sum = p->records->sums.len - 1;
+                VariantKind variant = {p->records->sums.items[sum].name, p->records->sums.items[sum].display, sum, 0};
+                vec_push(p->arena, &p->records->variants, variant);
+                find_variant_fields(p, i + n + 3);
+            }
             continue;
         }
         n = sum_definition_words(p, i);

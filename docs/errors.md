@@ -614,6 +614,8 @@ Line 2 (a warning): This count never runs: it starts above where it ends, and co
 To count down, write "count down from 10 to 1".
 ```
 
+**Kinds made of fields** (`a point is made of ...`): a field without a kind is "Say what kind of value "x" holds, in parentheses after it.", a missing separator "I expected "," or "and" before the next field, but found "column"." ([`err_kinds_made_of.err`](../tests/ast/err_kinds_made_of.err)), and changing a field is "The fields of a point can't change." ([`kinds_made_of.err`](../tests/errors/kinds_made_of.err)).
+
 ### Functions as values
 
 A function kept as a value has a kind that says what it takes and gives back, so calling one wrongly is caught before the program runs.
