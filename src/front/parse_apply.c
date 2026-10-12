@@ -189,6 +189,11 @@ static bool at_filter(const Parser *p) {
            (parser_at_word(p, 0, "whose") && parser_peek(p, 1)->kind == TOK_WORD);
 }
 
+Expr *parser_parse_filters(Parser *p, Expr *list) {
+    while (!p->sentence_failed && at_filter(p)) list = parse_filter(p, list);
+    return list;
+}
+
 Expr *parser_parse_apply_postfix(Parser *p, Expr *expr) {
     if (at_filter(p)) return parse_filter(p, expr);
     if (parser_match_words(p, "applied to every")) {

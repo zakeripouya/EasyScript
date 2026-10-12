@@ -84,17 +84,17 @@ People ask "how many", "any", "all" and "per" far more than they write loops. Ea
 
 | Proposed phrase | Replaces today | When |
 | --- | --- | --- |
-| `how many scores are above 70` | A loop with a counter | English pass |
-| `if any score is above 90:` | A loop with a flag | English pass |
-| `if all scores are at least 50:`, `if every order's profit is above 0` | A loop with a flag | English pass |
-| `if no score is below 0:` | A loop with a flag | English pass |
-| `the average of scores`, `the total of scores`, `the median of scores` | `added together` and division | English pass |
-| `the top 5 scores`, `the lowest 3`, `the 10 most common` | Sort then slice | English pass |
-| `the customer with the highest total`, `the one with the most orders` | A search loop with two variables | English pass |
-| `the total amount of orders per region` (`per` only: `by` already means sorting and steps) | A map and a loop | English pass |
-| `half of total`, `twice price`, `20 percent of price` | Arithmetic | English pass |
+| `how many scores are above 70` | A loop with a counter | Done (part 2) |
+| `if any score is above 90:` | A loop with a flag | Done (part 2) |
+| `if all scores are at least 50:`, `if every order's profit is above 0` | A loop with a flag | Done (part 2) |
+| `if no score is below 0:` | A loop with a flag | Done (part 2) |
+| `the average of scores`, `the total of scores`, `the median of scores` | `added together` and division | Done (part 2) |
+| `the top 5 scores`, `the lowest 3`, `the 10 most common` | Sort then slice | Done (part 2) |
+| `the customer with the highest total`, `the one with the most orders` | A search loop with two variables | Done (part 2), except `the one ...`, which needs part 3's definitions to say which list |
+| `the total amount of orders per region` (`per` only: `by` already means sorting and steps) | A map and a loop | Done (part 2) |
+| `half of total`, `twice price`, `20 percent of price` | Arithmetic | Done (part 2) |
 | `price rounded to 2 decimal places` | Already built (step 21) | Done |
-| `how many questions there are` | `the number of items in` | English pass |
+| `how many questions there are` | `the number of items in` | Done (part 2) |
 
 ## Choices without if: the six patterns
 
@@ -711,6 +711,7 @@ The strongest single source is Pane's study of how non-programmers describe prog
 | 2026-10-11 | Merged the repo's step 22 notes (escapes, positions, helper name clashes, workarounds); heading renamed to "Rough spots to fix" so links from CHANGELOG and the roadmap still work |
 | 2026-10-11 | Part 1 decisions: file sentences say `file`; text `and` and input joiners recorded as planned changes; no "missing"; `every` triggers; the `it` rule; `per` only; `, then` chains; `the X of Y` rule; `exit code`; the comma rule; depends-on lines; already-built list; error counts and step 21 list updated |
 | 2026-10-12 | Part 1 built: `exit code`; `as a number` reads `1e5`, `as exact text`; counting up only (a warning for written counts that never run); `unless`, `give back X if/unless C`, `stop here`; line continuation; pieces in `say` and brackets in text (`[[`/`]]` for brackets), text `and` removed; `and`/`and then` between sentences (a function's name after `and` is a value, so it needs `and then`); `has` records with kinds from use (`some` dropped before a field); `can` methods; `the X of Y`; filters `that`/`whose`/`where` as postfixes and `each`; `for each score:`; `made of` kinds; docs/voice.md with the glossary ("name" for variables, "definition"/"how to X" for `to` functions) and `audit/plain-words`; errors as data (`diag_info`, `easyscript errors`). |
+| 2026-10-12 | Part 2 (questions and totals) built: `how many`, `any`/`every`/`no`/`all`/`none`, `the total`/`average`/`median of`, `the top N`/`lowest N`, `the N most common`, `the X with the highest Y`, `per FIELD` and `per month`/`year`/`day`/`weekday` (keys: "October 2026" text, years as numbers, so no date keys were needed), maps sorted by value, math words, the comma before `rounded`/`sorted`/`as`, plural verbs after `that`, and `easyscript plan`. Decided while building: built-in phrases win over fields (`the total of rex` is an error noting `rex's total`); a definition with the word keeps it, and `the` + that word is an error; `the one with the most Y` waits for part 3's definitions (it needs a list to refer to); action forms (`total the amount per month`) wait for part 4's `, then` chains, where `it` exists. |
 
 ## Sources
 

@@ -93,6 +93,19 @@ static const Phrase item_comparisons[] = {
     {"are", "are", BINARY_EQUAL, false},
 };
 
+// "the words that start with "a"", "how many words contain "e"": the text tests, with plural verbs.
+static const Phrase item_verbs[] = {
+    {"contain", "contain", BINARY_CONTAINS, false},
+    {"do not contain", "do not contain", BINARY_NOT_CONTAINS, false},
+    {"don't contain", "don't contain", BINARY_NOT_CONTAINS, false},
+    {"start with", "start with", BINARY_STARTS_WITH, false},
+    {"do not start with", "do not start with", BINARY_NOT_STARTS_WITH, false},
+    {"don't start with", "don't start with", BINARY_NOT_STARTS_WITH, false},
+    {"end with", "end with", BINARY_ENDS_WITH, false},
+    {"do not end with", "do not end with", BINARY_NOT_ENDS_WITH, false},
+    {"don't end with", "don't end with", BINARY_NOT_ENDS_WITH, false},
+};
+
 // "L is empty" (lists and text); "is empty list of ..." compares with an empty list instead.
 static const Phrase empty_tests[] = {
     {"is empty", "is empty", LIST_IS_EMPTY, false},
@@ -243,8 +256,26 @@ static Expr *parse_every(Parser *p) {
     return every;
 }
 
+// A comma followed by "rounded", "sorted" or "as" puts that postfix after the
+// whole value: "7 divided by 2, rounded down", "the total per region, sorted
+// biggest first".
+static Expr *parse_comma_postfixes(Parser *p, Expr *expr) {
+    while (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) &&
+           (parser_at_word(p, 1, "rounded") || parser_at_word(p, 1, "sorted") || parser_at_word(p, 1, "as"))) {
+        size_t comma = p->pos;
+        parser_advance(p);
+        Expr *after = parser_continue_postfix(p, expr);
+        if (after == expr) {  // not a postfix after all ("as" naming a count's number)
+            p->pos = comma;
+            break;
+        }
+        expr = after;
+    }
+    return expr;
+}
+
 Expr *parse_expression(Parser *p) {
-    return parser_at_every(p) ? parse_every(p) : parse_or(p);
+    return parse_comma_postfixes(p, parser_at_every(p) ? parse_every(p) : parse_or(p));
 }
 
 // --- or, and, not -----------------------------------------------------------
@@ -404,7 +435,11 @@ Expr *parse_join(Parser *p) {
 }
 
 static Expr *parse_postfix(Parser *p) {
-    Expr *expr = parse_primary(p);
+    return parser_continue_postfix(p, parse_primary(p));
+}
+
+// The postfixes after a value: "as a number", "reversed", "without the first item", ...
+Expr *parser_continue_postfix(Parser *p, Expr *expr) {
     for (;;) {
         if (p->as_ends_value && parser_at_word(p, 0, "as")) return expr;
         size_t len;
@@ -481,19 +516,24 @@ Expr *parse_unary(Parser *p) {
 
 // --- only --------------------------------------------------------------------
 
-// After "that" in "only L that are ..." and "the L that are ...": "are
-// COMPARISON V" or "are [not] empty", with the item (an "it") on the left.
+// After "that" in "only L that are ..." and "the L that are ...", and after
+// "how many L": "are COMPARISON V", "are [not] empty", a plural verb ("start
+// with X"), or "is COMPARISON V" for one item, with the item (an "it") on the left.
 Expr *parser_parse_item_test(Parser *p, const char *example) {
     Expr *it = ast_new_expr(p->arena, EXPR_IT, parser_token_pos(parser_peek(p, 0)));
-    Expr *condition = parse_empty_test(p, it, 3, 3);
+    bool singular = parser_at_word(p, 0, "is") || parser_at_word(p, 0, "isn't");
+    Expr *condition = parse_empty_test(p, it, singular ? 0 : 3, 3);
     if (!condition) {
-        size_t len;
-        const Phrase *op = parser_match_phrase(p, item_comparisons, COUNT(item_comparisons), &len);
+        size_t len = 0;
+        const Phrase *op = singular ? parser_match_phrase(p, comparison_ops, COUNT(comparison_ops), &len)
+                                    : parser_match_phrase(p, item_comparisons, COUNT(item_comparisons), &len);
+        if (!op && !singular) op = parser_match_phrase(p, item_verbs, COUNT(item_verbs), &len);
         if (!op) {
             const Token *token = parser_peek(p, 0);
             if (parser_error(p, token->span, "I expected a comparison like \"are at least\" here, but found %s.",
                              parser_describe(p, token))) {
                 diag_note(p->diag, "Write it like \"%s\".", example);
+                diag_info(p->diag, DIAG_MISSING, "a comparison", NULL);
             }
             return parser_error_expr(p);
         }
@@ -508,9 +548,22 @@ Expr *parser_parse_item_test(Parser *p, const char *example) {
     return condition;
 }
 
-// Every item test starts with "are" or "aren't".
+// Every item test starts with "are" or "aren't", or a plural verb ("start with").
 bool parser_at_item_test(const Parser *p, size_t ahead) {
-    return parser_at_word(p, ahead, "are") || parser_at_word(p, ahead, "aren't");
+    if (parser_at_word(p, ahead, "are") || parser_at_word(p, ahead, "aren't")) return true;
+    for (size_t i = 0; i < COUNT(item_verbs); i++) {
+        if (parser_match_words_at(p, ahead, item_verbs[i].words)) return true;
+    }
+    return false;
+}
+
+// A test of the value `first` up to a comparison: "every order's profit is
+// above 0" (after "every order"). "and" and "or" end it.
+Expr *parser_parse_comparison_after(Parser *p, Expr *first) {
+    p->pending_item = first;
+    Expr *condition = parse_comparison(p);
+    p->pending_item = NULL;
+    return condition;
 }
 
 // A condition whose first value is `first` ("whose age is over 3": the item's age).

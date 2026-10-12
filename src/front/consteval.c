@@ -565,7 +565,8 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
     case EXPR_LIST_OP: return map_op(ev, expr, out);
     case EXPR_EVERY:
     case EXPR_ONLY:
-    case EXPR_APPLY: return reject_list(ev, span);
+    case EXPR_APPLY:
+    case EXPR_AGGREGATE: return reject_list(ev, span);
     case EXPR_MAP: return map(ev, expr, out);
     case EXPR_EMPTY_MAP: return empty_map(ev, expr, out);
     case EXPR_MAP_GET:

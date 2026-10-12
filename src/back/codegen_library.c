@@ -75,6 +75,17 @@ void cg_emit_library(Codegen *g, const Expr *expr, StrBuf *out) {
     case LIB_FOLDERS_IN: sb_appendf(out, "es_folder_list(%zu, %s, true)", site, a); break;
     case LIB_FILE_SIZE: sb_appendf(out, "es_file_size(%zu, %s)", site, a); break;
     case LIB_FILE_CHANGED: sb_appendf(out, "es_file_changed(%zu, %s)", site, a); break;
+    case LIB_HALF: sb_appendf(out, "(%s * 0.5)", a); break;
+    case LIB_TWICE: sb_appendf(out, "(%s * 2.0)", a); break;
+    case LIB_PERCENT_OF: sb_appendf(out, "(%s * %s / 100.0)", a, b); break;
+    case LIB_PERIOD_KEY:
+        if (expr->as.library.part == DATE_YEAR) {
+            sb_appendf(out, "es_date_part(%s, %d)", a, DATE_YEAR);
+        } else {
+            sb_appendf(out, "es_period_text(%s, %d)", a, expr->as.library.part);
+        }
+        break;
+    case LIB_IS_INFINITE: sb_appendf(out, "%sisinf(%s)", expr->as.library.part ? "!" : "", a); break;
     default: break;
     }
     if (opened) sb_append_char(out, ')');
@@ -86,6 +97,10 @@ bool cg_library_effects(const Codegen *g, const Expr *expr) {
     case LIB_PI: return false;
     case LIB_WORKED: return cg_has_effects(g, expr->as.library.a);
     case LIB_ABSOLUTE:
+    case LIB_HALF:
+    case LIB_TWICE:
+    case LIB_PERCENT_OF:
+    case LIB_IS_INFINITE:
     case LIB_ROUNDED:
     case LIB_ROUNDED_UP:
     case LIB_ROUNDED_DOWN:

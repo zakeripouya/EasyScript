@@ -247,6 +247,7 @@ void cg_emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     f.function = fn;
     f.loop_ids = g->loop_ids;
     f.closures = g->closures;
+    f.plan = g->plan;
     for (size_t i = 0; i < fn->as.function.cells.len; i++) vec_push(g->arena, &f.cells, fn->as.function.cells.items[i]);
     for (size_t i = 0; i < fn->as.function.captures.len; i++) {
         vec_push(g->arena, &f.borrowed, fn->as.function.captures.items[i].name);
@@ -283,7 +284,40 @@ void cg_emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     sb_append(out, "}\n\n");
 }
 
-void codegen_c(Arena *arena, const Program *whole, const char *source_table, StrBuf *out) {
+void cg_plan(Codegen *g, SourcePos pos, const char *fmt, ...) {
+    if (!g->plan) return;
+    StrBuf text;
+    sb_init(&text, g->arena);
+    va_list args;
+    va_start(args, fmt);
+    sb_vappendf(&text, fmt, args);
+    va_end(args);
+    PlanLine line = {pos.line, pos.file, text.data};
+    vec_push(g->arena, &g->plan->lines, line);
+}
+
+// The plan's lines in the order of the program (stable for one line).
+static void write_plan(const Program *whole, PlanPool *pool, StrBuf *plan) {
+    for (size_t i = 1; i < pool->lines.len; i++) {  // insertion sort: plans are short
+        PlanLine x = pool->lines.items[i];
+        size_t j = i;
+        while (j > 0 && (pool->lines.items[j - 1].file > x.file ||
+                         (pool->lines.items[j - 1].file == x.file && pool->lines.items[j - 1].line > x.line))) {
+            pool->lines.items[j] = pool->lines.items[j - 1];
+            j--;
+        }
+        pool->lines.items[j] = x;
+    }
+    for (size_t i = 0; i < pool->lines.len; i++) {
+        const PlanLine *line = &pool->lines.items[i];
+        sb_appendf(plan, "Line %zu", line->line);
+        if (whole->files.len > 0) sb_appendf(plan, " of %s", whole->files.items[line->file].display);
+        sb_appendf(plan, ": %s\n", line->text);
+    }
+    if (pool->lines.len == 0) sb_append(plan, "There are no list questions, filters or sorts here.\n");
+}
+
+void codegen_c(Arena *arena, const Program *whole, const char *source_table, StrBuf *out, StrBuf *plan) {
     const Block *program = &whole->body;
     TextPool texts = {0};
     sb_init(&texts.code, arena);
@@ -298,6 +332,8 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     sb_init(&closures.code, arena);
     Codegen g = {0};
     g.closures = &closures;
+    PlanPool plan_pool = {0};
+    if (plan) g.plan = &plan_pool;
     for (size_t i = 0; i < whole->cells.len; i++) vec_push(arena, &g.cells, whole->cells.items[i]);
     g.arena = arena;
     g.records = &whole->records;
@@ -364,4 +400,5 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     cg_emit_drop_all(&g);
     sb_append_n(out, g.body.data, g.body.len);
     sb_append(out, "    es_finish(true);\n    return es_status;\n}\n");
+    if (plan) write_plan(whole, &plan_pool, plan);
 }

@@ -130,7 +130,9 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
         sb_append(scratch, ast_library_op_name(expr->as.library.op));
         if (expr->as.library.op == LIB_DATE_PART) sb_appendf(scratch, " %s", ast_date_part_name(expr->as.library.part));
         if (expr->as.library.op == LIB_IN_PERIOD) sb_appendf(scratch, " %s", ast_period_name(expr->as.library.part));
-        if (expr->as.library.op == LIB_WORKED && expr->as.library.part) sb_append(scratch, " (not)");
+        if ((expr->as.library.op == LIB_WORKED || expr->as.library.op == LIB_IS_INFINITE) && expr->as.library.part) {
+            sb_append(scratch, " (not)");
+        }
         break;
     case EXPR_LENGTH: return "length of";
     case EXPR_FILE_CONTENTS: return "contents of file";
@@ -152,6 +154,15 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
     case EXPR_LIST_OP: return ast_list_op_name(expr->as.list_op.op);
     case EXPR_EVERY: sb_appendf(scratch, "every %s in", expr->as.every.var.text); break;
     case EXPR_ONLY: return "only";
+    case EXPR_AGGREGATE: {
+        static const char *const names[] = {"how many", "any", "all", "none", "total", "average", "median", "top",
+                                            "most common", "with the highest"};
+        const char *name = names[expr->as.aggregate.kind];
+        if (expr->as.aggregate.lowest) name = expr->as.aggregate.kind == AGG_TOP ? "lowest" : "with the lowest";
+        sb_append(scratch, name);
+        if (expr->as.aggregate.group) sb_append(scratch, " per");
+        break;
+    }
     case EXPR_SLICE: {
         static const char *const names[] = {"items", "first items", "last items", "without the first item",
                                             "without the last item", "every", "without item"};
@@ -174,7 +185,9 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
             break;
         }
         return ast_text_op_name(expr->as.text_op.op);
-    case EXPR_FIELD: sb_appendf(scratch, "field %s", expr->as.field.name.text); break;
+    case EXPR_FIELD:  // "per month": the item's one date, found by the checker
+        sb_appendf(scratch, "field %s", expr->as.field.name.text ? expr->as.field.name.text : "(its date)");
+        break;
     case EXPR_NEW:
         if (type_is_sum(expr->as.new_record.type)) {  // "new circle (shape)"
             const VariantKind *variant = &records->variants.items[expr->as.new_record.variant];
@@ -237,6 +250,17 @@ static void dump_expr(const Expr *expr, size_t depth, Dump *d) {
     case EXPR_LIST_OP: dump_children(expr->as.list_op.operand, NULL, depth, d); break;
     case EXPR_EVERY: dump_children(expr->as.every.list, expr->as.every.body, depth, d); break;
     case EXPR_ONLY: dump_children(expr->as.only.list, expr->as.only.condition, depth, d); break;
+    case EXPR_AGGREGATE: {  // how many, then the list, then each part under its own label
+        dump_children(expr->as.aggregate.count, expr->as.aggregate.list, depth, d);
+        const Expr *parts[] = {expr->as.aggregate.condition, expr->as.aggregate.key, expr->as.aggregate.group};
+        static const char *const labels[] = {"test", "each", "per"};
+        for (size_t i = 0; i < 3; i++) {
+            if (!parts[i]) continue;
+            dump_label(depth + 1, d, labels[i]);
+            dump_expr(parts[i], depth + 2, d);
+        }
+        break;
+    }
     case EXPR_SLICE:  // in the order they're written, except postfix "without": the list first
         if (expr->as.slice.kind == SLICE_WITHOUT_AT) {
             dump_children(expr->as.slice.list, expr->as.slice.from, depth, d);

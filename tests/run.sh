@@ -22,6 +22,8 @@
 #   tests/ast/NAME.es     like tests/tokens, but with `easyscript ast`
 #   examples/lexer/       like tests/tokens, expected stdout in NAME.tokens
 #   tests/data/NAME.es    like tests/tokens, but with `easyscript errors` (errors as data)
+#   tests/plan/NAME.es    like tests/tokens, but with `easyscript plan` (what each list
+#                         question, filter and sort became)
 #   examples/parser/      like tests/ast, expected stdout in NAME.ast
 #   unit tests            tests/unit/*.c, built into the UNIT binary
 #   CLI checks            at the bottom of this file
@@ -246,6 +248,7 @@ check_warnings "$ROOT/tests/warnings" warnings
 check_dump tokens "$ROOT/tests/tokens" tokens out
 check_dump ast "$ROOT/tests/ast" ast out
 check_dump errors "$ROOT/tests/data" data out
+check_dump plan "$ROOT/tests/plan" plan out
 
 # Examples back the docs, so every one of them must be checked.
 check_run "$ROOT/examples/programs" examples/programs
@@ -458,6 +461,17 @@ expect_failure "cli/o-twice" 2 "Give -o only once." \
     "$ES" build "$HELLO" -o x -o y
 expect_failure "cli/two-sources" 2 "Give one .es file at a time." \
     "$ES" emit "$HELLO" "$HELLO"
+expect_failure "cli/plan-with-o" 2 "--plan only prints the plan, so it doesn't take -o." \
+    "$ES" build --plan "$HELLO" -o x
+
+# "build --plan FILE" is "plan FILE", and neither makes a file.
+fresh_dir
+out=$(cd "$WORK/cwd" && "$ES" build --plan "$ROOT/tests/plan/questions.es" 2>&1)
+if [ "$out" != "$(cat "$ROOT/tests/plan/questions.out")" ]; then
+    not_ok "cli/build-plan" "$out"
+elif check_cwd_empty "cli/build-plan"; then
+    ok "cli/build-plan"
+fi
 
 # "run FILE WORDS...": everything after the file is given to the program,
 # even words that look like the compiler's own ("-o").

@@ -130,6 +130,7 @@ bool cg_has_effects(const Codegen *g, const Expr *expr) {
         return false;
     case EXPR_CALL:
     case EXPR_APPLY:
+    case EXPR_AGGREGATE:
     case EXPR_FILE_CONTENTS:
     case EXPR_LIST_OP:
     case EXPR_EVERY:
@@ -441,6 +442,7 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     case EXPR_FUNCTION_REF: cg_emit_function_ref(g, expr, out); break;
     case EXPR_LAMBDA: cg_emit_lambda(g, expr, out); break;
     case EXPR_APPLY: cg_emit_apply(g, expr, out); break;
+    case EXPR_AGGREGATE: cg_emit_aggregate(g, expr, out); break;
     case EXPR_LIBRARY: cg_emit_library(g, expr, out); break;
     case EXPR_LENGTH:
         if (type_is_list(expr->as.operand->type)) {

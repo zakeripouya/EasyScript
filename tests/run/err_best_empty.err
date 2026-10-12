@@ -1,0 +1,4 @@
+Line 3: There's nothing to choose from: the list is empty.
+    say the dog with the highest age.
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+Check that the list isn't empty first, like "if dogs is not empty:".

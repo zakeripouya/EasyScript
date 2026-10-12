@@ -54,6 +54,7 @@ typedef enum {
     EXPR_LAMBDA,         // a function taking x that gives back x times 2 / a function taking word: (a block)
     EXPR_APPLY,          // F applied to every X in L, the Xs in L that pass F, L combined using F, L sorted by F
     EXPR_LIBRARY,        // the standard library's values: the square root of X, a random number from A to B, today, ...
+    EXPR_AGGREGATE,      // how many L are ..., any score is ..., the total of L, the top 3 L, ... per FIELD
 } ExprKind;
 
 typedef struct Expr Expr;
@@ -203,6 +204,18 @@ struct Expr {
             Expr *start;      // APPLY_COMBINE: ", starting from S" (NULL: the first item)
             bool descending;  // APPLY_SORT: "biggest first"
         } apply;
+        struct {
+            AggregateKind kind;
+            Span op_span;      // the words that say what's worked out ("how many", "any", "the total")
+            Expr *list;
+            Expr *condition;   // AGG_COUNT, ANY, ALL, NONE: a test of "it" (the item), or NULL
+            Expr *key;         // worked out from "it" for each item ("the total amount": its amount); NULL: the item
+            Expr *group;       // "per region": the item's group (from "it"), or NULL; then the result is a map
+            Expr *count;       // AGG_TOP, AGG_MOST_COMMON: how many
+            bool lowest;       // AGG_TOP: "the lowest 3"; AGG_BEST: "with the lowest"
+            Name item;         // "any score", "the customer with ...": the item's name as written
+            bool implied;      // the list is the one named like the item's plural ("scores")
+        } aggregate;
     } as;
 };
 

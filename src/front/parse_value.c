@@ -102,12 +102,12 @@ static Expr *parse_text(Parser *p) {
 
 static Expr *parse_group(Parser *p) {
     const Token *open = parser_advance(p);
-    bool as_ends_value = p->as_ends_value, no_call = p->no_call;  // inside parentheses, "as" converts again
-    p->as_ends_value = false;
-    p->no_call = false;
+    bool as_ends_value = p->as_ends_value, no_call = p->no_call, no_best = p->no_best;  // inside parentheses, "as" converts again
+    p->as_ends_value = p->no_call = p->no_best = false;
     Expr *inner = parse_expression(p);
     p->as_ends_value = as_ends_value;
     p->no_call = no_call;
+    p->no_best = no_best;
     if (!parser_at(p, 0, TOK_RPAREN)) {
         if (parser_error(p, open->span, "This \"(\" is never closed.")) {
             diag_note(p->diag, "Add a \")\" where the group ends, on the same line.");
@@ -263,6 +263,10 @@ static Expr *reject_inner_every(Parser *p) {
 static Expr *parse_word(Parser *p) {
     const Token *token = parser_peek(p, 0);
     const char *word = token->text;
+    if (strcmp(word, "no") == 0) {  // "no score is below 0" (a test), not the value no
+        Expr *none = parser_parse_aggregate_word(p);
+        if (none) return none;
+    }
     if (strcmp(word, "yes") == 0 || strcmp(word, "true") == 0 || strcmp(word, "no") == 0 ||
         strcmp(word, "false") == 0) {
         Expr *expr = literal(p, EXPR_BOOLEAN);
@@ -314,6 +318,8 @@ static Expr *parse_word(Parser *p) {
     if (list) return list;
     Expr *text = parser_parse_text_word(p);
     if (text) return text;
+    Expr *question = parser_parse_aggregate_word(p);  // "how many", "any", "the total of", "the top 3", ...
+    if (question) return question;
     if (parser_at_only(p)) return parser_parse_only(p);
     if (parser_at_every(p)) return reject_inner_every(p);
     size_t field = parser_known_field_words(p, 0);
@@ -329,7 +335,7 @@ static Expr *parse_value(Parser *p) {
         return item;
     }
     switch (parser_peek(p, 0)->kind) {
-    case TOK_NUMBER: return parse_number(p);
+    case TOK_NUMBER: return parser_at_most_common(p) ? parser_parse_most_common(p) : parse_number(p);
     case TOK_STRING: return parse_text(p);
     case TOK_LPAREN: return parse_group(p);
     case TOK_WORD: return parse_word(p);

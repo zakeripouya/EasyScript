@@ -6,6 +6,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Breaking
 
+- **`total`, `average`, `median`, `number`, `half`, `twice`, `top`, `lowest`, `any`, `all`, `none`, `remainder` and `how many` start phrases** when no definition has that name: `total of 3`, where `total` is a name holding a number, now reads as "the total of 3" (an error: 3 isn't a list) instead of "total can't be called". `tests/errors/call_variable.es` now uses `price`. A definition with one of these names keeps working (`total of marks` calls it); written with `the` it's an error asking which was meant.
+
 - **`F of X` where F is both a function and a field's name is an error** asking for `X's F` or `F with X`, because `the F of X` now also reads a field. Three tests that called such functions with `of` now use `with`.
 
 - **`and` no longer joins text:** `"Hello, " and name` is an error that shows the new ways: commas in `say` (`say "Hello,", name, "!"`), brackets in text, or `followed by`. `and` between values now always means both (yes/no). Tests and examples that joined with `and` now use `followed by` or the new forms.
@@ -30,6 +32,12 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - **Runtime errors from `run`, and from a word past the end of the words given to the program, no longer leak** (LeakSanitizer on Linux found `argv` and a number shown in the message left unreachable).
 
 ### Added
+
+- **Questions and totals about lists** (English pass part 2): `how many scores are above 70`, `how many guests there are`, `if any score is above 90`, `if every order's amount is above 0`, `if no score is below 0`, `all scores are at least 50`, `none of scores are ...`, `the total of scores` / `the total amount of orders`, `the average`, `the median`, `the top 3 scores`, `the lowest 2 orders by amount`, `the 10 most common words`, `the customer with the highest total` (also `most`, `fewest`, ...), and grouping with `per` (`the total amount of orders per region`, `the number of sales per month`). Each goes through the list once without making a list it doesn't give back (the top N keep a small heap), `any`/`every`/`no` stop as soon as the answer is known, and a filter in the list is tested in the same pass.
+- **Maps sorted by their values:** `totals sorted biggest first` and `sort totals biggest first`.
+- **Math words:** `half of X`, `twice X`, `N percent of X`, `the remainder of X divided by Y`, `X is infinite`, and a comma before `rounded`, `sorted` or `as` that puts it after the whole value (`minutes divided by 60, rounded down`).
+- **Plural verbs in filters:** `the words that start with "a"`, `how many words contain "e"` (also `end with`, `don't contain`, ...).
+- **`easyscript plan FILE`** (or `easyscript build --plan FILE`): one line per list question, filter and sort, saying what it became (passes, lists made, filters tested in the same pass), produced by the code generator and golden-tested in `tests/plan`.
 
 - **Errors as data:** `easyscript errors FILE` prints each error and warning as a JSON object per line. The errors added in this release also carry what the problem is, what's missing, the kind expected and the possible answers, so a later notebook can ask them as questions.
 

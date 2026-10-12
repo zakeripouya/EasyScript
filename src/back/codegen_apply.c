@@ -107,6 +107,13 @@ static void emit_helper(Codegen *g, const Expr *expr, size_t id) {
 // es_map3(LIST, F, START): the parts worked out in the order they're
 // written (the function first in "F applied to every X in L").
 void cg_emit_apply(Codegen *g, const Expr *expr, StrBuf *out) {
+    static const char *const plans[] = {
+        "\"applied to every\": 1 pass, making 1 new list of the same length.",
+        "\"that pass\": 1 pass, making 1 new list of the items kept.",
+        "\"combined using\": 1 pass, no list made.",
+        "\"sorted by\": 1 pass working out each item's key, then a stable sort of a copy.",
+    };
+    cg_plan(g, expr->pos, "%s", plans[expr->as.apply.kind]);
     size_t id = ++g->helpers->count;
     emit_helper(g, expr, id);
     const Expr *f = expr->as.apply.function;

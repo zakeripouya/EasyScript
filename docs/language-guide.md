@@ -30,6 +30,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [18. The standard library](#18-the-standard-library) | Available |
 | [19. Programs and the system](#19-programs-and-the-system) | Available |
 | [20. The keyboard](#20-the-keyboard) | Available |
+| [21. Questions and totals](#21-questions-and-totals) | Available |
 
 ---
 
@@ -1985,4 +1986,68 @@ Arrow keys are `"up"`, `"down"`, `"left"` and `"right"`; others with names are `
 While the keyboard is in use, keys aren't shown as you type them. The terminal goes back to normal when the program ends, however it ends (even with Ctrl+C or a mistake), and while `ask` reads a line or another program runs. Keys can also come from a file (`./game < keys.txt`), read one at a time, which is how games are tested.
 
 Try Snake: `./easyscript run examples/programs/snake/play.es`. The keyboard works on macOS and Linux; on Windows, use WSL until the Windows port.
+
+## 21. Questions and totals
+
+**Available.** Most of what people do with a list is ask about it: how many, is any, is every, what's the total, which is the biggest. EasyScript has a phrase for each, so you don't need a loop with a counter.
+
+```
+let scores be a list of 72, 45, 95, 60 and 88.
+say how many scores are above 70.            # 3
+if any score is above 90, say "Someone did great.".
+if every score is at least 40, say "Everyone passed.".
+if no score is below 0, say "No negatives.".
+say the total of scores, the average of scores, the median of scores.   # 360 72 72
+say the top 3 scores.                        # 95, 88 and 72
+```
+
+`any score` looks through the list named like its plural, `scores`. To name the list yourself, write `any score in results is ...`, or use the plural: `all scores are below 100`, `any of scores are above 95`, `none of scores are above 95`.
+
+### Records, fields and groups
+
+With records, say which field:
+
+```
+an order has a customer (text), a region (text) and an amount (a number).
+...
+say the total amount of orders.                      # 390
+say the total amount of orders per region.           # "east" is 140 and "west" is 250
+say the number of orders per region.                 # "east" is 2 and "west" is 1
+say the order with the highest amount's customer.    # Bo
+say the top 2 orders by amount.
+if every order's amount is above 10, say "All above 10.".
+say how many orders whose amount is over 50 there are.
+```
+
+`per` makes a map from each group to its result, in the order the groups first came up; add `, sorted biggest first` to put the biggest first, and go through it with `for each region and total in ...:`. With dates, `per month`, `per year`, `per day` and `per weekday` group by the item's date (`per month of signup` when it has more than one).
+
+### Math words
+
+`half of price`, `twice price`, `20 percent of price` and `the remainder of 17 divided by 5` mean what they say. `minutes divided by 60, rounded down` divides and then rounds: a comma before `rounded`, `sorted` or `as` puts it after the whole value. `total is infinite` asks whether a number is infinity.
+
+### What each one means exactly
+
+Each phrase is one pass over the list, written here with the loops it stands for (`it` is the item):
+
+- `how many L are ...` starts a count at 0 and adds 1 for each item that passes. `how many L there are` is the number of items.
+- `any ITEM ...` is no until an item passes, then yes, and stops. `every ITEM ...` is yes until an item fails, then no, and stops. `no ITEM ...` is yes until an item passes, then no, and stops.
+- `the total of L` starts at 0 and adds each item (or each item's field). `the average` is that total divided by the number of items, an error for an empty list. `the median` keeps the numbers, sorts them, and takes the middle one (or halfway between the two middle ones).
+- `the top N L` keeps the N biggest seen so far (in a small heap, so it never sorts the whole list) and gives them back biggest first; `the lowest N` the same for the smallest. Ties keep the item that came first.
+- `the N most common L` counts each item in a map, then takes the N biggest counts.
+- `the ITEM with the highest FIELD` keeps the best item seen so far; the first one wins a tie. An empty list is an error.
+- `... per FIELD` keeps a map from each group to its running result.
+- A filter in the list (`the orders whose amount is over 50`) is tested in the same pass, unless its test calls a definition (then the filter keeps its own pass, so calls happen in order).
+
+`easyscript plan FILE` (or `easyscript build --plan FILE`) prints one line for each of these, saying what it became:
+
+```
+Line 3: "how many": counted in 1 pass, no list made.
+Line 7: "the top": 1 pass keeping the best ones in a heap, no sort of the whole list.
+```
+
+### Things to watch
+
+- `the total of`, `the average of`, `the median of` and `the number of` mean the program's own definition when it has one with that name: `total of scores` calls `to total of numbers:`. Written with `the`, it's an error asking which was meant.
+- `the total of rex`, when `rex` is a record with a field called `total`, is an error: the phrase adds up a list. Write `rex's total` for the field.
+- These phrases are values, so `say how many scores are above 70.` works anywhere a value does.
 

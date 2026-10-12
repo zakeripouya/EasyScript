@@ -61,6 +61,7 @@ Docs must never show syntax as working before it does. Mark planned features "Co
 | `tests/tokens/` | `NAME.es` plus `NAME.out`, and `NAME.err` for error cases | `easyscript tokens` |
 | `tests/ast/` | `NAME.es` plus `NAME.out`, and `NAME.err` for error cases | `easyscript ast` |
 | `tests/data/` | `NAME.es` plus `NAME.out` (the errors as data), and an empty `NAME.err` when there are errors | `easyscript errors` |
+| `tests/plan/` | `NAME.es` plus `NAME.out`: what each list question, filter and sort became | `easyscript plan` |
 | `tests/run/` | `NAME.es` plus `NAME.out`; optional `NAME.in` (input), `NAME.args` (the words given to the program, separated by spaces) and `NAME.err` (runtime error) | `easyscript run` with `ES_DEBUG_MEMORY=1`: stdout must match; with `.err` it must exit 1 with exactly that stderr, otherwise exit 0 with empty stderr (and nothing alive at the end) |
 | `tests/memory/` | `NAME.es` plus `NAME.out`; optional `NAME.in` and `NAME.err` | Built (from `emit`, with `-DES_HOOKS`), then run with `ES_DEBUG_MEMORY=1 ES_MEMORY_LIMIT=100000`: stdout must match, nothing may be alive at the end, and live text may never pass 100,000 bytes (peak memory under 16 MB where measurable). With `.err` it must hit the limit (exit 70) with exactly that stderr |
 | `tests/errors/` | `NAME.es` plus `NAME.err` | `easyscript emit` (must fail to compile; exact stderr). Mostly checker errors |

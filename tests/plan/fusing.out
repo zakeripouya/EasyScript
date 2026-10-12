@@ -1,0 +1,12 @@
+Line 7: "how many": counted in 1 pass, no list made, 1 filter tested in the same pass.
+Line 8: "how many": counted in 1 pass, no list made, 2 filters tested in the same pass.
+Line 9: "that pass": 1 pass, making 1 new list of the items kept.
+Line 9: "how many": counted in 1 pass, no list made.
+Line 10: a filter ("that", "whose", "where" or "only"): 1 pass, making 1 new list of the items kept.
+Line 10: "how many": counted in 1 pass, no list made.
+Line 11: "any": 1 pass, stopping at the first item that passes (through a copy of the list, since it calls a definition).
+Line 12: "each": 1 pass, making 1 new list of the same length.
+Line 13: "sorted": a copy of the list (reused when nothing else holds it), then sorted.
+Line 13: a filter ("that", "whose", "where" or "only"): 1 pass, making 1 new list of the items kept.
+Line 14: "combined using": 1 pass, no list made.
+Line 15: "sorted by": 1 pass working out each item's key, then a stable sort of a copy.

@@ -16,7 +16,8 @@ static const char *const op_display[] = {
     "\"the time now\"", "today", "tomorrow", "yesterday", "\"days ago\"", "\"days from now\"", "a date's part",
     "\"is in\"", "\"the number of days between\"", "\"is before\"", "\"is after\"", "\"file ... exists\"",
     "\"folder ... exists\"", "\"the lines of file\"", "\"the files in\"", "\"the folders in\"",
-    "\"the size of file\"", "\"the last change of file\"",
+    "\"the size of file\"", "\"the last change of file\"", "\"half of\"", "\"twice\"", "\"percent of\"",
+    "\"is infinite\"", "\"per\"",
 };
 
 static TypeVar require(Checker *c, const Expr *operand, Type type, const char *display, const char *needs) {
@@ -109,6 +110,17 @@ TypeVar checker_check_library(Checker *c, const Expr *expr) {
     case LIB_FILE_CHANGED:
         text(c, a, display);
         return types_new(c, TYPE_DATE, line);
+    case LIB_PERCENT_OF: number(c, b, display); /* fall through */
+    case LIB_HALF:
+    case LIB_TWICE:
+        number(c, a, display);
+        return types_new(c, TYPE_NUMBER, line);
+    case LIB_IS_INFINITE:
+        number(c, a, display);
+        return types_new(c, TYPE_YESNO, line);
+    case LIB_PERIOD_KEY:  // "per year" groups by a number, the others by text ("October 2026")
+        date(c, a, arena_sprintf(c->arena, "\"per %s\"", ast_date_part_name(expr->as.library.part)));
+        return types_new(c, expr->as.library.part == DATE_YEAR ? TYPE_NUMBER : TYPE_TEXT, line);
     default: break;
     }
     return error_var(c);

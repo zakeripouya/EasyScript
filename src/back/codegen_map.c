@@ -106,6 +106,10 @@ void cg_emit_map_op(Codegen *g, const Expr *expr, StrBuf *out) {
     case LIST_VALUES: sb_appendf(out, "es_map_list(%s, false)", map); break;
     case LIST_IS_EMPTY: sb_appendf(out, "es_map_is_empty(%s)", map); break;
     case LIST_NOT_EMPTY: sb_appendf(out, "!es_map_is_empty(%s)", map); break;
+    case LIST_SORTED:  // in the order of the values: ES_SORT_UP or ES_SORT_DOWN
+    case LIST_SORTED_DOWN:
+        cg_plan(g, expr->pos, "\"sorted\": a copy of the map, its entries sorted by their values.");
+        sb_appendf(out, "es_map_sorted(%s, %d)", map, (int)(expr->as.list_op.op - LIST_SORTED)); break;
     default: sb_appendf(out, "es_map_copy(%s)", map); break;  // LIST_COPY
     }
 }

@@ -194,6 +194,10 @@ static bool reads(const Expr *expr, const char *name) {
     case EXPR_LIST_OP: return reads(expr->as.list_op.operand, name);
     case EXPR_EVERY: return reads(expr->as.every.list, name) || reads(expr->as.every.body, name);
     case EXPR_ONLY: return reads(expr->as.only.list, name) || reads(expr->as.only.condition, name);
+    case EXPR_AGGREGATE:
+        return reads(expr->as.aggregate.count, name) || reads(expr->as.aggregate.list, name) ||
+               reads(expr->as.aggregate.condition, name) || reads(expr->as.aggregate.key, name) ||
+               reads(expr->as.aggregate.group, name);
     case EXPR_SLICE:
         return reads(expr->as.slice.from, name) || reads(expr->as.slice.to, name) || reads(expr->as.slice.list, name);
     case EXPR_TEXT_OP:

@@ -111,6 +111,19 @@ All arithmetic is **Available**.
 
 `times` multiplies only when a value follows it, so a sentence like `repeat 3 times:` keeps its own `times`.
 
+**Math words** (all **Available**):
+
+| Pattern | Means | Example |
+|---|---|---|
+| `half of X` | `X times 0.5` | `half of price` |
+| `twice X` | `X times 2` | `twice price` |
+| `N percent of X` | `N times X divided by 100` | `20 percent of price` |
+| `the remainder of X divided by Y` | `X mod Y` | `the remainder of 17 divided by 5` |
+| `X is infinite` / `X is not infinite` / `X isn't infinite` | Yes when X is infinity or minus infinity | `if total is infinite, say "Too big."` |
+| `X divided by Y, rounded down` | Whole-number division: a comma before `rounded` (or `sorted`, or `as`) puts it after the whole value | `minutes divided by 60, rounded down` |
+
+Like `length of`, `half of` and `twice` take a single value (`twice price plus 1` is `(twice price) plus 1`), and so does what comes after `percent of`. They mean the program's own definition instead when it defines one called `half`, `twice` or `remainder` (and `twice with 4` still calls a function kept in a name `twice`).
+
 Arithmetic needs numbers on both sides; anything else is an error before the program runs, such as "Line 12: I can't subtract text from a number." To join text, use `and` or `followed by` (which turns numbers into text for you). Dividing or taking the remainder by zero is the error "You divided by zero."
 
 ### Conversions
@@ -447,6 +460,36 @@ Sorting text, and sorting by length, keeps equal items in the order they were in
 | `only L that are empty` / `... that are not empty` / `... that aren't empty` | The items (text or lists) that are, or aren't, empty | `only the names that aren't empty` |
 
 These filters go after a single value, like `'s`, so a longer list goes in parentheses (`(item 1 of groups) where it is empty`), and `the number of items in (the dogs whose age is over 3)` needs them too. The comparisons after `that` are the usual ones with `are` for `is`: `are`, `are not`, `aren't`, `are equal to`, `are not equal to`, `aren't equal to`, `are greater than`, `are more than`, `are bigger than`, `are above`, `are over`, `are less than`, `are smaller than`, `are below`, `are under`, `are at least`, `are at most`, `are greater than or equal to`, `are more than or equal to`, `are bigger than or equal to`, `are less than or equal to`, and `are smaller than or equal to`.
+
+### Questions and totals
+
+All **Available**. Each goes through the list once, makes no list it doesn't give back, and stops early where it can (`easyscript plan FILE` shows what each became). L is a single value with its filters (`the orders whose amount is over 100`); in a test, `it` is the item.
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `how many L are COMPARISON X` / `how many L is ...` / `how many of L are ...` | How many items pass the test (also `are empty`, `start with`, `end with`, `contain`, `don't contain`, ...) | `how many scores are above 70` |
+| `how many L there are` / `how many L there is` | How many items | `how many guests there are` |
+| `how many L whose FIELD ...` / `how many L where C` | How many items the filter keeps | `how many orders whose amount is over 50` |
+| `the number of L` | How many items (`the number of items in L` too) | `the number of orders` |
+| `any ITEM TEST` / `every ITEM TEST` / `no ITEM TEST` | Yes if some, every, or no item passes, going through the list named like ITEM's plural; stops as soon as the answer is known. An empty list makes `every` and `no` yes and `any` no | `if any score is above 90:`, `if every order's amount is above 0:` |
+| `any ITEM in L TEST` / `no ITEM in L TEST` | The same, with the list named | `if any word in names starts with "Z":` |
+| `all L are ...` / `all of L are ...` / `any of L are ...` / `none of L are ...` | The same, with the plural list | `if all scores are at least 50:` |
+| `the total of L` / `the total FIELD of L` | All the numbers (or each item's FIELD) added up; 0 for an empty list | `the total amount of orders` |
+| `the average of L` / `the average FIELD of L` | The total divided by how many; an empty list is an error | `the average age of dogs` |
+| `the median of L` / `the median FIELD of L` | The middle number (halfway between the two middle ones for an even count); an empty list is an error | `the median of scores` |
+| `the top N L` / `the lowest N L` | A new list of the N biggest (or smallest) numbers or dates, biggest (or smallest) first; ties in the order they were in. All of them if there are fewer | `the top 3 scores` |
+| `the top N L by FIELD` / `the lowest N L by FIELD` | The N items with the biggest (smallest) FIELD | `the top 2 orders by amount` |
+| `the N most common L` | A new list of the N items (text or numbers) that come up most, most first; ties in the order they first came up | `the 10 most common words` |
+| `the ITEM with the highest FIELD` / `... the lowest FIELD` | The item with the biggest (smallest) FIELD, the first one on a tie; from the list named like ITEM's plural. Also `biggest`, `largest`, `greatest`, `most`, and `smallest`, `fewest`, `least`. A FIELD that's a list counts its items. An empty list is an error | `the customer with the highest total`, `the order with the most items` |
+| `the ITEM in L with the highest FIELD` | The same, with the list named | `the dog in pets with the lowest age` |
+| `... per FIELD` | After `the total`, `the average`, `the median` or `the number of`: a map from each value of the field to the result for the items with it, in the order each first came up | `the total amount of orders per region` |
+| `... per month` / `per year` / `per day` / `per weekday` | Grouped by the item's date (its one date field, or `per month of FIELD`): months as text like "October 2026", days like "Sunday, October 11, 2026", weekdays like "Sunday", years as numbers | `the number of sales per month` |
+| `M sorted` / `M sorted biggest first` | A map's copy with its entries in the order of their values (numbers, dates or text) | `the total amount of orders per region, sorted biggest first` |
+| `sort M` / `sort M biggest first` | The same order, changing the map itself | `sort totals biggest first` |
+
+Each is written in core terms in the [language guide](language-guide.md#21-questions-and-totals). The words `total`, `average`, `median`, `number`, `top`, `lowest`, `any`, `all`, `none` and `how` keep meaning the program's own definition when it defines one with that name (`total of scores` calls it); written with `the` (`the total of scores`), that's an error asking which was meant.
+
+The plural verbs after `that` and in `how many` are `contain`, `do not contain`, `don't contain`, `start with`, `do not start with`, `don't start with`, `end with`, `do not end with` and `don't end with`: `the words that start with "a"`.
 
 ### Sharing
 

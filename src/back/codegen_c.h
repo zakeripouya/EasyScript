@@ -10,6 +10,8 @@
 // errors; codegen reports nothing itself.
 // `source_table` (source_table.h) goes into the program as it is, so runtime
 // errors can show the line that failed; codegen doesn't read it.
-void codegen_c(Arena *arena, const Program *program, const char *source_table, StrBuf *out);
+// When `plan` isn't NULL, a line for each high-level form (a question about a
+// list, a filter, ...) saying what it became is written to it ("easyscript plan").
+void codegen_c(Arena *arena, const Program *program, const char *source_table, StrBuf *out, StrBuf *plan);
 
 #endif

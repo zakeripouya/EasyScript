@@ -370,6 +370,38 @@ Line 2: "scores" is a list of numbers, so this could mean two things.
 To put it at the end of the list, write "add ... to the end of scores". To add it to every item, write "set scores to every n in scores plus ...".
 ```
 
+**Questions about a list**: [`question_errors.es`](../tests/errors/question_errors.es), [`err_questions.es`](../tests/ast/err_questions.es)
+
+```
+Line 4: There's no list called "results" for "any result" to look through.
+    if any result is above 2, say "yes".
+           ^^^^^^
+"any result" looks through the list called "results". Make that list first, or say which list, like "any result in scores ...".
+```
+
+```
+Line 12: I can only add up the items of a list, but this is a dog.
+    say the total of rex.
+                     ^^^
+For a field called "total", write "rex's total".
+```
+
+```
+Line 24: "per month" could mean more than one date here.
+    say the number of trips per month.
+                            ^^^^^^^^^
+Say which, like "per month of start".
+```
+
+```
+Line 14: "the total" could mean two things here.
+    say the total of scores.
+            ^^^^^
+"total" is also a definition in this program. To use the definition, write "total of ..." without "the". To add up a list, write it like "scores added together".
+```
+
+Also: "I expected "there are" or a test like "are above 70" here, ...", "I expected a test like "are above 50" after "all scores", ...", "I expected a field after "per" here, ...", "I expected "with the highest" here, ...", "I expected "divided by" here, ..." (after `the remainder of`), ""per month" needs a date to group by, but a dog has no date in it.", "The top items are picked from a list of numbers or dates, ...", "I can only count how often numbers or text come up, ...".
+
 **A list inside a list without parentheses**: [`err_list_forms.es`](../tests/ast/err_list_forms.es)
 
 ```
@@ -899,6 +931,9 @@ Positions start at 1: the first item is item 1.
 | Removing a key that isn't there | "I can't remove "Bob": the map has no value for it." with "To check first, use "has"." |
 | A record checked not to be nothing, then set to nothing through another name before it's used | "This was checked not to be nothing, but something has set it to nothing since then." with the hint "Another name for the same record can change it. Check it again just before using it." |
 | A record's field checked to be a variant, then set to another one through another name before it's used | "This was checked to be a circle, but something has set it to a point since then." with the same hint |
+| The average or median of an empty list | "There's nothing to average: the list is empty." / "There's no middle number: the list is empty." |
+| The one with the highest (or lowest) of an empty list | "There's nothing to choose from: the list is empty." with the hint "Check that the list isn't empty first, like "if dogs is not empty:"." |
+| The top N with N not whole or below 0 | "How many to take has to be a whole number, 0 or more, but it's 1.5." |
 
 Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).
 

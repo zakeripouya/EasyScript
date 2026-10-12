@@ -41,6 +41,7 @@ typedef struct {
     Expr *pending_item;     // "every NAME in L": the item's name, the first value of what follows
     bool method_record;     // parsing a method's record: "rename rex with ..." doesn't call rex
     bool no_call;           // parsing what "call" calls: "call handler with 3" doesn't call handler yet
+    bool no_best;           // parsing the list of "the dog in L with the highest ...": L isn't one itself
     size_t lambdas;         // functions made inside values so far (their C names: 0l1, 0l2, ...)
     size_t block_end;       // 1 + the token after a block that ended a value ("a function taking x:"), or 0
     size_t hidden_lists;    // lists sentences like "apply F to every X in L" hold in hidden names so far
@@ -178,6 +179,15 @@ Stmt *parser_parse_can(Parser *p);
 Expr *parser_parse_item_test(Parser *p, const char *example);
 bool parser_at_item_test(const Parser *p, size_t ahead);
 Expr *parser_parse_condition_after(Parser *p, Expr *first);
+Expr *parser_parse_comparison_after(Parser *p, Expr *first);
+Expr *parser_continue_postfix(Parser *p, Expr *expr);
+
+// parse_aggregate.c: questions about a list ("how many", "any", "the total of", "the top 3", "per")
+// A question starting with a word here, or NULL if none starts here.
+Expr *parser_parse_aggregate_word(Parser *p);
+// "the 10 most common words": a number (or a name) followed by "most common".
+bool parser_at_most_common(const Parser *p);
+Expr *parser_parse_most_common(Parser *p);
 const char *parser_plural_of(Arena *arena, const char *name);
 size_t parser_made_of_words(const Parser *p, size_t i);
 bool parser_at_made_of(const Parser *p);
@@ -231,6 +241,8 @@ bool parser_at_selection(const Parser *p);
 Expr *parser_parse_selection(Parser *p);
 // After a value: "applied to every X in L", "combined using F", "sorted by F"; NULL if none is next.
 Expr *parser_parse_apply_postfix(Parser *p, Expr *expr);
+// After a list: its filters ("whose age is over 3", "that are above 70", "where ..."), if any.
+Expr *parser_parse_filters(Parser *p, Expr *list);
 Stmt *parser_parse_apply(Parser *p, const Token *verb);  // apply F to every X in L
 bool parser_at_keep_only(const Parser *p);                // "keep" + "only" (not a constant called "only")
 Stmt *parser_parse_keep_only(Parser *p, const Token *verb);

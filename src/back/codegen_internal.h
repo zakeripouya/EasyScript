@@ -64,6 +64,17 @@ typedef struct {
     Vec(const char *) dispatchers;  // the C functions that call an interface's way (es_way0_speak), once each
 } ClosurePool;
 
+// "easyscript plan": one line per high-level form, saying what it became.
+typedef struct {
+    size_t line;
+    unsigned file;
+    const char *text;
+} PlanLine;
+
+typedef struct {
+    Vec(PlanLine) lines;
+} PlanPool;
+
 typedef struct {
     Arena *arena;
     const Records *records;      // the program's kinds of record and of map
@@ -86,7 +97,11 @@ typedef struct {
     Vec(const char *) cells;     // names kept in cells here, because functions made inside share them
     Vec(const char *) borrowed;  // in a function made inside a value: the cells it uses from around it
     ClosurePool *closures;       // the C code of functions kept as values
+    PlanPool *plan;              // what each high-level form became ("easyscript plan"), or NULL
 } Codegen;
+
+// Adds a line to the plan (when there is one): what the form at pos became.
+void cg_plan(Codegen *g, SourcePos pos, const char *fmt, ...) PRINTF_LIKE(3, 4);
 
 // codegen_expr.c
 // The C expression for a value, of the C type of its kind.
@@ -190,6 +205,17 @@ const char *cg_item_suffix(Type list);  // the runtime's suffix for its items: "
 const char *cg_value_suffix(Type type); // the same for a value of that kind: "n", "b", "t", "l", "r", "m"
 const char *cg_items(Type type);        // what the runtime calls a kind of item: "ES_ITEMS_NUMBER", ...
 void cg_emit_list_expr(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_LIST ... EXPR_ONLY
+// The C functions a list is gone through in ("every", "only", questions): a
+// Codegen sharing g's pools, the variables `expr` reads (its parameters), and
+// writing those parameters and the arguments that go with them.
+void cg_helper_init(const Codegen *g, Codegen *helper);
+void cg_helper_collect(Codegen *g, const Expr *expr, Codegen *helper);  // expr may be NULL
+bool cg_calls_function(const Codegen *g, const Expr *expr);
+void cg_store_item(StrBuf *out, const char *name, Type type, const char *suffix);  // "es_vn_x = es_items->at.n[es_i];"
+void cg_helper_params(StrBuf *out, const Codegen *helper);
+void cg_helper_args(const Codegen *g, StrBuf *out, const Codegen *helper);
+// codegen_aggregate.c
+void cg_emit_aggregate(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_AGGREGATE
 void cg_emit_contains(Codegen *g, const Expr *expr, StrBuf *out);   // L contains X
 // The C loop header of "for each N in L" (after its variables are declared).
 void cg_emit_each_head(Codegen *g, const Stmt *stmt, size_t id, StrBuf *body, size_t depth);
