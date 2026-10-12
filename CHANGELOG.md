@@ -6,6 +6,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Breaking
 
+- **`F of X` where F is both a function and a field's name is an error** asking for `X's F` or `F with X`, because `the F of X` now also reads a field. Three tests that called such functions with `of` now use `with`.
+
 - **`and` no longer joins text:** `"Hello, " and name` is an error that shows the new ways: commas in `say` (`say "Hello,", name, "!"`), brackets in text, or `followed by`. `and` between values now always means both (yes/no). Tests and examples that joined with `and` now use `followed by` or the new forms.
 - **`[` and `]` in text hold values** (`"Hello, [name]!"`), so a bracket in the text itself is written twice: `"[[draft]]"`. A single `]` is an error. The JSON example and a few tests now double their brackets.
 
@@ -26,6 +28,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - **Runtime errors from `run`, and from a word past the end of the words given to the program, no longer leak** (LeakSanitizer on Linux found `argv` and a number shown in the message left unreachable).
 
 ### Added
+
+- **`the name of rex`** reads a field like `rex's name`, without parentheses (`the name of item 1 of dogs`, `the name of the owner of rex`), in values and in `set`/`add ... to`/`increase` sentences.
 
 - **`a dog can bark:`** defines a method (the main form now; `to bark, for a dog:` stays as a synonym), with inputs and a result as usual: `a dog can fetch with a toy:`, `a shape can tell its area, giving back a number:`. Messages show methods the way they were written.
 

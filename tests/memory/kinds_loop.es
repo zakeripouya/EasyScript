@@ -32,7 +32,7 @@ repeat 200000 times:
                 skip this one.
     add s to the end of kept.
     if the number of items in kept is more than 3, remove the first item from kept.
-    set the value for (label of s) in named to copy.
+    set the value for (label with s) in named to copy.
     if the number of entries in named is more than 5, set named to an empty map from text to shapes.
     check which kind s is:
         when it's a point:

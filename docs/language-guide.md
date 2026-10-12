@@ -1061,12 +1061,13 @@ Fields can come in any order, separated by `and` or commas. A `new` inside anoth
 
 ### Fields
 
-`rex's age` is a field. It works anywhere a value does, and chains: `the order's customer's name`. Inside a `for each` loop, `it's name` is the item's field, and `(item 1 of dogs)'s name` takes a field of a value in parentheses. `'s` binds tightest of all, so `rex's age plus 1` is `(rex's age) plus 1`.
+`rex's age` is a field. It works anywhere a value does, and chains: `the order's customer's name`. `the age of rex` means the same, and needs no parentheses: `the name of item 1 of dogs`, `the name of the owner of rex`. (If a function has the same name as a field, `the size of rex` could mean either, so it's an error that asks you to write `rex's size` or `size with rex`.) Inside a `for each` loop, `it's name` is the item's field, and `(item 1 of dogs)'s name` takes a field of a value in parentheses. `'s` binds tightest of all, so `rex's age plus 1` is `(rex's age) plus 1`.
 
 Change fields with the same sentences as variables:
 
 ```
 set rex's age to 4.
+set the age of rex to 4.
 add 1 to rex's age.
 increase rex's age by 2.
 add "ball" to the end of rex's toys.

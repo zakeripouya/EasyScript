@@ -9,8 +9,8 @@ Line 14: This is a node or nothing, so check it first.
 Give it a name with "let", then use it inside "if NAME is not nothing:".
 
 Line 15: "value" needs a node for "start", but this is a node or nothing.
-    say value of first's next.
-                 ^^^^^^^^^^^^
+    say value with first's next.
+                   ^^^^^^^^^^^^
 It could be nothing. Check it first, like "if first's next is not nothing:".
 
 Line 16: "first" is a node, so it's never nothing.

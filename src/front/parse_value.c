@@ -215,6 +215,35 @@ static Expr *parse_name_or_call(Parser *p) {
     return expr;
 }
 
+// "the name of rex": the field "name" of rex, like "rex's name". The record
+// is a primary, so "the name of the owner of rex" works from the right. A
+// function with the field's name makes it ambiguous: an error.
+static Expr *parse_field_of(Parser *p, size_t words) {
+    Name name;
+    parser_take_name(p, words, &name);
+    Span of = parser_advance(p)->span;
+    if (parser_at_sentence_end(p)) {
+        if (parser_error(p, of, "Something is missing after \"of\".")) {
+            diag_note(p->diag, "Say whose %s it is, like \"the %s of rex\".", name.display, name.display);
+        }
+        return parser_error_expr(p);
+    }
+    Expr *record = parse_primary(p);
+    if (p->sentence_failed) return record;
+    Expr *expr = ast_new_expr(p->arena, EXPR_FIELD, ast_pos_join(name.pos, record->pos));
+    if (parser_is_function(p, name.text)) {
+        const char *whole = parser_text(p, expr->pos.span), *owner = parser_text(p, record->pos.span);
+        if (parser_error(p, expr->pos.span, "\"%s\" could mean two things.", whole)) {
+            diag_note(p->diag, "\"%s\" is a field and a function. For the field, write \"%s's %s\"; for the function, "
+                               "write \"%s with %s\".", name.display, owner, name.display, name.display, owner);
+        }
+        return parser_error_expr(p);
+    }
+    expr->as.field.record = record;
+    expr->as.field.name = name;
+    return expr;
+}
+
 // "every NAME in" anywhere but the start of a value.
 static Expr *reject_inner_every(Parser *p) {
     Span span = parser_advance(p)->span;
@@ -281,6 +310,8 @@ static Expr *parse_word(Parser *p) {
     if (text) return text;
     if (parser_at_only(p)) return parser_parse_only(p);
     if (parser_at_every(p)) return reject_inner_every(p);
+    size_t field = parser_known_field_words(p, 0);
+    if (field > 0 && parser_at_word(p, field, "of")) return parse_field_of(p, field);  // the name of rex
 
     return parse_name_or_call(p);
 }

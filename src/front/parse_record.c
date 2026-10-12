@@ -280,6 +280,13 @@ bool parser_parse_target(Parser *p, Name *name, Expr **field, const char *const 
         return false;
     }
     Expr *base;
+    size_t words = parser_known_field_words(p, 0);
+    if (words > 0 && parser_at_word(p, words, "of")) {  // "set the age of rex to 5"
+        base = parse_primary(p);
+        if (base->kind != EXPR_FIELD || p->sentence_failed) return false;
+        *field = base;
+        return true;
+    }
     if (parser_at(p, 0, TOK_LPAREN)) {  // "set (item 2 of players)'s name to ..."
         const Token *open = parser_peek(p, 0);
         base = parse_primary(p);

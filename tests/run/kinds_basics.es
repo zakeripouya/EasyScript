@@ -44,8 +44,8 @@ otherwise:
 to width of s:
     if s isn't a rectangle, give back 0.
     give back s's width.
-say width of (item 2 of shapes).
-say width of c.
+say width with (item 2 of shapes).
+say width with c.
 
 note: "it" is the value checked; a loop inside a "when" has its own "it".
 check which kind item 2 of shapes is:

@@ -547,6 +547,7 @@ A kind of record is written like any other kind: `(a dog)` for an input, `giving
 | `a new NAME` | A new record whose fields all start at their starting values | `a new chain` |
 | `R's FIELD` | A field of a record. Chains work, and so does `it's` | `rex's name`, `the order's customer's name`, `it's age` |
 | `(X)'s FIELD` | A field of a value in parentheses | `(item 1 of dogs)'s name` |
+| `the FIELD of R` | The same as `R's FIELD`, with no parentheses needed. R is a single value, so it chains from the right; it works in `set`, `add ... to` and the other change sentences too. If a function has the field's name, it's an error asking which (`rex's size` or `size with rex`); phrases like `the length of` keep their meaning | `the name of rex`, `the name of item 1 of dogs`, `the name of the owner of rex`, `set the age of rex to 4` |
 | `set R's FIELD to X` | Changes a field | `set rex's age to 4` |
 | `add X to R's FIELD`, `subtract`, `increase`, `decrease`, `multiply`, `divide` | Changes a number field, like a variable (`add X to R's FIELD` adds to the end of a list field that doesn't hold numbers, as for list variables) | `add 1 to rex's age` |
 | `R is S` / `R is not S` | Yes if R and S are **the same record** (two records with the same fields are still two records) | `if rex is fido, ...` |

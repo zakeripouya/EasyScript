@@ -12,7 +12,7 @@ to value of start (a node), giving back a number:
 let first be a new node with value 1.
 say first's next's value.
 say (find with 1 and first)'s value.
-say value of first's next.
+say value with first's next.
 if first is nothing, say "never".
 if 5 is not nothing, say "never".
 if nothing is nothing, say "always".
