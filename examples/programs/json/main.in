@@ -1,0 +1,72 @@
+null
+---
+true
+---
+  false  
+---
+[1, 2.5, -3, 0, -0, 1e3, 2.5E-2, 1E+2, 12345678901234567890, 0.1]
+---
+"Hello, \"world\"\n\ttab \\ slash \/ café 😀 é"
+---
+{
+  "name": "Ada",
+  "languages": ["English", "French"],
+  "born": {"year": 1815, "month": 12},
+  "active": false,
+  "notes": null,
+  "empty": {},
+  "nothing here": [],
+  "name": "Ada Lovelace"
+}
+---
+[[[[[]]]], {"a": {"b": {"c": [1, {"d": []}]}}}]
+---
+"Unicode stays: héllo, 日本"
+---
+[1, 2,]
+---
+{
+  "a": 1,
+  "b" 2
+}
+---
+"never ends
+---
+01
+---
+-
+---
+1.
+---
+1e
+---
+1e400
+---
+"bad \x escape"
+---
+"\u12"
+---
+"\ud800 alone"
+---
+"\udc00"
+---
+"\u0000"
+---
+tru
+---
+[1 2]
+---
+{"a": 1} extra
+---
+
+---
+{1: 2}
+---
+{"a" 1}
+---
+"tab	inside"
+---
+[
+  1,
+  {"deep": [true, fals]}
+]
