@@ -432,6 +432,7 @@ static Expr *parse_comparison(Parser *p) {
     if (!empty) empty = parser_parse_kind_test(p, left);
     if (!empty) empty = parser_parse_library_test(p, left);
     if (!empty) empty = parser_parse_adjective_test(p, left, false);  // "rex is loyal"
+    if (!empty) empty = parser_parse_count_test(p, left);              // "they have more than 5 orders"
     if (empty && parser_match_phrase(p, comparison_ops, COUNT(comparison_ops), &len)) {
         Span op = parser_consume(p, len);
         if (parser_error(p, op, "Comparisons can't be chained like this.")) {
@@ -567,6 +568,7 @@ Expr *parser_parse_item_test(Parser *p, const char *example) {
     Expr *it = ast_new_expr(p->arena, EXPR_IT, parser_token_pos(parser_peek(p, 0)));
     bool singular = parser_at_word(p, 0, "is") || parser_at_word(p, 0, "isn't");
     Expr *condition = parser_parse_adjective_test(p, it, !singular);  // "how many customers are loyal"
+    if (!condition) condition = parser_parse_count_test(p, it);       // "... have more than 5 orders"
     if (!condition) condition = parse_empty_test(p, it, singular ? 0 : 3, 3);
     if (!condition) {
         size_t len = 0;
@@ -596,6 +598,12 @@ Expr *parser_parse_item_test(Parser *p, const char *example) {
 // Every item test starts with "are" or "aren't", or a plural verb ("start with").
 bool parser_at_item_test(const Parser *p, size_t ahead) {
     if (parser_at_word(p, ahead, "are") || parser_at_word(p, ahead, "aren't")) return true;
+    if ((parser_at_word(p, ahead, "have") || parser_at_word(p, ahead, "has")) &&
+        (parser_match_words_at(p, ahead + 1, "more than") || parser_match_words_at(p, ahead + 1, "at least") ||
+         parser_match_words_at(p, ahead + 1, "fewer than") || parser_match_words_at(p, ahead + 1, "less than") ||
+         parser_match_words_at(p, ahead + 1, "at most") || parser_at_word(p, ahead + 1, "exactly"))) {
+        return true;  // "how many customers have more than 5 orders"
+    }
     for (size_t i = 0; i < COUNT(item_verbs); i++) {
         if (parser_match_words_at(p, ahead, item_verbs[i].words)) return true;
     }

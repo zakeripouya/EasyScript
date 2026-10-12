@@ -416,7 +416,7 @@ static Stmt *parse_rule(Parser *p, size_t kind_words) {
     return stmt;
 }
 
-Stmt *parser_parse_definition(Parser *p) {
+static Stmt *parse_shape(Parser *p) {
     size_t words = 0;
     switch (shape_here(p, &words)) {
     case RULE: return parse_rule(p, words);
@@ -427,6 +427,13 @@ Stmt *parser_parse_definition(Parser *p) {
     case NONE: break;
     }
     return NULL;
+}
+
+Stmt *parser_parse_definition(Parser *p) {
+    p->describing = true;  // "they" is the record described
+    Stmt *stmt = parse_shape(p);
+    p->describing = false;
+    return stmt;
 }
 
 // --- Using them ------------------------------------------------------------------------

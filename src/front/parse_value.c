@@ -302,6 +302,7 @@ static Expr *parse_word(Parser *p) {
         return reason;
     }
     if (strcmp(word, "it") == 0) return parser_chain_it(p, literal(p, EXPR_IT));
+    if (strcmp(word, "they") == 0 && p->describing) return literal(p, EXPR_IT);  // "if they have more than 5 orders"
     if ((strcmp(word, "its") == 0 || strcmp(word, "their") == 0) &&
         parser_field_words(p, 1) > 0) {  // "its radius", "their orders": "it's radius"
         Expr *it = parser_chain_it(p, literal(p, EXPR_IT));
@@ -366,6 +367,7 @@ static Expr *parse_word(Parser *p) {
     if (question) return question;
     if (parser_at_only(p)) return parser_parse_only(p);
     if (parser_at_every(p)) return reject_inner_every(p);
+    if (parser_at_field_across(p)) return parser_parse_field_across(p);  // the names of the drinks
     size_t field = parser_field_words(p, 0);
     if (field > 0 && parser_at_word(p, field, "of")) return parse_field_of(p, field);  // the name of rex
 

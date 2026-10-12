@@ -1296,6 +1296,18 @@ say rex's name.                    # Rexy
 if same dog is rex, say "same".    # same
 ```
 
+A field across a whole list, and a count of a list field, read the way you'd say them:
+
+```
+say the names of the drinks.                 # latte and tea
+say each drink's size.                       # medium and small
+if ann has at least 2 orders, say "Regular!".
+a customer is loyal if they have more than 5 orders.
+say how many customers have fewer than 2 orders.
+```
+
+`the names of the drinks` is a new list of each drink's name (`names` is the plural of the field `name`), and `each drink's name` the same for the list called `drinks`. `has more than 5 orders` counts the items of the field `orders` (also `at least`, `fewer than`, `at most` and `exactly`). In a definition like `a customer is loyal if ...`, `they` means the customer.
+
 `a copy of rex` makes a new record with the same field values. The copy is **shallow**: text, lists and records inside it are shared with the original. Two records with the same fields are still two records, so `is` says no for a copy. To compare what's inside, compare the fields, or write a method:
 
 ```

@@ -95,6 +95,7 @@ typedef struct {
     const char *chain_it;   // in a step after ", then": the hidden name "it" means ("" if the step before gives
                             // nothing), else NULL
     Vec(Pattern) patterns;  // every definition with inputs in the middle of its first line (pre-scan)
+    bool describing;        // reading a definition ("a customer is loyal if ..."): "they" is "it"
     Vec(const char *) yes_fields;  // fields written as yes or no ("can be fragile", "a fragile (yes or no)"): describing words
     size_t limit;           // reading one input of such a call: tokens from here on look like a sentence's end
     Token limit_token;      // ... and this is what they look like
@@ -557,5 +558,11 @@ bool parser_at_best_group(const Parser *p);    // the store with the highest tot
 Expr *parser_parse_best_group(Parser *p);
 bool parser_at_top_group(const Parser *p);     // the top 3 stores by total amount
 Expr *parser_parse_top_group(Parser *p);
+
+// --- A field across a list, counting a list field (parse_across.c) -------------------------
+
+bool parser_at_field_across(const Parser *p);  // the names of the drinks; each drink's name
+Expr *parser_parse_field_across(Parser *p);
+Expr *parser_parse_count_test(Parser *p, Expr *left);  // has more than 5 orders, or NULL
 
 #endif
