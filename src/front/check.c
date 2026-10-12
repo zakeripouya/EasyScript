@@ -370,7 +370,17 @@ static void check_loop(Checker *c, const Stmt *stmt) {
                      "A loop needs yes or no to decide whether to keep going",
                      "Compare it with something, like \"while count is less than 10\".");
     TypeVar item = 0, value = 0;
-    if (stmt->as.loop.list) item = checker_check_each(c, stmt, &value);
+    const Expr *implied = stmt->as.loop.implied ? stmt->as.loop.list : NULL;  // "for each score:" and "scores"
+    if (implied && !checker_find_made(c, implied->as.name) && !checker_find_constant(c, implied->as.name)) {
+        diag_error(c->diag, stmt->as.loop.var.pos.span, "There's no list called \"%s\" for this to go through.",
+                   implied->display);
+        diag_note(c->diag, "\"for each %s:\" goes through the list called \"%s\". Make that list first, or say which "
+                           "list to go through, like \"for each %s in groceries:\".",
+                  stmt->as.loop.var.display, implied->display, stmt->as.loop.var.display);
+        item = types_new(c, TYPE_ERROR, stmt->pos.line);
+    } else if (stmt->as.loop.list) {
+        item = checker_check_each(c, stmt, &value);
+    }
     size_t outer = c->made.len;
     Loop loop = {stmt->as.loop.kind == LOOP_COUNT || stmt->as.loop.kind == LOOP_TIMES, 0, false, NO_VARIANT, false};
     if (stmt->as.loop.kind == LOOP_COUNT) loop.it = check_loop_variable(c, stmt);

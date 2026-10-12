@@ -437,6 +437,7 @@ Sorting text, and sorting by length, keeps equal items in the order they were in
 | Pattern | Meaning | Example |
 |---|---|---|
 | `for each N in L:` + indented lines | Run the lines once for each item, with N (and `it`) the item. Goes through the items the list had when it started | `for each score in scores:` |
+| `for each N:` + indented lines | The same, going through the list named like N's plural (`score` → `scores`, `box` → `boxes`, `berry` → `berries`). If there's no such name, it's an error asking which list | `for each score:` |
 | `each N in L REST` / `every N in L REST` | A new list: REST worked out for each item, as if it started with N. Only at the start of a value (or in parentheses) | `each score in scores plus 5` |
 | `L that COMPARISON X` / `L that are [not] empty` | A new list of the items for which the comparison is yes (`only` before it is the same) | `the scores that are at least 70` |
 | `L whose FIELD REST` | The records (or values of a kind) whose field makes REST yes, REST read as if it started with the field | `the dogs whose age is over 3` |

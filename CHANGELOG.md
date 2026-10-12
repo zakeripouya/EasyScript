@@ -29,6 +29,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **`for each score:`** goes through the list named like the plural (`scores`); without such a list it's an error asking which list.
+
 - **Filters after any list:** `the scores that are above 70`, `the dogs whose age is over 3`, `the scores where it is below 70`, `the scores that pass is even` (`only` is no longer needed), and **`each score in scores plus 1`** for working something out for every item (`every` stays a synonym).
 
 - **`the name of rex`** reads a field like `rex's name`, without parentheses (`the name of item 1 of dogs`, `the name of the owner of rex`), in values and in `set`/`add ... to`/`increase` sentences.

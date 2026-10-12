@@ -450,6 +450,7 @@ struct Stmt {
             LoopKind kind;
             Expr *from, *to, *step;  // LOOP_COUNT (step NULL: 1)
             bool down;               // "count down": never counts up
+            bool implied;            // "for each score:": the list is the one named like the plural ("scores")
             Name var;                // LOOP_COUNT: "number" unless named; LOOP_EACH: each item (a map's key)
             bool var_named;          // the program chose the name (otherwise it's "number")
             Name value_name;         // LOOP_EACH over a map: each value ("for each name and age in ages")

@@ -143,6 +143,7 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 
 ### Loops (implemented in `src/front/parse_loop.c`)
 
+- **`for each N:`** (no `in`): `Stmt.loop.implied`, and the list is an `EXPR_NAME` of N's plural (`parser_plural_of`, the record-kind rule); the checker reports "There's no list called "things" for this to go through." when that name isn't made.
 - **Forms** (all need `:` plus an indented block via `parser_parse_block`; no one-line loops): `count [down] from A to B [by S | in steps of S] [and call each number N | as N]`, `go from …` (same as `count from`), `for each N from A to B [by S | in steps of S]`, `for each N in L` (`LOOP_EACH`, `list`; see "Lists"), `do this N times` / `repeat N times`, `while C` / `as long as C` / `repeat while C`, `keep doing this until C` / `repeat until C`, `forever`. AST: `STMT_LOOP` with `LoopKind`, `from`/`to`/`step` (NULL = 1)/`down`/`var` (default `"number"` at the verb's position, `var_named`)/`times`/`condition`/`list`/`body`.
 - **`as` in count headers:** while parsing A, B and S, `Parser.as_ends_value` makes `parse_postfix` stop at `as`, so `as N` names the loop variable (even `as number`). Parentheses reset the flag (`parse_group`), so `(limit as a number)` converts. B and S stop before `and call` (the `and` rule), `by` and `in` (plain words).
 - **Counting goes up only** unless it says `count down`; a count whose start and end are written numbers with the start above the end is a warning (`warn_never_counts` in check.c) suggesting `count down`.

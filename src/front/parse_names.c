@@ -141,7 +141,7 @@ static void find_function(Parser *p, size_t i, bool can) {
 }
 
 // "dog" -> "dogs", "box" -> "boxes", "berry" -> "berries" (the last word).
-static const char *plural_of(Arena *arena, const char *name) {
+const char *parser_plural_of(Arena *arena, const char *name) {
     size_t len = strlen(name);
     char last = name[len - 1], before = len > 1 ? name[len - 2] : ' ';
     if (last == 'y' && !strchr("aeiou ", before)) return arena_sprintf(arena, "%.*sies", (int)(len - 1), name);
@@ -214,7 +214,7 @@ static bool add_kind(Parser *p, size_t i, size_t n, bool sum) {
     for (size_t r = 0; r < p->records->sums.len; r++) {
         if (strcmp(p->records->sums.items[r].name, name) == 0 && sum) return false;
     }
-    RecordKind kind = {name, join_words(p, i, n, true, ' '), plural_of(p->arena, name), NULL};
+    RecordKind kind = {name, join_words(p, i, n, true, ' '), parser_plural_of(p->arena, name), NULL};
     if (sum) {
         vec_push(p->arena, &p->records->sums, kind);
     } else {
@@ -293,7 +293,7 @@ size_t parser_interface_words(const Parser *p, size_t i) {
 static const char *interface_plural(Arena *arena, const char *name) {
     if (strncmp(name, "something ", 10) == 0) return arena_sprintf(arena, "things %s", name + 10);
     if (strncmp(name, "anything ", 9) == 0) return arena_sprintf(arena, "things %s", name + 9);
-    return plural_of(arena, name);
+    return parser_plural_of(arena, name);
 }
 
 // One way's line: "way to NAME [with ...]" (the "a" is dropped): its name is
@@ -373,7 +373,7 @@ bool parser_add_builtin_kind(Parser *p, const char *name, size_t words) {
     for (size_t r = 0; r < p->records->len; r++) {
         if (strcmp(p->records->items[r].name, name) == 0) return false;
     }
-    RecordKind kind = {name, name, plural_of(p->arena, name), NULL};
+    RecordKind kind = {name, name, parser_plural_of(p->arena, name), NULL};
     vec_push(p->arena, p->records, kind);
     add_known(p, name, words, false, false, false);
     return true;
@@ -418,7 +418,8 @@ void parser_find_names(Parser *p) {
             add_name(p, i + 1, n, false);
             add_name(p, after + 1, name_words(p, after + 1), false);
         } else if ((strcmp(word, "each") == 0 && i > 0 && word_at(p, i - 1, "for") &&
-                    (word_at(p, after, "in") || word_at(p, after, "from"))) ||
+                    (word_at(p, after, "in") || word_at(p, after, "from") ||
+                     (after < p->count && p->tokens[after].kind == TOK_COLON))) ||
                    (strcmp(word, "every") == 0 && word_at(p, after, "in") &&
                     !(n == 2 && word_at(p, i + 2, "item")))) {  // not "every other item in" (a slice)
             add_name(p, i + 1, n, false);

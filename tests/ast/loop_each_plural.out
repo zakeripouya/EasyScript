@@ -1,0 +1,6 @@
+for each score in [1:1]
+  in
+    name scores [1:10]
+  do
+    say [2:5]
+      name score [2:9]

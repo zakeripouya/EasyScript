@@ -1,0 +1,8 @@
+Line 1: There's no list called "things" for this to go through.
+    for each thing:
+             ^^^^^
+"for each thing:" goes through the list called "things". Make that list first, or say which list to go through, like "for each thing in groceries:".
+
+Line 4: A "for each" loop needs a list to go through, but this is a number.
+    for each total:
+             ^^^^^

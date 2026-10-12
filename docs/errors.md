@@ -282,6 +282,8 @@ The checker also explains `skip this one` outside a loop, `it` outside a countin
 
 **`unless` and leaving early:** `unless` needs yes or no like `if` ("An "unless" needs yes or no to decide, but this is a number."), can't have an `otherwise` ("An "unless" can't have an "otherwise"." with a note to turn it into an `if`), and `stop here` only works inside a function that gives back nothing (""stop here" only works inside a function.", or ""double" gives back a value, so it can't stop without one here."). See [`unless_errors.err`](../tests/errors/unless_errors.err) and [`err_unless.err`](../tests/ast/err_unless.err).
 
+**`for each score:`** with no list called `scores` is "There's no list called "things" for this to go through." with a note to make it or say which list ([`loop_each_plural.err`](../tests/errors/loop_each_plural.err)).
+
 ### Kinds of values
 
 The checker knows the kind of every value (number, text, yes/no, or a list of one of these) before the program runs, so mixing them up is a compile error with the line and carets. These used to be runtime errors, and they keep the same wording.

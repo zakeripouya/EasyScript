@@ -97,10 +97,18 @@ static bool parse_for_each(Parser *p, Stmt *stmt) {
     static const char *const in[] = {"in", NULL};
     static const char *const example = "for each n from 1 to 10:";
     stmt->as.loop.var_named = true;
-    if (!parser_expect_word(p, each, example) || !parser_parse_name(p, &stmt->as.loop.var, from_in) ||
-        !parser_expect_word(p, from_in, example)) {
-        return false;
+    if (!parser_expect_word(p, each, example) || !parser_parse_name(p, &stmt->as.loop.var, from_in)) return false;
+    if (parser_at(p, 0, TOK_COLON)) {  // "for each score:" goes through "scores"
+        const Name *var = &stmt->as.loop.var;
+        Expr *list = ast_new_expr(p->arena, EXPR_NAME, var->pos);
+        list->as.name = parser_plural_of(p->arena, var->text);
+        list->display = parser_plural_of(p->arena, var->display);
+        stmt->as.loop.kind = LOOP_EACH;
+        stmt->as.loop.list = list;
+        stmt->as.loop.implied = true;
+        return true;
     }
+    if (!parser_expect_word(p, from_in, example)) return false;
     if (strcmp(p->tokens[p->pos - 1].text, "and") == 0) {  // for each name and age in ages
         stmt->as.loop.pair = true;
         if (!parser_parse_name(p, &stmt->as.loop.value_name, in) ||

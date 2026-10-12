@@ -824,6 +824,8 @@ for each score in scores:
 
 Inside the loop, `it` is the item too. `stop the loop` and `skip this one` work as in every loop. The loop goes through the items the list had when it started, so adding to or removing from the list inside the loop doesn't change which items it visits.
 
+When the list's name is the plural of the item's, `for each score:` is enough: it goes through `scores` (the plural adds `s`, or `es` after `s`, `x`, `z`, `ch` and `sh`, and `y` after a consonant becomes `ies`). If there's no list with that name, it's an error that asks which list you mean.
+
 ### New lists from old ones
 
 `each NAME in L` (or `every NAME in L`) works out the rest of the value for each item and gives the results as a new list:
