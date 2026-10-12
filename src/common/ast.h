@@ -456,6 +456,7 @@ struct Stmt {
             const char *intro;     // the word before the inputs: "with", "of", "using" or "to" (NULL: none)
             bool method;           // "to bark, for a dog:": the first input is the dog
             bool can;              // written "a dog can bark:" (a method)
+            bool pattern;          // "to give a customer a discount of some percent:": inputs in the first line
             int defines;           // DEFINES_ADJECTIVE ("a customer is loyal if ...", named "is loyal") or
                                    // DEFINES_VALUE ("a customer's profit is ...", named "the profit"): a
                                    // method whose body is one "give back", with "it" its first input

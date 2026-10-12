@@ -4,7 +4,15 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Added (reads like text)
+
+- Definitions with inputs in the middle of their first line: `to give a customer a discount of some percent:` (`a KIND`, `another KIND` and `some NAME` are inputs, called `the customer`, `the other person`, `the percent` inside), called with the same words: `give ann a discount of 10 percent.`, `introduce ann to bob.`, `give every loyal customer a discount of 10 percent.` (once per item).
+- `increase X by N percent`, `reduce X by N percent` / `decrease X by N percent`, and `reduce X by N` (the same as `decrease`).
+
 ### Breaking
+
+- **(reads like text)** `reduce` starts a sentence, so a one-word definition named `reduce` needs another name.
+- **(reads like text)** A definition's first line with `a KIND` (a kind the program has), `another KIND` or `some NAME` before any input word (`with`, `of`, `to`, ...) has its inputs in the middle: `to adopt a dog:` used to be a definition called "adopt dog" with no inputs, and is now one with the input `dog`.
 
 - **A table read with `and call it NAME` (a plural) has rows of a kind named after it** (`purchases`: `a purchase`), so a row prints as `a purchase with ...` instead of `a row of spending.csv with ...`, and that word now names the kind. `tests/run/table_files.out` changed for this.
 - **`me` and `undo` are reserved** for talking to EasyScript, so they can't be names; **`tell` and `list` start sentences** (`tell me ...`, `list the big orders`), so they can't be one-word definition names. In a program that reads a table, `the WORD of X`, `whose WORD` and `its WORD` can read a column, so a misspelled field there is reported by the checker instead.

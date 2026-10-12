@@ -143,6 +143,27 @@ static Stmt *parse_amount_first(Parser *p, const Token *verb, const StmtForm *fo
 }
 
 // increase/decrease/multiply/divide X by E
+// "increase price by 10 percent": multiply it by (100 plus 10) divided by 100
+// (minus, to reduce or decrease), as it would be written by hand.
+static void by_percent(Parser *p, Stmt *stmt) {
+    Expr *amount = stmt->as.change.amount;
+    SourcePos pos = ast_pos_join(amount->pos, parser_token_pos(parser_advance(p)));
+    Expr *hundred = ast_new_expr(p->arena, EXPR_NUMBER, pos);
+    hundred->as.number.text = "100";
+    Expr *sum = ast_new_expr(p->arena, EXPR_BINARY, pos);
+    sum->as.binary.op = stmt->as.change.op == CHANGE_ADD ? BINARY_ADD : BINARY_SUBTRACT;
+    sum->as.binary.op_span = pos.span;
+    sum->as.binary.left = hundred;
+    sum->as.binary.right = amount;
+    Expr *share = ast_new_expr(p->arena, EXPR_BINARY, pos);
+    share->as.binary.op = BINARY_DIVIDE;
+    share->as.binary.op_span = pos.span;
+    share->as.binary.left = sum;
+    share->as.binary.right = hundred;
+    stmt->as.change.op = CHANGE_MULTIPLY;
+    stmt->as.change.amount = share;
+}
+
 static Stmt *parse_target_first(Parser *p, const Token *verb, const StmtForm *form) {
     const char *const connector[] = {form->connector, NULL};
     Stmt *stmt = parser_new_stmt(p, STMT_CHANGE, verb);
@@ -152,6 +173,8 @@ static Stmt *parse_target_first(Parser *p, const Token *verb, const StmtForm *fo
         return NULL;
     }
     stmt->as.change.amount = parse_expression(p);
+    bool percent = (form->op == CHANGE_ADD || form->op == CHANGE_SUBTRACT) && parser_at_word(p, 0, "percent");
+    if (percent && !p->sentence_failed) by_percent(p, stmt);
     return !p->sentence_failed && parser_parse_starting_at(p, stmt) ? stmt : NULL;
 }
 
@@ -330,6 +353,7 @@ static const StmtForm forms[] = {
     {"subtract", parse_amount_first, true, CHANGE_SUBTRACT, "from", "subtract 5 from total"},
     {"increase", parse_target_first, false, CHANGE_ADD, "by", "increase total by 5"},
     {"decrease", parse_target_first, false, CHANGE_SUBTRACT, "by", "decrease total by 5"},
+    {"reduce", parse_target_first, false, CHANGE_SUBTRACT, "by", "reduce price by 10 percent"},
     {"multiply", parse_target_first, false, CHANGE_MULTIPLY, "by", "multiply total by 2"},
     {"divide", parse_target_first, false, CHANGE_DIVIDE, "by", "divide total by 2"},
     {"say", parse_say, false, 0, NULL, "say \"hello\""},
@@ -453,6 +477,7 @@ Stmt *parse_statement(Parser *p) {
         if (call) call->pos = ast_pos_join(call->pos, (SourcePos){p->prev_span, 0, 0, 0});
         return call;
     }
+    if (parser_at_pattern_call(p)) return parser_parse_pattern_call(p);  // give ann a discount of 10 percent
     const StmtForm *form = find_form(verb);
     // A function's name starts a call: one of several words even if its first
     // word starts sentences ("add tax to 100"), a one-word one otherwise.

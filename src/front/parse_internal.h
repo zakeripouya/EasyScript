@@ -35,6 +35,26 @@ typedef struct {
     bool always;        // "the total is always ...": any value, not "the one ..."
 } Definition;
 
+// "to give a customer a discount of some percent:": a definition whose inputs
+// are in the middle of its first line (pre-scan, parse_pattern.c). Each part
+// is a fixed word or an input ("a customer", "another person", "some percent").
+typedef struct {
+    const char *word;   // a fixed word, or NULL for an input
+    const char *name;   // an input: its name inside the definition ("customer", "other person", "percent")
+    const char *shown;  // an input: how the first line writes it ("a customer", "another person", "some percent")
+    bool some;          // "some NAME": a call can repeat NAME after the value ("of 10 percent")
+    size_t token;       // the input's (or word's) first token
+    size_t tokens;      // how many tokens the input takes in the first line
+} PatternPart;
+
+typedef struct {
+    size_t at;          // the index of its "to"
+    const char *text;   // "give a customer a discount of some percent": its name
+    Vec(PatternPart) parts;
+    size_t line;
+    bool broken;        // two inputs in a row: its definition is an error, and nothing calls it
+} Pattern;
+
 typedef struct {
     Arena *arena;
     Diag *diag;
@@ -74,6 +94,9 @@ typedef struct {
     bool chain_file;        // the step before used a file ("what's in it" reads it)
     const char *chain_it;   // in a step after ", then": the hidden name "it" means ("" if the step before gives
                             // nothing), else NULL
+    Vec(Pattern) patterns;  // every definition with inputs in the middle of its first line (pre-scan)
+    size_t limit;           // reading one input of such a call: tokens from here on look like a sentence's end
+    Token limit_token;      // ... and this is what they look like
 } Parser;
 
 // A word or symbol sequence with a meaning, e.g. "is greater than".
@@ -503,5 +526,14 @@ void parser_add_field_name(Parser *p, const char *name, size_t words);
 // while, as, keep, forever), and stop/break/skip/continue/move on.
 Stmt *parse_loop(Parser *p, const Token *verb);
 Stmt *parse_loop_control(Parser *p, const Token *verb);
+
+// --- Definitions with inputs in the middle (parse_pattern.c) ------------------------
+
+void parser_find_patterns(Parser *p);  // pre-scan, after the kinds are known
+const Pattern *parser_pattern_at(const Parser *p, size_t to);  // the pattern whose "to" is token `to`, or NULL
+Stmt *parser_parse_pattern_definition(Parser *p, const Token *verb, const Pattern *pattern);
+bool parser_at_pattern_call(const Parser *p);
+Stmt *parser_parse_pattern_call(Parser *p);
+void parser_add_name_words(Parser *p, const char *text, size_t words);  // a known name of several words
 
 #endif

@@ -484,7 +484,7 @@ multiply total by 2.
 divide total by 4.
 ```
 
-`increase total by 5` and `decrease total by 1` mean the same as `add` and `subtract`.
+`increase total by 5` and `decrease total by 1` mean the same as `add` and `subtract`, and `reduce price by 5` the same as `decrease`. With `percent` after the amount, they change it by a share of itself: `increase rent by 3 percent` multiplies `rent` by (100 plus 3) divided by 100, and `reduce price by 10 percent` multiplies it by (100 minus 10) divided by 100.
 
 A name is one word. It can't be `a`, `an`, or `the`, because EasyScript ignores those words, and the compiler explains this if you try:
 
@@ -756,6 +756,34 @@ say range from 1 to 5.
 ```
 
 You don't write down what kind of value each input is: the compiler works it out from how the function uses it and what it's given, and tells you before the program runs if something doesn't fit. When it can't tell, you can say, like `to area with width (a number) and height (a number), giving back a number:`. See [chapter 9](#9-types).
+
+### Inputs in the middle
+
+**Status: Available.**
+
+A definition can put its inputs where a sentence would: `a KIND` (a kind of record your program has) is an input, `another KIND` is a second one of the same kind, and `some NAME` is any other input. Inside, they're `the KIND`, `the other KIND` and `the NAME`. Every other word of the first line is fixed, and a sentence with exactly those words, and a value where each input goes, does it:
+
+```
+a customer has a name and a price.
+a person has a name.
+
+to give a customer a discount of some percent:
+    reduce the customer's price by the percent percent.
+
+to introduce a person to another person:
+    say "[the person's name], meet [the other person's name].".
+
+give ann a discount of 10 percent.
+introduce ann to bob.
+```
+
+A value for `some NAME` can be followed by NAME, so `of 10 percent` gives the input 10. `every customer`, or `every loyal customer` with a describing word, in place of a value does the sentence once for each:
+
+```
+give every loyal customer a discount of 10 percent.
+```
+
+The first line is read this way only when an input comes before any of the usual words for inputs (`with`, `of`, `to`, ...), so the definitions above in this chapter keep their meaning. Each sentence has to fit one definition: two that fit the same sentence, a fixed word that's a kind (`to feed customer some food:`), and two inputs with nothing between them are errors that say how to fix them.
 
 ### When something goes wrong inside a function
 

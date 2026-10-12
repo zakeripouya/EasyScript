@@ -259,3 +259,11 @@ Every line of the "Start here" examples, read aloud as someone who has never wri
 | first_program | `let name be "Ada".` | "let ... be" is how maths talks | `the name is "Ada".` (it clashes with comparisons; needs a proposal) |
 | taste | `to greet using name:` | "greet using name" isn't English | `to greet someone called name:` or `to greet a person:` |
 | taste | `count down from 3 to 1: say it.` | "it" for the number counted only works once you know it | `say the number.` |
+
+## Reads like text
+
+On the `reads-like-text` branch (from master after the English pass merge), 2026-10-12. The rule and every decision are in [english-pass.md](english-pass.md#decided-2026-10-12-reads-like-text); each new phrase has a file in [proposals/](proposals/README.md). Each feature is one commit, after `make test`, `make test-gcc`, `make test-debug` (with the leak sweep) and `make CC=gcc test` on Linux x86-64 (GCC 16 in Docker) all passed.
+
+| # | Feature | Result | Tests (test / gcc / debug / Linux gcc) |
+|---|---|---|---|
+| 1 | Inputs in the middle of a definition's first line (`to give a customer a discount of some percent:`, `give every loyal customer a discount of 10 percent.`, `introduce ann to bob.`), `increase/reduce/decrease X by N percent`, `reduce X by N` | Built. New: `run/pattern_actions`, `errors/pattern_errors`, `ast/patterns`, `ast/err_patterns`, `examples/programs/discounts`. Breaking: `reduce` starts sentences; `to adopt a dog:` now has an input | 717 / 717 / 716, 0 leaks / 717 |

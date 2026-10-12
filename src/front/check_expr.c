@@ -33,6 +33,18 @@ static const char *kind_words(Checker *c, Type type) {
     }
 }
 
+// "to give a customer a discount of some percent (a number)": a definition with
+// inputs in its first line, with the kind of input `marked` shown after it.
+static const char *pattern_header(Checker *c, const Function *f, size_t marked, Type mark) {
+    const Stmt *def = f->definition;
+    if (marked >= def->as.function.params.len || mark == TYPE_UNKNOWN) return arena_sprintf(c->arena, "to %s", f->display);
+    const char *input = arena_sprintf(c->arena, "some %s", def->as.function.params.items[marked].text);
+    const char *at = strstr(f->display, input);
+    if (!at) return arena_sprintf(c->arena, "to %s", f->display);
+    size_t before = (size_t)(at - f->display) + strlen(input);
+    return arena_sprintf(c->arena, "to %.*s (%s)%s", (int)before, f->display, kind_words(c, mark), f->display + before);
+}
+
 // "to area with width (a number) and height", with input `marked` given the
 // kind `mark` (when marked is in range), and kinds that were written down.
 static const char *header(Checker *c, const Function *f, size_t marked, Type mark) {
@@ -40,6 +52,7 @@ static const char *header(Checker *c, const Function *f, size_t marked, Type mar
     sb_init(&sb, c->arena);
     const Stmt *def = f->definition;
     size_t first = def->as.function.method ? 1 : 0;  // a method: "to bark, for a dog" or "a dog can bark"
+    if (def->as.function.pattern) return pattern_header(c, f, marked, mark);
     if (def->as.function.can) {
         sb_appendf(&sb, "%s can %s", checker_type_name(c, def->as.function.declared.items[0]), f->display);
     } else {

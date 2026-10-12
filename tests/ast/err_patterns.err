@@ -1,0 +1,50 @@
+Line 7: This sentence could mean two things.
+    give ann a discount of 10 percent.
+    ^^^^
+It fits "to give a customer a discount of some percent:" on line 3.
+It fits "to give a product a discount of some amount:" on line 5.
+Change the words of one of them so each sentence fits only one.
+
+Line 8: "customer" is a kind, so I can't tell whether it's an input here.
+    to feed customer some food:
+            ^^^^^^^^
+To make it an input, write "a customer". To keep the word, use one that isn't a kind.
+
+Line 10: Two inputs in a row can't be told apart in a call.
+    to pay a customer some amount:
+                      ^^^^
+Put a word between them, like "to introduce a person to another person:".
+
+Line 12: There are two inputs called "customer" here.
+    to compare a customer to a customer:
+                               ^^^^^^^^
+Write "another customer" for the second one, and call it "the other customer".
+
+Line 16: Something is missing after "for".
+    thank ann for.
+              ^^^
+This sentence looks like "to thank a customer for some reason:" on line 14. Put a value where each input goes.
+
+Line 17: I expected the sentence to end here, but found "today".
+    thank ann for "coming" today.
+                           ^^^^^
+This sentence fits "to thank a customer for some reason:" on line 14. Put each value where its input goes.
+
+Line 18: I expected "for" here, but found "bob".
+    thank ann bob for "coming".
+              ^^^
+This sentence fits "to thank a customer for some reason:" on line 14. Put each value where its input goes.
+
+Line 19: I expected the items after "every", like "every customer".
+    thank every for "coming".
+          ^^^^^
+
+Line 22: I expected the sentence to end here, but found "and".
+    greet every customer and every product.
+                         ^^^
+This sentence fits "to greet a customer:" on line 20. Put each value where its input goes.
+
+Line 25: Only one input can be "every ...".
+    introduce every customer to every customer.
+                                ^^^^^
+Give the others one at a time, or use "for each".

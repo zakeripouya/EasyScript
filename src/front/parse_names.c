@@ -89,6 +89,10 @@ static void add_known(Parser *p, const char *text, size_t n, bool function, unsi
     if (function) vec_push(p->arena, &p->functions, text);
 }
 
+void parser_add_name_words(Parser *p, const char *text, size_t words) {
+    add_known(p, text, words, false, 0, false);
+}
+
 static void add_name(Parser *p, size_t at, size_t n, bool function) {
     if (n == 0 || (n == 1 && !function)) return;  // one-word variables need no recognizing
     add_known(p, join_words(p, at, n, false, ' '), n, function, 0, false);
@@ -451,8 +455,9 @@ void parser_find_names(Parser *p) {
     parser_find_definitions(p);
     parser_find_tables(p);
     parser_find_program_result(p);
+    parser_find_patterns(p);
     for (size_t i = 0; i + 1 < p->count; i++) {
-        if (p->tokens[i].kind != TOK_WORD) continue;
+        if (p->tokens[i].kind != TOK_WORD || parser_pattern_at(p, i)) continue;
         const char *word = p->tokens[i].text;
         size_t n = name_words(p, i + 1), after = i + 1 + n;
         size_t kind_words;

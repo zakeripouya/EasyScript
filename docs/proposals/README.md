@@ -19,4 +19,4 @@ A doubt that comes up while building goes back into the proposal, not into the p
 
 ## Proposals
 
-None yet.
+- [0001: inputs in the middle of a definition's first line](0001-inputs-in-the-middle.md) (Built)

@@ -6,6 +6,7 @@
 
 const Token *parser_peek(const Parser *p, size_t ahead) {
     size_t index = p->pos + ahead;
+    if (p->limit && index >= p->limit) return &p->limit_token;  // the end of one input of a pattern's call
     return &p->tokens[index < p->count ? index : p->count - 1];
 }
 
@@ -20,7 +21,7 @@ bool parser_at_word(const Parser *p, size_t ahead, const char *word) {
 
 const Token *parser_advance(Parser *p) {
     const Token *token = parser_peek(p, 0);
-    if (p->pos < p->count - 1) p->pos++;
+    if (p->pos < p->count - 1 && (!p->limit || p->pos < p->limit)) p->pos++;
     p->prev_span = token->span;
     return token;
 }

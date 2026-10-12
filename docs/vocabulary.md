@@ -180,6 +180,9 @@ The words that start statements are only special at the start of a sentence, so 
 | `subtract X from NAME` | `NAME` becomes `NAME minus X` | `subtract 1 from count` | Available |
 | `increase NAME by X` | Same as `add X to NAME` | `increase score by 10` | Available |
 | `decrease NAME by X` | Same as `subtract X from NAME` | `decrease lives by 1` | Available |
+| `reduce NAME by X` | Same as `decrease NAME by X` | `reduce price by 5` | Available |
+| `increase NAME by X percent` | `NAME` becomes `NAME times (100 plus X) divided by 100`, as `multiply NAME by (100 plus X) divided by 100` would | `increase rent by 3 percent` | Available |
+| `reduce NAME by X percent` / `decrease NAME by X percent` | `NAME` becomes `NAME times (100 minus X) divided by 100` | `reduce the customer's price by 10 percent` | Available |
 | `multiply NAME by X` | `NAME` becomes `NAME times X` | `multiply price by 2` | Available |
 | `divide NAME by X` | `NAME` becomes `NAME divided by X` | `divide total by 4` | Available |
 
@@ -322,6 +325,9 @@ All function sentences are **Available**.
 | `NAME X and Y` | Call a function as a sentence | `greet "Paris".` |
 | `NAME with X and Y` | Same (`of` and `using` too, and `to`, `for`, `from` or `in` for a function defined with that word) | `greet with "Paris".`, `add tax to 100.`, `pause for 3.` |
 | `call NAME [with X and Y]` | Same | `call greet with "Paris".` |
+| `to WORDS a KIND WORDS some NAME ...:` | A definition with its inputs in the middle of its first line. `a KIND` (a kind the program has) is an input called `the KIND` inside; `another KIND` is a second one of the same kind, called `the other KIND`; `some NAME` is an input called `the NAME`, with its kind from use (or written after it: `some fee (a number)`). Every other word is fixed. It starts with a word, and has a word between any two inputs | `to give a customer a discount of some percent:`<br>`to introduce a person to another person:` |
+| `WORDS VALUE WORDS VALUE ...` | Call such a definition as a sentence: exactly its words, with a value where each input goes. A value for `some NAME` can be followed by NAME (`of 10 percent` gives 10) | `give ann a discount of 10 percent.`<br>`introduce ann to bob.` |
+| `... every [WORD] ITEM ...` | One input written `every customer` or `every loyal customer`: the sentence is done once for each item of the list named like the item's plural (only those the describing word fits) | `give every loyal customer a discount of 10 percent.` |
 
 Rules:
 
@@ -330,6 +336,7 @@ Rules:
 - **Giving back:** a function with no `give back X` gives back nothing, and can only be called as a sentence of its own. One that gives back a value always gives back the same kind, and stops with an error if it reaches its end without `give back`. `give back` outside a function is an error.
 - **Kinds:** an input's kind comes from how the function uses it and what it's given; what it gives back comes from its `give back`s. When nothing decides a kind, write it (see below).
 - **Names:** a function's name is every word before the word that introduces its inputs (`with`, `of`, `using`, `to`, `for`, `from`, `in`; `for` always ends the name), so `to greet someone:` is a function called `greet someone` with no inputs (`to greet with someone:` gives it one). A one-word name can't be a sentence word (like `say` or `count`), but a name of several words can start with one (`add tax`), and then a sentence starting with it calls the function. Functions and variables share names, so `area` can't be both. Each input needs its own name.
+- **Inputs in the middle:** a first line is read this way only when an input (`a customer`, `another person`, `some percent`) comes before any word that introduces inputs the usual way (`with`, `of`, `to`, ...) and it has no comma, so `to greet with someone:` and `to bark, for a dog:` keep their meaning. A sentence is matched by its fixed words, each the first one after the input before it (outside parentheses). A sentence two definitions fit is an error naming both; so is a fixed word that's a kind (write `a customer` to make it an input), two inputs in a row, or two inputs with one name (write `another customer`).
 - **Checks before running:** calling a function that doesn't exist suggests the closest one; giving it the wrong number of inputs says how many it needs and where it's defined.
 - **Deep recursion** stops with "Definitions are using each other too deeply (more than 10000 inside each other)." instead of crashing.
 
