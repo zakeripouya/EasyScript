@@ -140,6 +140,27 @@ Expr *parser_parse_choice(Parser *p, Expr *value) {
     return new_choice(p, value, condition, otherwise);
 }
 
+static Expr *binary(Parser *p, BinaryOp op, Span span, Expr *left, Expr *right) {
+    Expr *expr = ast_new_expr(p->arena, EXPR_BINARY, ast_pos_join(left->pos, right->pos));
+    expr->as.binary.op = op;
+    expr->as.binary.op_span = span;
+    expr->as.binary.left = left;
+    expr->as.binary.right = right;
+    return expr;
+}
+
+// "X, minus 10 percent": X times (100 minus 10) divided by 100, as written by hand.
+static Expr *percent_change(Parser *p, Expr *value, Expr *amount, bool plus) {
+    Span word = parser_advance(p)->span;  // percent
+    Expr *hundred = ast_new_expr(p->arena, EXPR_NUMBER, amount->pos);
+    hundred->as.number.text = "100";
+    Expr *share = binary(p, plus ? BINARY_ADD : BINARY_SUBTRACT, word, hundred, amount);
+    Expr *factor = binary(p, BINARY_DIVIDE, word, share, hundred);
+    Expr *changed = binary(p, BINARY_MULTIPLY, word, value, factor);
+    changed->pos = ast_pos_join(value->pos, (SourcePos){word, 0, 0, 0});
+    return changed;
+}
+
 // ", plus N if C" / ", minus N if C" after a value: N added (or taken away)
 // only when C is yes. Returns the value unchanged (and reads nothing) when no
 // "if" follows N.
@@ -148,6 +169,9 @@ Expr *parser_parse_add_if(Parser *p, Expr *value) {
     parser_advance(p);  // ,
     const Token *op = parser_advance(p);
     Expr *amount = parse_join(p);
+    if (!p->sentence_failed && parser_at_word(p, 0, "percent")) {  // ", minus 10 percent": a share of the value
+        return percent_change(p, value, amount, strcmp(op->text, "plus") == 0);
+    }
     if (p->sentence_failed || !parser_at_word(p, 0, "if")) {
         if (!p->sentence_failed) p->pos = start;
         return value;

@@ -494,6 +494,7 @@ All **Available**. Each goes through the list once, makes no list it doesn't giv
 | `the top N L` / `the lowest N L` | A new list of the N biggest (or smallest) numbers or dates, biggest (or smallest) first; ties in the order they were in. All of them if there are fewer | `the top 3 scores` |
 | `the top N L by FIELD` / `the lowest N L by FIELD` | The N items with the biggest (smallest) FIELD | `the top 2 orders by amount` |
 | `the N most common L` | A new list of the N items (text or numbers) that come up most, most first; ties in the order they first came up | `the 10 most common words` |
+| `the most common ITEM [in L]` | The one that comes up most: the first of `the 1 most common`, from the list named like ITEM's plural (or L). An empty list is an error | `the most common drink`, `the most common size in sizes` |
 | `the ITEM with the highest FIELD` / `... the lowest FIELD` | The item with the biggest (smallest) FIELD, the first one on a tie; from the list named like ITEM's plural. Also `biggest`, `largest`, `greatest`, `most`, and `smallest`, `fewest`, `least`. A FIELD that's a list counts its items. An empty list is an error | `the customer with the highest total`, `the order with the most items` |
 | `the ITEM in L with the highest FIELD` | The same, with the list named | `the dog in pets with the lowest age` |
 | `the FIELD with the highest total\|average\|median FIELD2 [of L]` / `... with the highest number of L` | The best group: when FIELD is a field of the items (not a list), the FIELD whose group has the biggest total (average, median, number of items). Exactly `the first item of the keys of (the total FIELD2 of L per FIELD, sorted biggest first)` (`lowest` and the others: smallest first). Without `of L`, L is the one list whose items have FIELD (none or several is an error asking for `... of L`) | `the store with the highest total amount`, `the category with the highest number of purchases` |
@@ -616,6 +617,7 @@ A kind of record is written like any other kind: `(a dog)` for an input, `giving
 | `(X)'s FIELD` | A field of a value in parentheses | `(item 1 of dogs)'s name` |
 | `the FIELDs of L` | A field across a list: a new list with each item's FIELD, in order. FIELDs is the plural of a field's name (one word) that isn't a field itself. The same as `each NAME in L's FIELD` | `the names of the drinks`, `the names of drinks whose size is "small"` |
 | `each ITEM's FIELD` | The same, for the list named like ITEM's plural | `each drink's name` |
+| `R has a FIELD of N` / `R has a FIELD of at least N` (and the other words below) | The field compared with N: `R's FIELD is N`, `... is at least N`. Also after `how many Ls`, `any`, `every` | `how many students have a score of at least 60` |
 | `R has more than N FIELD` (also `at least`, `fewer than`, `less than`, `at most`, `exactly`; `have` too) | Counts a list field: the same as `the number of items in R's FIELD is above N` (and so on). Also after `how many Ls`, `any`, `every` | `if ann has at least 2 orders`, `how many customers have fewer than 2 orders` |
 | `the FIELD of R` | The same as `R's FIELD`, with no parentheses needed. R is a single value, so it chains from the right; it works in `set`, `add ... to` and the other change sentences too. If a function has the field's name, it's an error asking which (`rex's size` or `size with rex`); phrases like `the length of` keep their meaning | `the name of rex`, `the name of item 1 of dogs`, `the name of the owner of rex`, `set the age of rex to 4` |
 | `set R's FIELD to X` | Changes a field | `set rex's age to 4` |
@@ -737,6 +739,7 @@ All **Available** (English pass part 3). Each is a sentence at the start of a li
 | Pattern | Meaning | Example |
 |---|---|---|
 | `A if CONDITION, otherwise B` | A value: A when CONDITION is yes, B when it's no (only that one is worked out). Both have the same kind. The comma before `otherwise` makes it a value; without it, a trailing `if` stays the sentence's own condition (`give back X if C`) | `a parcel's care fee is 4 if it's fragile, otherwise 0.` |
+| `X, plus N percent` / `X, minus N percent` | X with N percent of it added (taken away): `X times (100 plus N) divided by 100`. Money is rounded to the cent | `price, minus 10 percent` |
 | `X, plus N if CONDITION` / `X, minus N if CONDITION` | X with N added (or taken away) only when CONDITION is yes; the same as `X plus (N if CONDITION, otherwise 0)`. The comma is required | `its base price, plus 12 if it's abroad, plus 4 if it's fragile` |
 
 ### Describing words (adjectives)

@@ -368,6 +368,39 @@ Expr *parser_parse_most_common(Parser *p) {
     return finish(common, common->as.aggregate.list);
 }
 
+// "the most common name [in L]": the first of the 1 most common, from the list
+// named like the item's plural (or L).
+static bool at_most_common_one(const Parser *p) {
+    return parser_match_words(p, "most common") && parser_is_name_word(parser_peek(p, 2)) &&
+           !parser_is_function(p, "most");
+}
+
+static Expr *parse_most_common_one(Parser *p) {
+    SourcePos start = parser_token_pos(parser_peek(p, 0));
+    Span words = parser_consume(p, 2);
+    Expr *common = new_aggregate(p, AGG_MOST_COMMON, start, words);
+    Expr *one = ast_new_expr(p->arena, EXPR_NUMBER, start);
+    one->as.number.text = "1";
+    common->as.aggregate.count = one;
+    if (parser_peek(p, 1)->kind == TOK_WORD && (parser_at_word(p, 1, "in") || parser_at_word(p, 1, "of"))) {
+        parser_take_name(p, 1, &common->as.aggregate.item);  // "the most common size in drinks"
+        parser_advance(p);
+        common->as.aggregate.list = parse_list_part(p);
+    } else {
+        size_t n = 0;
+        while (parser_is_name_word(parser_peek(p, n))) n++;
+        parser_take_name(p, n, &common->as.aggregate.item);
+        common->as.aggregate.list = parser_implied_list(p, &common->as.aggregate.item);
+        common->as.aggregate.implied = common->as.aggregate.list->kind == EXPR_NAME;
+    }
+    if (p->sentence_failed) return parser_error_expr(p);
+    finish(common, common->as.aggregate.list);
+    Expr *first = ast_new_expr(p->arena, EXPR_ITEM, common->pos);
+    first->as.item.where = ITEM_FIRST;
+    first->as.item.list = common;
+    return first;
+}
+
 static const struct {
     const char *word;
     bool lowest;
@@ -405,7 +438,10 @@ static bool at_with_superlative(const Parser *p, size_t n) {
 static size_t best_item_words(const Parser *p) {
     if (p->no_best) return 0;
     size_t n = 0;
-    while (parser_is_name_word(parser_peek(p, n)) && !parser_at_word(p, n, "with") && !parser_at_word(p, n, "in")) n++;
+    while (parser_is_name_word(parser_peek(p, n)) && !parser_at_word(p, n, "with") && !parser_at_word(p, n, "in")) {
+        if (parser_at_word(p, n, "of")) return 0;  // "the name of the student with the highest score": a field of it
+        n++;
+    }
     if (n == 0 || !at_with_superlative(p, n)) return 0;
     const KnownName *known = parser_match_name(p, 0, true);
     return known && known->words >= n ? 0 : n;  // "customer with ..." calls a function called "customer"
@@ -519,6 +555,7 @@ Expr *parser_parse_aggregate_word(Parser *p) {
     if (parser_at_best_group(p)) return parser_parse_best_group(p);  // the store with the highest total amount
     if (at_top(p)) return parse_top(p);
     if (parser_at_most_common(p)) return parser_parse_most_common(p);
+    if (at_most_common_one(p)) return parse_most_common_one(p);  // the most common name
     if ((words = best_item_words(p)) > 0) return parse_best(p, words);
     return NULL;
 }

@@ -29,8 +29,9 @@ static bool report_no_plural(Checker *c, const Expr *expr) {
     const Name *item = &expr->as.aggregate.item;
     static const char *const words[] = {"", "any", "every", "no"};
     AggregateKind kind = expr->as.aggregate.kind;
-    const char *phrase = kind == AGG_BEST ? arena_sprintf(c->arena, "the %s with ...", item->display)
-                                          : arena_sprintf(c->arena, "%s %s", words[kind], item->display);
+    const char *phrase = kind == AGG_BEST          ? arena_sprintf(c->arena, "the %s with ...", item->display)
+                         : kind == AGG_MOST_COMMON ? arena_sprintf(c->arena, "the most common %s", item->display)
+                                                   : arena_sprintf(c->arena, "%s %s", words[kind], item->display);
     diag_error(c->diag, item->pos.span, "There's no list called \"%s\" for \"%s\" to look through.", list->display,
                phrase);
     const char *example = "groceries";  // a list the program has, if it has one

@@ -616,6 +616,11 @@ bool parser_at_item_test(const Parser *p, size_t ahead) {
          parser_match_words_at(p, ahead + 1, "at most") || parser_at_word(p, ahead + 1, "exactly"))) {
         return true;  // "how many customers have more than 5 orders"
     }
+    size_t field_words = parser_field_words(p, ahead + 1);
+    if ((parser_at_word(p, ahead, "have") || parser_at_word(p, ahead, "has")) && field_words > 0 &&
+        parser_peek(p, ahead + 1)->filler.length > 0 && parser_at_word(p, ahead + 1 + field_words, "of")) {
+        return true;  // "how many students have a score of at least 60"
+    }
     for (size_t i = 0; i < COUNT(item_verbs); i++) {
         if (parser_match_words_at(p, ahead, item_verbs[i].words)) return true;
     }

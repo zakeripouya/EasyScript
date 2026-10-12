@@ -1306,7 +1306,7 @@ a customer is loyal if they have more than 5 orders.
 say how many customers have fewer than 2 orders.
 ```
 
-`the names of the drinks` is a new list of each drink's name (`names` is the plural of the field `name`), and `each drink's name` the same for the list called `drinks`. `has more than 5 orders` counts the items of the field `orders` (also `at least`, `fewer than`, `at most` and `exactly`). In a definition like `a customer is loyal if ...`, `they` means the customer.
+`how many students have a score of at least 60` compares a field the same way (`has a score of 95` is equality). `the name of the student with the highest score` is that student's name, and `the most common drink` the one in `drinks` that comes up most. `the names of the drinks` is a new list of each drink's name (`names` is the plural of the field `name`), and `each drink's name` the same for the list called `drinks`. `has more than 5 orders` counts the items of the field `orders` (also `at least`, `fewer than`, `at most` and `exactly`). In a definition like `a customer is loyal if ...`, `they` means the customer.
 
 `a copy of rex` makes a new record with the same field values. The copy is **shallow**: text, lists and records inside it are shared with the original. Two records with the same fields are still two records, so `is` says no for a copy. To compare what's inside, compare the fields, or write a method:
 
@@ -2328,7 +2328,7 @@ a parcel's price is its base price, plus 12 if it's abroad, plus 4 if it's fragi
 let label be "glass" if box is fragile, otherwise "other".
 ```
 
-`A if C, otherwise B` is A when C is yes and B when it's no; only the one chosen is worked out. The comma before `otherwise` is what makes it a choice: without it, `give back X if C` is still a sentence that only happens when C is yes. `, plus N if C` adds N only when C is yes (`, minus N if C` takes it away); the comma is needed there too.
+`X, minus 10 percent` takes 10 percent of X away (`, plus 5 percent` adds it). `A if C, otherwise B` is A when C is yes and B when it's no; only the one chosen is worked out. The comma before `otherwise` is what makes it a choice: without it, `give back X if C` is still a sentence that only happens when C is yes. `, plus N if C` adds N only when C is yes (`, minus N if C` takes it away); the comma is needed there too.
 
 ### Values worked out from a record, and named values
 

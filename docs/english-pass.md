@@ -713,6 +713,14 @@ Left out of the English pass, each with its reason (details under [Still open](#
 
 ### Still open
 
+- [ ] **A list of records written as a table** ("Still not English": `let students be a list of a new student with name "Ana", ...`): `the students are:` with one `"Ana" in "Math" scored 72` line each needs a wording for each kind. Suggested: `the students are the rows below:` with a header line and comma-separated rows, read like a csv file.
+- [ ] **Indenting a line of output** (`say "  ", student's name, ...`): suggested `say ..., indented.` or showing a list `as a table`.
+- [ ] **Naming two things at once in a loop** (`for each class and average in ...`): suggested `for each class, with its average, in ...`; it's an addition, but `with` there would have to stay apart from inputs and fields.
+- [ ] **A space after a question's prompt** (`ask "What's your name? " ...`): adding it automatically changes what existing programs print, so it waits for a decision. Suggested: add one space when the prompt ends with `?` or `:` and has none.
+- [ ] **`the name is "Ada".`** instead of `let name be "Ada".`: it would clash with comparisons and with `the NAME is the one ...` definitions, so it changes meanings; no clear wording.
+- [ ] **Quotes inside brackets** (`"([parcel's note, or "no note"])"`): would change how text is read (a quote inside brackets ends the text today). The comma form works now: `"(", parcel's note, or "no note", ")"`.
+- [ ] **`write the text below in file F:`** (rows of a csv file in a block): the lexer only turns a line ending `text below:` into text; `let rows be the text below:` then `put rows in file F` works now. Suggested: allow `the text below` anywhere in a line that ends with `:`.
+
 - [ ] **Actions with inputs in the middle** (`give every loyal customer a 10 percent discount`): methods today take their inputs after their name (`give discount to rex with 10`). A way to define `give KIND a N percent discount:` would make this sentence work; it needs a rule for where inputs can go. (Part 3)
 
 - [ ] **`try to` beyond files** (part 4): `try to` covers sentences that use a file or a folder, checked before they run. Should other failures (dividing by zero, a missing key, `as a number` on text that isn't one) be catchable too? Catching them in the generated C needs a way to undo a half-done sentence's memory; each already has its own form (`, or D`, `if ... is 0`).

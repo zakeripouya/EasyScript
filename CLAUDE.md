@@ -140,7 +140,7 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 ### Describing fields and one-line choices (implemented in `src/front/parse_describe.c`)
 
 - **Yes/no fields:** `..., and can be WORD` in a `has` sentence, or `KIND can be WORD [and can be WORD].` after the kind's definition (`parser_at_can_be`, added to its `STMT_RECORD`), make a `TYPE_YESNO` field starting at `no`. The pre-scan (`find_has_fields`) records them, and fields written `(yes ...)`, in `Parser.yes_fields`; `parser_is_describing` (an adjective or such a field) is what `X is WORD`, `the WORD Ls`, `are WORD`, `every WORD ITEM` and `remove the WORD Ls` check, and `parser_adjective_call` gives an `EXPR_FIELD` for a field. `it's WORD` (`parser_parse_field` after `it`) is the adjective when WORD is one and not a field. `a new WORD... KIND` puts `WORD yes` first in the values (`yes_words` in parse_record.c). `mark X as [not] WORD` is a `STMT_SET` of the field (statement word `mark`).
-- **Choices:** `A if C, otherwise B` (`parser_at_choice`: `if` and then `, otherwise` at depth 0 in the sentence; checked at the end of `parse_expression`) is an `EXPR_TABLE` with no subject (values A, B; conditions C, NULL), shown as `choice`; `X, plus|minus N if C` (`parser_parse_add_if` from `parse_comma_postfixes`; read back when no `if` follows N) is `X ± (N if C, otherwise 0)` with that 0's `number.zero` set. The checker and `cg_emit_table` skip the subject when it's NULL.
+- **Choices:** `A if C, otherwise B` (`parser_at_choice`: `if` and then `, otherwise` at depth 0 in the sentence; checked at the end of `parse_expression`) is an `EXPR_TABLE` with no subject (values A, B; conditions C, NULL), shown as `choice`; `X, plus|minus N if C` (`parser_parse_add_if` from `parse_comma_postfixes`; read back when neither `if` nor `percent` follows N) is `X ± (N if C, otherwise 0)` with that 0's `number.zero` set; `X, plus|minus N percent` (`percent_change`) is `X times (100 ± N) divided by 100`. The checker and `cg_emit_table` skip the subject when it's NULL.
 
 ### The best group (implemented in `src/front/parse_best_group.c`, `check_aggregate.c`)
 
@@ -149,6 +149,7 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 ### A field across a list (implemented in `src/front/parse_across.c`)
 
 - `the FIELDs of L` (`field_plural_at`: a plural that isn't a field, a function or a known name, whose singular (`parser_singular_of`) is a one-word field, then `of`) and `each ITEM's FIELD` (L the implied list) are `EXPR_EVERY` with a hidden item name `0eachN` and the body `FIELD` of it; tried in `parse_word` just before `the FIELD of R`.
+- `X has|have a FIELD of [at least|...] N` (a known field with its dropped `a`, then `of`: `parse_field_test`) compares the field with N (equality without a word).
 - `X has|have more than|at least|fewer than|less than|at most|exactly N FIELD` (`parser_parse_count_test`, in `parse_comparison` and the item tests, which `parser_at_item_test` lets start with `have`) is `EXPR_LENGTH` of the field compared with N. `they` is `it` while `Parser.describing` (set by `parser_parse_definition`).
 
 ### Files in steps in a row (implemented in `src/front/parse_chain_file.c`)
@@ -165,6 +166,10 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 
 - `NAME is text that must ... .` at a line start (`parser_text_kind_words`; the pre-scan adds `Records.texts`) is a `STMT_RULE` with `rule.text` the kind, `TYPE_TEXTKIND` (16) + index (`type_is_textkind`; record kinds start at 64 now). `parser_match_kind_name` finds kinds of text first, so they're written `(an email)`, `a list of emails`; a `has` field named like one gets that kind. `X as an email` is `EXPR_CONVERT` `CONVERT_TO_TEXT_KIND` (`convert.kind`).
 - **Checker:** `check_text_kind` checks the rule with `it` text, gives it an id, sets the kind's `definition`, and adds it to the `rules` of every field of the kind. A kind of text is text wherever text is needed (`types_require` accepts it for `TYPE_TEXT`, `kind_bit` gives `KIND_TEXT`, comparisons through `text_and_kind`, searches in `checker_settle_search`); text where the kind is needed is an error in `checker_fits` ("This has to be an email, but this is text."), except while `Checker.storing_field` (new, set field), where the field's rules check it. `types_finish` erases every kind of text to `TYPE_TEXT` (`erase_text_kinds`) in the syntax tree, inputs, results and fields, so codegen only sees text; `as an email` is `es_ruleN(site, text)` (`cg_emit_rule` gives a kind of text's rule a text input).
+
+### Small wordings (reads like text, part 9)
+
+- `the most common ITEM [in L]` (`at_most_common_one` in parse_aggregate.c) is `EXPR_ITEM` first of `AGG_MOST_COMMON` with count 1. In `the name of the student with the highest score`, `best_item_words` stops at `of`, so `the FIELD of R` reads it.
 
 ### Constants (implemented in `parse_func.c`, `consteval.c`, `check.c`, `codegen_c.c`)
 

@@ -27,3 +27,4 @@ A doubt that comes up while building goes back into the proposal, not into the p
 - [0006: files in steps in a row, and "doesn't exist"](0006-files-in-steps.md) (Built)
 - [0007: exact money](0007-exact-money.md) (Built)
 - [0008: kinds of text with a rule](0008-kinds-of-text.md) (Built)
+- [0009: wordings from the "Still not English" list](0009-still-not-english.md) (Built)

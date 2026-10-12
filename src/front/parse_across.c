@@ -96,8 +96,37 @@ static const struct {
     {"less than", BINARY_LESS},    {"at most", BINARY_LESS_EQUAL},     {"exactly", BINARY_EQUAL},
 };
 
+// "has a score of at least 60": the field compared with the number ("of 60": equal).
+static Expr *parse_field_test(Parser *p, Expr *left, size_t words) {
+    Span verb = parser_consume(p, 1);  // has, have
+    Expr *field = ast_new_expr(p->arena, EXPR_FIELD, left->pos);
+    field->as.field.record = left;
+    parser_take_name(p, words, &field->as.field.name);
+    parser_advance(p);  // of
+    BinaryOp op = BINARY_EQUAL;
+    for (size_t i = 0; i < sizeof counts / sizeof counts[0]; i++) {
+        size_t n = parser_match_words(p, counts[i].words);
+        if (n) {
+            verb = parser_consume(p, n);
+            op = counts[i].op;
+            break;
+        }
+    }
+    Expr *amount = parse_unary(p);
+    Expr *test = ast_new_expr(p->arena, EXPR_BINARY, ast_pos_join(left->pos, amount->pos));
+    test->as.binary.op = op;
+    test->as.binary.op_span = verb;
+    test->as.binary.left = field;
+    test->as.binary.right = amount;
+    return test;
+}
+
 Expr *parser_parse_count_test(Parser *p, Expr *left) {
     if (!parser_at_word(p, 0, "has") && !parser_at_word(p, 0, "have")) return NULL;
+    size_t field_words = parser_field_words(p, 1);  // a known field, or a table's column
+    if (field_words > 0 && parser_peek(p, 1)->filler.length > 0 && parser_at_word(p, 1 + field_words, "of")) {
+        return parse_field_test(p, left, field_words);  // "have a score of at least 60"
+    }
     for (size_t i = 0; i < sizeof counts / sizeof counts[0]; i++) {
         size_t n = parser_match_words_at(p, 1, counts[i].words);
         if (!n) continue;
