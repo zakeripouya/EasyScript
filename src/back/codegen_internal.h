@@ -66,6 +66,8 @@ typedef struct {
     Vec(const char *) dispatchers;  // the C functions that call an interface's way (es_way0_speak), once each
 } ClosurePool;
 
+typedef Vec(const Stmt *) StmtList;
+
 // "easyscript plan": one line per high-level form, saying what it became.
 typedef struct {
     size_t line;
@@ -100,6 +102,8 @@ typedef struct {
     Vec(const char *) borrowed;  // in a function made inside a value: the cells it uses from around it
     ClosurePool *closures;       // the C code of functions kept as values
     PlanPool *plan;              // what each high-level form became ("easyscript plan"), or NULL
+    StmtList events;             // main()'s events, run by a loop at its end (codegen_event.c)
+    StmtList inlining;           // definitions being written in place (cg_emit_inline), innermost last
 } Codegen;
 
 // Adds a line to the plan (when there is one): what the form at pos became.
@@ -203,6 +207,9 @@ void cg_emit_kind_test(Codegen *g, const Expr *expr, StrBuf *out);      // EXPR_
 void cg_emit_default(Codegen *g, const Expr *expr, StrBuf *out);        // EXPR_DEFAULT: X, or D
 void cg_emit_table(Codegen *g, const Expr *expr, StrBuf *out);          // EXPR_TABLE: "depends on"
 void cg_emit_rule(Codegen *g, const Stmt *stmt);                        // STMT_RULE: its C function
+void cg_emit_events(Codegen *g);
+// A call of a definition written as a sentence, written in place; false if it has to be a call.
+bool cg_emit_inline(Codegen *g, const Stmt *fn, const Expr *arg, StrBuf *out);  // codegen_event.c: the loop that runs main()'s events, at its end
 // A field's value checked by the field's rules: "es_rule1(SITE, VALUE)" (VALUE when it has none).
 const char *cg_follow_rules(Codegen *g, const Field *field, const char *value, SourcePos pos);
 void cg_emit_match(Codegen *g, const Stmt *stmt);                       // STMT_MATCH
@@ -220,6 +227,7 @@ void cg_helper_collect(Codegen *g, const Expr *expr, Codegen *helper);  // expr 
 bool cg_calls_function(const Codegen *g, const Expr *expr);
 void cg_store_item(StrBuf *out, const char *name, Type type, const char *suffix);  // "es_vn_x = es_items->at.n[es_i];"
 void cg_helper_params(StrBuf *out, const Codegen *helper);
+void cg_drop_helper_names(const Codegen *helper, StrBuf *out);  // releases its item and hidden names
 void cg_helper_args(const Codegen *g, StrBuf *out, const Codegen *helper);
 // codegen_aggregate.c
 void cg_emit_aggregate(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_AGGREGATE

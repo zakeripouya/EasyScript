@@ -355,6 +355,7 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     for (size_t i = 0; i < program->len; i++) {
         cg_emit_stmt(&g, program->items[i]);
     }
+    cg_emit_events(&g);
     StrBuf functions;
     sb_init(&functions, arena);
     for (size_t i = 0; i < g.functions.len; i++) {

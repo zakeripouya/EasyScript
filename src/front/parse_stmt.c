@@ -456,6 +456,7 @@ Stmt *parse_statement(Parser *p) {
     if (parser_at_made_of(p)) return parser_parse_made_of(p);
     if (parser_at_definition(p)) return parser_parse_definition(p);  // a customer is loyal if ...
     if (parser_at_table(p)) return parser_parse_table(p);            // the shipping cost depends on the total:
+    if (parser_at_event(p)) return parser_parse_event(p);            // every 2 seconds: / whenever C:
     if (parser_interface_words(p, p->pos) > 0) return parse_interface(p);
     if (parser_at_library_sentence(p)) {  // "delete the file F", "clear the screen", "run "git"", ...
         Stmt *stmt = parser_parse_library_sentence(p);

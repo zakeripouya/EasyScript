@@ -229,11 +229,7 @@ static void emit_helper(Codegen *g, Question *q, Codegen *helper, size_t id) {
     cg_store_item(out, item_name, q->item, q->suffix);
     sb_append_n(out, step.data, step.len);
     sb_append(out, "    }\n");
-    if (type_counted(q->item)) {
-        sb_appendf(out, "    %s(&", cg_drop(q->item));
-        cg_append_raw_var(out, item_name, q->item);
-        sb_append(out, ");\n");
-    }
+    cg_drop_helper_names(helper, out);
     emit_finish(g, q, out);
     sb_append(out, "}\n\n");
 }

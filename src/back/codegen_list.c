@@ -381,11 +381,7 @@ static void emit_helper(Codegen *g, const Expr *expr, Codegen *helper, size_t id
     }
     sb_append(out, "    }\n");
     if (!every) sb_append(out, "    es_list_shrink(es_result); /* exactly the items kept */\n");
-    if (type_counted(item_type)) {
-        sb_appendf(out, "    %s(&", cg_drop(item_type));
-        cg_append_raw_var(out, item, item_type);
-        sb_append(out, ");\n");
-    }
+    cg_drop_helper_names(helper, out);
     sb_append(out, "    es_list_release(es_items);\n    return es_result;\n}\n\n");
 }
 
@@ -401,6 +397,20 @@ void cg_helper_init(const Codegen *g, Codegen *helper) {
     helper->constants = g->constants;
     helper->closures = g->closures;
     helper->plan = g->plan;
+    helper->inlining = g->inlining;  // so a definition that uses itself through a question isn't written in place forever
+}
+
+// Every text, list or record a helper keeps in a name of its own (its item,
+// and the hidden names of tables and definitions written in place), released
+// before it gives back.
+void cg_drop_helper_names(const Codegen *helper, StrBuf *out) {
+    for (size_t i = 0; i < helper->vars.len; i++) {
+        const VarCode *var = &helper->vars.items[i];
+        if (!type_counted(var->type)) continue;
+        sb_appendf(out, "    %s(&", cg_drop(var->type));
+        cg_append_raw_var(out, var->name, var->type);
+        sb_append(out, ");\n");
+    }
 }
 
 void cg_helper_collect(Codegen *g, const Expr *expr, Codegen *helper) {

@@ -108,3 +108,38 @@ void checker_check_loop(Checker *c, const Stmt *stmt) {
     c->present.len = checked;
     checker_end_scope(c, outer, stmt->pos.line, "the loop");
 }
+
+// --- Events ---------------------------------------------------------------------------
+
+// "every 2 seconds:", "whenever C:", "whenever a key is pressed:": at the top
+// level only. They're checked after the rest of the program, which has run by
+// the time they do, so they see every name it makes (and nothing it checked
+// stays checked: an event can come after anything).
+void checker_check_event(Checker *c, const Stmt *stmt) {
+    if (c->function || c->blocks > 0) {
+        static const char *const words[] = {"every", "every", "whenever", "when", "whenever"};
+        diag_error(c->diag, stmt->verb, "\"%s\" can only be at the top level, not inside %s.", words[stmt->as.event.kind],
+                   c->function ? "a definition" : "an \"if\" or a loop");
+        diag_note(c->diag, "Move it to the start of a line, outside every block. Events run once the rest of the "
+                           "program has.");
+        diag_info(c->diag, DIAG_NOT_ALLOWED, "an event inside a block", NULL);
+        return;
+    }
+    c->present.len = 0;
+    const Expr *every = stmt->as.event.every, *condition = stmt->as.event.condition;
+    if (every) {
+        checker_require(c, checker_check_expr(c, every), TYPE_NUMBER, every, "How often has to be a number", NULL);
+    }
+    if (condition) {
+        checker_require(c, checker_check_expr(c, condition), TYPE_YESNO, condition, "An event needs yes or no to decide",
+                        "Compare it with something, like \"whenever score is over 100\".");
+    }
+    bool key = stmt->as.event.kind == EVENT_KEY;
+    if (key) {
+        Loop it = {true, types_new(c, TYPE_TEXT, stmt->pos.line), true, NO_VARIANT, false};
+        vec_push(c->arena, &c->loops, it);
+    }
+    checker_check_block(c, &stmt->as.event.body, stmt->pos.line, "the event");
+    if (key) c->loops.len--;
+    c->present.len = 0;
+}

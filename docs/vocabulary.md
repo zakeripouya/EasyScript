@@ -753,6 +753,20 @@ Every table must end with an `otherwise` line, so every case has a value; one wi
 
 A rule sees only constants and the value it checks.
 
+### Events
+
+All **Available**. Events run once the program's other sentences have, in the order they're written, until `stop the program` (or, with no schedules, until the rules have been checked and the keys have run out).
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `every N seconds:` / `every second:` (also `minutes`, `minute`, `hours`, `hour`, `milliseconds`, `millisecond`) + lines | Runs the lines every N seconds, the first time N seconds after the program's other sentences; N is worked out once, and must be more than 0 | `every 150 milliseconds:` |
+| `every day at TIME:` / `every Monday at TIME:` (any day of the week) + lines | Runs at that time of day (on the computer's calendar). TIME is `9am`, `9:30pm`, `12am` (midnight) or `17:00` | `every Monday at 9am:` |
+| `whenever CONDITION:` + lines / `whenever CONDITION, SENTENCE` | Runs each time CONDITION becomes yes (it's checked once the other sentences have run, and after each event) | `whenever score is over 100, say "Level up!".` |
+| `when CONDITION:` + lines / `when CONDITION, SENTENCE` | Runs the first time CONDITION is yes, and never again | `when score is over 50, say "Halfway there.".` |
+| `whenever a key is pressed:` + lines | Runs for each key pressed, with `it` the key (`"left"`, `"enter"`, `"a"`, ...; see [the keyboard](#system-tools)). Keys from a file come one before each round of the schedules | `whenever a key is pressed:` |
+
+Events can only be written at the top level, and they see every name the program makes. The exact meaning: after the other sentences, a loop that checks the `whenever`/`when` rules, then waits for a key until the next schedule is due, then runs the schedules that are due, and goes round again.
+
 ### Acting on a whole group
 
 | Pattern | Meaning | Example |

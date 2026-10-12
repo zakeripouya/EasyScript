@@ -31,7 +31,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [19. Programs and the system](#19-programs-and-the-system) | Available |
 | [20. The keyboard](#20-the-keyboard) | Available |
 | [21. Questions and totals](#21-questions-and-totals) | Available |
-| [22. Choices without if](#22-choices-without-if) | Available (events and schedules: coming soon) |
+| [22. Choices without if](#22-choices-without-if) | Available |
 
 ---
 
@@ -2054,7 +2054,7 @@ Line 7: "the top": 1 pass keeping the best ones in a heap, no sort of the whole 
 
 ## 22. Choices without if
 
-**Available** (events and schedules are coming soon). Most programs are full of `if`s that say what something *is*: an order is big when its amount is over 1000, shipping costs 5 when the total is over 50. EasyScript lets you say those things once, as sentences, and then use them anywhere.
+**Available.** Most programs are full of `if`s that say what something *is*: an order is big when its amount is over 1000, shipping costs 5 when the total is over 50. EasyScript lets you say those things once, as sentences, and then use them anywhere.
 
 ### Defaults
 
@@ -2128,6 +2128,24 @@ set every monster's color to "blue".
 add 10 to every player's score.
 ```
 
+### Events
+
+```
+let score be 0.
+every 2 seconds:
+    add 40 to score.
+    say "Score:", score.
+whenever score is over 100:
+    say "Level up!".
+    stop the program.
+whenever a key is pressed:
+    if it is "q", stop the program.
+every Monday at 9am:
+    say "Time for the meeting.".
+```
+
+Events run once the rest of the program has: `every 2 seconds:` runs its lines every 2 seconds, `every Monday at 9am:` at that time, `whenever ...:` each time its condition becomes yes, `when ..., ...` the first time, and `whenever a key is pressed:` for each key (`it` is the key). The program keeps going until `stop the program`. The Snake game (`examples/programs/snake/play.es`) is written this way.
+
 ### What each one means exactly
 
 - `a customer is loyal if C.` is `to is loyal, for a customer: give back C`, with `it` the customer; `rex is loyal` calls it.
@@ -2135,6 +2153,7 @@ add 10 to every player's score.
 - `the best customer is the one with the highest profit.` puts `the customer with the highest profit` wherever `the best customer` is written.
 - A table is the first line's value whose condition is yes, tried in order: `if X is over 100 ... otherwise if X is over 50 ... otherwise ...`.
 - A rule is a check after the field gets its value, stopping the program when it's no.
+- Events are a loop after the program's other sentences: check each `whenever` (it runs when its condition is yes now and was no the round before) and `when` (the first time only), wait for a key until the next schedule is due, then run the schedules that are due.
 - `remove the tasks that are done.` is `keep only the tasks in tasks where not (it is done)`; `set every monster's color to "blue".` is `for each monster in monsters: set it's color to "blue"`.
 
 ### Things to watch

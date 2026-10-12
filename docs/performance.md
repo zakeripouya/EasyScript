@@ -68,8 +68,10 @@ The English pass's speed rule: every high-level form must take at most 20% longe
 | `the entry with the highest value` | 300 times over 200,000 records | 0.10 s | 0.20 s | 0.50 |
 | `the total value of entries per group` (by hand: a map with `, or 0`) | 100 times | 0.29 s | 0.47 s | 0.62 |
 | `how many entries whose value is over 500` (the filter in the same pass) | 300 times | 0.10 s | 0.22 s | 0.45 |
+| `how many entries are big`, with `an entry is big if its value is over 500.` | 300 times | 0.20 s | 0.20 s | 1.00 |
+| `the total fee of entries`, with a `depends on` table (by hand: an `if` chain) | 100 times | 0.09 s | 0.13 s | 0.69 |
 
-Apple M4, macOS 15.3.1, Apple clang 17.0.0, best of 3, 2026-10-12. Every form is faster than its loop: a `for each` loop goes through a copy of the list it can't prove nothing changes (`es_list_snapshot`), while a question that calls no definition can't change the list and reads it directly; the top 10 keep a heap of 10 instead of sorting a million numbers; and `per` finds each group's place in the map once instead of looking it up twice.
+Apple M4, macOS 15.3.1, Apple clang 17.0.0, best of 3, 2026-10-12. Every form is faster than its loop: a `for each` loop goes through a copy of the list it can't prove nothing changes (`es_list_snapshot`), while a question that calls no definition can't change the list and reads it directly; the top 10 keep a heap of 10 instead of sorting a million numbers; and `per` finds each group's place in the map once instead of looking it up twice. A describing word (`is big`) and a table of a kind's value are written in place where they're used (as a call they were 70% slower than the loop).
 
 ## History
 

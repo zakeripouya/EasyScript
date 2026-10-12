@@ -1,0 +1,23 @@
+Line 2: How often has to be a number, but this is text.
+    every speed seconds:
+          ^^^^^
+
+Line 4: An event needs yes or no to decide, but this is text.
+    whenever speed:
+             ^^^^^
+Compare it with something, like "whenever score is over 100".
+
+Line 7: "every" can only be at the top level, not inside an "if" or a loop.
+        every 2 seconds:
+        ^^^^^
+Move it to the start of a line, outside every block. Events run once the rest of the program has.
+
+Line 10: "whenever" can only be at the top level, not inside a definition.
+        whenever speed is "slow", say "w".
+        ^^^^^^^^
+Move it to the start of a line, outside every block. Events run once the rest of the program has.
+
+Line 12: I can't add a number to text.
+        say it plus 1.
+            ^^^^^^^^^
+To join text, use "followed by".

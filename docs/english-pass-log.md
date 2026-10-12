@@ -66,3 +66,19 @@ A running record of the unattended English-pass run (parts 2 to 5, then charts),
 - **`a customer is loyal if they ordered more than 5 times`** (a verb about the record): "they" + a verb isn't parsed; `if the number of items in their orders is above 5` works.
 
 ### Commits
+- `8866ac3` Add choices without if: defaults, describing words, values, tables, rules, groups (test 661, gcc 661, debug 660 + 0 leaks).
+- (next) Events and schedules, Snake with events, sentence definitions written in place, examples and benchmarks; tagged `english-pass-part-3`.
+
+### Events (part 3, item 7)
+
+- `every N seconds|minutes|hours|milliseconds:`, `every day at 9pm:`, `every Monday at 9:30am:`, `every Friday at 17:00:`, `whenever C:` / `whenever C, S`, `when C, S`, `whenever a key is pressed:` (`it` is the key).
+- **Decided:** events run in one loop after the program's other sentences; `whenever` fires when its condition becomes yes (checked after the other sentences and after each event), `when` fires once; keys from a file (tests, or piped input) come one before each round of the schedules, so runs repeat exactly; the program ends with `stop the program`, or when there are no schedules and (if it reads keys) the keys run out.
+- Snake (`examples/programs/snake/play.es`) is rewritten with `whenever a key is pressed:`, `every 150 milliseconds:` and `whenever g's over:`.
+- `tests/leaks.sh` now builds programs with the test hooks and the fixed clock, like `tests/run.sh`, so programs with events or `wait` don't wait for real.
+- **Speed rule:** a describing word used in a question (`how many entries are big`) was 70% slower than the hand-written loop as a call; sentence definitions are now written in place at their calls (1.00 of the loop). Tables are 0.69.
+- Examples: `coffee_shop.es` (the plan's coffee shop without its web parts) and `shipping.es`.
+
+### Rough spots found
+
+- `each drink in drinks's name` can't be written: the `'s` attaches to the list. Left for part 5's rough spots.
+

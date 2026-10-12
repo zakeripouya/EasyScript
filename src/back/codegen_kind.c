@@ -251,7 +251,9 @@ void cg_emit_rule(Codegen *g, const Stmt *stmt) {
         sb_append(out, ", ");
         cg_append_raw_var(out, item, type);
     }
-    sb_append(out, ");\n    return ");
+    sb_append(out, ");\n");
+    cg_drop_helper_names(&helper, out);
+    sb_append(out, "    return ");
     cg_append_raw_var(out, item, type);
     sb_append(out, ";\n}\n\n");
 }
@@ -261,4 +263,54 @@ const char *cg_follow_rules(Codegen *g, const Field *field, const char *value, S
         value = arena_sprintf(g->arena, "es_rule%zu(%zu, %s)", field->rules.items[i]->as.rule.id, cg_site(g, pos), value);
     }
     return value;
+}
+
+// A definition written as a sentence ("an order is big if ...") called on one
+// value: its value written in place, with "it" that value, so a question that
+// uses it costs what the same test written by hand does. A definition that
+// uses itself is called instead (it would never end).
+bool cg_emit_inline(Codegen *g, const Stmt *fn, const Expr *arg, StrBuf *out) {
+    if (!fn->as.function.defines || fn->as.function.body.len != 1) return false;
+    const Stmt *ret = fn->as.function.body.items[0];
+    if (ret->kind != STMT_RETURN || !ret->as.returned) return false;
+    for (size_t i = 0; i < g->inlining.len; i++) {
+        if (g->inlining.items[i] == fn) return false;
+    }
+    Type type = fn->as.function.param_types.items[0];
+    const char *name = NULL;
+    const char *setup = "";
+    if (arg->kind == EXPR_IT && !arg->narrowed && !arg->lifted) {  // the item of the question around: used as it is
+        for (size_t i = g->loops.len; i > 0 && !name; i--) {
+            const LoopCode *loop = &g->loops.items[i - 1];
+            if (loop->item) name = loop->item_type == type ? loop->item : "";
+        }
+        if (name && !*name) name = NULL;
+    }
+    if (arg->kind == EXPR_NAME && !arg->narrowed && !arg->lifted && !cg_is_constant(g, arg->as.name) &&
+        !cg_find_function(g, arg->as.name) && !cg_is_cell(g, arg->as.name) && arg->type == type) {
+        name = arg->as.name;  // a name is used as it is
+    }
+    if (!name) {
+        name = arena_sprintf(g->arena, "0inline%zu", ++g->loop_ids);
+        cg_declare_name(g, name, type);
+        StrBuf set;
+        sb_init(&set, g->arena);
+        if (type_counted(type)) {
+            sb_appendf(&set, "%s(&", cg_set(type));
+            cg_append_var(g, &set, name, type);
+            sb_appendf(&set, ", %s), ", cg_operand(g, arg, false));
+        } else {
+            cg_append_var(g, &set, name, type);
+            sb_appendf(&set, " = %s, ", cg_operand(g, arg, false));
+        }
+        setup = set.data;
+    }
+    LoopCode it = {NULL, 0, 0, name, type};
+    vec_push(g->arena, &g->loops, it);
+    vec_push(g->arena, &g->inlining, fn);
+    const char *value = cg_operand(g, ret->as.returned, false);
+    g->inlining.len--;
+    g->loops.len--;
+    sb_appendf(out, "(%s%s)", setup, value);
+    return true;
 }

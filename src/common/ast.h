@@ -226,6 +226,15 @@ struct Expr {
     } as;
 };
 
+// What starts an event's sentences (STMT_EVENT), once the program's other sentences have run.
+typedef enum {
+    EVENT_EVERY,     // every N seconds: (interval in seconds)
+    EVENT_AT,        // every day at 9pm: / every Monday at 9am: (weekday, or -1 for every day; time of day)
+    EVENT_WHENEVER,  // whenever C: each time C becomes yes
+    EVENT_WHEN,      // when C, S: the first time C is yes
+    EVENT_KEY,       // whenever a key is pressed: ("it" is the key)
+} EventKind;
+
 // What a definition written as a sentence defines (Stmt.as.function.defines).
 enum { DEFINES_NOTHING, DEFINES_ADJECTIVE, DEFINES_VALUE };
 
@@ -257,6 +266,7 @@ typedef enum {
     STMT_USE,          // use helpers (another file's definitions; loaded before parsing)
     STMT_LIBRARY,      // the standard library's sentences: wait 2 seconds, shuffle L, delete the file F, ...
     STMT_RULE,         // an age must be between 0 and 150 / a customer's email must contain "@" (top level only)
+    STMT_EVENT,        // every 2 seconds: / every Monday at 9am: / whenever C: / when C, S / whenever a key is pressed:
 } StmtKind;
 
 // What a sentence of the standard library does (STMT_LIBRARY), with its parts in a and b.
@@ -455,6 +465,15 @@ struct Stmt {
             Vec(Capture) captures; // a lambda: the names it uses from around it (checker)
             NameList cells;           // the names it makes (or its inputs) that functions made inside use (checker)
         } function;
+        struct {
+            EventKind kind;
+            Expr *every;        // EVENT_EVERY: how many
+            double scale;       // EVENT_EVERY: seconds per unit written (60 for minutes, 0.001 for milliseconds)
+            int weekday;        // EVENT_AT: 0 Sunday ... 6 Saturday, or -1 for every day
+            double time;        // EVENT_AT: seconds after midnight
+            Expr *condition;    // EVENT_WHENEVER, EVENT_WHEN
+            Block body;
+        } event;
         struct {
             Type kind;          // "a customer's email": the kind; TYPE_UNKNOWN: every kind with the field
             Name field;

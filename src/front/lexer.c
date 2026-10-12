@@ -254,9 +254,9 @@ static void lex_number(Lexer *lx) {
         while (is_digit(peek_at(lx, lx->pos))) lx->pos++;
     }
     emit_source_text(lx, TOK_NUMBER, start, lx->pos);
-    if (is_alpha(peek_at(lx, lx->pos))) {
-        report_letters_after_number(lx, start);
-    }
+    char a = to_lower(peek_at(lx, lx->pos)), m = to_lower(peek_at(lx, lx->pos + 1));
+    bool clock = (a == 'a' || a == 'p') && m == 'm' && !is_word_char(peek_at(lx, lx->pos + 2));  // 9am: 9, am
+    if (is_alpha(peek_at(lx, lx->pos)) && !clock) report_letters_after_number(lx, start);
 }
 
 // --- Strings ----------------------------------------------------------------

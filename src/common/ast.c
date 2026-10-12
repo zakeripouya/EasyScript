@@ -389,6 +389,25 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
     case STMT_SUM: sb_appendf(scratch, "kind %s", stmt->as.sum.name.text); break;
     case STMT_MATCH: return "check which kind";
     case STMT_INTERFACE: sb_appendf(scratch, "interface %s", stmt->as.iface.name.text); break;
+    case STMT_EVENT: {
+        static const char *const days[] = {"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"};
+        double scale = stmt->as.event.scale;
+        int minutes = (int)(stmt->as.event.time / 60);
+        switch (stmt->as.event.kind) {
+        case EVENT_EVERY:
+            sb_appendf(scratch, "every (%s)", scale == 1 ? "seconds" : scale == 60 ? "minutes" : scale == 3600 ? "hours"
+                                                                                                   : "milliseconds");
+            break;
+        case EVENT_AT:
+            sb_appendf(scratch, "every %s at %02d:%02d", stmt->as.event.weekday < 0 ? "day" : days[stmt->as.event.weekday],
+                       minutes / 60, minutes % 60);
+            break;
+        case EVENT_WHENEVER: return "whenever";
+        case EVENT_WHEN: return "when";
+        case EVENT_KEY: return "whenever a key is pressed";
+        }
+        break;
+    }
     case STMT_RULE:
         sb_append(scratch, "rule: ");
         if (stmt->as.rule.kind != TYPE_UNKNOWN) {
@@ -534,6 +553,11 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
     case STMT_CALL: dump_expr(stmt->as.call, depth + 1, d); break;
     case STMT_USE: break;
     case STMT_RULE: dump_expr(stmt->as.rule.condition, depth + 1, d); break;
+    case STMT_EVENT:
+        dump_children(stmt->as.event.every, stmt->as.event.condition, depth, d);
+        dump_label(depth + 1, d, "do");
+        for (size_t i = 0; i < stmt->as.event.body.len; i++) dump_stmt(stmt->as.event.body.items[i], depth + 2, d);
+        break;
     case STMT_LIBRARY:
         dump_children(stmt->as.library.a, stmt->as.library.b, depth, d);
         for (size_t i = 0; i < stmt->as.library.parts.len; i++) dump_expr(stmt->as.library.parts.items[i], depth + 1, d);

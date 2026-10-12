@@ -355,6 +355,7 @@ bool cg_ordered(Codegen *g, Expr *const *exprs, size_t n, const char **values, S
 }
 
 static void emit_call(Codegen *g, const Stmt *fn, Expr *const *args, size_t n, SourcePos pos, StrBuf *out) {
+    if (n == 1 && cg_emit_inline(g, fn, args[0], out)) return;  // "rex is big": the definition's value, in place
     const char **values = arena_alloc(g->arena, (n + 1) * sizeof(char *));
     bool opened = cg_ordered(g, args, n, values, out);
     cg_append_function(out, "es_f_", fn);

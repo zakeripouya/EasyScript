@@ -354,6 +354,7 @@ void checker_collect_records(Checker *c, const Block *program);  // reports kind
 void checker_check_record(Checker *c, Stmt *stmt);               // STMT_RECORD: its fields and starting values
 void checker_end_scope(Checker *c, size_t outer, size_t line, const char *where);
 void checker_check_loop(Checker *c, const Stmt *stmt);
+void checker_check_event(Checker *c, const Stmt *stmt);  // check_loop.c: STMT_EVENT
 TypeVar checker_field_kind(Checker *c, Field *field, size_t line);
 void checker_report_undecided_fields(Checker *c);
 TypeVar checker_check_field(Checker *c, const Expr *expr);       // EXPR_FIELD

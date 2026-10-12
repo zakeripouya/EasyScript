@@ -339,6 +339,7 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
     case STMT_USE: checker_check_use(c, stmt); break;
     case STMT_LIBRARY: checker_check_library_stmt(c, stmt); break;
     case STMT_RULE: checker_check_rule(c, (Stmt *)stmt); break;
+    case STMT_EVENT: checker_check_event(c, stmt); break;
     case STMT_ASK:
         checker_check_expr(c, stmt->as.ask.prompt);
         make_text(c, &stmt->as.ask.answer);
@@ -503,11 +504,11 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
     collect_functions(&c, program);
     checker_collect_constants(&c, program);
     collect_names(&c, program);
-    for (size_t pass = 0; pass < 4; pass++) {  // constants, kinds of record, functions, then the rest
+    for (size_t pass = 0; pass < 5; pass++) {  // constants, kinds of record, functions, the rest, then events
         for (size_t i = 0; i < program->len; i++) {
             const Stmt *stmt = program->items[i];
             int kind_pass = stmt->kind == STMT_CONSTANT ? 0 : stmt->kind == STMT_RECORD || stmt->kind == STMT_SUM || stmt->kind == STMT_INTERFACE ? 1
-                            : stmt->kind == STMT_FUNCTION ? 2 : 3;
+                            : stmt->kind == STMT_FUNCTION ? 2 : stmt->kind == STMT_EVENT ? 4 : 3;
             c.file = stmt->pos.file;
             if (kind_pass == (int)pass && checker_check_module_stmt(&c, stmt)) check_stmt(&c, stmt);
         }

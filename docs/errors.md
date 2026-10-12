@@ -432,6 +432,24 @@ Line 10: This is a number, so it's never nothing.
 ", or" gives another value when there isn't one. Leave it out here.
 ```
 
+**Events**: [`event_errors.es`](../tests/errors/event_errors.es), [`err_events.es`](../tests/ast/err_events.es)
+
+```
+Line 7: "every" can only be at the top level, not inside an "if" or a loop.
+        every 2 seconds:
+        ^^^^^
+Move it to the start of a line, outside every block. Events run once the rest of the program has.
+```
+
+```
+Line 1: I expected a time of day here, like "9am", "9:30pm" or "17:00".
+    every Monday at 25:00:
+                    ^^
+Write it like "every Monday at 9am:". Hours go from 1 to 12 with am or pm, or from 0 to 23 with minutes (17:00).
+```
+
+Also: ""when a key is pressed" happens more than once, so it's "whenever".", "An event needs yes or no to decide, ...".
+
 Also: "I know how to work out a customer's discount, but not a product's.", ""starting at" only works with a value in a map.", ""the ones with the highest ..." doesn't say how many.", ""the one whose ..." could be more than one.", ""big customers" is worked out from itself.", "A table needs its lines below it, indented, after a ":".", "The "otherwise" line has to be the last one.", "A rule can only be at the top level, ...", "The fields called "weight" aren't all the same kind, so one rule can't cover them.".
 
 **A list inside a list without parentheses**: [`err_list_forms.es`](../tests/ast/err_list_forms.es)
@@ -966,6 +984,7 @@ Positions start at 1: the first item is item 1.
 | The average or median of an empty list | "There's nothing to average: the list is empty." / "There's no middle number: the list is empty." |
 | The one with the highest (or lowest) of an empty list | "There's nothing to choose from: the list is empty." with the hint "Check that the list isn't empty first, like "if dogs is not empty:"." |
 | The top N with N not whole or below 0 | "How many to take has to be a whole number, 0 or more, but it's 1.5." |
+| An event's "every N seconds" with N 0 or less | "How often has to be more than 0 seconds, but it's 0." |
 | A field given a value its rule doesn't allow | "An age must be between 0 and 150, but this one is 230." / "A person's email must contain "@", but this one is "bob.example.com"." / for other kinds, "..., but this one doesn't follow it." |
 
 Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).

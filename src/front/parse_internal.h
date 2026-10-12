@@ -226,6 +226,10 @@ bool parser_is_adjective(const Parser *p, const char *word);
 // A method for the kind at the current token (its words consumed), the kind its input: what a sentence defines.
 Stmt *parser_new_method(Parser *p, size_t kind_words, int defines);
 
+// parse_event.c: "every 2 seconds:", "every Monday at 9am:", "whenever C:", "when C, S", "whenever a key is pressed:"
+bool parser_at_event(const Parser *p);
+Stmt *parser_parse_event(Parser *p);
+
 // parse_group.c: acting on a whole group
 bool parser_at_remove_filter(const Parser *p);              // after "remove": "the tasks that are done"
 Stmt *parser_parse_remove_filter(Parser *p, Stmt *stmt);    // ... as "keep only" with the test turned around
