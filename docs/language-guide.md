@@ -303,6 +303,14 @@ let page be the text below:
 say page.
 ```
 
+A sentence that puts or writes text in a file can take the text below too, with the colon at its end:
+
+```
+put the text below in file "spending.csv":
+    date,store,amount
+    2026-09-01,Landlord,1200
+```
+
 Try it: [`examples/lexer/text.es`](../examples/lexer/text.es)
 
 ### Comments

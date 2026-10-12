@@ -2,14 +2,13 @@ note: The sales report from docs/english-pass.md, written with questions about l
 note: (part 2 of the English pass) and a table read from a csv file. The first run
 note: writes an example orders.csv to read.
 if file "orders.csv" doesn't exist:
-    let rows be the text below:
+    put the text below in file "orders.csv":
         customer,region,amount,cost
         Ann,East,1200,700
         Bo,West,300,250
         Ann,East,800,500
         Cy,North,2500,1900
         Bo,West,150,90
-    put rows in file "orders.csv".
 
 read the table in "orders.csv" and call it orders.
 an order's profit is its amount minus its cost.

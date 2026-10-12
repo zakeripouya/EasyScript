@@ -33,6 +33,7 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | `\n` `\t` `\r` `\"` `\\` | Escapes inside text: new line, tab, back to the line's start, quote, backslash | `"Line one\nLine two"` | Available |
 | `\u{CODE}` / `\uXXXX` | The character with that code, in hex (1 to 10FFFF, not D800 to DFFF) | `"caf\u{e9}"`, `"\u{1F600}"` | Available |
 | `the text below:` + indented lines | Text of several lines, exactly as written (no escapes, no values in brackets), without the indentation they share; blank lines inside are kept, and it ends at the first line that isn't indented more than the sentence | `let page be the text below:` | Available |
+| `put the text below in file F:` / `write the text below in file F:` (or `to file F`) + indented lines | The same text, written to the file: a `put` or `write` sentence with `the text below` in it and a colon at its end | `put the text below in file "spending.csv":` | Available |
 | `yes`, `true` | The yes value | `done is yes` | Available |
 | `no`, `false` | The no value | `ready is false` | Available |
 | `nothing` | What a function gives back when it gives back no value. Otherwise it can only be used where a record can be nothing (see [Records](#records)) | `return` (gives back nothing), `set node's next to nothing` | Available |

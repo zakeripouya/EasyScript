@@ -719,7 +719,7 @@ Left out of the English pass, each with its reason (details under [Still open](#
 - [ ] **A space after a question's prompt** (`ask "What's your name? " ...`): adding it automatically changes what existing programs print, so it waits for a decision. Suggested: add one space when the prompt ends with `?` or `:` and has none.
 - [ ] **`the name is "Ada".`** instead of `let name be "Ada".`: it would clash with comparisons and with `the NAME is the one ...` definitions, so it changes meanings; no clear wording.
 - [x] **Quotes inside brackets** (`"([parcel's note, or "no note"])"`): built (2026-10-12). It's an addition: text in quotes inside brackets was always an error before. A quote counts as text inside the value only when its closing quote and then a `]` come on the line, so a forgotten `]` keeps its clear error.
-- [ ] **`write the text below in file F:`** (rows of a csv file in a block): the lexer only turns a line ending `text below:` into text; `let rows be the text below:` then `put rows in file F` works now. Suggested: allow `the text below` anywhere in a line that ends with `:`.
+- [x] **`put the text below in file F:`**: built (2026-10-12), for `put` and `write` sentences ending with a colon. An addition: such a line was always an error before.
 
 - [ ] **Actions with inputs in the middle** (`give every loyal customer a 10 percent discount`): methods today take their inputs after their name (`give discount to rex with 10`). A way to define `give KIND a N percent discount:` would make this sentence work; it needs a rule for where inputs can go. (Part 3)
 

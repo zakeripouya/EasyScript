@@ -1,7 +1,7 @@
 note: The program a budget session in the notebook would save (from the
 note: English pass plan). The first run writes an example spending.csv.
 if file "spending.csv" doesn't exist:
-    let rows be the text below:
+    put the text below in file "spending.csv":
         date,store,category,amount
         2026-09-01,Landlord,rent,1200
         2026-09-05,Whole Foods,groceries,84.20
@@ -10,7 +10,6 @@ if file "spending.csv" doesn't exist:
         2026-10-01,Landlord,rent,1200
         2026-10-03,Sushi Bar,eating out,71.25
         2026-10-08,Apple,electronics,249
-    put rows in file "spending.csv".
 
 read the table in "spending.csv" and call it purchases.
 a purchase is big if its amount is over $200.

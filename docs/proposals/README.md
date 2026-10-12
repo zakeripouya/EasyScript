@@ -29,3 +29,4 @@ A doubt that comes up while building goes back into the proposal, not into the p
 - [0008: kinds of text with a rule](0008-kinds-of-text.md) (Built)
 - [0009: wordings from the "Still not English" list](0009-still-not-english.md) (Built)
 - [0010: text in quotes inside brackets](0010-quotes-in-brackets.md) (Built)
+- [0011: put the text below in a file](0011-text-below-in-files.md) (Built)

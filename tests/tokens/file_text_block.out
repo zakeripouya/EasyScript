@@ -1,0 +1,11 @@
+WORD          1:1     put
+STRING        1:9     "milk\neggs"  [after "the"]
+WORD          1:20    in
+WORD          1:23    file
+STRING        1:28    "notes.txt"
+NEWLINE       3:9
+WORD          4:1     say
+STRING        4:5     "done"
+PERIOD        4:11    .
+NEWLINE       4:12
+EOF           5:1

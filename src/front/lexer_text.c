@@ -190,14 +190,40 @@ static bool word_is(const Token *token, const char *word) {
 // indented under it are the text, exactly as written (no escapes, no values
 // in brackets), without their shared indentation and joined by new lines.
 // It becomes one STRING in place of "text below :"; the lines are skipped.
-bool lexer_text_block(Lexer *lx) {
-    size_t n = lx->tokens.len;
-    if (!lx->line_has_tokens || n < 3 || !word_is(&lx->tokens.items[n - 3], "text") ||
-        !word_is(&lx->tokens.items[n - 2], "below") || lx->tokens.items[n - 1].kind != TOK_COLON) {
-        return false;
+// "put the text below in file "notes.txt":": a "put" or "write" line ending
+// with a colon, with "text below" before it: where "text below" is (or 0).
+static size_t text_below_inside(const Lexer *lx) {
+    size_t n = lx->tokens.len, first = n;
+    while (first > 0) {
+        TokenKind kind = lx->tokens.items[first - 1].kind;
+        if (kind == TOK_NEWLINE || kind == TOK_INDENT || kind == TOK_DEDENT) break;
+        first--;
     }
-    Token text = lx->tokens.items[n - 3];
-    lx->tokens.len -= 3;
+    if (n < first + 5 || lx->tokens.items[n - 1].kind != TOK_COLON ||
+        !(word_is(&lx->tokens.items[first], "put") || word_is(&lx->tokens.items[first], "write"))) {
+        return 0;
+    }
+    for (size_t k = first + 1; k + 3 < n; k++) {
+        if (word_is(&lx->tokens.items[k], "text") && word_is(&lx->tokens.items[k + 1], "below")) return k;
+    }
+    return 0;
+}
+
+bool lexer_text_block(Lexer *lx) {
+    size_t n = lx->tokens.len, inside = 0;
+    if (!lx->line_has_tokens || n < 3) return false;
+    if (!word_is(&lx->tokens.items[n - 3], "text") || !word_is(&lx->tokens.items[n - 2], "below") ||
+        lx->tokens.items[n - 1].kind != TOK_COLON) {
+        inside = text_below_inside(lx);
+        if (!inside) return false;
+    }
+    Vec(Token) after = {0};  // "in file "notes.txt"" after "text below", put back after the text
+    size_t k = inside ? inside : n - 3;
+    for (size_t i = k + 2; inside && i + 1 < n; i++) vec_push(lx->arena, &after, lx->tokens.items[i]);
+    Token text = lx->tokens.items[k];
+    Span words = {text.span.offset, lx->tokens.items[k + 1].span.offset + lx->tokens.items[k + 1].span.length -
+                                        text.span.offset};
+    lx->tokens.len = k;
     size_t outer = lx->indent, at = lx->pos, last = lx->pos, last_start = lx->line_start, shared = SIZE_MAX;
     for (size_t line = at < lx->len ? at + 1 : at; line < lx->len;) {  // which lines belong to it
         size_t end = line, width = 0;
@@ -230,7 +256,9 @@ bool lexer_text_block(Lexer *lx) {
         line = end + 1;
     }
     lx->pending_filler = text.filler;
-    lexer_emit_content(lx, TOK_STRING, text.span.offset, last, value.data ? value.data : "", value.len);
+    lexer_emit_content(lx, TOK_STRING, text.span.offset, inside ? words.offset + words.length : last,
+                       value.data ? value.data : "", value.len);
+    for (size_t i = 0; i < after.len; i++) vec_push(lx->arena, &lx->tokens, after.items[i]);
     lx->line += used;  // the next line is the one after the text
     lx->line_start = last_start;
     lx->pos = last;
