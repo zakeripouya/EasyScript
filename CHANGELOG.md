@@ -40,6 +40,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - `X as a table` (lists and maps in columns), `L sorted by FIELD` (a field of the items), `add A and B to the end of file F, one per line`, and `what's in file F` / `what's in it`.
 - Examples `groceries.es` and `budget.es` (the plan's multi-step request and the budget session's saved program).
 - English pass part 5: a definition can join two inputs with `in`, `to`, `from`, `by` or `at` (`to column of cell in grid:`, called `the column of 7 in 4`); in a call sentence each input is a whole value (`report with "bad" and "I expected " followed by word.`); `a new ...` values in a list or map need no parentheses (`a list of a new point with x 1 and y 2, a new point with x 3 and y 4`); a list written out with items of different kinds that fit exactly one interface is a list of it; `profit by customer` as a name suggests "customer profits".
+- The language guide starts with "Your first programs", a chapter for people who have never programmed (no programmer words, checked by `audit/plain-words`; every program in it run by `docs/first-programs-run`). The examples README lists the plain-English programs first.
+- `L sorted by FIELD` sorts with the same stable key sort as `sorted by F` (it used a heap and was twice as slow). `NAME with commas` works after a plain name (it was read as calling NAME). `benchmarks/run.sh`'s 20% check now works (its ratio was never worked out), and the `sort` and `words` benchmarks no longer join text with `and`.
 - A sentence EasyScript doesn't understand (with no close statement word) gets the 2 or 3 sentences that share the most words with it.
 
 ### Changed

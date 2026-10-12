@@ -631,6 +631,36 @@ $out"
 check_readme_block "## A first program" "$ROOT/examples/programs/first_program.es" "docs/readme-first-program"
 check_readme_block "## A bigger example" "$ROOT/examples/programs/taste.es" "docs/readme-bigger-example"
 
+# Every program in the guide's "Your first programs" chapter runs (blocks
+# that ask for input, and the error shown as an example, are left out).
+first_programs() {
+    rm -rf "$WORK/first" && mkdir -p "$WORK/first" &&
+        awk -v dir="$WORK/first" '
+            /^## Your first programs/ { inside = 1; next }
+            inside && /^## / { exit }
+            inside && /^```/ { if (block) { block = 0 } else { block = 1; n++ }; next }
+            inside && block { print > (dir "/block" n ".es") }
+        ' "$ROOT/docs/language-guide.md"
+    failed=""
+    count=0
+    for program in "$WORK"/first/block*.es; do
+        if grep -q "^Line \|ask " "$program"; then continue; fi
+        count=$((count + 1))
+        fresh_dir
+        if ! out=$(cd "$WORK/cwd" && "$ES" run "$program" </dev/null 2>&1); then
+            failed="$failed
+$(cat "$program")
+$out"
+        fi
+    done
+    if [ -n "$failed" ] || [ "$count" -lt 5 ]; then
+        not_ok "docs/first-programs-run" "$count programs run;$failed"
+    else
+        ok "docs/first-programs-run"
+    fi
+}
+first_programs
+
 # --- Audits ---------------------------------------------------------------------
 #
 # Every error message in the source must be produced by some test, every

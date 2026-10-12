@@ -79,7 +79,12 @@ static void emit_start(Codegen *g, const Question *q, StrBuf *out) {
     case AGG_NONE: sb_append(out, "    bool es_result = true;\n"); break;
     case AGG_AVERAGE: sb_append(out, "    double es_total = 0, es_count = 0;\n"); break;
     case AGG_MEDIAN: sb_append(out, "    EsList *es_keys = es_list_new(ES_ITEMS_NUMBER, 0);\n"); break;
-    case AGG_TOP: break;  // es_top, made before the list is looked at
+    case AGG_TOP:  // es_top, made before the list is looked at; "sorted by amount" (all of them): keys to sort by
+        if (!q->expr->as.aggregate.count) {  // the items kept (a filter can be in the same pass), and their keys
+            sb_appendf(out, "    EsList *es_keys = es_list_new(ES_ITEMS_NUMBER, es_items->len);\n    EsList *es_kept = "
+                            "es_list_new(%s, es_items->len);\n", cg_items(q->item));
+        }
+        break;
     case AGG_MOST_COMMON:
         sb_appendf(out, "    EsMap *es_counts = es_map_new(%s, ES_ITEMS_NUMBER, 0);\n", cg_items(q->item));
         break;
@@ -119,7 +124,16 @@ static void emit_step(Codegen *helper, const Question *q, StrBuf *out) {
     case AGG_TOTAL: sb_appendf(out, "        es_result += %s;\n", key_code(helper, q)); break;
     case AGG_AVERAGE: sb_appendf(out, "        es_total += %s;\n        es_count += 1;\n", key_code(helper, q)); break;
     case AGG_MEDIAN: sb_appendf(out, "        es_push_n(es_keys, %s);\n", key_code(helper, q)); break;
-    case AGG_TOP: sb_appendf(out, "        es_top_offer(&es_top, %s, es_i);\n", key_code(helper, q)); break;
+    case AGG_TOP:
+        if (!q->expr->as.aggregate.count) {
+            const char *item = arena_sprintf(helper->arena, "es_items->at.%s[es_i]", q->suffix);
+            if (type_counted(q->item)) item = arena_sprintf(helper->arena, "%s(%s)", cg_retain(q->item), item);  // kept too
+            sb_appendf(out, "        es_push_n(es_keys, %s);\n        es_push_%s(es_kept, %s);\n", key_code(helper, q),
+                       q->suffix, item);
+        } else {
+            sb_appendf(out, "        es_top_offer(&es_top, %s, es_i);\n", key_code(helper, q));
+        }
+        break;
     case AGG_MOST_COMMON:
         sb_appendf(out, "        es_map_slot(es_counts, (EsValue){.%c = %s}, NULL)->n += 1;\n",
                    q->item == TYPE_TEXT ? 't' : 'n', item_read(helper, q, true));
@@ -146,7 +160,14 @@ static void emit_finish(Codegen *g, const Question *q, StrBuf *out) {
     switch (q->kind) {
     case AGG_AVERAGE: sb_appendf(out, "%s    return es_average(%zu, es_total, es_count);\n", release, q->site); break;
     case AGG_MEDIAN: sb_appendf(out, "%s    return es_median(%zu, es_keys);\n", release, q->site); break;
-    case AGG_TOP: sb_appendf(out, "    EsList *es_result = es_top_take(&es_top, es_items);\n%s    return es_result;\n", release); break;
+    case AGG_TOP:
+        if (!q->expr->as.aggregate.count) {  // the items kept, in their keys' order (stable, like "sorted by F")
+            sb_appendf(out, "    es_list_shrink(es_kept);\n    es_sort_by_keys(es_kept, es_keys, %s);\n%s    return es_kept;\n",
+                       q->expr->as.aggregate.lowest ? "false" : "true", release);
+        } else {
+            sb_appendf(out, "    EsList *es_result = es_top_take(&es_top, es_items);\n%s    return es_result;\n", release);
+        }
+        break;
     case AGG_MOST_COMMON: sb_appendf(out, "%s    return es_most_common(&es_top, es_counts);\n", release); break;
     case AGG_BEST: {
         sb_appendf(out, "    if (es_best == SIZE_MAX) {\n    %s        es_no_choice(%zu);\n    }\n", release, q->site);
@@ -218,9 +239,8 @@ static void emit_helper(Codegen *g, Question *q, Codegen *helper, size_t id) {
     cg_helper_params(out, helper);
     sb_append(out, ") {\n");
     cg_emit_declarations(helper, out);
-    if (q->kind == AGG_TOP || q->kind == AGG_MOST_COMMON) {  // how many to take is checked first
-        sb_appendf(out, "    EsTop es_top = es_top_start(%zu, %s, es_list->len, %s);\n", q->site,
-                   agg->as.aggregate.count ? "es_take" : "(double)es_list->len",  // "sorted by amount": all of them
+    if ((q->kind == AGG_TOP && agg->as.aggregate.count) || q->kind == AGG_MOST_COMMON) {  // how many is checked first
+        sb_appendf(out, "    EsTop es_top = es_top_start(%zu, es_take, es_list->len, %s);\n", q->site,
                    agg->as.aggregate.lowest ? "true" : "false");
     }
     // A call could change the list while it's being gone through; then go through it as it was.

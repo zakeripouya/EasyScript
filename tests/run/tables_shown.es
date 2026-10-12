@@ -11,3 +11,6 @@ say (an empty list of dogs) as a table.
 say "[(an empty map from text to numbers) as a table]" is "".
 let empty dogs be an empty list of dogs.
 say empty dogs sorted by age.
+say the dogs whose good boy is yes, sorted by age biggest first as a table.
+let total be 1234567.
+say total with commas.

@@ -113,6 +113,8 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 ### English pass, part 5 changes
 
 - **`new` in lists and maps:** `Parser.in_items` (set by `parse_list_item`/`parse_entry_part`, cleared in parentheses); `at_next_field` in parse_record.c ends a `new` value's fields before another `new` or, in items, before a non-word.
+- **Docs checks:** `docs/first-programs-run` (run.sh) runs every code block of the guide's "Your first programs" chapter (except `ask` blocks and shown errors); `plain_words.py` fails if that chapter uses a banned word.
+- **`sorted by FIELD`** with no count: the aggregate gathers the items that pass (retained) and their keys (`es_kept`, `es_keys`) and sorts them with `es_sort_by_keys` (`benchmarks/forms/sorted.es`).
 - **Mixed lists:** `check_mixed_kinds` (check_list.c) makes a written-out list of different record/variant kinds a list of the one interface they all fit (`checker_common_interfaces`); several is an error.
 
 ### English pass, part 4 additions (parse_question.c, parse_chain.c, parse_table_file.c, check_apply.c, codegen_library.c, runtime/es_totals.h)

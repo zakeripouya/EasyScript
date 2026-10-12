@@ -104,16 +104,16 @@ Time (and peak memory) for each benchmark, measured with `make bench`:
 | Program | EasyScript | C | Go | Python |
 |---|---|---|---|---|
 | Recursive fib(38) | 0.25 s | 0.07 s | 0.08 s | 2.90 s |
-| Count to 100 million | 0.05 s | 0.03 s | 0.02 s | 4.02 s |
-| Nested loops (100 million rounds) | 0.11 s | 0.03 s | 0.03 s | 5.06 s |
-| Build a 50,000-character text | 0.00 s, 1.3 MB | (none) | 0.01 s, 13 MB | 0.01 s, 12 MB |
-| Sort a million numbers | 0.06 s, 9.0 MB | 0.08 s (`qsort`), 8.8 MB | 0.08 s, 29 MB | 0.31 s, 61 MB |
-| Add to a text a million times | 0.00 s, 6.2 MB | 0.00 s, 6.0 MB | 0.00 s, 23 MB | 0.05 s, 16 MB |
-| Count two million words with a map | 0.10 s, 3.4 MB | (none) | 0.05 s, 7.9 MB | 0.37 s, 13 MB |
-| Map, filter and reduce a million numbers, ten times | 0.13 s, 64 MB (a hand-written loop: 0.10 s) | 0.05 s, 19 MB | 0.05 s, 58 MB | 1.28 s, 165 MB |
-| Read a csv file of 100,000 rows and total it | 0.04 s, 58 MB | (none) | (none) | 0.09 s (`csv` module), 12 MB |
+| Count to 100 million | 0.05 s | 0.03 s | 0.02 s | 4.04 s |
+| Nested loops (100 million rounds) | 0.11 s | 0.03 s | 0.03 s | 4.99 s |
+| Build a 50,000-character text | 0.00 s, 1.3 MB | (none) | 0.01 s, 12 MB | 0.01 s, 12 MB |
+| Sort a million numbers | 0.06 s, 9.0 MB | 0.08 s (`qsort`), 8.8 MB | 0.08 s, 34 MB | 0.31 s, 65 MB |
+| Add to a text a million times | 0.00 s, 6.0 MB | 0.00 s, 6.0 MB | 0.00 s, 22 MB | 0.04 s, 16 MB |
+| Count two million words with a map | 0.10 s, 3.6 MB | (none) | 0.05 s, 8.0 MB | 0.37 s, 14 MB |
+| Map, filter and reduce a million numbers, ten times | 0.13 s, 61 MB (a hand-written loop: 0.09 s) | 0.05 s, 19 MB | 0.04 s, 59 MB | 1.22 s, 180 MB |
+| Read a csv file of 100,000 rows and total it | 0.04 s, 60 MB | (none) | (none) | 0.09 s (`csv` module), 12 MB |
 
-Apple M4, macOS 15.3.1, EasyScript 0.1.0 plus Phase 2 through step 21 (modules and the standard library), 2026-10-11. The compiler knows every value's kind, so numbers are plain C doubles and loops run close to C. Sorting beats C's `qsort` because the comparison is inlined instead of called through a function pointer, and sorts numbers in place, in the same memory as C. Text that only one variable holds grows in place, so adding to it a million times takes about 5 ms, in the same memory as C (it took over two minutes before). Counting words with a map is 4 times faster than Python's dictionaries, in less memory than Go. Recursion is slower than C because every call checks for runaway recursion and records itself for runtime errors' call chain (so it can stop with a friendly error that says how it got there), and numbers compare with a small tolerance. Details and history: [docs/performance.md](docs/performance.md).
+Apple M4, macOS 15.3.1, EasyScript 0.1.0 plus Phase 2 through step 22 and the English pass, 2026-10-12. Every question about a list (`how many`, `the total of`, `the top 10`, `per region`, `sorted by amount`, ...) runs at least as fast as the same work written as a loop. The compiler knows every value's kind, so numbers are plain C doubles and loops run close to C. Sorting beats C's `qsort` because the comparison is inlined instead of called through a function pointer, and sorts numbers in place, in the same memory as C. Text that only one variable holds grows in place, so adding to it a million times takes about 5 ms, in the same memory as C (it took over two minutes before). Counting words with a map is 4 times faster than Python's dictionaries, in less memory than Go. Recursion is slower than C because every call checks for runaway recursion and records itself for runtime errors' call chain (so it can stop with a friendly error that says how it got there), and numbers compare with a small tolerance. Details and history: [docs/performance.md](docs/performance.md).
 
 ## Roadmap
 

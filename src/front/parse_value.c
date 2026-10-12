@@ -220,8 +220,8 @@ static Expr *parse_name_or_call(Parser *p) {
         expr->display = name.display;
         return expr;
     }
-    // "word with "a" replaced by "b"" replaces text, unless "word" is a function.
-    bool replace = parser_at_replace(p) && !parser_is_function(p, name.text);
+    // "word with "a" replaced by "b"" replaces text, and "total with commas" writes a number, unless the name is a function.
+    bool replace = (parser_at_replace(p) || parser_match_words(p, "with commas")) && !parser_is_function(p, name.text);
     if (parser_is_method(p, name.text) && (parser_at_word(p, 0, "for") || parser_at_call_intro(p, name.text) ||
                                            parser_starts_operand(parser_peek(p, 0)))) {
         Expr *call = ast_new_expr(p->arena, EXPR_CALL, name.pos);  // bark rex / have a birthday for rex

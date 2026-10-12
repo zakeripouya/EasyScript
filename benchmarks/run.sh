@@ -131,7 +131,7 @@ for src in "$ROOT"/benchmarks/forms/*.es; do
     form_time=$SECONDS_TAKEN
     form_result=$RESULT
     measure "$OUT/form_${name}_loop"
-    ratio=$(awk -v a="$form_time" -v b="$SECONDS_TAKEN" 'BEGIN{printf "%.2f", b > 0 ? a / b : 1}')
+    ratio=$(awk -v a="$form_time" -v b="$SECONDS_TAKEN" 'BEGIN{printf "%.2f", (b > 0 ? a / b : 1)}')
     note=$form_result
     if [ "$form_result" != "$RESULT" ]; then
         note="$form_result  (MISMATCH: by hand $RESULT)"

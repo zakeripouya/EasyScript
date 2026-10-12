@@ -10,6 +10,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | Chapter | Status |
 |---|---|
 | [0. Getting set up](#0-getting-set-up) | Available |
+| [Your first programs](#your-first-programs) | Available |
 | [1. How EasyScript reads your sentences](#1-how-easyscript-reads-your-sentences) | Available |
 | [2. Values and expressions](#2-values-and-expressions) | Available |
 | [3. Variables](#3-variables) | Available |
@@ -61,6 +62,158 @@ and run it:
 ```
 
 `easyscript build hello.es -o hello` makes a program you can run on its own (`./hello`). Running `./easyscript` with nothing after it starts the interactive shell, where you can type sentences and see the results straight away; end a line with `:` to type a block, and finish the block with a blank line. Two more commands show what the compiler sees: `easyscript tokens` (the words and symbols) and `easyscript ast` (the meaning, as a tree).
+
+---
+
+## Your first programs
+
+**Status: Available**
+
+This chapter is for you if you have never written a program. Each part is a short program you can copy into a file and run. Later chapters go into each idea in more depth.
+
+### Saying something
+
+A program is a list of sentences. EasyScript does them in order, one after the other.
+
+```
+say "Hello!".
+say "This is my first program.".
+```
+
+Save it as `hello.es` and run `./easyscript run hello.es`. It shows the two lines.
+
+Text goes in double quotes. A sentence ends with a period or at the end of the line.
+
+### Keeping a value
+
+Give a value a name with `let`. Then use the name wherever you want the value.
+
+```
+let name be "Ann".
+let age be 12.
+say name, "is", age.
+say "Next year [name] will be [age plus 1].".
+```
+
+Commas join pieces into one line, with spaces between them. Inside text, a value in square brackets is put in its place.
+
+To change a value, use `set`, `add` or `increase`:
+
+```
+let score be 0.
+add 10 to score.
+increase score by 5.
+say "Score:", score.
+set score to 100.
+say "Score:", score.
+```
+
+### Asking a question
+
+`ask` shows a question and waits for an answer. `ask for a number` keeps asking until the answer is a number.
+
+```
+ask "What's your name? " and call it name.
+ask for a number "How old are you? " and call it age.
+say "Hi, [name]! In ten years you'll be [age plus 10].".
+```
+
+### Making a choice
+
+`if` does something only when a test is yes. `otherwise` covers the rest. The sentences that belong to `if` are moved in by four spaces.
+
+```
+let temperature be 25.
+if temperature is above 20:
+    say "Warm today.".
+otherwise:
+    say "Bring a coat.".
+```
+
+A short choice fits on one line: `if temperature is above 30, say "Hot!".`
+
+### Doing something again
+
+```
+repeat 3 times:
+    say "Hip hip hooray!".
+count from 1 to 5:
+    say it.
+```
+
+Inside `count from 1 to 5`, `it` is the number it's at.
+
+### Lists
+
+A list keeps several values in order. You can ask questions about it in plain words.
+
+```
+let scores be a list of 72, 95, 88 and 61.
+say "Total:", the total of scores.
+say "Average:", the average of scores.
+say "Best:", the biggest of scores.
+say how many scores are above 80, "scores are above 80.".
+say "Good ones:", the scores that are above 80.
+for each score in scores:
+    if score is below 70, say score, "needs work.".
+```
+
+### Things with parts
+
+Some things have parts, like a pet with a name and an age. Say what parts it has, then make some.
+
+```
+a pet has a name and an age.
+let pets be a list of a new pet with name "Rex" and age 3, a new pet with name "Tom" and age 7.
+say the pet with the highest age.
+say the average age of pets.
+for each pet in pets:
+    say pet's name, "is", pet's age.
+```
+
+### Teaching it a new word
+
+Write `to` and a name, then the sentences it stands for, moved in by four spaces. `give back` says what it works out.
+
+```
+to double with number:
+    give back number times 2.
+
+say double with 21.
+
+for example, double with 3 is 6.
+```
+
+`for example, ...` says what a word should give. If it's ever wrong, EasyScript shows a warning, so your examples work as tests (`./easyscript test file.es` checks them all).
+
+### Steps in a row
+
+You can give several steps in one sentence. In each step, `it` means what the step before made.
+
+```
+make a new file called "shopping.txt", then write "milk" in file it,
+then add "eggs" and "bread" to the end of file it, one per line,
+and then show me what's in it.
+```
+
+A line that ends with a comma, `then` or `and` goes on to the next line.
+
+### When something goes wrong
+
+If EasyScript can't understand a sentence, it says which line, points to the words, and shows what it expected. For example, `sya "hi".` gets:
+
+```
+Line 1: I don't know a sentence that starts with "sya".
+    sya "hi".
+    ^^^
+Did you mean "say"?
+```
+
+It never guesses what you meant: when a sentence could mean two things, it asks you to say which.
+
+### What's next
+
+The chapters below explain each part of the language: values, names, choices, loops, lists, text, things with parts, and more. The [examples](../examples/README.md) start with programs written the same plain way.
 
 ---
 

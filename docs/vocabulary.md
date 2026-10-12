@@ -1026,4 +1026,4 @@ Every value has a kind, worked out by the compiler before the program runs (**Av
 
 ## Later phases
 
-Modules (Phase 2), and everything after, will be added here as their designs settle. See the [roadmap](roadmap.md).
+The notebook's words (`again`, `the result`, `undo`), charts in replies, and everything after the English pass will be added here as their designs settle. See the [roadmap](roadmap.md) and [english-pass.md](english-pass.md).

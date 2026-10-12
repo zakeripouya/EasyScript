@@ -130,7 +130,11 @@ def source_strings():
 
 def doc_prose(path):
     """A doc's prose: no code blocks, inline code, tables or headings."""
-    text, prose, code = open(path, encoding='utf-8').read(), [], False
+    return prose_of(open(path, encoding='utf-8').read())
+
+
+def prose_of(text):
+    prose, code = [], False
     for line in text.split('\n'):
         if line.startswith('```'):
             code = not code
@@ -139,6 +143,13 @@ def doc_prose(path):
             continue
         prose.append(re.sub(r'`[^`]*`', 'it', re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', line)))
     return ' '.join(prose)
+
+
+def first_programs_prose():
+    """The prose of the guide's "Your first programs" chapter."""
+    text = open(os.path.join(ROOT, 'docs', 'language-guide.md'), encoding='utf-8').read()
+    start = text.index('## Your first programs')
+    return prose_of(text[start:text.index('\n## ', start + 1)])
 
 
 def main():
@@ -165,6 +176,11 @@ def main():
             problems.append(f'{where}: uses {", ".join(words)}: {value}')
     for doc in BEGINNER_DOCS:
         print(f'reading level of {doc}: grade {grade(doc_prose(os.path.join(ROOT, doc))):.1f} (reported, not checked)')
+    chapter = first_programs_prose()  # checked: it's written for people who have never programmed
+    for words in [banned_words(chapter)]:
+        if words:
+            problems.append(f'docs/language-guide.md (Your first programs): uses {", ".join(words)}')
+    print(f'reading level of "Your first programs": grade {grade(chapter):.1f}')
     for problem in problems:
         print(problem)
     return 1 if problems else 0
