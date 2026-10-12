@@ -157,6 +157,7 @@ typedef enum {
     TEXT_IS_LETTER,   // T is a letter (negated: is not a letter)
     TEXT_IS_DIGIT,    // T is a digit
     TEXT_IS_SPACE,    // T is a space
+    TEXT_INDENTED,    // "say T, indented [by ARG]": each line of T with ARG spaces before it (2 without ARG)
 } TextOp;
 
 // What a built-in that takes a function does with it (EXPR_APPLY). Each makes something new.

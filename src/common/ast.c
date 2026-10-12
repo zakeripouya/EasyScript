@@ -54,7 +54,7 @@ const char *ast_text_op_name(TextOp op) {
     static const char *const names[] = {
         "characters of", "words of", "lines of", "in uppercase", "in lowercase", "without extra spaces",
         "split by", "joined with", "replaced", "position of", "code of", "character with code",
-        "is a letter", "is a digit", "is a space",
+        "is a letter", "is a digit", "is a space", "indented",
     };
     return names[op];
 }

@@ -714,7 +714,7 @@ Left out of the English pass, each with its reason (details under [Still open](#
 ### Still open
 
 - [ ] **A list of records written as a table** ("Still not English": `let students be a list of a new student with name "Ana", ...`): `the students are:` with one `"Ana" in "Math" scored 72` line each needs a wording for each kind. Suggested: `the students are the rows below:` with a header line and comma-separated rows, read like a csv file.
-- [ ] **Indenting a line of output** (`say "  ", student's name, ...`): suggested `say ..., indented.` or showing a list `as a table`.
+- [x] **Indenting a line of output**: built (2026-10-12) as `say ..., indented [by N]`. In a program that makes a name `indented`, the bare form keeps its old meaning (a piece), so no program changes meaning.
 - [ ] **Naming two things at once in a loop** (`for each class and average in ...`): suggested `for each class, with its average, in ...`; it's an addition, but `with` there would have to stay apart from inputs and fields.
 - [ ] **A space after a question's prompt** (`ask "What's your name? " ...`): adding it automatically changes what existing programs print, so it waits for a decision. Suggested: add one space when the prompt ends with `?` or `:` and has none.
 - [ ] **`the name is "Ada".`** instead of `let name be "Ada".`: it would clash with comparisons and with `the NAME is the one ...` definitions, so it changes meanings; no clear wording.

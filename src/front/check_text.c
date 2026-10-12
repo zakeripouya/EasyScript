@@ -2,6 +2,7 @@
 // makes. "contains" and "the position of" work on text and on lists, so
 // they wait until the kind of what they look in is known (DEFER_CONTAINS).
 
+#include <string.h>
 #include "front/check_internal.h"
 
 static TypeVar error_var(Checker *c) {
@@ -158,6 +159,28 @@ TypeVar checker_check_text_op(Checker *c, const Expr *expr) {
     case TEXT_FROM_CODE:
         checker_require(c, checker_check_expr(c, expr->as.text_op.operand), TYPE_NUMBER, expr->as.text_op.operand,
                         "A character code has to be a number", NULL);
+        return types_new(c, TYPE_TEXT, line);
+    case TEXT_INDENTED:
+        if (!expr->as.text_op.arg && (checker_find_made(c, "indented") || checker_find_constant(c, "indented") ||
+                                      checker_find_function(c, "indented"))) {
+            // "say total, indented" where the program has a name "indented": a piece, as it always was
+            Expr *pieces = (Expr *)expr, *said = expr->as.text_op.operand->as.convert.operand;
+            Expr *name = ast_new_expr(c->arena, EXPR_NAME, expr->pos);
+            name->as.name = "indented";
+            name->display = "indented";
+            pieces->kind = EXPR_BINARY;
+            memset(&pieces->as, 0, sizeof pieces->as);
+            pieces->as.binary.op = BINARY_PIECES;
+            pieces->as.binary.op_span = expr->pos.span;
+            pieces->as.binary.left = said;
+            pieces->as.binary.right = name;
+            return checker_check_expr(c, pieces);
+        }
+        checker_check_expr(c, expr->as.text_op.operand);  // "as text" of what's said
+        if (expr->as.text_op.arg) {
+            checker_require(c, checker_check_expr(c, expr->as.text_op.arg), TYPE_NUMBER, expr->as.text_op.arg,
+                            "How far to indent has to be a number", NULL);
+        }
         return types_new(c, TYPE_TEXT, line);
     default: break;
     }

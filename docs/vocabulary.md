@@ -67,6 +67,7 @@ If the left side is `no`, the answer is `no` and the right side isn't worked out
 
 | Pattern | Meaning | Example | Status |
 |---|---|---|---|
+| `say ..., indented` / `say ..., indented by N` | What's said with 2 spaces (or N, a whole number from 0 to 1000) before each of its lines. In a program that makes a name `indented`, `say X, indented` without `by` keeps meaning the pieces X and `indented` | `say student's name, student's score, indented.` | Available |
 | `say A, B, C` | The pieces turned into text and joined, with a space between two pieces unless one of them is empty, the first ends with a space, a new line, `(`, `[` or `$`, or the second starts with a space, a new line or one of `. , ! ? ; : ) ] %`. Works in `say`, `show`, `print`, `display` and `complain`, at the top level only | `say "Hello,", name, "!"` prints `Hello, Ann!` | Available |
 | `"... [VALUE] ..."` | Text with a value in brackets: the value is worked out and put in the text exactly where it is (no spaces added); `"[name]!"` is `"" followed by name followed by "!"` | `say "You have [tasks] tasks."` | Available |
 | `[[` and `]]` in text | A `[` or `]` in the text itself (a single `]` outside a value is an error) | `"[[draft]]"` is `[draft]` | Available |

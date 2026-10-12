@@ -18,7 +18,8 @@ bool cg_text_op_effects(const Codegen *g, const Expr *expr) {
     case TEXT_JOINED:
     case TEXT_REPLACE:
     case TEXT_CODE:
-    case TEXT_FROM_CODE: return true;
+    case TEXT_FROM_CODE:
+    case TEXT_INDENTED: return true;
     case TEXT_POSITION:
         if (type_is_list(expr->as.text_op.operand->type)) return true;
         break;
@@ -137,6 +138,12 @@ void cg_emit_text_op(Codegen *g, const Expr *expr, StrBuf *out) {
     }
     if (op == TEXT_POSITION) {
         emit_position(g, expr, out);
+        return;
+    }
+    if (op == TEXT_INDENTED) {  // the text first, then how far
+        const char *text = cg_operand(g, expr->as.text_op.operand, false);
+        const char *by = expr->as.text_op.arg ? cg_operand(g, expr->as.text_op.arg, false) : "2.0";
+        sb_appendf(out, "es_text_indent(%zu, %s, %s)", cg_site(g, expr->pos), text, by);
         return;
     }
     const char *operand = cg_operand(g, expr->as.text_op.operand, false);

@@ -186,6 +186,22 @@ static Stmt *parse_say(Parser *p, const Token *verb, const StmtForm *form) {
     Stmt *stmt = parser_new_stmt(p, STMT_SAY, verb);
     if (parser_at_word(p, 0, "me")) parser_advance(p);  // "show me the total", "tell me ..."
     stmt->as.value = parser_parse_pieces(p);
+    if (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) && parser_at_word(p, 1, "indented")) {
+        Span words = parser_consume(p, 2);  // ", indented [by N]": every line with spaces before it
+        Expr *text = ast_new_expr(p->arena, EXPR_CONVERT, stmt->as.value->pos);
+        text->as.convert.target = CONVERT_TO_TEXT;
+        text->as.convert.op_span = words;
+        text->as.convert.operand = stmt->as.value;
+        Expr *indented = ast_new_expr(p->arena, EXPR_TEXT_OP, ast_pos_join(text->pos, (SourcePos){words, 0, 0, 0}));
+        indented->as.text_op.op = TEXT_INDENTED;
+        indented->as.text_op.operand = text;
+        if (parser_at_word(p, 0, "by")) {
+            parser_advance(p);
+            indented->as.text_op.arg = parse_unary(p);
+            indented->pos = ast_pos_join(indented->pos, indented->as.text_op.arg->pos);
+        }
+        stmt->as.value = indented;
+    }
     return stmt;
 }
 

@@ -424,6 +424,7 @@ not done and ready
 There are three ways to put values into text, and numbers (or lists) are turned into text for you:
 
 - **Commas in `say`:** `say "Hello,", name, "!"` prints the pieces with a space between them, except next to punctuation, so it prints `Hello, Ann!`. `show`, `print`, `display` and `complain` take pieces too.
+- **Indenting:** `say name, score, indented.` puts 2 spaces before each line of what's said; `indented by 4` puts 4.
 - **Brackets in text:** `"Hello, [name]! You have [tasks plus 1] tasks."` works out each value in brackets and puts it exactly there; the value can have text in quotes of its own (`"([note, or "none"])"`). Write `[[` and `]]` for a bracket in the text itself.
 - **`followed by`** joins two values exactly as they are, anywhere: `"Total: " followed by total`.
 

@@ -1,0 +1,4 @@
+Line 1: How far to indent has to be a whole number of spaces from 0 to 1000, but it's 2.5.
+    say "x", indented by 2.5.
+        ^^^^^^^^^^^^^^^^^^^^
+Write a whole number of spaces, like "indented by 4".
