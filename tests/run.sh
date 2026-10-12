@@ -256,6 +256,15 @@ for dir in "$ROOT"/examples/*/; do
         *) not_ok "examples/$(basename "$dir")" "no test runner covers this directory; add it to tests/run.sh" ;;
     esac
 done
+# Snake (examples/programs/snake/play.es) waits for the keyboard, so it isn't
+# run here (main.es tests its rules); it has to compile, though, and its C is
+# checked with the rest below.
+fresh_dir
+if out=$(cd "$WORK/cwd" && "$ES" emit "$ROOT/examples/programs/snake/play.es" 2>&1 >/dev/null); then
+    ok "examples/snake-play-compiles"
+else
+    not_ok "examples/snake-play-compiles" "$out"
+fi
 for src in "$ROOT"/examples/*.es; do
     [ -e "$src" ] || continue
     not_ok "examples/$(basename "$src")" "examples must live in examples/programs/, examples/lexer/ or examples/parser/"
@@ -545,7 +554,8 @@ if [ "${ES_SANITIZE:-0}" = 1 ]; then
 else
     strict_failed=""
     for src in "$ROOT"/tests/run/*.es "$ROOT"/tests/memory/*.es "$ROOT"/examples/programs/*.es \
-        "$ROOT"/tests/modules/*/main.es "$ROOT"/examples/programs/*/main.es "$ROOT"/benchmarks/*/*.es; do
+        "$ROOT"/tests/modules/*/main.es "$ROOT"/examples/programs/*/main.es "$ROOT"/examples/programs/snake/play.es \
+        "$ROOT"/benchmarks/*/*.es; do
         [ -e "$src" ] || continue
         "$ES" emit "$src" >"$WORK/strict.c" 2>/dev/null || continue
         if ! out=$("$STRICT_CC" -std=c11 -Wall -Wextra -Wpedantic -Werror -O2 -c "$WORK/strict.c" \

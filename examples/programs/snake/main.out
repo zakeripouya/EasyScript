@@ -1,0 +1,46 @@
+A new game, with the food just ahead (score 0, 3 long):
+##########
+#        #
+#        #
+#  oo@*  #
+#        #
+#        #
+##########
+One step right: the snake eats and grows (score 1, 4 long):
+##########
+#        #
+#        #
+#  ooo@  #
+#    *   #
+#        #
+##########
+Turning straight back is ignored (score 1, 4 long):
+##########
+#        #
+#        #
+#   ooo@ #
+#    *   #
+#        #
+##########
+Down twice (S is down) (score 1, 4 long):
+##########
+#        #
+#        #
+#     oo #
+#    * o #
+#      @ #
+##########
+Over after hitting the bottom wall: yes
+Steps after the end change nothing: 4
+A long snake turns into itself (score 0, 5 long):
+##########
+#*       #
+#        #
+#  ooo   #
+#   @o   #
+#        #
+##########
+Over: yes
+Following its own tail around a square is fine: over is no, the snake is at 0, 8, 9 and 1.
+On a board of 4, the food is at 3, the snake at 2, 1 and 0.
+Eating the last free cell fills the board, and the game is over: yes

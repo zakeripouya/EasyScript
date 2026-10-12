@@ -1924,5 +1924,5 @@ Arrow keys are `"up"`, `"down"`, `"left"` and `"right"`; others with names are `
 
 While the keyboard is in use, keys aren't shown as you type them. The terminal goes back to normal when the program ends, however it ends (even with Ctrl+C or a mistake), and while `ask` reads a line or another program runs. Keys can also come from a file (`./game < keys.txt`), read one at a time, which is how games are tested.
 
-The keyboard works on macOS and Linux; on Windows, use WSL until the Windows port.
+Try Snake: `./easyscript run examples/programs/snake/play.es`. The keyboard works on macOS and Linux; on Windows, use WSL until the Windows port.
 
