@@ -92,6 +92,7 @@ Never bless just to make the suite go green. A blessed regression becomes the ne
 ## Language rules
 
 - **New syntax follows [docs/design-principles.md](docs/design-principles.md),** or is added to its "Known exceptions" with the reason, in the same change. Unsure? Add it to "Open questions" there instead.
+- **English pass:** before adding a phrase, read [docs/english-pass.md](docs/english-pass.md) and follow its "Decided" section and design rules; a change of plan goes in its update log in the same change.
 - **Deterministic parsing:** never guess what a sentence means. If it's ambiguous or doesn't match a pattern, report an error with the line, what was expected, and concrete suggestions.
 - Keywords are case-insensitive, and `the`/`a`/`an` are ignored. No word is reserved; the parser decides meaning from context.
 - Error messages are plain English. See [docs/errors.md](docs/errors.md).

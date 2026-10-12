@@ -124,7 +124,7 @@ Apple M4, macOS 15.3.1, EasyScript 0.1.0 plus Phase 2 through step 21 (modules a
 
 Also planned: **EasyScript Notebook** (after Phase 1, growing with Phase 4). It's a chat-style notebook where each message is a statement that runs immediately, with results (text, tables, charts) shown as replies. Messages that don't parse get friendly suggestions. An optional AI fallback writes EasyScript for vague requests and always shows the code before running it. A whole conversation exports as a runnable `.es` file. It will ship as a Jupyter kernel first, so it also works in Jupyter and VS Code.
 
-Details: [docs/roadmap.md](docs/roadmap.md).
+Details: [docs/roadmap.md](docs/roadmap.md). Next is the **English pass** (plain-English questions, totals, choices without `if`, text templates), planned in [docs/english-pass.md](docs/english-pass.md).
 
 ## Design rules
 

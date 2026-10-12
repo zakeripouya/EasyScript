@@ -118,6 +118,8 @@ Each exception exists because following the rule would cost more than it gives. 
 - **`program result` is a kind the language defines,** added only to programs that use `run`, `worked` or the kind's name, so other programs keep the name free. Its fields are read like any record's (`r's output`); a program that defines its own `program result` can't also get one from `run` (an error says so).
 - **`the key being pressed` is a value that changes by itself:** it's whatever key has been pressed and not read yet, so two uses in a row can differ. Like `the time now`, it describes the world when it's worked out.
 
+The English pass's plan for new phrases, and the decisions already made about them, are in [english-pass.md](english-pass.md#decided-2026-10-11).
+
 ## Open questions
 
 None at the moment. Phrasings that may not follow these rules go here until they're decided.
