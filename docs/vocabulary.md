@@ -218,6 +218,8 @@ Reading a file inside an expression also works: `contents of file X` ([Built-in 
 | `else` | Synonym of `otherwise` (also `else if`) | `else:` | Available |
 | `if CONDITION, SENTENCE` | One-line form: one simple sentence, on the same line | `if x is 5, say "five".` | Available |
 | `if CONDITION then SENTENCE` | Same as the comma form | `if x is 5 then say "five".` | Available |
+| `unless CONDITION:` + indented lines | Run the indented sentences only when the condition is **no** (the same as `if not (CONDITION):`). It can't have an `otherwise` | `unless ready:` | Available |
+| `unless CONDITION, SENTENCE` / `unless CONDITION then SENTENCE` | One-line form | `unless ready, say "Not yet."` | Available |
 
 Rules:
 
@@ -283,6 +285,8 @@ All function sentences are **Available**.
 | `to NAME with INPUT and INPUT:` | Define a function with inputs (`of`, `using`, `to`, `for`, `from` and `in` work like `with`; commas work like `and`). NAME is every word before them | `to area with width and height:`, `to add tax to amount:`, `to pause for seconds:`, `to busiest artist from names:`, `to count vowels in word:` |
 | `give back X` / `return X` | End the function and hand X back to whoever called it | `give back width times height` |
 | `return` | End the function early, handing back nothing (`give back nothing` is the same) | `return` |
+| `give back X if CONDITION` / `give back X unless CONDITION` | Leave early with X, but only when the condition is yes (`if`) or no (`unless`); otherwise go on to the next sentence. The same as `if CONDITION, give back X` | `give back 0 if scores is empty.`<br>`give back x unless x is below 0.` |
+| `stop here` / `stop here if CONDITION` / `stop here unless CONDITION` | Leave a function that gives back nothing (the same as `return`), always or only when the condition says so. Only inside a function: to end the program, `stop the program` | `stop here if amount is 0.` |
 | `INPUT (KIND)` | Say what kind of value an input is (optional) | `to area with width (a number) and height (a number):`<br>`to average of scores (a list of numbers):` |
 | `, giving back KIND` | Say what kind of value the function gives back (optional; the comma is optional) | `to roll, giving back a number:` |
 | `NAME X and Y` | Call a function as a sentence | `greet "Paris".` |

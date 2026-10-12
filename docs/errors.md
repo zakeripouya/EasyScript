@@ -278,6 +278,8 @@ A constant is fixed before the program starts, so it can only use numbers, text,
 
 The checker also explains `skip this one` outside a loop, `it` outside a counting loop, using a loop's number after the loop ("it only exists inside that loop"), `give back` outside a function, a function defined inside an `if`, a loop, or another function, two functions with the same name, two inputs with the same name, a variable named like a function, and calling a variable. For constants it also explains calls, `it`, file contents and `nothing` in a constant's value, a constant that uses a later constant or itself, constants inside blocks, duplicate constants, names that clash with a constant, and mistakes in the value itself (like dividing by zero), with the same wording as the runtime errors. The full, tested set is in [`tests/errors/`](../tests/errors/).
 
+**`unless` and leaving early:** `unless` needs yes or no like `if` ("An "unless" needs yes or no to decide, but this is a number."), can't have an `otherwise` ("An "unless" can't have an "otherwise"." with a note to turn it into an `if`), and `stop here` only works inside a function that gives back nothing (""stop here" only works inside a function.", or ""double" gives back a value, so it can't stop without one here."). See [`unless_errors.err`](../tests/errors/unless_errors.err) and [`err_unless.err`](../tests/ast/err_unless.err).
+
 ### Kinds of values
 
 The checker knows the kind of every value (number, text, yes/no, or a list of one of these) before the program runs, so mixing them up is a compile error with the line and carets. These used to be runtime errors, and they keep the same wording.

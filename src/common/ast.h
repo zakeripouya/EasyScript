@@ -367,12 +367,14 @@ typedef struct {
     Expr *condition;
     Block body;
     SourcePos pos;  // the branch's first line, from "if"/"otherwise" to its colon
+    bool unless;    // "unless C": the branch runs when C is no
 } IfBranch;
 
 struct Stmt {
     StmtKind kind;
     SourcePos pos;  // the whole statement, without its period
     Span verb;      // the word that chose the statement as written, e.g. "display"
+    bool stop_here; // STMT_RETURN written "stop here"
     union {
         struct {
             Name name;
@@ -405,6 +407,7 @@ struct Stmt {
         struct {
             Vec(IfBranch) branches;  // the "if" first, then each "otherwise"
             bool one_line;           // "if C, S." or "if C then S."
+            bool trailing;           // "give back x unless C.": the condition after the sentence (one_line too)
         } if_stmt;
         struct {
             Name name;

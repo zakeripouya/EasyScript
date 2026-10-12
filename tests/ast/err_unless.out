@@ -1,0 +1,6 @@
+let ready [1:1]
+  no [1:14]
+define f (x) [10:1]
+  do
+say [13:1]
+  text "after" [13:5]

@@ -1,4 +1,5 @@
-// if / otherwise if / otherwise ("else" means "otherwise").
+// if / otherwise if / otherwise ("else" means "otherwise"), and "unless C"
+// (no "otherwise"), which runs its block when C is no.
 //
 //   if C:                     one-line forms (no "otherwise"):
 //       statements                if C, S.
@@ -67,11 +68,12 @@ bool parser_parse_block(Parser *p, Block *body, SourcePos *header, const SourceP
 }
 
 static bool missing_condition(Parser *p, const char *after) {
+    const char *example = strcmp(after, "unless") == 0 ? "unless x is 5:" : "if x is 5:";
     const Token *next = parser_peek(p, 0);
     bool missing = parser_at_sentence_end(p) || next->kind == TOK_COLON || next->kind == TOK_COMMA ||
                    parser_at_word(p, 0, "then");
     if (missing && parser_error(p, p->prev_span, "Something is missing after \"%s\".", after)) {
-        diag_note(p->diag, "Add a condition that's yes or no, like \"if x is 5:\".");
+        diag_note(p->diag, "Add a condition that's yes or no, like \"%s\".", example);
     }
     return missing;
 }
@@ -146,13 +148,27 @@ static bool parse_one_line_body(Parser *p, IfBranch *branch) {
     return true;
 }
 
+// "unless C:" can't have an "otherwise": the opposite "if" reads better.
+// The rest of the chain is still read, so it causes no more errors.
+static void reject_unless_otherwise(Parser *p) {
+    const Token *keyword = parser_peek(p, 0);
+    if (parser_error(p, keyword->span, "An \"unless\" can't have an \"%s\".", keyword->text)) {
+        diag_note(p->diag, "Turn it around: write \"if\" with the opposite condition, then the \"%s\".",
+                  keyword->text);
+    }
+    Stmt *ignored = ast_new_stmt(p->arena, STMT_IF, parser_token_pos(keyword));
+    parse_otherwise_chain(p, ignored);
+}
+
 Stmt *parse_if(Parser *p, const Token *verb) {
     Stmt *stmt = ast_new_stmt(p->arena, STMT_IF, parser_token_pos(verb));
     stmt->verb = verb->span;
     IfBranch first = {0};
     first.pos = stmt->pos;
+    first.unless = strcmp(verb->text, "unless") == 0;
+    const char *what = first.unless ? "this \"unless\"" : "this \"if\"";
 
-    if (missing_condition(p, "if")) {
+    if (missing_condition(p, verb->text)) {
         parser_skip_line_and_block(p);
         parse_otherwise_chain(p, stmt);
         p->ended_with_block = true;  // set last: statements inside the blocks reset it
@@ -173,18 +189,41 @@ Stmt *parse_if(Parser *p, const Token *verb) {
         const Token *token = parser_peek(p, 0);
         if (parser_error(p, token->span, "I expected a colon, a comma, or \"then\" after the condition, but found %s.",
                          parser_describe(p, token))) {
-            diag_note(p->diag, "Write \"if x is 5:\" with the sentences on indented lines below, "
-                               "or \"if x is 5, say \"five\"\" on one line.");
+            diag_note(p->diag, "Write \"%s x is 5:\" with the sentences on indented lines below, "
+                               "or \"%s x is 5, say \"five\"\" on one line.", verb->text, verb->text);
         }
         parser_skip_line_and_block(p);
         ok = false;
     } else {
-        ok = parser_parse_block(p, &first.body, &first.pos, &stmt->pos, "this \"if\"");
+        ok = parser_parse_block(p, &first.body, &first.pos, &stmt->pos, what);
     }
     if (ok) vec_push(p->arena, &stmt->as.if_stmt.branches, first);
+    if (first.unless && parser_at_otherwise(p)) {
+        reject_unless_otherwise(p);
+        ok = false;
+    }
     ok = parse_otherwise_chain(p, stmt) && ok;
     p->ended_with_block = true;  // set last: statements inside the blocks reset it
     return ok ? stmt : NULL;
+}
+
+// "give back x unless C." / "stop here if C.": a sentence with its condition
+// after it is a one-line if (or unless) holding the sentence.
+Stmt *parser_finish_condition_after(Parser *p, Stmt *stmt) {
+    if (p->sentence_failed || !(parser_at_word(p, 0, "if") || parser_at_word(p, 0, "unless"))) return stmt;
+    const Token *keyword = parser_advance(p);
+    if (missing_condition(p, keyword->text)) return NULL;
+    IfBranch branch = {0};
+    branch.unless = strcmp(keyword->text, "unless") == 0;
+    branch.condition = parse_expression(p);
+    if (p->sentence_failed) return NULL;
+    branch.pos = stmt->pos;
+    vec_push(p->arena, &branch.body, stmt);
+    Stmt *wrapped = ast_new_stmt(p->arena, STMT_IF, ast_pos_join(stmt->pos, branch.condition->pos));
+    wrapped->verb = keyword->span;
+    wrapped->as.if_stmt.one_line = wrapped->as.if_stmt.trailing = true;
+    vec_push(p->arena, &wrapped->as.if_stmt.branches, branch);
+    return wrapped;
 }
 
 // --- A stray "otherwise" -------------------------------------------------------

@@ -187,6 +187,13 @@ Stmt *parse_loop_control(Parser *p, const Token *verb) {
             parser_advance(p);
             return parser_finish_stop(p, parser_new_stmt(p, STMT_STOP, verb));
         }
+        if (parser_at_word(p, 0, "here")) {  // "stop here [if C]": leaves the function
+            parser_advance(p);
+            Stmt *stmt = parser_new_stmt(p, STMT_RETURN, verb);
+            stmt->pos.span.length = p->prev_span.offset + p->prev_span.length - stmt->pos.span.offset;
+            stmt->stop_here = true;
+            return parser_finish_condition_after(p, stmt);
+        }
         if (parser_at_word(p, 0, "loop")) parser_advance(p);
         return parser_new_stmt(p, STMT_BREAK, verb);
     }

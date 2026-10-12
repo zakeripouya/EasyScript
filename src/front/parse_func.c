@@ -195,8 +195,10 @@ Stmt *parse_return(Parser *p, const Token *verb) {
     static const char *const back[] = {"back", NULL};
     if (strcmp(verb->text, "give") == 0 && !parser_expect_word(p, back, "give back total")) return NULL;
     Stmt *stmt = parser_new_stmt(p, STMT_RETURN, verb);
-    if (!parser_at_sentence_end(p)) stmt->as.returned = parse_expression(p);
-    return stmt;
+    bool condition = parser_at_word(p, 0, "if") || parser_at_word(p, 0, "unless");
+    if (!parser_at_sentence_end(p) && !condition) stmt->as.returned = parse_expression(p);
+    if (stmt->as.returned) stmt->pos = ast_pos_join(stmt->pos, stmt->as.returned->pos);
+    return parser_finish_condition_after(p, stmt);
 }
 
 // --- Calling as a statement --------------------------------------------------------

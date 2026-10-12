@@ -24,6 +24,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **`unless`** (`unless ready:`, `unless ready, say "Not yet."`), the opposite of `if`, without an `otherwise`; and **leaving a function early with the condition after the sentence:** `give back 0 if scores is empty.`, `give back x unless x is below 0.`, `stop here if amount is 0.` (`stop here` is `return`). Each is the same `if` (or `if not`) written out, as a one-line if in the syntax tree.
+
 - **`as a number` reads powers of ten** (`"1e5"`, `"2.5E-3"`), and **`X as exact text`** turns a number into the shortest text that reads back as exactly the same number (`as text` keeps 10 significant digits), so numbers survive a round trip through a file. Constants work out both the same way.
 
 - **System tools** (Phase 2, step 22). See [stdlib.md](docs/stdlib.md#system-tools) and the new [chapter 19](docs/language-guide.md#19-programs-and-the-system).

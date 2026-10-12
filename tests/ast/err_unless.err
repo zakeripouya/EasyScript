@@ -1,0 +1,24 @@
+Line 4: An "unless" can't have an "otherwise".
+    otherwise:
+    ^^^^^^^^^
+Turn it around: write "if" with the opposite condition, then the "otherwise".
+
+Line 6: Something is missing after "unless".
+    unless:
+    ^^^^^^
+Add a condition that's yes or no, like "unless x is 5:".
+
+Line 8: I expected a colon, a comma, or "then" after the condition, but found the end of the line.
+    unless ready
+                ^
+Write "unless x is 5:" with the sentences on indented lines below, or "unless x is 5, say "five"" on one line.
+
+Line 11: Something is missing after "unless".
+        give back 1 unless.
+                    ^^^^^^
+Add a condition that's yes or no, like "unless x is 5:".
+
+Line 12: Something is missing after "if".
+        stop here if.
+                  ^^
+Add a condition that's yes or no, like "if x is 5:".

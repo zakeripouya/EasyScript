@@ -339,6 +339,7 @@ static const StmtForm forms[] = {
     {"continue", parse_control_form, true, 0, NULL, "skip this one"},
     {"move", parse_control_form, true, 0, NULL, "move on"},
     {"if", parse_if_form, false, 0, NULL, "if total is 5, say \"five\""},
+    {"unless", parse_if_form, false, 0, NULL, "unless total is 5, say \"not five\""},
     {"check", parse_check_form, false, 0, NULL, "check which kind s is:"},
     {"count", parse_loop_form, false, 0, NULL, "count from 1 to 10:"},
     {"go", parse_loop_form, false, 0, NULL, "go from 0 to 100 in steps of 10:"},

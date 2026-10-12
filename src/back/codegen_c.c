@@ -190,7 +190,9 @@ static void emit_if(Codegen *g, const Stmt *stmt) {
         } else {
             sb_append(&g->body, " else ");
         }
-        if (branch->condition) sb_appendf(&g->body, "if (%s) ", expr_code(g, branch->condition));
+        if (branch->condition) {
+            sb_appendf(&g->body, branch->unless ? "if (!(%s)) " : "if (%s) ", expr_code(g, branch->condition));
+        }
         sb_append(&g->body, "{\n");
         cg_emit_block(g, &branch->body);
         cg_indent(g);

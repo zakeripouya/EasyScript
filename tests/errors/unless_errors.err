@@ -1,0 +1,19 @@
+Line 2: An "unless" needs yes or no to decide, but this is a number.
+    unless total:
+           ^^^^^
+Compare it with something, like "unless x is 5".
+
+Line 4: "stop here" only works inside a function.
+    stop here if total is 5.
+    ^^^^^^^^^
+It ends the function and goes back to whoever used it. To end the whole program, write "stop the program".
+
+Line 6: "double" gives back a value, so it can't stop without one here.
+        stop here if x is 0.
+        ^^^^^^^^^
+Give back a value here too, like "give back 0".
+
+Line 9: "give back" only works inside a function.
+    give back 1 unless total is 5.
+    ^^^^^^^^^^^
+It ends a function and hands a value back to whoever called it. To end the whole program, write "stop the program".

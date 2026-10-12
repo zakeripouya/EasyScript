@@ -412,6 +412,14 @@ if temperature is 24, say "Exactly 24.".
 if temperature is at least 20 then say "Maybe go for a walk.".
 ```
 
+`unless` is the opposite of `if`: its sentences run when the condition is no. It can't have an `otherwise` (turn it into an `if` instead):
+
+```
+unless temperature is above 30:
+    say "No need for the fan.".
+unless temperature is below 0, say "No ice today.".
+```
+
 The conditions are the comparisons from [chapter 2](#2-values-and-expressions), and they must be yes or no. `if temperature:` on its own is an error, caught before the program runs, because a number isn't yes or no.
 
 A name made inside a block only exists inside it. If you need it afterwards, make it before the `if` and change it inside with `set`.
@@ -519,6 +527,18 @@ to area with width and height:
 
 say area of 3 and 4.
 if area of 2 and 5 is 10, say "ten".
+```
+
+A function can leave early: `give back X if CONDITION` (or `unless`) hands X back only when the condition says so, and otherwise goes on to the next sentence. In a function that gives back nothing, `stop here if CONDITION` does the same:
+
+```
+to first word of line, giving back text:
+    give back "" if line is empty.
+    give back item 1 of the words of line.
+
+to warn with amount:
+    stop here unless amount is above 100.
+    say "That's a lot: " followed by amount.
 ```
 
 A function can call itself. Here the factorial of a number is the number times the factorial of the number below it:

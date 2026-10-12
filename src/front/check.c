@@ -143,6 +143,12 @@ static void check_let(Checker *c, const Stmt *stmt) {
 static void check_return(Checker *c, const Stmt *stmt) {
     TypeVar value = stmt->as.returned ? checker_check_value(c, stmt->as.returned) : 0;
     const Function *f = c->function;
+    if (!f && stmt->stop_here) {
+        diag_error(c->diag, stmt->pos.span, "\"stop here\" only works inside a function.");
+        diag_note(c->diag, "It ends the function and goes back to whoever used it. "
+                           "To end the whole program, write \"stop the program\".");
+        return;
+    }
     if (!f) {
         diag_error(c->diag, stmt->pos.span, "\"give back\" only works inside a function.");
         diag_note(c->diag, "It ends a function and hands a value back to whoever called it. "
@@ -154,8 +160,9 @@ static void check_return(Checker *c, const Stmt *stmt) {
     if (nothing && result == TYPE_NOTHING) return;  // "give back nothing" is "return"
     if (!stmt->as.returned) {
         if (result == TYPE_NOTHING || result == TYPE_ERROR) return;
-        diag_error(c->diag, stmt->pos.span, "%s gives back a value, so it can't give back nothing here.",
-                   checker_capital(c, checker_function_label(c, f)));
+        diag_error(c->diag, stmt->pos.span, "%s gives back a value, so it can't %s here.",
+                   checker_capital(c, checker_function_label(c, f)),
+                   stmt->stop_here ? "stop without one" : "give back nothing");
         diag_note(c->diag, "Give back a value here too, like \"give back 0\".");
     } else if (result == TYPE_NOTHING) {
         diag_error(c->diag, stmt->as.returned->pos.span, "%s gives back nothing, so it can't give back a value.",
@@ -202,7 +209,8 @@ void checker_check_statements(Checker *c, const Block *block) {
         check_stmt(c, stmt);
         if (stmt->kind == STMT_IF && stmt->as.if_stmt.branches.len == 1 &&
             always_leaves(&stmt->as.if_stmt.branches.items[0].body)) {
-            checker_narrow_condition(c, stmt->as.if_stmt.branches.items[0].condition, false);
+            checker_narrow_condition(c, stmt->as.if_stmt.branches.items[0].condition,
+                                     stmt->as.if_stmt.branches.items[0].unless);
         }
     }
 }
@@ -268,15 +276,19 @@ static void check_if(Checker *c, const Stmt *stmt) {
     size_t outer = c->present.len;
     for (size_t i = 0; i < stmt->as.if_stmt.branches.len; i++) {
         const IfBranch *branch = &stmt->as.if_stmt.branches.items[i];
-        if (branch->condition) {
+        if (branch->condition && branch->unless) {
+            checker_require(c, checker_check_expr(c, branch->condition), TYPE_YESNO, branch->condition,
+                            "An \"unless\" needs yes or no to decide",
+                            "Compare it with something, like \"unless x is 5\".");
+        } else if (branch->condition) {
             checker_require(c, checker_check_expr(c, branch->condition), TYPE_YESNO, branch->condition,
                             "An \"if\" needs yes or no to decide", "Compare it with something, like \"if x is 5\".");
         }
         size_t before = c->present.len;
-        if (branch->condition) checker_narrow_condition(c, branch->condition, true);
-        checker_check_block(c, &branch->body, stmt->pos.line, "the \"if\"");
+        if (branch->condition) checker_narrow_condition(c, branch->condition, !branch->unless);
+        checker_check_block(c, &branch->body, stmt->pos.line, branch->unless ? "the \"unless\"" : "the \"if\"");
         c->present.len = before;
-        if (branch->condition) checker_narrow_condition(c, branch->condition, false);
+        if (branch->condition) checker_narrow_condition(c, branch->condition, branch->unless);
     }
     c->present.len = outer;
 }

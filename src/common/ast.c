@@ -326,7 +326,8 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
     case STMT_APPEND_FILE: return "append to file";
     case STMT_READ_FILE: sb_appendf(scratch, "read file, call it %s", stmt->as.read_file.name.text); break;
     case STMT_STOP: return stmt->as.stop_code ? "stop the program with code" : "stop the program";
-    case STMT_IF: return stmt->as.if_stmt.one_line ? "if (one line)" : "if";
+    case STMT_IF:
+        return stmt->as.if_stmt.trailing ? "if (after the sentence)" : stmt->as.if_stmt.one_line ? "if (one line)" : "if";
     case STMT_LOOP: return loop_label(stmt, scratch);
     case STMT_BREAK: return "stop the loop";
     case STMT_CONTINUE: return "skip this one";
@@ -334,7 +335,7 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
         sb_appendf(scratch, "define %s%s ", stmt->as.function.private ? "privately " : "", stmt->as.function.name.text);
         append_inputs(scratch, stmt, records);
         break;
-    case STMT_RETURN: return "give back";
+    case STMT_RETURN: return stmt->stop_here ? "stop here" : "give back";
     case STMT_CALL: return "call";
     case STMT_CONSTANT:
         sb_appendf(scratch, "keep %s%s", stmt->as.constant.private ? "privately " : "", stmt->as.constant.name.text);
@@ -370,7 +371,10 @@ static void dump_label(size_t depth, Dump *d, const char *label) {
 static void dump_if(const Stmt *stmt, size_t depth, Dump *d) {
     for (size_t i = 0; i < stmt->as.if_stmt.branches.len; i++) {
         const IfBranch *branch = &stmt->as.if_stmt.branches.items[i];
-        const char *label = i == 0 ? "branch if" : branch->condition ? "branch otherwise if" : "branch otherwise";
+        const char *label = branch->unless ? "branch unless"
+                            : i == 0       ? "branch if"
+                            : branch->condition ? "branch otherwise if"
+                                                : "branch otherwise";
         dump_line(&branch->pos, depth + 1, d, label);
         if (branch->condition) {
             dump_label(depth + 2, d, "condition");
