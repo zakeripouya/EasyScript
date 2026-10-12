@@ -43,21 +43,48 @@ static void require_position(Checker *c, const Expr *position) {
 
 // --- Values --------------------------------------------------------------------------
 
+// Items of different kinds of record (or kinds with variants) that all fit
+// exactly one interface: a list of that interface ("a list of a new dog ...
+// and a new cat ..." holds things that can speak). Two or more is an error.
+static bool check_mixed_kinds(Checker *c, const Expr *expr, const TypeVar *vars, TypeVar *result) {
+    size_t n = expr->as.items.len;
+    Type *kinds = arena_alloc(c->arena, n * sizeof(Type));
+    bool mixed = false;
+    for (size_t i = 0; i < n; i++) {
+        kinds[i] = types_of(c, vars[i]);
+        if (!(type_is_record(kinds[i]) || type_is_sum(kinds[i])) || type_is_maybe(kinds[i])) return false;
+        mixed |= kinds[i] != kinds[0];
+    }
+    Type iface;
+    size_t fits = mixed ? checker_common_interfaces(c, kinds, n, &iface) : 0;
+    if (fits == 0) return false;
+    if (fits > 1) {
+        diag_error(c->diag, expr->pos.span, "The items of this list are different kinds, and they all fit more than one "
+                                            "kind of thing, so it could be a list of either.");
+        diag_note(c->diag, "Start with an empty list of the one you mean, like \"an empty list of %s\", and add each one "
+                           "to its end.", c->records->interfaces.items[type_iface_index(iface)].plural);
+        diag_info(c->diag, DIAG_TWO_MEANINGS, NULL, NULL);
+        *result = types_new(c, TYPE_ERROR, expr->pos.line);
+        return true;
+    }
+    *result = types_new_list(c, types_new(c, iface, expr->pos.line), expr->pos.line);
+    return true;
+}
+
 static TypeVar check_literal(Checker *c, const Expr *expr) {
-    TypeVar first = checker_check_expr(c, expr->as.items.items[0]);
-    for (size_t i = 1; i < expr->as.items.len; i++) {
+    size_t n = expr->as.items.len;
+    TypeVar *vars = arena_alloc(c->arena, n * sizeof(TypeVar));
+    for (size_t i = 0; i < n; i++) vars[i] = checker_check_expr(c, expr->as.items.items[i]);
+    TypeVar mixed;
+    if (check_mixed_kinds(c, expr, vars, &mixed)) return mixed;
+    TypeVar first = vars[0];
+    for (size_t i = 1; i < n; i++) {
         const Expr *item = expr->as.items.items[i];
-        TypeVar var = checker_check_expr(c, item);
+        TypeVar var = vars[i];
         if (!types_unify(c, first, var)) {
             diag_error(c->diag, item->pos.span,
                        "All the items of a list have to be the same kind: the first is %s, but this is %s.",
                        checker_kind(c, first), checker_kind(c, var));
-            Type shared = checker_shared_interface(c, types_of(c, first), types_of(c, var));
-            if (shared != TYPE_UNKNOWN) {
-                diag_note(c->diag, "Both can be used as %s. To keep them in one list, start with \"an empty list of "
-                                   "%s\" and add each one to its end.", checker_type_name(c, shared),
-                          c->records->interfaces.items[type_iface_index(shared)].plural);
-            }
         }
     }
     return types_new_list(c, first, expr->pos.line);
@@ -98,6 +125,11 @@ static TypeVar check_list_op(Checker *c, const Expr *expr) {
     case LIST_SORTED_LENGTH:
     case LIST_SORTED_LENGTH_DOWN: {
         bool length = expr->as.list_op.op >= LIST_SORTED_LENGTH;
+        if (!length && type_is_map(types_of(c, var))) {  // a map, in the order of its values
+            types_defer_one_of(c, operand, types_item(c, var), var, KIND_NUMBER | KIND_TEXT | KIND_DATE,
+                               "I can only sort a map whose values are numbers or text");
+            return var;
+        }
         const char *message = length ? "I can only sort a list of text or lists by their length"
                                      : "I can only sort a list of numbers or text";
         TypeVar item = checker_require_list(c, var, operand, message);
@@ -267,6 +299,12 @@ void checker_check_list_stmt(Checker *c, const Stmt *stmt) {
     case LIST_APPLY:
     case LIST_KEEP:
     case LIST_SORT_BY: break;  // checked above
+    }
+    if (stmt->as.list.op == LIST_SORT && !stmt->as.list.by_length && type_is_map(types_of(c, list_var))) {
+        if (checker_reject_fixed(c, list)) return;
+        types_defer_one_of(c, list, types_item(c, list_var), list_var, KIND_NUMBER | KIND_TEXT | KIND_DATE,
+                           "I can only sort a map whose values are numbers or text");
+        return;
     }
     TypeVar item = checker_require_list(c, list_var, list, message);
     if (types_of(c, item) == TYPE_ERROR) return;

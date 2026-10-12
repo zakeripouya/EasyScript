@@ -3,31 +3,7 @@
 #include <string.h>
 #include "front/lexer.h"
 
-#define TAB_WIDTH 4
-
-typedef struct {
-    Arena *arena;
-    Diag *diag;
-    const char *src;
-    size_t len;
-    size_t pos;
-
-    size_t line;           // 1-based line containing pos
-    size_t line_start;     // offset of the first byte of that line
-    size_t content_start;  // offset just past the line's indentation
-    size_t indent;         // indentation width, tabs counted as TAB_WIDTH
-    bool indent_has_tab;
-    bool line_has_tokens;
-    bool continued;        // the last line ended with ",", "then" or "and", so this one carries on its sentence
-
-    size_t col_offset;     // column() cache: the column of col_offset
-    size_t col;
-
-    Vec(size_t) indents;   // open block indentation widths, bottom is 0
-    Span pending_filler;   // a filler word dropped since the last token (length 0 if none)
-    Vec(Token) tokens;
-    unsigned file;         // the file being lexed (lex_files)
-} Lexer;
+#include "front/lexer_internal.h"
 
 // --- Character classes (ASCII only, independent of locale) -----------------
 
@@ -52,7 +28,7 @@ static bool is_continuation_byte(char c) {
 }
 
 // Length of the UTF-8 sequence starting at s, or 0 if it isn't valid.
-static size_t utf8_seq_len(const char *s, size_t avail) {
+size_t lexer_utf8_len(const char *s, size_t avail) {
     unsigned char c = (unsigned char)s[0];
     size_t n = c < 0x80 ? 1 : (c >> 5) == 0x6 ? 2 : (c >> 4) == 0xE ? 3 : (c >> 3) == 0x1E ? 4 : 0;
     if (n == 0 || n > avail) return 0;
@@ -64,12 +40,12 @@ static size_t utf8_seq_len(const char *s, size_t avail) {
 
 // --- Positions and emitting tokens -----------------------------------------
 
-static char peek_at(const Lexer *lx, size_t offset) {
+char lexer_peek(const Lexer *lx, size_t offset) {
     return offset < lx->len ? lx->src[offset] : '\0';
 }
 
 // True at a newline, a CR before a newline, or the end of input.
-static bool at_line_end(const Lexer *lx, size_t offset) {
+bool lexer_at_line_end(const Lexer *lx, size_t offset) {
     if (offset >= lx->len) return true;
     char c = lx->src[offset];
     return c == '\n' || (c == '\r' && (offset + 1 >= lx->len || lx->src[offset + 1] == '\n'));
@@ -99,7 +75,7 @@ static void emit_layout(Lexer *lx, TokenKind kind, size_t start, size_t end) {
     emit(lx, kind, start, end, "", 0);
 }
 
-static Span span_between(size_t start, size_t end) {
+Span lexer_span(size_t start, size_t end) {
     Span span = {start, end - start};
     return span;
 }
@@ -123,7 +99,7 @@ static const char *describe_levels(Lexer *lx) {
 }
 
 static void report_bad_dedent(Lexer *lx, const char *levels) {
-    diag_error(lx->diag, span_between(lx->line_start, lx->content_start),
+    diag_error(lx->diag, lexer_span(lx->line_start, lx->content_start),
                "This line is indented %zu %s, which doesn't line up with any block above it.",
                lx->indent, plural_spaces(lx->indent));
     diag_note(lx->diag, "Use %s spaces to match one of the blocks it belongs to.%s", levels,
@@ -149,7 +125,7 @@ static void apply_indentation(Lexer *lx) {
     if (vec_last(&lx->indents) != lx->indent) report_bad_dedent(lx, levels);
 }
 
-static void emit_content(Lexer *lx, TokenKind kind, size_t start, size_t end, const char *text, size_t text_len) {
+void lexer_emit_content(Lexer *lx, TokenKind kind, size_t start, size_t end, const char *text, size_t text_len) {
     if (!lx->line_has_tokens) {
         lx->line_has_tokens = true;
         apply_indentation(lx);
@@ -160,7 +136,7 @@ static void emit_content(Lexer *lx, TokenKind kind, size_t start, size_t end, co
 static void emit_source_text(Lexer *lx, TokenKind kind, size_t start, size_t end) {
     char *text = arena_alloc(lx->arena, end - start + 1);
     memcpy(text, lx->src + start, end - start);
-    emit_content(lx, kind, start, end, text, end - start);
+    lexer_emit_content(lx, kind, start, end, text, end - start);
 }
 
 // --- Words and numbers ------------------------------------------------------
@@ -177,18 +153,18 @@ static void lex_plain_word(Lexer *lx, size_t start) {
         text[i] = to_lower(lx->src[start + i]);
     }
     if (is_filler(text)) {
-        lx->pending_filler = span_between(start, lx->pos);
+        lx->pending_filler = lexer_span(start, lx->pos);
         return;
     }
-    emit_content(lx, TOK_WORD, start, lx->pos, text, n);
+    lexer_emit_content(lx, TOK_WORD, start, lx->pos, text, n);
 }
 
 // An apostrophe belongs to a word only between letters: isn't, rock'n'roll.
 // A word ending in 's is the word and then a possessive: "rex's" is "rex", 's.
 static void lex_word(Lexer *lx) {
     size_t start = lx->pos;
-    while (is_word_char(peek_at(lx, lx->pos)) ||
-           (peek_at(lx, lx->pos) == '\'' && is_alpha(peek_at(lx, lx->pos + 1)))) {
+    while (is_word_char(lexer_peek(lx, lx->pos)) ||
+           (lexer_peek(lx, lx->pos) == '\'' && is_alpha(lexer_peek(lx, lx->pos + 1)))) {
         lx->pos++;
     }
     size_t end = lx->pos;
@@ -197,16 +173,16 @@ static void lex_word(Lexer *lx) {
     lex_plain_word(lx, start);
     if (!possessive) return;
     lx->pos = end;
-    emit_content(lx, TOK_POSSESSIVE, end - 2, end, "'s", 2);
+    lexer_emit_content(lx, TOK_POSSESSIVE, end - 2, end, "'s", 2);
 }
 
 static void report_letters_after_number(Lexer *lx, size_t start) {
     size_t number_end = lx->pos;
     size_t end = number_end;
-    while (is_word_char(peek_at(lx, end))) end++;
+    while (is_word_char(lexer_peek(lx, end))) end++;
     int number_len = (int)(number_end - start);
     int letters_len = (int)(end - number_end);
-    diag_error(lx->diag, span_between(start, end), "A number can't have letters stuck to it: \"%.*s\".",
+    diag_error(lx->diag, lexer_span(start, end), "A number can't have letters stuck to it: \"%.*s\".",
                (int)(end - start), lx->src + start);
     diag_note(lx->diag, "Put a space between them, like \"%.*s %.*s\".", number_len, lx->src + start,
               letters_len, lx->src + number_end);
@@ -229,12 +205,12 @@ static bool is_any_suffix(const char *s) {
 // "7th". The suffix has to be the right one ("2th" is an error).
 static bool lex_ordinal(Lexer *lx, size_t start) {
     size_t end = lx->pos;
-    char suffix[2] = {to_lower(peek_at(lx, end)), to_lower(peek_at(lx, end + 1))};
-    if (!is_any_suffix(suffix) || is_word_char(peek_at(lx, end + 2))) return false;
+    char suffix[2] = {to_lower(lexer_peek(lx, end)), to_lower(lexer_peek(lx, end + 1))};
+    if (!is_any_suffix(suffix) || is_word_char(lexer_peek(lx, end + 2))) return false;
     const char *right = ordinal_suffix(lx->src + start, end - start);
     lx->pos = end + 2;
     if (suffix[0] != right[0] || suffix[1] != right[1]) {
-        diag_error(lx->diag, span_between(start, lx->pos), "\"%.*s\" isn't how that ordinal is written.",
+        diag_error(lx->diag, lexer_span(start, lx->pos), "\"%.*s\" isn't how that ordinal is written.",
                    (int)(lx->pos - start), lx->src + start);
         diag_note(lx->diag, "Write \"%.*s%s\".", (int)(end - start), lx->src + start, right);
     }
@@ -247,132 +223,19 @@ static bool lex_ordinal(Lexer *lx, size_t start) {
 // number with an ordinal suffix is an ordinal ("3rd").
 static void lex_number(Lexer *lx) {
     size_t start = lx->pos;
-    while (is_digit(peek_at(lx, lx->pos))) lx->pos++;
-    if (is_alpha(peek_at(lx, lx->pos)) && lex_ordinal(lx, start)) return;
-    if (peek_at(lx, lx->pos) == '.' && is_digit(peek_at(lx, lx->pos + 1))) {
+    while (is_digit(lexer_peek(lx, lx->pos))) lx->pos++;
+    if (is_alpha(lexer_peek(lx, lx->pos)) && lex_ordinal(lx, start)) return;
+    if (lexer_peek(lx, lx->pos) == '.' && is_digit(lexer_peek(lx, lx->pos + 1))) {
         lx->pos++;
-        while (is_digit(peek_at(lx, lx->pos))) lx->pos++;
+        while (is_digit(lexer_peek(lx, lx->pos))) lx->pos++;
     }
     emit_source_text(lx, TOK_NUMBER, start, lx->pos);
-    if (is_alpha(peek_at(lx, lx->pos))) {
-        report_letters_after_number(lx, start);
-    }
+    char a = to_lower(lexer_peek(lx, lx->pos)), m = to_lower(lexer_peek(lx, lx->pos + 1));
+    bool clock = (a == 'a' || a == 'p') && m == 'm' && !is_word_char(lexer_peek(lx, lx->pos + 2));  // 9am: 9, am
+    if (is_alpha(lexer_peek(lx, lx->pos)) && !clock) report_letters_after_number(lx, start);
 }
 
 // --- Strings ----------------------------------------------------------------
-
-static void report_unterminated_string(Lexer *lx, size_t start) {
-    diag_error(lx->diag, span_between(start, lx->pos), "This text is missing its closing quote.");
-    diag_note(lx->diag, "Add a \" where the text ends. Text has to finish on the line it starts on.");
-}
-
-static void report_unknown_escape(Lexer *lx, size_t backslash, size_t seq_len) {
-    diag_error(lx->diag, span_between(backslash, backslash + 1 + seq_len), "I don't know the escape \"\\%.*s\".",
-               (int)seq_len, lx->src + backslash + 1);
-    diag_note(lx->diag, "Inside text you can use \\n (new line), \\t (tab), \\\" (quote) and \\\\ (backslash).");
-}
-
-// Handles the escape at lx->pos (a backslash) and appends its value.
-static void lex_escape(Lexer *lx, StrBuf *value) {
-    size_t backslash = lx->pos;
-    char c = lx->src[backslash + 1];
-    switch (c) {
-    case 'n': sb_append_char(value, '\n'); break;
-    case 't': sb_append_char(value, '\t'); break;
-    case '"': sb_append_char(value, '"'); break;
-    case '\\': sb_append_char(value, '\\'); break;
-    default: {
-        size_t n = utf8_seq_len(lx->src + backslash + 1, lx->len - backslash - 1);
-        if (n == 0) n = 1;
-        report_unknown_escape(lx, backslash, n);
-        sb_append_n(value, lx->src + backslash, n + 1);  // keep it as written
-        lx->pos += n + 1;
-        return;
-    }
-    }
-    lx->pos += 2;
-}
-
-static void skip_to_line_end(Lexer *lx) {
-    while (lx->pos < lx->len && lx->src[lx->pos] != '\n') lx->pos++;
-}
-
-static void lex_token(Lexer *lx);
-
-// "[VALUE]" inside text: LBRACKET, the value's tokens, RBRACKET. A quote or
-// the end of the line before the "]" is an error: the rest of the line is
-// skipped, and an RBRACKET with no text tells the parser not to report it again.
-static void lex_text_value(Lexer *lx) {
-    size_t open = lx->pos++;
-    emit_content(lx, TOK_LBRACKET, open, open + 1, "[", 1);
-    for (;;) {
-        while (lx->pos < lx->len && (lx->src[lx->pos] == ' ' || lx->src[lx->pos] == '\t')) lx->pos++;
-        if (at_line_end(lx, lx->pos) || lx->src[lx->pos] == '"') {
-            diag_error(lx->diag, span_between(open, open + 1),
-                       "This \"[\" starts a value inside the text, but there's no \"]\" to end it.");
-            diag_note(lx->diag, "End the value with \"]\", like \"Hello, [name]!\". To put a \"[\" in text, write it "
-                                "twice: \"[[\".");
-            diag_info(lx->diag, DIAG_MISSING, "\"]\"", NULL);
-            diag_choice(lx->diag, "]");
-            diag_choice(lx->diag, "[[");
-            skip_to_line_end(lx);
-            emit_content(lx, TOK_RBRACKET, lx->pos, lx->pos, "", 0);
-            return;
-        }
-        if (lx->src[lx->pos] == ']') {
-            emit_content(lx, TOK_RBRACKET, lx->pos, lx->pos + 1, "]", 1);
-            lx->pos++;
-            return;
-        }
-        lex_token(lx);
-    }
-}
-
-// Text in quotes. A value in brackets splits it: STRING, LBRACKET, the
-// value's tokens, RBRACKET, STRING (each STRING possibly empty). "[[" is "["
-// and "]]" is "]".
-static void lex_string(Lexer *lx) {
-    size_t start = lx->pos++;
-    StrBuf value;
-    sb_init(&value, lx->arena);
-    while (true) {
-        if (at_line_end(lx, lx->pos)) {
-            report_unterminated_string(lx, start);
-            break;
-        }
-        char c = lx->src[lx->pos];
-        if (c == '"') {
-            lx->pos++;
-            break;
-        }
-        if ((c == '[' || c == ']') && peek_at(lx, lx->pos + 1) == c) {
-            sb_append_char(&value, c);
-            lx->pos += 2;
-        } else if (c == ']') {
-            diag_error(lx->diag, span_between(lx->pos, lx->pos + 1), "This \"]\" doesn't end a value.");
-            diag_note(lx->diag, "To put a \"]\" in text, write it twice: \"]]\". A value in text goes between "
-                                "\"[\" and \"]\", like \"Hello, [name]!\".");
-            diag_info(lx->diag, DIAG_NOT_ALLOWED, NULL, NULL);
-            diag_choice(lx->diag, "]]");
-            sb_append_char(&value, c);
-            lx->pos++;
-        } else if (c == '[') {
-            emit_content(lx, TOK_STRING, start, lx->pos, value.data, value.len);
-            lex_text_value(lx);
-            start = lx->pos;
-            sb_init(&value, lx->arena);
-            if (vec_last(&lx->tokens).text_len == 0) break;  // a broken value: the line is skipped
-        } else if (c == '\\' && !at_line_end(lx, lx->pos + 1)) {
-            lex_escape(lx, &value);
-        } else if (c == '\\') {
-            lx->pos++;  // a backslash at the end of the line; the text is unterminated
-        } else {
-            sb_append_char(&value, c);
-            lx->pos++;
-        }
-    }
-    emit_content(lx, TOK_STRING, start, lx->pos, value.data, value.len);
-}
 
 // --- Symbols and stray characters ------------------------------------------
 
@@ -396,7 +259,7 @@ static void note_for_character(Lexer *lx, const char *s, size_t n) {
 static void report_unexpected(Lexer *lx) {
     const char *s = lx->src + lx->pos;
     unsigned char c = (unsigned char)*s;
-    size_t n = utf8_seq_len(s, lx->len - lx->pos);
+    size_t n = lexer_utf8_len(s, lx->len - lx->pos);
     Span span = {lx->pos, n ? n : 1};
 
     if (c == '\'') {
@@ -427,7 +290,8 @@ static TokenKind two_char_symbol(char a, char b) {
 
 static TokenKind one_char_symbol(char c) {
     switch (c) {
-    case '.': return TOK_PERIOD;
+    case '.':
+    case '?': return TOK_PERIOD;  // "what is total?": a question ends a sentence too
     case ',': return TOK_COMMA;
     case ':': return TOK_COLON;
     case '(': return TOK_LPAREN;
@@ -446,18 +310,18 @@ static TokenKind one_char_symbol(char c) {
 
 static void lex_symbol(Lexer *lx) {
     size_t start = lx->pos;
-    TokenKind kind = two_char_symbol(peek_at(lx, start), peek_at(lx, start + 1));
+    TokenKind kind = two_char_symbol(lexer_peek(lx, start), lexer_peek(lx, start + 1));
     size_t n = 2;
     if (kind == TOK_EOF) {
-        kind = one_char_symbol(peek_at(lx, start));
+        kind = one_char_symbol(lexer_peek(lx, start));
         n = 1;
     }
     // "(first item of people)'s name": a possessive after a closing parenthesis.
     bool after_paren = start > 0 && lx->src[start - 1] == ')';
-    if (kind == TOK_EOF && after_paren && peek_at(lx, start) == '\'' && to_lower(peek_at(lx, start + 1)) == 's' &&
-        !is_word_char(peek_at(lx, start + 2))) {
+    if (kind == TOK_EOF && after_paren && lexer_peek(lx, start) == '\'' && to_lower(lexer_peek(lx, start + 1)) == 's' &&
+        !is_word_char(lexer_peek(lx, start + 2))) {
         lx->pos += 2;
-        emit_content(lx, TOK_POSSESSIVE, start, start + 2, "'s", 2);
+        lexer_emit_content(lx, TOK_POSSESSIVE, start, start + 2, "'s", 2);
         return;
     }
     if (kind == TOK_EOF) {
@@ -489,19 +353,19 @@ static void begin_line(Lexer *lx) {
 static bool is_note_line(const Lexer *lx) {
     const char *word = "note";
     for (size_t i = 0; i < 4; i++) {
-        if (to_lower(peek_at(lx, lx->pos + i)) != word[i]) return false;
+        if (to_lower(lexer_peek(lx, lx->pos + i)) != word[i]) return false;
     }
-    return peek_at(lx, lx->pos + 4) == ':';
+    return lexer_peek(lx, lx->pos + 4) == ':';
 }
 
-static void lex_token(Lexer *lx) {
+void lexer_token(Lexer *lx) {
     char c = lx->src[lx->pos];
     if (is_alpha(c)) {
         lex_word(lx);
     } else if (is_digit(c)) {
         lex_number(lx);
     } else if (c == '"') {
-        lex_string(lx);
+        lexer_string(lx);
     } else {
         lex_symbol(lx);
     }
@@ -510,7 +374,7 @@ static void lex_token(Lexer *lx) {
 // Lexes up to (not including) the newline that ends the current line.
 static void lex_line(Lexer *lx) {
     if (is_note_line(lx)) {
-        skip_to_line_end(lx);
+        lexer_skip_to_line_end(lx);
         return;
     }
     while (lx->pos < lx->len && lx->src[lx->pos] != '\n') {
@@ -518,9 +382,9 @@ static void lex_line(Lexer *lx) {
         if (c == ' ' || c == '\t' || c == '\r') {
             lx->pos++;
         } else if (c == '#') {
-            skip_to_line_end(lx);
+            lexer_skip_to_line_end(lx);
         } else {
-            lex_token(lx);
+            lexer_token(lx);
         }
     }
 }
@@ -536,6 +400,7 @@ static bool carries_on(const Lexer *lx) {
 
 // The NEWLINE token covers "\r\n" when the line ends with one.
 static void end_line(Lexer *lx) {
+    lexer_text_block(lx);  // "let json be the text below:" and the lines under it
     size_t start = lx->pos > lx->line_start && lx->src[lx->pos - 1] == '\r' ? lx->pos - 1 : lx->pos;
     lx->continued = carries_on(lx);
     if (lx->continued) {

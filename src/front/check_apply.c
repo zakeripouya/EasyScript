@@ -51,7 +51,47 @@ static void require_value(Checker *c, const Expr *expr, TypeVar result) {
                        "What's applied has to give back a value");
 }
 
+// "L sorted by amount" where "amount" isn't a definition, a name or a
+// constant, but a field of some kind (or maybe a table's column): by the items' field (like "the top N L by amount", taking all of
+// them, so equal ones keep their order).
+static bool sorts_by_field(Checker *c, const Expr *expr) {
+    const Expr *f = expr->as.apply.function;
+    if (expr->as.apply.kind != APPLY_SORT || f->kind != EXPR_NAME || f->module || checker_find_made(c, f->as.name) ||
+        checker_find_function(c, f->as.name) || checker_find_constant(c, f->as.name)) {
+        return false;
+    }
+    if (checker_field_owner(c, f->as.name)) return true;  // some kind has a field with that name
+    for (size_t i = 0; i < c->records->len; i++) {  // or the program reads a table, whose columns could be
+        const Stmt *definition = c->records->items[i].definition;
+        if (definition && definition->as.record.fields.len > 0 &&
+            strcmp(definition->as.record.fields.items[0].name.text, "0header") == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static TypeVar check_sort_by_field(Checker *c, Expr *expr) {
+    Expr *name = expr->as.apply.function, *list = expr->as.apply.list;
+    bool descending = expr->as.apply.descending;
+    Expr *it = ast_new_expr(c->arena, EXPR_IT, name->pos);
+    Expr *key = ast_new_expr(c->arena, EXPR_FIELD, name->pos);
+    key->as.field.record = it;
+    key->as.field.name.text = name->as.name;
+    key->as.field.name.display = name->display ? name->display : name->as.name;
+    key->as.field.name.pos = name->pos;
+    memset(&expr->as, 0, sizeof expr->as);
+    expr->kind = EXPR_AGGREGATE;
+    expr->as.aggregate.kind = AGG_TOP;
+    expr->as.aggregate.op_span = name->pos.span;
+    expr->as.aggregate.list = list;
+    expr->as.aggregate.key = key;
+    expr->as.aggregate.lowest = !descending;  // smallest first, unless it says "biggest first"
+    return checker_check_aggregate(c, expr);
+}
+
 TypeVar checker_check_apply(Checker *c, const Expr *expr) {
+    if (sorts_by_field(c, expr)) return check_sort_by_field(c, (Expr *)expr);
     TypeVar f = check_function_operand(c, expr->as.apply.function);
     const Expr *list_expr = expr->as.apply.list;
     TypeVar list = checker_check_expr(c, list_expr);

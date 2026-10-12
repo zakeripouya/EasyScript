@@ -54,6 +54,9 @@ typedef enum {
     EXPR_LAMBDA,         // a function taking x that gives back x times 2 / a function taking word: (a block)
     EXPR_APPLY,          // F applied to every X in L, the Xs in L that pass F, L combined using F, L sorted by F
     EXPR_LIBRARY,        // the standard library's values: the square root of X, a random number from A to B, today, ...
+    EXPR_AGGREGATE,      // how many L are ..., any score is ..., the total of L, the top 3 L, ... per FIELD
+    EXPR_DEFAULT,        // X, or D [if there isn't one]: X when it isn't nothing, otherwise D (as.lookup: map is X)
+    EXPR_TABLE,          // a "depends on" table: the first value whose condition (about "it", the subject) is yes
 } ExprKind;
 
 typedef struct Expr Expr;
@@ -203,8 +206,37 @@ struct Expr {
             Expr *start;      // APPLY_COMBINE: ", starting from S" (NULL: the first item)
             bool descending;  // APPLY_SORT: "biggest first"
         } apply;
+        struct {
+            Expr *subject;           // what it depends on ("the total"); "it" in the conditions
+            Vec(Expr *) values;      // one per line, in order
+            Vec(Expr *) conditions;  // one per line; NULL for the last line's "otherwise"
+        } table;
+        struct {
+            AggregateKind kind;
+            Span op_span;      // the words that say what's worked out ("how many", "any", "the total")
+            Expr *list;
+            Expr *condition;   // AGG_COUNT, ANY, ALL, NONE: a test of "it" (the item), or NULL
+            Expr *key;         // worked out from "it" for each item ("the total amount": its amount); NULL: the item
+            Expr *group;       // "per region": the item's group (from "it"), or NULL; then the result is a map
+            Expr *count;       // AGG_TOP, AGG_MOST_COMMON: how many
+            bool lowest;       // AGG_TOP: "the lowest 3"; AGG_BEST: "with the lowest"
+            Name item;         // "any score", "the customer with ...": the item's name as written
+            bool implied;      // the list is the one named like the item's plural ("scores")
+        } aggregate;
     } as;
 };
+
+// What starts an event's sentences (STMT_EVENT), once the program's other sentences have run.
+typedef enum {
+    EVENT_EVERY,     // every N seconds: (interval in seconds)
+    EVENT_AT,        // every day at 9pm: / every Monday at 9am: (weekday, or -1 for every day; time of day)
+    EVENT_WHENEVER,  // whenever C: each time C becomes yes
+    EVENT_WHEN,      // when C, S: the first time C is yes
+    EVENT_KEY,       // whenever a key is pressed: ("it" is the key)
+} EventKind;
+
+// What a definition written as a sentence defines (Stmt.as.function.defines).
+enum { DEFINES_NOTHING, DEFINES_ADJECTIVE, DEFINES_VALUE };
 
 // --- Statements ------------------------------------------------------------
 
@@ -233,6 +265,10 @@ typedef enum {
     STMT_INTERFACE,    // something that can speak is anything with: (ways indented below; top level only)
     STMT_USE,          // use helpers (another file's definitions; loaded before parsing)
     STMT_LIBRARY,      // the standard library's sentences: wait 2 seconds, shuffle L, delete the file F, ...
+    STMT_RULE,         // an age must be between 0 and 150 / a customer's email must contain "@" (top level only)
+    STMT_EVENT,        // every 2 seconds: / every Monday at 9am: / whenever C: / when C, S / whenever a key is pressed:
+    STMT_TRY,          // try to S. if that fails, S2.
+    STMT_EXAMPLE,      // for example, X is Y. (as.value: the condition, checked where it's written) (S uses a file or a folder; "the reason" says why it couldn't)
 } StmtKind;
 
 // What a sentence of the standard library does (STMT_LIBRARY), with its parts in a and b.
@@ -249,7 +285,9 @@ typedef enum {
     DO_DELETE_FILE,    // delete the file A
     DO_DELETE_FOLDER,  // delete the folder A [and everything in it: `everything`]
     DO_READ_CSV,       // read csv file A and call it NAME
-    DO_SAVE_CSV,       // save A as csv file B
+    DO_SAVE_CSV,       // save A as csv file B (or "save A as B"): a list of maps or records, or a map
+    DO_READ_TABLE,     // read the table in A [and call it NAME]: rows of a kind made for it (`type`)
+    DO_SAVE_CHART,     // save a bar chart of A as B [, titled parts[0]] (scale: 0 bar, 1 line, 2 pie; see lib/charts.es)
     DO_COMPLAIN,       // complain A (to the error output)
     DO_RUN,            // run A [with parts...] [and call the result NAME]
     DO_WAIT_KEY,       // wait for a key and call it NAME
@@ -285,6 +323,7 @@ typedef struct {
     Expr *initial;  // "starting at E", or NULL
     SourcePos pos;
     ConstValue folded;  // filled in by the checker: the starting value, worked out (unless it's "nothing")
+    Vec(struct Stmt *) rules;  // filled in by the checker: the STMT_RULEs its values must follow
 } Field;
 
 typedef enum {
@@ -357,6 +396,7 @@ typedef struct {
     Vec(size_t) variants;  // Records.variants
     bool nothing;          // "when it's nothing" (alone, or with variants)
     bool otherwise;
+    Expr *guard;  // "when it's a circle whose radius is over 10": a test of "it" too (NULL: none)
     Block body;
     SourcePos pos;  // from "when"/"otherwise" to its colon
 } MatchBranch;
@@ -390,11 +430,13 @@ struct Stmt {
             Expr *field;  // a field ("add 1 to rex's age"): an EXPR_FIELD (or a map's value: an
                           // EXPR_MAP_GET); target is then unused
             bool append;  // filled in by the checker: "add E to L" where L is a list
+            Expr *start;  // ", starting at S" (a map's value): what a missing key's value starts as, or NULL
         } change;
         Expr *value;  // STMT_SAY
         struct {
             Expr *prompt;
             Name answer;
+            Type kind;  // TYPE_TEXT, or TYPE_NUMBER ("ask for a number") / TYPE_YESNO ("ask yes or no"): asked again until it fits
         } ask;
         struct {
             Expr *text;
@@ -414,8 +456,13 @@ struct Stmt {
             const char *intro;     // the word before the inputs: "with", "of", "using" or "to" (NULL: none)
             bool method;           // "to bark, for a dog:": the first input is the dog
             bool can;              // written "a dog can bark:" (a method)
+            int defines;           // DEFINES_ADJECTIVE ("a customer is loyal if ...", named "is loyal") or
+                                   // DEFINES_VALUE ("a customer's profit is ...", named "the profit"): a
+                                   // method whose body is one "give back", with "it" its first input
             size_t overload;       // a method sharing its name with another kind's: 1 + its kind's index (checker)
             Vec(Name) params;
+            Vec(const char *) joiners; // per input: the word before it after the first ("in": "to column of cell
+                                       // in grid:"), or NULL ("and", ",")
             Vec(Type) declared;    // per input: the kind written in "(a number)", or TYPE_UNKNOWN
             Type declared_result;  // "giving back a number", or TYPE_UNKNOWN
             Vec(Type) param_types; // filled in by the checker
@@ -426,6 +473,26 @@ struct Stmt {
             Vec(Capture) captures; // a lambda: the names it uses from around it (checker)
             NameList cells;           // the names it makes (or its inputs) that functions made inside use (checker)
         } function;
+        struct {
+            EventKind kind;
+            Expr *every;        // EVENT_EVERY: how many
+            double scale;       // EVENT_EVERY: seconds per unit written (60 for minutes, 0.001 for milliseconds)
+            int weekday;        // EVENT_AT: 0 Sunday ... 6 Saturday, or -1 for every day
+            double time;        // EVENT_AT: seconds after midnight
+            Expr *condition;    // EVENT_WHENEVER, EVENT_WHEN
+            Block body;
+        } event;
+        struct {
+            Type kind;          // "a customer's email": the kind; TYPE_UNKNOWN: every kind with the field
+            Name field;
+            Expr *condition;    // yes or no for "it", the field's value
+            const char *message;  // "An age must be between 0 and 150", as written
+            size_t id;          // filled in by the checker: its C function (es_rule1, ...)
+        } rule;
+        struct {
+            struct Stmt *attempt;  // the sentence tried
+            Block fallback;        // what to do if its file or folder can't be used
+        } attempt;  // STMT_TRY
         Expr *returned;  // STMT_RETURN; NULL for a bare "return"
         Expr *call;      // STMT_CALL: an EXPR_CALL
         struct {
@@ -443,7 +510,8 @@ struct Stmt {
             bool folder;      // DO_RENAME, DO_MOVE: "the folder A" rather than "the file A"
             Name name;        // DO_READ_CSV, DO_RUN, DO_WAIT_KEY: the name made (text NULL: none)
             Type type;        // DO_SAVE_CSV, DO_RUN: filled in by the checker: the list's kind, the parts' kinds
-            Vec(Expr *) parts;  // DO_RUN: the words after "with", each text, a number or a list of text
+            Vec(Expr *) parts;  // DO_RUN: the words after "with", each text, a number or a list of text;
+                                // DO_SAVE_CHART: the title (or NULL), then the checker's call of lib/charts.es
         } library;
         Expr *stop_code;  // STMT_STOP: "with code N" or "saying it failed" (1); NULL: 0
         struct {

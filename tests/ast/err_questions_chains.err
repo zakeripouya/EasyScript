@@ -1,0 +1,19 @@
+Line 1: I can't answer "who" questions yet.
+    who is the best?
+    ^^^
+Ask with "what", "which", "how many" or "is", like "which customer has the highest total?".
+
+Line 2: I can't answer "where" questions yet.
+    where is the file?
+    ^^^^^
+Ask with "what", "which", "how many" or "is", like "which customer has the highest total?".
+
+Line 3: Something is missing after "in".
+    read the table in.
+             ^^^^^^^^
+Say which file, like "read the table in "sales.csv" and call it sales".
+
+Line 4: I expected a field after "per" here, but found ".".
+    total the amount of orders per.
+                               ^^^
+Write it like "the total amount of orders per region".

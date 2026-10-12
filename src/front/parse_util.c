@@ -50,7 +50,7 @@ bool parser_at_sentence_end(const Parser *p) {
 
 static const char *const operator_words[] = {
     "and", "or", "not", "is", "isn't", "equals", "reaches", "plus", "minus",
-    "times", "multiplied", "divided", "mod", "followed", "as", "using",
+    "times", "multiplied", "divided", "mod", "followed", "as", "using", "me", "undo",
 };
 
 bool parser_is_operator_word(const char *word) {

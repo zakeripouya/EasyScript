@@ -11,4 +11,4 @@ repeat 2000000 times:
     set x to x times 16807 mod 2147483647
     let word be item (x mod 20000 plus 1) of vocabulary
     set the value for word in counts to (the value for word in counts, or 0) plus 1
-say the number of entries in counts and " " and the value for "w0" in counts and " " and the value for "w7" in counts and " " and the value for "w19999" in counts
+say the number of entries in counts, the value for "w0" in counts, the value for "w7" in counts, the value for "w19999" in counts

@@ -130,7 +130,9 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
         sb_append(scratch, ast_library_op_name(expr->as.library.op));
         if (expr->as.library.op == LIB_DATE_PART) sb_appendf(scratch, " %s", ast_date_part_name(expr->as.library.part));
         if (expr->as.library.op == LIB_IN_PERIOD) sb_appendf(scratch, " %s", ast_period_name(expr->as.library.part));
-        if (expr->as.library.op == LIB_WORKED && expr->as.library.part) sb_append(scratch, " (not)");
+        if ((expr->as.library.op == LIB_WORKED || expr->as.library.op == LIB_IS_INFINITE) && expr->as.library.part) {
+            sb_append(scratch, " (not)");
+        }
         break;
     case EXPR_LENGTH: return "length of";
     case EXPR_FILE_CONTENTS: return "contents of file";
@@ -138,7 +140,11 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
     case EXPR_BINARY: return ast_binary_op_name(expr->as.binary.op);
     case EXPR_CONVERT: return expr->as.convert.target == CONVERT_TO_NUMBER ? "as number"
                                          : expr->as.convert.target == CONVERT_TO_TEXT ? "as text"
-                                                                                       : "as exact text";
+                                         : expr->as.convert.target == CONVERT_TO_EXACT_TEXT ? "as exact text"
+                                         : expr->as.convert.target == CONVERT_TO_MONEY      ? "as money"
+                                         : expr->as.convert.target == CONVERT_TO_PERCENT    ? "as a percent"
+                                         : expr->as.convert.target == CONVERT_TO_TABLE      ? "as a table"
+                                                                                           : "with commas";
     case EXPR_LIST: return "list of";
     case EXPR_EMPTY_LIST:
         sb_appendf(scratch, "empty %s", ast_type_name(scratch->arena, records, expr->as.list_type) + 2);  // without "a "
@@ -152,6 +158,15 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
     case EXPR_LIST_OP: return ast_list_op_name(expr->as.list_op.op);
     case EXPR_EVERY: sb_appendf(scratch, "every %s in", expr->as.every.var.text); break;
     case EXPR_ONLY: return "only";
+    case EXPR_AGGREGATE: {
+        static const char *const names[] = {"how many", "any", "all", "none", "total", "average", "median", "top",
+                                            "most common", "with the highest"};
+        const char *name = names[expr->as.aggregate.kind];
+        if (expr->as.aggregate.lowest) name = expr->as.aggregate.kind == AGG_TOP ? "lowest" : "with the lowest";
+        sb_append(scratch, name);
+        if (expr->as.aggregate.group) sb_append(scratch, " per");
+        break;
+    }
     case EXPR_SLICE: {
         static const char *const names[] = {"items", "first items", "last items", "without the first item",
                                             "without the last item", "every", "without item"};
@@ -174,7 +189,9 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
             break;
         }
         return ast_text_op_name(expr->as.text_op.op);
-    case EXPR_FIELD: sb_appendf(scratch, "field %s", expr->as.field.name.text); break;
+    case EXPR_FIELD:  // "per month": the item's one date, found by the checker
+        sb_appendf(scratch, "field %s", expr->as.field.name.text ? expr->as.field.name.text : "(its date)");
+        break;
     case EXPR_NEW:
         if (type_is_sum(expr->as.new_record.type)) {  // "new circle (shape)"
             const VariantKind *variant = &records->variants.items[expr->as.new_record.variant];
@@ -193,6 +210,8 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
         break;
     case EXPR_MAP_GET: return expr->as.lookup.fallback ? "value for, or" : "value for";
     case EXPR_MAP_WITHOUT: return "map without";
+    case EXPR_DEFAULT: return "or if there isn't one";
+    case EXPR_TABLE: return "depends on";
     }
     return scratch->data;
 }
@@ -233,10 +252,30 @@ static void dump_expr(const Expr *expr, size_t depth, Dump *d) {
         dump_children(expr->as.lookup.fallback, NULL, depth, d);
         break;
     case EXPR_MAP_WITHOUT: dump_children(expr->as.lookup.map, expr->as.lookup.key, depth, d); break;
+    case EXPR_DEFAULT: dump_children(expr->as.lookup.map, expr->as.lookup.fallback, depth, d); break;
+    case EXPR_TABLE:  // the subject, then each value and when
+        dump_children(expr->as.table.subject, NULL, depth, d);
+        for (size_t i = 0; i < expr->as.table.values.len; i++) {
+            const Expr *condition = expr->as.table.conditions.items[i];
+            dump_label(depth + 1, d, condition ? "when" : "otherwise");
+            dump_children(expr->as.table.values.items[i], condition, depth + 1, d);
+        }
+        break;
     case EXPR_ITEM: dump_children(expr->as.item.position, expr->as.item.list, depth, d); break;
     case EXPR_LIST_OP: dump_children(expr->as.list_op.operand, NULL, depth, d); break;
     case EXPR_EVERY: dump_children(expr->as.every.list, expr->as.every.body, depth, d); break;
     case EXPR_ONLY: dump_children(expr->as.only.list, expr->as.only.condition, depth, d); break;
+    case EXPR_AGGREGATE: {  // how many, then the list, then each part under its own label
+        dump_children(expr->as.aggregate.count, expr->as.aggregate.list, depth, d);
+        const Expr *parts[] = {expr->as.aggregate.condition, expr->as.aggregate.key, expr->as.aggregate.group};
+        static const char *const labels[] = {"test", "each", "per"};
+        for (size_t i = 0; i < 3; i++) {
+            if (!parts[i]) continue;
+            dump_label(depth + 1, d, labels[i]);
+            dump_expr(parts[i], depth + 2, d);
+        }
+        break;
+    }
     case EXPR_SLICE:  // in the order they're written, except postfix "without": the list first
         if (expr->as.slice.kind == SLICE_WITHOUT_AT) {
             dump_children(expr->as.slice.list, expr->as.slice.from, depth, d);
@@ -343,7 +382,9 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
     case STMT_USE: sb_appendf(scratch, "use %s", stmt->as.module.text); break;
     case STMT_LIBRARY:
         sb_append(scratch, ast_library_action_name(stmt->as.library.op));
-        if (stmt->as.library.name.text) sb_appendf(scratch, ", call it %s", stmt->as.library.name.text);
+        if (stmt->as.library.name.text && stmt->as.library.op != DO_SAVE_CHART) {  // a chart's name is hidden
+            sb_appendf(scratch, ", call it %s", stmt->as.library.name.text);
+        }
         if (stmt->as.library.everything) sb_append(scratch, " and everything in it");
         if (stmt->as.library.op == DO_WAIT && stmt->as.library.scale != 1) {
             sb_appendf(scratch, " (%s)", stmt->as.library.scale > 1 ? "minutes" : "milliseconds");
@@ -354,6 +395,35 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
     case STMT_SUM: sb_appendf(scratch, "kind %s", stmt->as.sum.name.text); break;
     case STMT_MATCH: return "check which kind";
     case STMT_INTERFACE: sb_appendf(scratch, "interface %s", stmt->as.iface.name.text); break;
+    case STMT_EVENT: {
+        static const char *const days[] = {"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"};
+        double scale = stmt->as.event.scale;
+        int minutes = (int)(stmt->as.event.time / 60);
+        switch (stmt->as.event.kind) {
+        case EVENT_EVERY:
+            sb_appendf(scratch, "every (%s)", scale == 1 ? "seconds" : scale == 60 ? "minutes" : scale == 3600 ? "hours"
+                                                                                                   : "milliseconds");
+            break;
+        case EVENT_AT:
+            sb_appendf(scratch, "every %s at %02d:%02d", stmt->as.event.weekday < 0 ? "day" : days[stmt->as.event.weekday],
+                       minutes / 60, minutes % 60);
+            break;
+        case EVENT_WHENEVER: return "whenever";
+        case EVENT_WHEN: return "when";
+        case EVENT_KEY: return "whenever a key is pressed";
+        }
+        break;
+    }
+    case STMT_TRY: return "try to";
+    case STMT_EXAMPLE: return "for example";
+    case STMT_RULE:
+        sb_append(scratch, "rule: ");
+        if (stmt->as.rule.kind != TYPE_UNKNOWN) {
+            const char *kind = ast_type_name(scratch->arena, records, stmt->as.rule.kind);
+            sb_appendf(scratch, "%s's ", kind + (strncmp(kind, "an ", 3) == 0 ? 3 : 2));  // without "a" or "an"
+        }
+        sb_appendf(scratch, "%s must", stmt->as.rule.field.text);
+        break;
     }
     return scratch->data;
 }
@@ -462,9 +532,11 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
             dump_section(target_label(field), field, depth + 1, d);
             dump_expr(stmt->as.change.amount, depth + 1, d);
         }
+        if (stmt->as.change.start) dump_section("starting at", stmt->as.change.start, depth + 1, d);
         break;
     }
-    case STMT_SAY: dump_expr(stmt->as.value, depth + 1, d); break;
+    case STMT_SAY:
+    case STMT_EXAMPLE: dump_expr(stmt->as.value, depth + 1, d); break;
     case STMT_ASK: dump_expr(stmt->as.ask.prompt, depth + 1, d); break;
     case STMT_WRITE_FILE:
     case STMT_APPEND_FILE:
@@ -489,8 +561,25 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
         break;
     case STMT_CALL: dump_expr(stmt->as.call, depth + 1, d); break;
     case STMT_USE: break;
+    case STMT_RULE: dump_expr(stmt->as.rule.condition, depth + 1, d); break;
+    case STMT_TRY:
+        dump_stmt(stmt->as.attempt.attempt, depth + 1, d);
+        dump_label(depth + 1, d, "if that fails");
+        for (size_t i = 0; i < stmt->as.attempt.fallback.len; i++) dump_stmt(stmt->as.attempt.fallback.items[i], depth + 2, d);
+        break;
+    case STMT_EVENT:
+        dump_children(stmt->as.event.every, stmt->as.event.condition, depth, d);
+        dump_label(depth + 1, d, "do");
+        for (size_t i = 0; i < stmt->as.event.body.len; i++) dump_stmt(stmt->as.event.body.items[i], depth + 2, d);
+        break;
     case STMT_LIBRARY:
         dump_children(stmt->as.library.a, stmt->as.library.b, depth, d);
+        if (stmt->as.library.op == DO_SAVE_CHART) {  // "a bar chart", its title (if any), not the checker's call
+            static const char *const kinds[] = {"a bar chart", "a line chart", "a pie chart"};
+            dump_label(depth + 1, d, kinds[(int)stmt->as.library.scale]);
+            if (stmt->as.library.parts.items[0]) dump_section("titled", stmt->as.library.parts.items[0], depth + 1, d);
+            break;
+        }
         for (size_t i = 0; i < stmt->as.library.parts.len; i++) dump_expr(stmt->as.library.parts.items[i], depth + 1, d);
         break;
     case STMT_CONSTANT: dump_expr(stmt->as.constant.value, depth + 1, d); break;

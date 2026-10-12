@@ -21,7 +21,7 @@ static bool at_postfix_after_comma(const Parser *p) {
 // text, with a space between them where it's needed (BINARY_PIECES).
 Expr *parser_parse_pieces(Parser *p) {
     Expr *expr = parse_expression(p);
-    while (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) && !at_postfix_after_comma(p)) {
+    while (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) && !at_postfix_after_comma(p) && !parser_at_step_link(p)) {
         Span comma = parser_advance(p)->span;
         if (parser_at_sentence_end(p)) {
             if (parser_error(p, comma, "Something is missing after \",\".")) {
@@ -95,15 +95,117 @@ bool parser_at_and(const Parser *p) {
     return parser_at_word(p, 0, "and") && !parser_at_word(p, 1, "call") && !parser_at_next_action(p);
 }
 
-// A sentence, and the ones joined to it with "and" (or "and then"), each
-// added to the block. Returns the last.
-Stmt *parser_parse_actions(Parser *p, Block *block) {
-    Stmt *stmt = parse_statement(p);
-    if (stmt && !p->sentence_failed) vec_push(p->arena, block, stmt);
-    while (stmt && !p->sentence_failed && !p->ended_with_block && parser_at_next_action(p)) {
-        parser_consume(p, parser_at_word(p, 1, "then") ? 2 : 1);
-        stmt = parse_statement(p);
-        if (stmt && !p->sentence_failed) vec_push(p->arena, block, stmt);
-    }
-    return stmt;
+
+// --- Sentences that aren't understood ------------------------------------------------
+
+// More sentences to suggest, besides each statement word's example.
+static const char *const more_sentences[] = {
+    "make a new file called \"notes.txt\"", "read the table in \"sales.csv\" and call it sales",
+    "total the amount per month", "what is the total?", "show me the big orders", "for each score in scores:",
+};
+
+static bool ends_at(const Parser *p, size_t i) {
+    TokenKind kind = parser_peek(p, i)->kind;
+    return kind == TOK_PERIOD || kind == TOK_NEWLINE || kind == TOK_EOF || kind == TOK_DEDENT || kind == TOK_INDENT;
 }
+
+// How many of the sentence's words (up to its end) are words of the example.
+static size_t shared_words(const Parser *p, const char *example) {
+    size_t shared = 0;
+    for (size_t i = 0; !ends_at(p, i) && i < 12; i++) {
+        const Token *token = parser_peek(p, i);
+        if (token->kind != TOK_WORD) continue;
+        bool again = false;  // a word written twice counts once
+        for (size_t j = 0; j < i && !again; j++) {
+            again = parser_peek(p, j)->kind == TOK_WORD && strcmp(parser_peek(p, j)->text, token->text) == 0;
+        }
+        for (const char *at = example; !again && (at = strstr(at, token->text)) != NULL; at++) {
+            bool start = at == example || at[-1] == ' ' || at[-1] == '"';
+            char end = at[token->text_len];
+            if (start && (end == '\0' || end == ' ' || end == '"' || end == '?' || end == ':')) {
+                shared++;
+                break;
+            }
+        }
+    }
+    return shared;
+}
+
+// "Sentences like these work: ...": the (up to) 3 example sentences sharing
+// the most words with this one (the extra ones, then the statement table's,
+// when they tie). False if none
+// shares a word.
+static bool note_closest_sentences(Parser *p) {
+    size_t forms = parser_form_count(), n = forms + COUNT(more_sentences);
+    const char *best[3] = {NULL, NULL, NULL};
+    size_t score[3] = {0, 0, 0};
+    for (size_t i = 0; i < n; i++) {
+        size_t more = COUNT(more_sentences);  // these first: they win ties
+        const char *example = i < more ? more_sentences[i] : parser_form_example(i - more);
+        bool seen = false;
+        for (size_t k = 0; k < 3; k++) seen |= best[k] && strcmp(best[k], example) == 0;
+        size_t s = seen ? 0 : shared_words(p, example);
+        for (size_t k = 0; s > 0 && k < 3; k++) {
+            if (s <= score[k]) continue;
+            for (size_t m = 2; m > k; m--) best[m] = best[m - 1], score[m] = score[m - 1];
+            best[k] = example, score[k] = s;
+            break;
+        }
+    }
+    if (!best[0]) return false;
+    StrBuf list;
+    sb_init(&list, p->arena);
+    for (size_t k = 0; k < 3 && best[k]; k++) {
+        bool last = k == 2 || !best[k + 1];
+        sb_appendf(&list, "%s\"%s\"", k == 0 ? "" : last ? " or " : ", ", best[k]);
+        diag_choice(p->diag, "%s", best[k]);
+    }
+    diag_note(p->diag, "%s: %s.", best[1] ? "Sentences like these work" : "A sentence like this works", list.data);
+    return true;
+}
+
+void parser_report_unknown_start(Parser *p) {
+    static const char *const generic = "Sentences start with a word like \"let\", \"set\", \"say\" or \"ask\".";
+    const Token *token = parser_peek(p, 0);
+    if (token->kind != TOK_WORD) {
+        if (parser_error(p, token->span, "A sentence can't start with %s.", parser_describe(p, token))) {
+            diag_note(p->diag, "%s", generic);
+        }
+        return;
+    }
+    // A name of several words ("late fee is 5") is shown whole.
+    const KnownName *known = parser_match_name(p, 0, false);
+    size_t words = known ? known->words : 1;
+    Span span = {token->span.offset, parser_peek(p, words - 1)->span.offset + parser_peek(p, words - 1)->span.length -
+                                         token->span.offset};
+    const char *written = parser_text(p, span);
+    if (!parser_error(p, span, "I don't know a sentence that starts with \"%s\".", written)) return;
+    // Statement words and the program's function names, as suggestions.
+    size_t forms = parser_form_count(), n = forms + 1 + p->functions.len;
+    const char **candidates = arena_alloc(p->arena, n * sizeof(char *));
+    for (size_t i = 0; i < forms; i++) candidates[i] = parser_form_word(i);
+    candidates[forms] = "please";
+    for (size_t i = 0; i < p->functions.len; i++) candidates[forms + 1 + i] = p->functions.items[i];
+    const char *closest = words == 1 ? parser_closest_words(p, token->text, candidates, n) : NULL;
+    const char *longer = NULL;  // a function whose name starts with this word: "to greet someone:"
+    for (size_t i = 0; words == 1 && !longer && i < p->functions.len; i++) {
+        const char *f = p->functions.items[i];
+        if (strncmp(f, token->text, token->text_len) == 0 && f[token->text_len] == ' ') longer = f;
+    }
+    if (longer) {
+        diag_note(p->diag, "The definition is called \"%s\": its name is every word before \"with\", "
+                           "\"of\", \"using\" or \"to\". To give \"%s\" an input, write \"to %s with %s:\".",
+                  longer, written, written, longer + token->text_len + 1);
+    } else if (parser_at_word(p, words, "can")) {  // "a cat can purr:" before any cat is defined
+        diag_note(p->diag, "\"%s\" isn't a kind of record I know. Define it first, like \"a %s has a name.\", "
+                           "and then what it can do.", written, written);
+    } else if (closest) {
+        diag_note(p->diag, "Did you mean %s?", closest);
+    } else if (parser_looks_like_assignment(parser_peek(p, words))) {
+        diag_note(p->diag, "To keep a value in a name, write \"let %s be ...\". To change it, write \"set %s to ...\".",
+                  written, written);
+    } else if (!note_closest_sentences(p)) {
+        diag_note(p->diag, "%s", generic);
+    }
+}
+

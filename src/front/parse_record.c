@@ -273,6 +273,10 @@ Expr *parser_parse_field(Parser *p, Expr *record) {
 
 bool parser_parse_target(Parser *p, Name *name, Expr **field, const char *const *next) {
     *field = NULL;
+    if (parser_at_every_target(p)) {  // "set every monster's color to blue"
+        *field = parser_parse_every_target(p);
+        return !p->sentence_failed;
+    }
     if (parser_at_lookup(p)) {  // "set the value for "tea" in prices to 3"
         *field = parser_parse_lookup(p);
         if ((*field)->kind == EXPR_MAP_GET && !(*field)->as.lookup.fallback) return !p->sentence_failed;
@@ -284,7 +288,7 @@ bool parser_parse_target(Parser *p, Name *name, Expr **field, const char *const 
         return false;
     }
     Expr *base;
-    size_t words = parser_known_field_words(p, 0);
+    size_t words = parser_field_words(p, 0);
     if (words > 0 && parser_at_word(p, words, "of")) {  // "set the age of rex to 5"
         base = parse_primary(p);
         if (base->kind != EXPR_FIELD || p->sentence_failed) return false;
@@ -322,10 +326,23 @@ bool parser_parse_target(Parser *p, Name *name, Expr **field, const char *const 
 
 // --- New records ----------------------------------------------------------------------------
 
-bool parser_at_new(const Parser *p) {
+static bool at_new_at(const Parser *p, size_t ahead) {
     size_t words;
-    return parser_at_word(p, 0, "new") &&
-           (parser_match_record(p, 1, false, &words) >= 0 || parser_match_variant(p, 1, &words) >= 0);
+    return parser_at_word(p, ahead, "new") &&
+           (parser_match_record(p, ahead + 1, false, &words) >= 0 || parser_match_variant(p, ahead + 1, &words) >= 0);
+}
+
+bool parser_at_new(const Parser *p) {
+    return at_new_at(p, 0);
+}
+
+// After a field's value: "and" or "," and another field. Before another new
+// value ("a list of a new point with x 1 and y 2, a new point ..."), or, in an
+// item of a list or map, something that can't be a field's name (the map's
+// next key), the new value ends and the list or map around it goes on.
+static bool at_next_field(const Parser *p) {
+    bool separator = (parser_at_word(p, 0, "and") && !parser_at_word(p, 1, "call")) || parser_at(p, 0, TOK_COMMA);
+    return separator && !at_new_at(p, 1) && (!p->in_items || parser_peek(p, 1)->kind == TOK_WORD);
 }
 
 static bool is_parenthesized(const Parser *p, const Expr *expr) {
@@ -386,8 +403,7 @@ Expr *parser_parse_new(Parser *p) {
         parser_advance(p);
         do {
             if (!parse_field_value(p, expr)) return parser_error_expr(p);
-        } while (((parser_at_word(p, 0, "and") && !parser_at_word(p, 1, "call")) || parser_at(p, 0, TOK_COMMA)) &&
-                 parser_advance(p));
+        } while (at_next_field(p) && parser_advance(p));
     }
     expr->pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0, 0});
     return expr;
@@ -397,9 +413,12 @@ Expr *parser_parse_new(Parser *p) {
 
 void parser_parse_method_args(Parser *p, Expr *call) {
     if (parser_at_word(p, 0, "for")) parser_advance(p);
+    bool sentence = p->call_sentence;  // for the inputs after the record
+    p->call_sentence = false;
     p->method_record = true;  // the "with" after it belongs to the method
     Expr *record = parse_unary(p);
     p->method_record = false;
+    p->call_sentence = sentence;
     vec_push(p->arena, &call->as.call.args, record);
     call->pos = ast_pos_join(call->pos, record->pos);
     if (parser_at_word(p, 0, "and") && !parser_at_word(p, 1, "call")) {
@@ -410,4 +429,5 @@ void parser_parse_method_args(Parser *p, Expr *call) {
         parser_advance(p);
         parser_parse_call_args(p, call, commas);
     }
+    p->call_sentence = false;
 }

@@ -1,0 +1,44 @@
+every (seconds) [1:1]
+  number 2 [1:7]
+  do
+    say [2:5]
+      text "tick" [2:9]
+every (minutes) [3:1]
+  do
+    say [4:5]
+      text "a minute" [4:9]
+every (milliseconds) [5:1]
+  number 100 [5:7]
+  do
+    say [6:5]
+      text "fast" [6:9]
+every day at 21:00 [7:1]
+  do
+    say [8:5]
+      text "evening" [8:9]
+every monday at 09:30 [9:1]
+  do
+    say [10:5]
+      text "meeting" [10:9]
+every friday at 17:00 [11:1]
+  do
+    say [12:5]
+      text "weekend" [12:9]
+whenever [13:1]
+  greater [13:10]
+    name score [13:10]
+    number 100 [13:24]
+  do
+    say [14:5]
+      text "level up" [14:9]
+when [15:1]
+  greater [15:6]
+    name score [15:6]
+    number 50 [15:20]
+  do
+    say [15:24]
+      text "halfway" [15:28]
+whenever a key is pressed [16:1]
+  do
+    say [17:5]
+      it [17:9]

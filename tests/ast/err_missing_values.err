@@ -31,4 +31,4 @@ Add a value there, like a number, some text in quotes, or a name.
 Line 7: Something is missing after "as".
     say x as
           ^^
-Did you mean "as a number" or "as text"?
+Did you mean "as a number", "as text", "as money", "as a percent" or "as a table"?

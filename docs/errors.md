@@ -370,6 +370,106 @@ Line 2: "scores" is a list of numbers, so this could mean two things.
 To put it at the end of the list, write "add ... to the end of scores". To add it to every item, write "set scores to every n in scores plus ...".
 ```
 
+**Questions about a list**: [`question_errors.es`](../tests/errors/question_errors.es), [`err_questions.es`](../tests/ast/err_questions.es)
+
+```
+Line 4: There's no list called "results" for "any result" to look through.
+    if any result is above 2, say "yes".
+           ^^^^^^
+"any result" looks through the list called "results". Make that list first, or say which list, like "any result in scores ...".
+```
+
+```
+Line 12: I can only add up the items of a list, but this is a dog.
+    say the total of rex.
+                     ^^^
+For a field called "total", write "rex's total".
+```
+
+```
+Line 24: "per month" could mean more than one date here.
+    say the number of trips per month.
+                            ^^^^^^^^^
+Say which, like "per month of start".
+```
+
+```
+Line 14: "the total" could mean two things here.
+    say the total of scores.
+            ^^^^^
+"total" is also a definition in this program. To use the definition, write "total of ..." without "the". To add up a list, write it like "scores added together".
+```
+
+Also: "I expected "there are" or a test like "are above 70" here, ...", "I expected a test like "are above 50" after "all scores", ...", "I expected a field after "per" here, ...", "I expected "with the highest" here, ...", "I expected "divided by" here, ..." (after `the remainder of`), ""per month" needs a date to group by, but a dog has no date in it.", "The top items are picked from a list of numbers or dates, ...", "I can only count how often numbers or text come up, ...".
+
+**Talking to it**: [`chain_errors.es`](../tests/errors/chain_errors.es), [`err_questions_chains.es`](../tests/ast/err_questions_chains.es)
+
+```
+Line 3: "it" could mean what the sentence before gave, or the item here.
+    let more be scores, then say the scores where it is above 4.
+                                                  ^^
+Use a name instead: end the sentence before with "and call it ...", or say the item's name.
+```
+
+```
+Line 1: I can't answer "who" questions yet.
+    who is the best?
+    ^^^
+Ask with "what", "which", "how many" or "is", like "which customer has the highest total?".
+```
+
+Also: "The sentence before this one doesn't give anything that "it" could mean.".
+
+**Choices without if**: [`definition_errors.es`](../tests/errors/definition_errors.es), [`err_definitions.es`](../tests/ast/err_definitions.es)
+
+```
+Line 7: I don't know what "loyal" means for a customer.
+    if ann is loyal, say "yes".
+              ^^^^^
+Say what it means, like "a customer is loyal if ...".
+```
+
+```
+Line 8: I know what "best" means for a customer, but not for a product.
+    if pen is best, say "yes".
+       ^^^
+Say what it means, like "a product is best if ...".
+```
+
+```
+Line 12: "the fee" doesn't say what it is when the total is 10 or less.
+    the fee depends on the total:
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+Add a last line like "10 otherwise." for that case.
+```
+
+```
+Line 10: This is a number, so it's never nothing.
+    say ann's total, or 0.
+        ^^^^^^^^^^^
+", or" gives another value when there isn't one. Leave it out here.
+```
+
+**Events**: [`event_errors.es`](../tests/errors/event_errors.es), [`err_events.es`](../tests/ast/err_events.es)
+
+```
+Line 7: "every" can only be at the top level, not inside an "if" or a loop.
+        every 2 seconds:
+        ^^^^^
+Move it to the start of a line, outside every block. Events run once the rest of the program has.
+```
+
+```
+Line 1: I expected a time of day here, like "9am", "9:30pm" or "17:00".
+    every Monday at 25:00:
+                    ^^
+Write it like "every Monday at 9am:". Hours go from 1 to 12 with am or pm, or from 0 to 23 with minutes (17:00).
+```
+
+Also: ""when a key is pressed" happens more than once, so it's "whenever".", "An event needs yes or no to decide, ...".
+
+Also: "I know how to work out a customer's discount, but not a product's.", ""starting at" only works with a value in a map.", ""the ones with the highest ..." doesn't say how many.", ""the one whose ..." could be more than one.", ""big customers" is worked out from itself.", "A table needs its lines below it, indented, after a ":".", "The "otherwise" line has to be the last one.", "A rule can only be at the top level, ...", "The fields called "weight" aren't all the same kind, so one rule can't cover them.".
+
 **A list inside a list without parentheses**: [`err_list_forms.es`](../tests/ast/err_list_forms.es)
 
 ```
@@ -714,7 +814,8 @@ Give it one, like "to speak, for a fish:".
 | A field of an interface's value | "Something that can speak has no fields, only ways." |
 | A way it doesn't have | "Something that can speak has no way to jump." with the ways it has |
 | A way given the wrong inputs, or used as a value when it gives back nothing | "The way to greet needs text for "name", but this is a number." / "The way to mix takes 2 values after blender, but this gives it 1." / "The way to speak doesn't give back a value, so it can't be used here." |
-| Two kinds in a list written out | "All the items of a list have to be the same kind: ..." with "Both can be used as a speaker. To keep them in one list, start with "an empty list of speakers" and add each one to its end." |
+| Two kinds in a list written out that fit no interface | "All the items of a list have to be the same kind: ..." |
+| Two kinds in a list written out that fit several interfaces | "The items of this list are different kinds, and they all fit more than one kind of thing, so it could be a list of either." with "Start with an empty list of the one you mean, like "an empty list of things that can speak", and add each one to its end." |
 | Definitions | ""speaker" already has a way to speak, on line 5." / "You already defined "speaker" on line 1." / ""dog" is already the name of a kind of record, on line 5." / "Interfaces can only be defined at the top level, not inside an "if" or a loop." ([`iface_definitions.es`](../tests/errors/iface_definitions.es)) |
 
 Mistakes in how a definition is written are parser errors, like "Say what kind of value "name" is, in parentheses after it.", "Each line of an interface is a way, but this starts with "speak"." and "The ways of "speaker" go on the lines below, indented."; the full set is in [`err_iface.err`](../tests/ast/err_iface.err).
@@ -899,8 +1000,101 @@ Positions start at 1: the first item is item 1.
 | Removing a key that isn't there | "I can't remove "Bob": the map has no value for it." with "To check first, use "has"." |
 | A record checked not to be nothing, then set to nothing through another name before it's used | "This was checked not to be nothing, but something has set it to nothing since then." with the hint "Another name for the same record can change it. Check it again just before using it." |
 | A record's field checked to be a variant, then set to another one through another name before it's used | "This was checked to be a circle, but something has set it to a point since then." with the same hint |
+| The average or median of an empty list | "There's nothing to average: the list is empty." / "There's no middle number: the list is empty." |
+| The one with the highest (or lowest) of an empty list | "There's nothing to choose from: the list is empty." with the hint "Check that the list isn't empty first, like "if dogs is not empty:"." |
+| The top N with N not whole or below 0 | "How many to take has to be a whole number, 0 or more, but it's 1.5." |
+| A table's column that isn't in the file | "sales.csv has no column called "amout"." with "Did you mean "amount"?" when one is close |
+| A table's value of the wrong kind | "In sales.csv, line 3, "amount" is "lots", which isn't a number." (or "yes or no", or "a date like 2026-10-31") |
+| An event's "every N seconds" with N 0 or less | "How often has to be more than 0 seconds, but it's 0." |
+| A field given a value its rule doesn't allow | "An age must be between 0 and 150, but this one is 230." / "A person's email must contain "@", but this one is "bob.example.com"." / for other kinds, "..., but this one doesn't follow it." |
 
 Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).
+
+### Talking to it, part 4
+
+```
+Line 1: Say what to do if it fails.
+    try to read file "x.txt" and call it notes.
+    ^^^
+Write it like "try to read file "notes.txt" and call it notes. if that fails, say "No notes yet."".
+```
+
+```
+Line 2: "try to" only works with a file or a folder.
+    try to say "hi". if that fails, say the reason.
+           ^^^^^^^^
+Use it to read, write, make or delete one, like "try to read file "notes.txt" and call it notes."
+```
+
+```
+Line 1: A constant can't be a number written as money, a percent or with commas.
+    keep price as 5 as money.
+                  ^^^^^^^^^^
+Make it with "let", or format the number where it's used.
+```
+
+```
+Line 1: "\u12" isn't a character I know.
+    say "\u{110000} \u12 \u{}".
+                    ^^^^
+Write the character's code in hex, like \u{e9} for "é" or \u{1F600}. Codes go from 1 to 10FFFF.
+```
+
+A sentence EasyScript doesn't know, with no close statement word, gets the sentences that share the most words with it:
+
+```
+Line 13: I don't know a sentence that starts with "duplicate".
+    duplicate the file "a.txt"
+    ^^^^^^^^^
+Sentences like these work: "make a new file called "notes.txt"", "write "hello" to file "notes.txt"" or "append "hello" to file "notes.txt"".
+```
+
+`what's in` reads files only:
+
+```
+Line 2: "what's in" only reads files, so it needs "file" before the file's name.
+    say what's in scores.
+        ^^^^^^^^^
+Write it like "show me what's in file "notes.txt"". To show a list, write "show me scores".
+```
+
+```
+Line 12: "as a table" needs a list or a map, but this is a number.
+    say 5 as a table.
+        ^
+```
+
+An example that isn't yes or no:
+
+```
+Line 2: An example says something that's yes or no, like "total is 12", but this is a number.
+    for example, total plus 1.
+                 ^^^^^^^^^^^^
+```
+
+While the program runs, a wrong example is a warning (the program goes on):
+
+```
+Line 12 (a warning): This example isn't right.
+    for example, double with 4 is 9.
+                 ^^^^^^^^^^^^^^^^^^
+It's 8 here.
+```
+
+A chart of something that isn't numbers:
+
+```
+Line 3: A chart needs a list of numbers or a map to numbers, but this is a list of text.
+    save a pie chart of names as "b.svg".
+                        ^^^^^
+Write it like "save a bar chart of the total amount of sales per month as "sales.svg"".
+```
+
+While the program runs, `ask for a number` with no more answers stops with:
+
+```
+Line 1: There's no answer to read: the input has run out.
+```
 
 ## Coming soon
 

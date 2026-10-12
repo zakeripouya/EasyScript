@@ -23,6 +23,11 @@ fi
 checked=0
 leaky=0
 
+# The same fixed clock and random numbers as tests/run.sh, so programs with
+# events and waits don't wait for real (they're built with the test hooks).
+export ES_NOW="2026-10-11 14:05:00"
+export ES_RANDOM_SEED=7
+
 # check LABEL INPUT CMD...: runs CMD under leaks with INPUT as stdin.
 check() {
     label=$1 input=$2
@@ -67,7 +72,8 @@ sweep emit "$ROOT/tests/errors" "$ROOT/tests/warnings" "$ROOT/tests/run" "$ROOT/
 for src in "$ROOT"/tests/run/*.es "$ROOT"/examples/programs/*.es "$ROOT"/tests/memory/*.es "$ROOT"/tests/warnings/*.es \
     "$ROOT"/tests/modules/*/main.es "$ROOT"/examples/programs/*/main.es; do
     case $src in */tests/warnings/*) ;; *) [ -f "${src%.es}.err" ] && continue ;; esac  # a warning's .err is its warnings
-    ES_SANITIZE=0 "$ES" build "$src" -o "$WORK/program" 2>/dev/null || continue
+    ES_SANITIZE=0 "$ES" emit "$src" >"$WORK/program.c" 2>/dev/null || continue
+    ${CC:-cc} -O2 -DES_HOOKS "$WORK/program.c" -o "$WORK/program" -lm || continue
     words=""  # NAME.args: the words given to the program
     [ -f "${src%.es}.args" ] && words=$(cat "${src%.es}.args")
     # shellcheck disable=SC2086

@@ -1,0 +1,5 @@
+WORD          1:1     say
+STRING        1:5     "\\u{110000} \\u12 \\u{}"
+PERIOD        1:27    .
+NEWLINE       1:28
+EOF           2:1

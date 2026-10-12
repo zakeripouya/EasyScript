@@ -73,7 +73,7 @@ Line 20: "text" is text (made on line 19), but this is a list of maps from text 
                                       ^^^^
 A name keeps the kind of value it was made with. To keep a list of maps from text to text, make a new name for it.
 
-Line 21: I can only save a list of maps as csv, but this is a number.
+Line 21: I can only save a list of maps or records, or a map, as csv, but this is a number.
     save 5 as csv file "out.csv"
          ^
 

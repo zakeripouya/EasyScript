@@ -1,0 +1,14 @@
+Line 1: "\u{110000}" isn't a character I know.
+    say "\u{110000} \u12 \u{}".
+         ^^^^^^^^^^
+Write the character's code in hex, like \u{e9} for "é" or \u{1F600}. Codes go from 1 to 10FFFF.
+
+Line 1: "\u12" isn't a character I know.
+    say "\u{110000} \u12 \u{}".
+                    ^^^^
+Write the character's code in hex, like \u{e9} for "é" or \u{1F600}. Codes go from 1 to 10FFFF.
+
+Line 1: "\u{}" isn't a character I know.
+    say "\u{110000} \u12 \u{}".
+                         ^^^^
+Write the character's code in hex, like \u{e9} for "é" or \u{1F600}. Codes go from 1 to 10FFFF.

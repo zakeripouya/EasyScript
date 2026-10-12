@@ -130,7 +130,8 @@ void checker_report_unknown(Checker *c, const char *name, const char *display, S
     const Symbol *later = find(c->later.items, c->later.len, name);
     const Symbol *ended = find(c->ended.items, c->ended.len, name);
     bool in_function = c->function && !c->function->definition->as.function.lambda;
-    const Symbol *outside = in_function ? find(c->later.items, c->later.len, name) : NULL;
+    const Symbol *outside = in_function || c->in_rule ? find(c->later.items, c->later.len, name) : NULL;
+    bool sentence = c->in_rule || (in_function && c->function->definition->as.function.defines);
     const Constant *near_constant = checker_closest_constant(c, name);
     size_t fn_len = c->function ? strlen(c->function->name) : 0, len = strlen(name);
     bool ends_function_name = fn_len > len && c->function->name[fn_len - len - 1] == ' ' &&
@@ -140,6 +141,9 @@ void checker_report_unknown(Checker *c, const char *name, const char *display, S
         size_t keep = strlen(display_fn) - len - 1;
         diag_note(c->diag, "This definition is called \"%s\". To make \"%s\" an input, introduce it with \"with\": "
                            "\"to %.*s with %s:\".", display_fn, display, (int)keep, display_fn, display);
+    } else if (outside && sentence) {  // "a customer is loyal if ...", "an age must ..."
+        diag_note(c->diag, "This only sees the value it's about (\"it\") and constants. To use \"%s\" in it, keep it "
+                           "with \"keep %s as ...\".", display, display);
     } else if (outside) {
         diag_note(c->diag, "A definition only sees its own inputs and the names it makes. To use \"%s\" here, "
                            "pass it in as an input.", display);

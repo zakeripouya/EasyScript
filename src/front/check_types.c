@@ -309,8 +309,8 @@ static const RecordKind *field_owner(Checker *c, TypeVar var) {
 static Type filled_in(Checker *c, Type type, Type unknown) {
     if (type_is_list(type)) return type_list_of(filled_in(c, type_item(type), TYPE_NUMBER));
     if (type_is_map(type)) {
-        return ast_map_type(c->arena, c->records, filled_in(c, ast_map_key(c->records, type), TYPE_TEXT),
-                            filled_in(c, ast_map_value(c->records, type), TYPE_NUMBER));
+        Type key = filled_in(c, ast_map_key(c->records, type), TYPE_TEXT);  // key first: kinds are added in order
+        return ast_map_type(c->arena, c->records, key, filled_in(c, ast_map_value(c->records, type), TYPE_NUMBER));
     }
     return type == TYPE_UNKNOWN ? unknown : type;
 }

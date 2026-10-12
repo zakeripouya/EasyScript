@@ -1,0 +1,9 @@
+No notes yet: I couldn't read the file "nope.txt": it doesn't exist.
+No table.
+I couldn't read the file "nope.csv": it doesn't exist.
+There's already a file called "made.txt".
+hello
+I couldn't find the file "made.txt".
+I couldn't make the folder "box/inner": the folder it should go in doesn't exist.
+I couldn't write to the file "box/x.txt": the folder it should go in doesn't exist.
+done

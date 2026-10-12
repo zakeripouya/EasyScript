@@ -6,6 +6,13 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Breaking
 
+- **A table read with `and call it NAME` (a plural) has rows of a kind named after it** (`purchases`: `a purchase`), so a row prints as `a purchase with ...` instead of `a row of spending.csv with ...`, and that word now names the kind. `tests/run/table_files.out` changed for this.
+- **`me` and `undo` are reserved** for talking to EasyScript, so they can't be names; **`tell` and `list` start sentences** (`tell me ...`, `list the big orders`), so they can't be one-word definition names. In a program that reads a table, `the WORD of X`, `whose WORD` and `its WORD` can read a column, so a misspelled field there is reported by the checker instead.
+- **`every`, `whenever` and `when` start sentences** (events) at the top level, so a function can no longer be called `whenever` or `when` with one word. Sentence definitions (`a customer is loyal if ...`) are written in place where they're used, so a runtime error inside one no longer adds "while working out ..." to the call chain.
+- **A word a kind defines with `is ... if` is that word everywhere:** with `an order is big if ...` in the program, `x is big` asks the definition instead of comparing x with a name `big`. Sentences starting `NAME must`, `NAME depends on`, `KIND's FIELD is`, and `the NAME is the one ...` now define things instead of being errors.
+
+- **`total`, `average`, `median`, `number`, `half`, `twice`, `top`, `lowest`, `any`, `all`, `none`, `remainder` and `how many` start phrases** when no definition has that name: `total of 3`, where `total` is a name holding a number, now reads as "the total of 3" (an error: 3 isn't a list) instead of "total can't be called". `tests/errors/call_variable.es` now uses `price`. A definition with one of these names keeps working (`total of marks` calls it); written with `the` it's an error asking which was meant.
+
 - **`F of X` where F is both a function and a field's name is an error** asking for `X's F` or `F with X`, because `the F of X` now also reads a field. Three tests that called such functions with `of` now use `with`.
 
 - **`and` no longer joins text:** `"Hello, " and name` is an error that shows the new ways: commas in `say` (`say "Hello,", name, "!"`), brackets in text, or `followed by`. `and` between values now always means both (yes/no). Tests and examples that joined with `and` now use `followed by` or the new forms.
@@ -21,6 +28,35 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 - **`the position of X in T` (and `in L`) is `a number or nothing`,** and gives **nothing** instead of 0 when X isn't there, following the design rule that "not found" results use `or nothing`. Using it as a number now needs a check first: `if at is not nothing:`, `if at is nothing, ...`, or `check which kind at is:`. Programs that compared it with 0 (`if the position of "@" in address is 0`) write `is nothing` instead. The exception for it is gone from the design principles.
 
+### Fixed
+
+- The compiler no longer depends on the order C works out a call's arguments in. Built with GCC on Linux, `easyscript plan` listed the parts of `any ... and not every ...` backwards, and some generated programs numbered their sites differently. Each part is now worked out first, in written order.
+
+### Changed (examples)
+
+- The "Start here" examples use the most natural forms the language has: `read the table in` in `order_report.es`, `unless file X exists:`, no parentheses around `new` values in lists, brackets in text instead of `followed by`, field kinds worked out from use, and `the number of parcels per country`. Same output.
+- New: [docs/proposals/](docs/proposals/README.md), where new phrases start.
+
+### Added (charts)
+
+- `save a bar chart of X as F` (also `line chart`, `pie chart`), `make a bar chart of X called F`, and `..., titled T`: SVG pictures of a list of numbers or a map to numbers, drawn by `lib/charts.es`, a module written in EasyScript that the compiler joins to programs with a chart sentence. The "best months" example now ends with its chart.
+
+### Added (English pass part 4, continued)
+
+- `ask for a number Q and call it NAME` and `ask yes or no Q and call it NAME`, asking again until the answer fits.
+- `X as money` (`$1,234.50`), `X as a percent` (`25%`), `X with commas` (`1,234,567`).
+- `the NAME is always VALUE.`: a name worked out again each time it's read; `the sum of L` as another way to say `the total of L`.
+- `try to S. if that fails, ...` for sentences that use a file or a folder, with `the reason`.
+- `the text below:` with indented lines: text of several lines, exactly as written. Escapes `\r` and `\u{e9}`/`\u00e9`.
+- `when it's a circle whose radius is over 10:` (and `where`, `that`) in `check which kind`.
+- Examples as tests: `for example, double with 3 is 6.` is checked where it's written (a warning if it isn't right), and `easyscript test FILE` says how many were right.
+- `X as a table` (lists and maps in columns), `L sorted by FIELD` (a field of the items), `add A and B to the end of file F, one per line`, and `what's in file F` / `what's in it`.
+- Examples `groceries.es` and `budget.es` (the plan's multi-step request and the budget session's saved program).
+- English pass part 5: a definition can join two inputs with `in`, `to`, `from`, `by` or `at` (`to column of cell in grid:`, called `the column of 7 in 4`); in a call sentence each input is a whole value (`report with "bad" and "I expected " followed by word.`); `a new ...` values in a list or map need no parentheses (`a list of a new point with x 1 and y 2, a new point with x 3 and y 4`); a list written out with items of different kinds that fit exactly one interface is a list of it; `profit by customer` as a name suggests "customer profits".
+- The language guide starts with "Your first programs", a chapter for people who have never programmed (no programmer words, checked by `audit/plain-words`; every program in it run by `docs/first-programs-run`). The examples README lists the plain-English programs first.
+- `L sorted by FIELD` sorts with the same stable key sort as `sorted by F` (it used a heap and was twice as slow). `NAME with commas` works after a plain name (it was read as calling NAME). `benchmarks/run.sh`'s 20% check now works (its ratio was never worked out), and the `sort` and `words` benchmarks no longer join text with `and`.
+- A sentence EasyScript doesn't understand (with no close statement word) gets the 2 or 3 sentences that share the most words with it.
+
 ### Changed
 
 - **Messages use the plain words of the new [voice guide](docs/voice.md):** no more "variable" ("name") or "function" for `to` definitions ("I don't know how to "aera".", ""give back" only works inside a definition.", "Definitions are using each other too deeply ..."), and seven long messages were split or shortened to read at grade 8 or below. A new audit (`audit/plain-words`) keeps it that way: no banned programmer words outside quotes, and a reading level of grade 8 or below for every tested error.
@@ -30,6 +66,15 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - **Runtime errors from `run`, and from a word past the end of the words given to the program, no longer leak** (LeakSanitizer on Linux found `argv` and a number shown in the message left unreachable).
 
 ### Added
+
+- **Questions and totals about lists** (English pass part 2): `how many scores are above 70`, `how many guests there are`, `if any score is above 90`, `if every order's amount is above 0`, `if no score is below 0`, `all scores are at least 50`, `none of scores are ...`, `the total of scores` / `the total amount of orders`, `the average`, `the median`, `the top 3 scores`, `the lowest 2 orders by amount`, `the 10 most common words`, `the customer with the highest total` (also `most`, `fewest`, ...), and grouping with `per` (`the total amount of orders per region`, `the number of sales per month`). Each goes through the list once without making a list it doesn't give back (the top N keep a small heap), `any`/`every`/`no` stop as soon as the answer is known, and a filter in the list is tested in the same pass.
+- **Choices without if** (English pass part 3): defaults (`the nickname, or "friend" if there isn't one`, `add 1 to the value for word in counts, starting at 0`); describing words (`a customer is loyal if ...`, `a big order is one whose ...`, then `if rex is loyal`, `the loyal customers`, `how many orders are big`); values worked out from a record (`an order's profit is its amount minus its cost.`, then `o's profit`) and named values (`the best customer is the one with the highest profit.`, `the big orders are the ones whose ...`); tables (`the shipping cost depends on the total:` with `5 when it's over 50.` and `10 otherwise.` lines); rules (`an age must be between 0 and 150.`, checked whenever a field gets a value); and acting on groups (`remove the tasks that are done.`, `set every monster's color to "blue".`). `their FIELD` works like `its FIELD`.
+- **Talking to it** (English pass part 4): questions ending in `?` (`what is total?`, `total?`, `is total above 100?`, `how many orders are big?`, `which customer has the highest total?`, `which orders are big?`), requests (`show me`, `give me`, `tell me`, `list`), polite words (`can you`, `I want to`, `let's`, ...), steps in a row (`, then`, `and then`, `after that`, `first`, `finally`) where `it` is what the step before gave, actions (`total the amount per month`, `count the big orders`, `... and call it NAME`), tables in files (`read the table in "sales.csv"`, with columns learned from use and checked when read), and `save X as "file.csv"` for maps and records too.
+- **Events:** `every 2 seconds:`, `every Monday at 9am:` (and `every day at 9:30pm:`, `at 17:00`), `whenever score is over 100:`, `when score is over 50, say ...`, and `whenever a key is pressed:` (with `it` the key), run by a loop once the rest of the program has. The Snake example's game loop is now written with them. Times of day like `9am` are now read as a number and `am`.
+- **Maps sorted by their values:** `totals sorted biggest first` and `sort totals biggest first`.
+- **Math words:** `half of X`, `twice X`, `N percent of X`, `the remainder of X divided by Y`, `X is infinite`, and a comma before `rounded`, `sorted` or `as` that puts it after the whole value (`minutes divided by 60, rounded down`).
+- **Plural verbs in filters:** `the words that start with "a"`, `how many words contain "e"` (also `end with`, `don't contain`, ...).
+- **`easyscript plan FILE`** (or `easyscript build --plan FILE`): one line per list question, filter and sort, saying what it became (passes, lists made, filters tested in the same pass), produced by the code generator and golden-tested in `tests/plan`.
 
 - **Errors as data:** `easyscript errors FILE` prints each error and warning as a JSON object per line. The errors added in this release also carry what the problem is, what's missing, the kind expected and the possible answers, so a later notebook can ask them as questions.
 

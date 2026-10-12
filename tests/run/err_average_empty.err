@@ -1,0 +1,3 @@
+Line 3: There's nothing to average: the list is empty.
+    say the average of scores.
+            ^^^^^^^^^^^^^^^^^

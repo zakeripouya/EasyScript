@@ -90,6 +90,7 @@ static void emit_list_op(Codegen *g, const Expr *expr, StrBuf *out) {
     case LIST_SORTED_DOWN:
     case LIST_SORTED_LENGTH:
     case LIST_SORTED_LENGTH_DOWN:
+        cg_plan(g, expr->pos, "\"sorted\": a copy of the list (reused when nothing else holds it), then sorted.");
         sb_appendf(out, "es_list_sorted(%s, %d)", code, (int)(expr->as.list_op.op - LIST_SORTED));
         break;
     case LIST_COPY:
@@ -205,6 +206,7 @@ static void collect(Codegen *g, const Expr *expr, Names *bound, Codegen *helper)
     case EXPR_LIST:
     case EXPR_MAP: collect_all(g, expr->as.items.items, expr->as.items.len, bound, helper); return;
     case EXPR_MAP_GET:
+    case EXPR_DEFAULT:
     case EXPR_MAP_WITHOUT: {
         Expr *parts[] = {expr->as.lookup.key, expr->as.lookup.map, expr->as.lookup.fallback};
         collect_all(g, parts, 3, bound, helper);
@@ -225,6 +227,17 @@ static void collect(Codegen *g, const Expr *expr, Names *bound, Codegen *helper)
     case EXPR_ONLY: {
         Expr *parts[] = {expr->as.only.list, expr->as.only.condition};
         collect_all(g, parts, 2, bound, helper);
+        return;
+    }
+    case EXPR_TABLE:
+        collect(g, expr->as.table.subject, bound, helper);
+        collect_all(g, expr->as.table.values.items, expr->as.table.values.len, bound, helper);
+        collect_all(g, expr->as.table.conditions.items, expr->as.table.conditions.len, bound, helper);
+        return;
+    case EXPR_AGGREGATE: {
+        Expr *parts[] = {expr->as.aggregate.count, expr->as.aggregate.list, expr->as.aggregate.condition,
+                         expr->as.aggregate.key, expr->as.aggregate.group};
+        collect_all(g, parts, 5, bound, helper);
         return;
     }
     case EXPR_APPLY: {
@@ -276,6 +289,7 @@ static bool calls_function(const Codegen *g, const Expr *expr) {
             if (calls_function(g, expr->as.items.items[i])) return true;
         }
         return false;
+    case EXPR_DEFAULT: return calls_function(g, expr->as.lookup.map) || calls_function(g, expr->as.lookup.fallback);
     case EXPR_MAP_GET:
     case EXPR_MAP_WITHOUT:
         return calls_function(g, expr->as.lookup.key) || calls_function(g, expr->as.lookup.map) ||
@@ -286,6 +300,23 @@ static bool calls_function(const Codegen *g, const Expr *expr) {
     case EXPR_LIST_OP: return calls_function(g, expr->as.list_op.operand);
     case EXPR_EVERY: return calls_function(g, expr->as.every.list) || calls_function(g, expr->as.every.body);
     case EXPR_ONLY: return calls_function(g, expr->as.only.list) || calls_function(g, expr->as.only.condition);
+    case EXPR_TABLE:
+        if (calls_function(g, expr->as.table.subject)) return true;
+        for (size_t i = 0; i < expr->as.table.values.len; i++) {
+            const Expr *condition = expr->as.table.conditions.items[i];
+            if (calls_function(g, expr->as.table.values.items[i]) || (condition && calls_function(g, condition))) {
+                return true;
+            }
+        }
+        return false;
+    case EXPR_AGGREGATE: {
+        const Expr *parts[] = {expr->as.aggregate.count, expr->as.aggregate.list, expr->as.aggregate.condition,
+                               expr->as.aggregate.key, expr->as.aggregate.group};
+        for (size_t i = 0; i < 5; i++) {
+            if (parts[i] && calls_function(g, parts[i])) return true;
+        }
+        return false;
+    }
     case EXPR_SLICE:
         return (expr->as.slice.from && calls_function(g, expr->as.slice.from)) ||
                (expr->as.slice.to && calls_function(g, expr->as.slice.to)) || calls_function(g, expr->as.slice.list);
@@ -350,26 +381,70 @@ static void emit_helper(Codegen *g, const Expr *expr, Codegen *helper, size_t id
     }
     sb_append(out, "    }\n");
     if (!every) sb_append(out, "    es_list_shrink(es_result); /* exactly the items kept */\n");
-    if (type_counted(item_type)) {
-        sb_appendf(out, "    %s(&", cg_drop(item_type));
-        cg_append_raw_var(out, item, item_type);
+    cg_drop_helper_names(helper, out);
+    sb_append(out, "    es_list_release(es_items);\n    return es_result;\n}\n\n");
+}
+
+void cg_helper_init(const Codegen *g, Codegen *helper) {
+    *helper = (Codegen){0};
+    helper->arena = g->arena;
+    helper->records = g->records;
+    helper->texts = g->texts;
+    helper->inits = g->inits;
+    helper->helpers = g->helpers;
+    helper->sites = g->sites;
+    helper->functions = g->functions;
+    helper->constants = g->constants;
+    helper->closures = g->closures;
+    helper->plan = g->plan;
+    helper->inlining = g->inlining;  // so a definition that uses itself through a question isn't written in place forever
+}
+
+// Every text, list or record a helper keeps in a name of its own (its item,
+// and the hidden names of tables and definitions written in place), released
+// before it gives back.
+void cg_drop_helper_names(const Codegen *helper, StrBuf *out) {
+    for (size_t i = 0; i < helper->vars.len; i++) {
+        const VarCode *var = &helper->vars.items[i];
+        if (!type_counted(var->type)) continue;
+        sb_appendf(out, "    %s(&", cg_drop(var->type));
+        cg_append_raw_var(out, var->name, var->type);
         sb_append(out, ");\n");
     }
-    sb_append(out, "    es_list_release(es_items);\n    return es_result;\n}\n\n");
+}
+
+void cg_helper_collect(Codegen *g, const Expr *expr, Codegen *helper) {
+    Names bound = {0};
+    if (expr) collect(g, expr, &bound, helper);
+}
+
+bool cg_calls_function(const Codegen *g, const Expr *expr) {
+    return calls_function(g, expr);
+}
+
+void cg_store_item(StrBuf *out, const char *name, Type type, const char *suffix) {
+    store_item(out, name, type, suffix);
+}
+
+void cg_helper_params(StrBuf *out, const Codegen *helper) {
+    for (size_t i = 0; i < helper->captured.len; i++) {
+        Type type = helper->captured.items[i].type;
+        sb_appendf(out, ", %s%s", cg_ctype(type), type_counted(type) ? "" : " ");
+        cg_append_raw_var(out, helper->captured.items[i].name, type);
+    }
+}
+
+void cg_helper_args(const Codegen *g, StrBuf *out, const Codegen *helper) {
+    for (size_t i = 0; i < helper->captured.len; i++) {
+        sb_append(out, ", ");
+        cg_append_var(g, out, helper->captured.items[i].name, helper->captured.items[i].type);
+    }
 }
 
 // es_every1(LIST, captured variables...)
 static void emit_helper_call(Codegen *g, const Expr *expr, StrBuf *out) {
-    Codegen helper = {0};
-    helper.arena = g->arena;
-    helper.records = g->records;
-    helper.texts = g->texts;
-    helper.inits = g->inits;
-    helper.helpers = g->helpers;
-    helper.sites = g->sites;
-    helper.functions = g->functions;
-    helper.constants = g->constants;
-    helper.closures = g->closures;
+    Codegen helper;
+    cg_helper_init(g, &helper);
     Names bound = {0};
     if (expr->kind == EXPR_EVERY) {
         vec_push(g->arena, &bound, expr->as.every.var.text);
@@ -379,6 +454,12 @@ static void emit_helper_call(Codegen *g, const Expr *expr, StrBuf *out) {
     }
     const Expr *list = expr->kind == EXPR_EVERY ? expr->as.every.list : expr->as.only.list;
     const char *list_code = cg_list_operand(g, list);
+    if (expr->kind == EXPR_EVERY) {
+        cg_plan(g, expr->pos, "\"each\": 1 pass, making 1 new list of the same length.");
+    } else {
+        cg_plan(g, expr->pos, "a filter (\"that\", \"whose\", \"where\" or \"only\"): 1 pass, making 1 new list of the "
+                              "items kept.");
+    }
     size_t id = ++g->helpers->count;
     emit_helper(g, expr, &helper, id);
     sb_appendf(out, "es_%s%zu(%s", expr->kind == EXPR_EVERY ? "every" : "only", id, list_code);
@@ -478,7 +559,8 @@ const char *cg_list_stmt(Codegen *g, const Stmt *stmt) {
     case LIST_SORT_BY: return cg_replace_stmt(g, stmt);
     case LIST_SORT: {
         static const char *const how[] = {"ES_SORT_UP", "ES_SORT_DOWN", "ES_SORT_LENGTH_UP", "ES_SORT_LENGTH_DOWN"};
-        sb_appendf(&out, "es_sort(%s, %s)", cg_operand(g, stmt->as.list.list, false),
+        sb_appendf(&out, "es_%s(%s, %s)", type_is_map(stmt->as.list.list->type) ? "map_sort" : "sort",
+                   cg_operand(g, stmt->as.list.list, false),
                    how[stmt->as.list.by_length * 2 + stmt->as.list.descending]);
         break;
     }

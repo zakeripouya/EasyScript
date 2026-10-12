@@ -317,7 +317,11 @@ static Expr *parse_list_item(Parser *p) {
         }
         return parser_error_expr(p);
     }
-    return parse_join(p);
+    bool outer = p->in_items;
+    p->in_items = true;
+    Expr *item = parse_join(p);
+    p->in_items = outer;
+    return item;
 }
 
 // list of A, B and C: commas separate items until the first "and"; after
@@ -332,8 +336,8 @@ static Expr *parse_list_literal(Parser *p) {
         list->pos = ast_pos_join(list->pos, item->pos);
         if (parser_at_and(p)) {
             after_and = true;
-        } else if (after_and || !parser_at(p, 0, TOK_COMMA)) {
-            return list;
+        } else if (after_and || !parser_at(p, 0, TOK_COMMA) || parser_at_step_link(p)) {
+            return list;  // (", then ..." starts the next step)
         }
         parser_advance(p);
     }
@@ -390,6 +394,41 @@ Expr *parser_parse_list_word(Parser *p) {
 
 // --- Changing lists ---------------------------------------------------------------
 
+static Expr *new_line_text(Parser *p, SourcePos pos) {
+    Expr *text = ast_new_expr(p->arena, EXPR_TEXT, pos);
+    text->as.text.value = "\n";
+    text->as.text.len = 1;
+    return text;
+}
+
+// ", one per line" after "add A and B to the end of file F": A, B, ... on
+// lines of their own (A followed by a new line followed by B ...), or a
+// list's items joined with new lines.
+static Expr *one_per_line(Parser *p, Expr *value, Span words) {
+    if (value->kind == EXPR_BINARY && value->as.binary.op == BINARY_AND) {
+        Expr *left = value->as.binary.left, *right = value->as.binary.right;
+        if (left->kind == EXPR_BINARY && left->as.binary.op == BINARY_AND) left = one_per_line(p, left, words);
+        if (right->kind == EXPR_BINARY && right->as.binary.op == BINARY_AND) right = one_per_line(p, right, words);
+        Expr *line = ast_new_expr(p->arena, EXPR_BINARY, value->pos);
+        line->as.binary.op = BINARY_JOIN;
+        line->as.binary.op_span = value->as.binary.op_span;
+        line->as.binary.left = left;
+        line->as.binary.right = new_line_text(p, value->pos);
+        Expr *joined = ast_new_expr(p->arena, EXPR_BINARY, value->pos);
+        joined->as.binary.op = BINARY_JOIN;
+        joined->as.binary.op_span = value->as.binary.op_span;
+        joined->as.binary.left = line;
+        joined->as.binary.right = right;
+        return joined;
+    }
+    Expr *joined = ast_new_expr(p->arena, EXPR_TEXT_OP, value->pos);
+    joined->as.text_op.op = TEXT_JOINED;
+    joined->as.text_op.op_span = words;
+    joined->as.text_op.operand = value;
+    joined->as.text_op.arg = new_line_text(p, value->pos);
+    return joined;
+}
+
 Stmt *parser_finish_add_end(Parser *p, Stmt *stmt, Expr *value) {
     parser_consume(p, 2);  // end of
     if (parser_at_word(p, 0, "file") && parser_starts_operand(parser_peek(p, 1))) {  // add X to the end of file F
@@ -398,6 +437,10 @@ Stmt *parser_finish_add_end(Parser *p, Stmt *stmt, Expr *value) {
         memset(&stmt->as, 0, sizeof stmt->as);
         stmt->as.file_write.text = value;
         stmt->as.file_write.path = parse_expression(p);
+        if (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) && parser_match_words_at(p, 1, "one per line")) {
+            Span words = parser_consume(p, 4);
+            stmt->as.file_write.text = one_per_line(p, value, words);
+        }
         return stmt;
     }
     stmt->kind = STMT_LIST;
@@ -447,6 +490,7 @@ Stmt *parser_parse_remove(Parser *p, const Token *verb) {
     static const char *const from[] = {"from", NULL};
     static const char *const example = "remove item 2 from scores";
     Stmt *stmt = parser_new_stmt(p, STMT_LIST, verb);
+    if (parser_at_remove_filter(p)) return parser_parse_remove_filter(p, stmt);  // remove the tasks that are done
     stmt->as.list.op = LIST_REMOVE;
     bool first_last = (parser_at_word(p, 0, "first") || parser_at_word(p, 0, "last")) && parser_at_word(p, 1, "item");
     bool item = parser_at_word(p, 0, "item") && (parser_at_word(p, 1, "from") || parser_at_item(p, from));

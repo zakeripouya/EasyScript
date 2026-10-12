@@ -1,0 +1,59 @@
+Line 3: "how many": counted in 1 pass, no list made.
+Line 4: "how many": counted in 1 pass, no list made.
+Line 5: "how many": counted in 1 pass, no list made.
+Line 6: "how many": counted in 1 pass, no list made.
+Line 7: "any": 1 pass, stopping at the first item that passes.
+Line 9: "every": 1 pass, stopping at the first item that fails.
+Line 10: "no": 1 pass, stopping at the first item that passes.
+Line 11: "every": 1 pass, stopping at the first item that fails.
+Line 12: "no": 1 pass, stopping at the first item that passes.
+Line 12: "any": 1 pass, stopping at the first item that passes.
+Line 12: "every": 1 pass, stopping at the first item that fails.
+Line 13: "any": 1 pass, stopping at the first item that passes.
+Line 13: "every": 1 pass, stopping at the first item that fails.
+Line 14: "the total": added up in 1 pass, no list made.
+Line 14: "the average": added up and counted in 1 pass, no list made.
+Line 14: "the median": 1 pass keeping the numbers in 1 list, sorted to find the middle.
+Line 15: "the median": 1 pass keeping the numbers in 1 list, sorted to find the middle.
+Line 16: "the top": 1 pass keeping the best ones in a heap, no sort of the whole list.
+Line 17: "the lowest": 1 pass keeping the best ones in a heap, no sort of the whole list.
+Line 18: "the top": 1 pass keeping the best ones in a heap, no sort of the whole list.
+Line 19: "the top": 1 pass keeping the best ones in a heap, no sort of the whole list.
+Line 21: "the top": 1 pass keeping the best ones in a heap, no sort of the whole list.
+Line 23: "the most common": 1 pass counting in a hash map, then the most common kept in a heap.
+Line 24: "the most common": 1 pass counting in a hash map, then the most common kept in a heap.
+Line 25: "how many": counted in 1 pass, no list made.
+Line 25: "how many": counted in 1 pass, no list made.
+Line 26: a filter ("that", "whose", "where" or "only"): 1 pass, making 1 new list of the items kept.
+Line 28: "how many": counted in 1 pass, no list made.
+Line 28: "the total": added up in 1 pass, no list made.
+Line 29: "every": 1 pass, stopping at the first item that fails.
+Line 30: "any": 1 pass, stopping at the first item that passes.
+Line 33: "the total": added up in 1 pass, no list made.
+Line 34: "the total ... per": added up per group in 1 pass, in a hash map.
+Line 35: "the number of ... per": counted per group in 1 pass, in a hash map.
+Line 36: "how many": counted in 1 pass, no list made.
+Line 37: "the average ... per": added up and counted per group in 1 pass, in 2 hash maps.
+Line 38: "the median ... per": 1 pass keeping each group's numbers in a list, each sorted to find its middle.
+Line 39: "with the highest": 1 pass keeping the best so far, no list made.
+Line 40: "with the lowest": 1 pass keeping the best so far, no list made.
+Line 40: "with the highest": 1 pass keeping the best so far, no list made.
+Line 41: "with the lowest": 1 pass keeping the best so far, no list made.
+Line 42: "the top": 1 pass keeping the best ones in a heap, no sort of the whole list.
+Line 43: "the lowest": 1 pass keeping the best ones in a heap, no sort of the whole list.
+Line 44: "how many": counted in 1 pass, no list made, 1 filter tested in the same pass.
+Line 45: "how many": counted in 1 pass, no list made, 1 filter tested in the same pass.
+Line 46: "the total": added up in 1 pass, no list made, 1 filter tested in the same pass.
+Line 47: "the average": added up and counted in 1 pass, no list made, 1 filter tested in the same pass.
+Line 48: "every": 1 pass, stopping at the first item that fails.
+Line 49: "any": 1 pass, stopping at the first item that passes.
+Line 51: "how many": counted in 1 pass, no list made, 1 filter tested in the same pass.
+Line 52: "the total ... per": added up per group in 1 pass, in a hash map.
+Line 52: "sorted": a copy of the map, its entries sorted by their values.
+Line 54: "the total ... per": added up per group in 1 pass, in a hash map.
+Line 57: "sorted": a copy of the map, its entries sorted by their values.
+Line 59: "how many": counted in 1 pass, no list made, 1 filter tested in the same pass.
+Line 62: "how many": counted in 1 pass, no list made.
+Line 65: "how many": counted in 1 pass, no list made.
+Line 65: "the total": added up in 1 pass, no list made.
+Line 67: "the total": added up in 1 pass, no list made.

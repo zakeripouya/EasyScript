@@ -14,7 +14,7 @@ delete the file "a" and everything in it
 read csv file "a.csv" and keep it as rows
 use the same random numbers
 shuffle
-save rows as "out.csv"
+save rows to "out.csv"
 put in file "x"
 put "x" into "y"
 a visit is a kind of thing with:

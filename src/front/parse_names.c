@@ -66,6 +66,13 @@ static bool word_at(const Parser *p, size_t i, const char *word) {
     return i < p->count && p->tokens[i].kind == TOK_WORD && strcmp(p->tokens[i].text, word) == 0;
 }
 
+static KnownName *parser_find_known(Parser *p, const char *text) {
+    for (size_t i = 0; i < p->names.len; i++) {
+        if (strcmp(p->names.items[i].text, text) == 0) return &p->names.items[i];
+    }
+    return NULL;
+}
+
 static void add_known(Parser *p, const char *text, size_t n, bool function, unsigned intros, bool method) {
     for (size_t i = 0; i < p->names.len; i++) {
         KnownName *known = &p->names.items[i];
@@ -77,7 +84,7 @@ static void add_known(Parser *p, const char *text, size_t n, bool function, unsi
             return;
         }
     }
-    KnownName known = {text, n, function, intros, method};
+    KnownName known = {text, n, function, intros, method, NULL, 0};
     vec_push(p->arena, &p->names, known);
     if (function) vec_push(p->arena, &p->functions, text);
 }
@@ -99,7 +106,17 @@ static bool at_sentence_end_index(const Parser *p, size_t i) {
     return kind == TOK_PERIOD || kind == TOK_NEWLINE || kind == TOK_EOF || kind == TOK_DEDENT || kind == TOK_INDENT;
 }
 
-// to NAME [[,] for KIND] [with | of | using | to] INPUT [(KIND)] [and | ,] INPUT ...
+// "in", "to", "from", "by" or "at" between two inputs of a definition ("to
+// column of cell in grid:", "to range from low to high:"), when an input's
+// name follows it: the word, or NULL.
+const char *parser_input_joiner(const Parser *p, size_t ahead) {
+    static const char *const joiners[] = {"in", "to", "from", "by", "at", NULL};
+    const Token *token = parser_peek(p, ahead), *next = parser_peek(p, ahead + 1);
+    if (!word_among(token, joiners) || !parser_is_name_word(next) || strcmp(next->text, "giving") == 0) return NULL;
+    return token->text;
+}
+
+// to NAME [[,] for KIND] [with | of | using | to] INPUT [(KIND)] [and | , | in | to | ...] INPUT ...
 // (or KIND can NAME ...: `can` is at i, and it's a method)
 static void find_function(Parser *p, size_t i, bool can) {
     size_t n = name_words(p, i + 1), words;
@@ -127,6 +144,9 @@ static void find_function(Parser *p, size_t i, bool can) {
               method);
     if (!introduced) return;
     j++;
+    Vec(const char *) joiners = {0};
+    vec_push(p->arena, &joiners, (const char *)NULL);
+    if (method) vec_push(p->arena, &joiners, (const char *)NULL);  // the record, then the first input
     for (;;) {
         size_t m = name_words(p, j);
         add_name(p, j, m, false);
@@ -135,8 +155,17 @@ static void find_function(Parser *p, size_t i, bool can) {
             while (j < p->count && p->tokens[j].kind != TOK_RPAREN && p->tokens[j].kind != TOK_NEWLINE) j++;
             j++;
         }
-        if (m == 0 || j >= p->count || !(word_at(p, j, "and") || p->tokens[j].kind == TOK_COMMA)) return;
+        Parser at = *p;
+        at.pos = j;
+        const char *joiner = m > 0 && j < p->count ? parser_input_joiner(&at, 0) : NULL;
+        if (!joiner && (m == 0 || j >= p->count || !(word_at(p, j, "and") || p->tokens[j].kind == TOK_COMMA))) break;
+        vec_push(p->arena, &joiners, joiner);
         j++;
+    }
+    KnownName *known = parser_find_known(p, join_words(p, i + 1, n, false, ' '));  // after add_name grew the table
+    if (known && !known->joiners) {  // the words between its inputs, for calls
+        known->joiners = joiners.items;
+        known->joiner_count = joiners.len;
     }
 }
 
@@ -164,8 +193,8 @@ static size_t record_definition_words(const Parser *p, size_t i) {
 // can't start sentences, so "if ages has ..." and "while ..." stay sentences.
 size_t parser_has_definition_words(const Parser *p, size_t i) {
     if (!at_line_start(p, i) || !parser_is_name_word(&p->tokens[i]) || parser_is_statement_word(p->tokens[i].text) ||
-        word_at(p, i, "otherwise") || word_at(p, i, "else") || word_at(p, i, "when")) {
-        return 0;
+        word_at(p, i, "otherwise") || word_at(p, i, "else") || word_at(p, i, "when") || word_at(p, i, "which")) {
+        return 0;  // ("which order has the highest total?" is a question)
     }
     size_t n = 1;
     while (i + n < p->count && is_inner_word(&p->tokens[i + n]) && !word_at(p, i + n, "has")) n++;
@@ -199,7 +228,7 @@ static void add_field_name(Parser *p, size_t i, size_t n) {
     for (size_t k = 0; k < p->fields.len; k++) {
         if (p->fields.items[k].words == n && strcmp(p->fields.items[k].text, join_words(p, i, n, false, ' ')) == 0) return;
     }
-    KnownName field = {join_words(p, i, n, false, ' '), n, false, false, false};
+    KnownName field = {join_words(p, i, n, false, ' '), n, false, false, false, NULL, 0};
     vec_push(p->arena, &p->fields, field);
 }
 
@@ -214,7 +243,7 @@ static bool add_kind(Parser *p, size_t i, size_t n, bool sum) {
     for (size_t r = 0; r < p->records->sums.len; r++) {
         if (strcmp(p->records->sums.items[r].name, name) == 0 && sum) return false;
     }
-    RecordKind kind = {name, join_words(p, i, n, true, ' '), parser_plural_of(p->arena, name), NULL};
+    RecordKind kind = {name, join_words(p, i, n, true, ' '), parser_plural_of(p->arena, name), NULL, false};
     if (sum) {
         vec_push(p->arena, &p->records->sums, kind);
     } else {
@@ -331,7 +360,7 @@ static size_t find_interface(Parser *p, size_t i, size_t n) {
     bool known = false;
     for (size_t k = 0; k < p->records->interfaces.len; k++) known |= strcmp(p->records->interfaces.items[k].name, name) == 0;
     if (!known) {
-        RecordKind kind = {name, join_words(p, i, n, true, ' '), interface_plural(p->arena, name), NULL};
+        RecordKind kind = {name, join_words(p, i, n, true, ' '), interface_plural(p->arena, name), NULL, false};
         vec_push(p->arena, &p->records->interfaces, kind);
     }
     size_t j = i + n + 4;  // is anything with :
@@ -395,7 +424,7 @@ bool parser_add_builtin_kind(Parser *p, const char *name, size_t words) {
     for (size_t r = 0; r < p->records->len; r++) {
         if (strcmp(p->records->items[r].name, name) == 0) return false;
     }
-    RecordKind kind = {name, name, parser_plural_of(p->arena, name), NULL};
+    RecordKind kind = {name, name, parser_plural_of(p->arena, name), NULL, false};
     vec_push(p->arena, p->records, kind);
     add_known(p, name, words, false, false, false);
     return true;
@@ -405,7 +434,7 @@ void parser_add_field_name(Parser *p, const char *name, size_t words) {
     for (size_t k = 0; k < p->fields.len; k++) {
         if (strcmp(p->fields.items[k].text, name) == 0) return;
     }
-    KnownName field = {name, words, false, false, false};
+    KnownName field = {name, words, false, false, false, NULL, 0};
     vec_push(p->arena, &p->fields, field);
 }
 
@@ -418,6 +447,9 @@ bool parser_is_method(const Parser *p, const char *name) {
 
 void parser_find_names(Parser *p) {
     find_records(p);
+    parser_find_table_files(p);
+    parser_find_definitions(p);
+    parser_find_tables(p);
     parser_find_program_result(p);
     for (size_t i = 0; i + 1 < p->count; i++) {
         if (p->tokens[i].kind != TOK_WORD) continue;
@@ -517,7 +549,8 @@ static void report_name_missing_after_prev(Parser *p) {
 // The name's n words are followed by a word that means something else and
 // then more name words ("let price plus tax be", "rate of pay"): the name
 // can't contain it. Suggests the name's other words: "pay rate" for "rate of
-// pay", as English puts it, and "price tax" for "price plus tax".
+// pay", as English puts it, "customer profits" for "profit by customer", and
+// "price tax" for "price plus tax".
 static bool reject_reserved_inside(Parser *p, size_t n, const char *const *next) {
     const Token *word = parser_peek(p, n);
     if (word->kind != TOK_WORD || word_among(word, next) || is_inner_word(word) || !is_inner_word(parser_peek(p, n + 1))) {
@@ -533,7 +566,11 @@ static bool reject_reserved_inside(Parser *p, size_t n, const char *const *next)
         const char *before = join_words(p, p->pos, n, true, ' ');
         const char *after = join_words(p, p->pos + n + 1, total - n - 1, true, ' ');
         bool of = strcmp(word->text, "of") == 0;
-        diag_note(p->diag, "Try a name without it, like \"%s %s\".", of ? after : before, of ? before : after);
+        if (strcmp(word->text, "by") == 0 || strcmp(word->text, "per") == 0) {  // "profit by customer": customer profits
+            diag_note(p->diag, "Try a name without it, like \"%s %s\".", after, parser_plural_of(p->arena, before));
+        } else {
+            diag_note(p->diag, "Try a name without it, like \"%s %s\".", of ? after : before, of ? before : after);
+        }
     }
     return true;
 }

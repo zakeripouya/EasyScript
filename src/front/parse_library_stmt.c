@@ -40,10 +40,45 @@ static bool expect(Parser *p, const char *words, const char *display, const char
     return parser_expect_phrase(p, words, display, example);
 }
 
+// "bar chart of", "line chart of" or "pie chart of" (the "a" is dropped).
+static bool at_chart(const Parser *p) {
+    return (parser_at_word(p, 0, "bar") || parser_at_word(p, 0, "line") || parser_at_word(p, 0, "pie")) &&
+           parser_at_word(p, 1, "chart") && parser_at_word(p, 2, "of");
+}
+
+// save a bar chart of X as F [, titled T] / make a bar chart of X called F [, titled T]
+// (a line chart, a pie chart): X is a list of numbers or a map to numbers.
+// The checker turns it into writing what lib/charts.es draws into F; the
+// hidden name (library.name) holds X.
+static Stmt *parse_chart(Parser *p, const Token *verb, bool saving) {
+    const char *example = saving ? "save a bar chart of sales as \"sales.svg\"" : "make a bar chart of sales called \"sales.svg\"";
+    Stmt *stmt = new_action(p, DO_SAVE_CHART, verb);
+    const char *kind = parser_advance(p)->text;
+    stmt->as.library.scale = strcmp(kind, "bar") == 0 ? 0 : strcmp(kind, "line") == 0 ? 1 : 2;
+    parser_consume(p, 2);  // chart of
+    p->as_ends_value = true;  // "save a bar chart of sales as ...": "as" isn't a conversion here
+    stmt->as.library.a = expect_value(p, example);
+    p->as_ends_value = false;
+    if (!stmt->as.library.a || !expect(p, saving ? "as" : "called", saving ? "as" : "called", example)) return NULL;
+    stmt->as.library.b = expect_value(p, example);
+    if (!stmt->as.library.b) return NULL;
+    Expr *title = NULL;
+    if (parser_at(p, 0, TOK_COMMA) && parser_at_word(p, 1, "titled")) {
+        parser_consume(p, 2);
+        title = expect_value(p, "save a bar chart of sales as \"sales.svg\", titled \"Sales\"");
+        if (!title) return NULL;
+    }
+    vec_push(p->arena, &stmt->as.library.parts, title);
+    stmt->as.library.name.text = arena_sprintf(p->arena, "0chart%zu", ++p->hidden_lists);
+    stmt->as.library.name.display = "the chart's values";
+    stmt->as.library.name.pos = stmt->as.library.a->pos;
+    return stmt;
+}
+
 bool parser_at_library_sentence(const Parser *p) {
     if (parser_at_system_sentence(p)) return true;  // run, complain
     static const char *const starts[] = {
-        "make new file", "make new folder", "make folder", "rename file", "rename folder", "copy file",
+        "make new file", "make new folder", "make folder", "make bar chart", "make line chart", "make pie chart", "rename file", "rename folder", "copy file",
         "move file", "move folder", "delete file", "delete folder", "clear screen", "read csv file",
         "use same random numbers",
     };
@@ -121,7 +156,7 @@ Stmt *parser_parse_library_sentence(Parser *p) {
     const Token *verb = parser_advance(p);
     p->ends_with_name = false;
     const char *word = verb->text;
-    if (strcmp(word, "make") == 0) return parse_make(p, verb);
+    if (strcmp(word, "make") == 0) return at_chart(p) ? parse_chart(p, verb, false) : parse_make(p, verb);
     if (strcmp(word, "rename") == 0) return parse_two_paths(p, verb, DO_RENAME);
     if (strcmp(word, "copy") == 0) return parse_two_paths(p, verb, DO_COPY);
     if (strcmp(word, "move") == 0) return parse_two_paths(p, verb, DO_MOVE);
@@ -179,11 +214,18 @@ Stmt *parser_parse_shuffle(Parser *p, const Token *verb) {
 
 Stmt *parser_parse_save(Parser *p, const Token *verb) {
     static const char *const example = "save rows as csv file \"out.csv\"";
+    if (at_chart(p)) return parse_chart(p, verb, true);  // save a bar chart of sales as "sales.svg"
     Stmt *stmt = new_action(p, DO_SAVE_CSV, verb);
     p->as_ends_value = true;  // "save rows as csv": "as" isn't a conversion here
     stmt->as.library.a = expect_value(p, example);
     p->as_ends_value = false;
-    if (!stmt->as.library.a || !expect(p, "as csv file", "as csv file", example)) return NULL;
+    if (!stmt->as.library.a) return NULL;
+    size_t n = parser_match_words(p, "as csv file");  // or "as F": csv is the only kind of file saved
+    if (n) {
+        parser_consume(p, n);
+    } else if (!expect(p, "as", "as", example)) {
+        return NULL;
+    }
     stmt->as.library.b = expect_value(p, example);
     return stmt->as.library.b ? stmt : NULL;
 }

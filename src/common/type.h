@@ -102,6 +102,7 @@ typedef struct {
     const char *display;  // as written in the definition
     const char *plural;   // matched: "dogs", "boxes", "berries"
     Stmt *definition;     // STMT_RECORD (the first one, if it's defined twice)
+    bool table;           // a row of "read the table in F": its fields are the columns the program uses
 } RecordKind;
 
 // One variant of a kind with variants ("a circle with a radius (a number)"

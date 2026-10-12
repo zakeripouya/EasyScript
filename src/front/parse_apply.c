@@ -159,7 +159,7 @@ static Expr *parse_filter(Parser *p, Expr *list) {
         only->as.only.condition = parser_parse_item_test(p, "the scores that are at least 70");
     } else {
         Span whose = parser_advance(p)->span;
-        if (parser_known_field_words(p, 0) == 0) {
+        if (parser_field_words(p, 0) == 0) {
             const Token *token = parser_peek(p, 0);
             if (parser_error(p, token->kind == TOK_WORD ? token->span : whose,
                              "\"whose\" needs a field after it, but no kind of record has one called %s.",
@@ -174,7 +174,7 @@ static Expr *parse_filter(Parser *p, Expr *list) {
         it->pos = parser_token_pos(&p->tokens[p->pos - 1]);
         Expr *field = ast_new_expr(p->arena, EXPR_FIELD, it->pos);
         field->as.field.record = it;
-        parser_take_name(p, parser_known_field_words(p, 0), &field->as.field.name);
+        parser_take_name(p, parser_field_words(p, 0), &field->as.field.name);
         field->pos = field->as.field.name.pos;
         only->as.only.condition = parser_parse_condition_after(p, field);
     }
@@ -187,6 +187,11 @@ static bool at_filter(const Parser *p) {
     return parser_at_word(p, 0, "where") || parser_match_words(p, "that pass") || parser_match_words(p, "that passes") ||
            (parser_at_word(p, 0, "that") && parser_at_item_test(p, 1)) ||
            (parser_at_word(p, 0, "whose") && parser_peek(p, 1)->kind == TOK_WORD);
+}
+
+Expr *parser_parse_filters(Parser *p, Expr *list) {
+    while (!p->sentence_failed && at_filter(p)) list = parse_filter(p, list);
+    return list;
 }
 
 Expr *parser_parse_apply_postfix(Parser *p, Expr *expr) {

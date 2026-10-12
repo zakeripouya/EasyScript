@@ -48,9 +48,11 @@ typedef struct {
     size_t count;
 } SitePool;
 
-// The C functions that "every" and "only" become (es_every1, es_only2, ...).
+// The C functions that "every" and "only" become (es_every1, es_only2, ...),
+// and the rules' (es_rule1, ...), whose prototypes come first.
 typedef struct {
     StrBuf code;
+    StrBuf heads;
     size_t count;
 } HelperPool;
 
@@ -63,6 +65,19 @@ typedef struct {
     Vec(const Stmt *) refs;
     Vec(const char *) dispatchers;  // the C functions that call an interface's way (es_way0_speak), once each
 } ClosurePool;
+
+typedef Vec(const Stmt *) StmtList;
+
+// "easyscript plan": one line per high-level form, saying what it became.
+typedef struct {
+    size_t line;
+    unsigned file;
+    const char *text;
+} PlanLine;
+
+typedef struct {
+    Vec(PlanLine) lines;
+} PlanPool;
 
 typedef struct {
     Arena *arena;
@@ -86,7 +101,13 @@ typedef struct {
     Vec(const char *) cells;     // names kept in cells here, because functions made inside share them
     Vec(const char *) borrowed;  // in a function made inside a value: the cells it uses from around it
     ClosurePool *closures;       // the C code of functions kept as values
+    PlanPool *plan;              // what each high-level form became ("easyscript plan"), or NULL
+    StmtList events;             // main()'s events, run by a loop at its end (codegen_event.c)
+    StmtList inlining;           // definitions being written in place (cg_emit_inline), innermost last
 } Codegen;
+
+// Adds a line to the plan (when there is one): what the form at pos became.
+void cg_plan(Codegen *g, SourcePos pos, const char *fmt, ...) PRINTF_LIKE(3, 4);
 
 // codegen_expr.c
 // The C expression for a value, of the C type of its kind.
@@ -183,6 +204,14 @@ void cg_emit_variants(Codegen *g, StrBuf *out);  // every variant's struct, desc
 void cg_emit_new_variant(Codegen *g, const Expr *expr, StrBuf *out);    // EXPR_NEW of a variant
 void cg_emit_variant_field(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_FIELD of one
 void cg_emit_kind_test(Codegen *g, const Expr *expr, StrBuf *out);      // EXPR_KIND_TEST
+void cg_emit_default(Codegen *g, const Expr *expr, StrBuf *out);        // EXPR_DEFAULT: X, or D
+void cg_emit_table(Codegen *g, const Expr *expr, StrBuf *out);          // EXPR_TABLE: "depends on"
+void cg_emit_rule(Codegen *g, const Stmt *stmt);                        // STMT_RULE: its C function
+void cg_emit_events(Codegen *g);
+// A call of a definition written as a sentence, written in place; false if it has to be a call.
+bool cg_emit_inline(Codegen *g, const Stmt *fn, const Expr *arg, StrBuf *out);  // codegen_event.c: the loop that runs main()'s events, at its end
+// A field's value checked by the field's rules: "es_rule1(SITE, VALUE)" (VALUE when it has none).
+const char *cg_follow_rules(Codegen *g, const Field *field, const char *value, SourcePos pos);
 void cg_emit_match(Codegen *g, const Stmt *stmt);                       // STMT_MATCH
 
 // codegen_list.c
@@ -190,6 +219,18 @@ const char *cg_item_suffix(Type list);  // the runtime's suffix for its items: "
 const char *cg_value_suffix(Type type); // the same for a value of that kind: "n", "b", "t", "l", "r", "m"
 const char *cg_items(Type type);        // what the runtime calls a kind of item: "ES_ITEMS_NUMBER", ...
 void cg_emit_list_expr(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_LIST ... EXPR_ONLY
+// The C functions a list is gone through in ("every", "only", questions): a
+// Codegen sharing g's pools, the variables `expr` reads (its parameters), and
+// writing those parameters and the arguments that go with them.
+void cg_helper_init(const Codegen *g, Codegen *helper);
+void cg_helper_collect(Codegen *g, const Expr *expr, Codegen *helper);  // expr may be NULL
+bool cg_calls_function(const Codegen *g, const Expr *expr);
+void cg_store_item(StrBuf *out, const char *name, Type type, const char *suffix);  // "es_vn_x = es_items->at.n[es_i];"
+void cg_helper_params(StrBuf *out, const Codegen *helper);
+void cg_drop_helper_names(const Codegen *helper, StrBuf *out);  // releases its item and hidden names
+void cg_helper_args(const Codegen *g, StrBuf *out, const Codegen *helper);
+// codegen_aggregate.c
+void cg_emit_aggregate(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_AGGREGATE
 void cg_emit_contains(Codegen *g, const Expr *expr, StrBuf *out);   // L contains X
 // The C loop header of "for each N in L" (after its variables are declared).
 void cg_emit_each_head(Codegen *g, const Stmt *stmt, size_t id, StrBuf *body, size_t depth);
@@ -237,6 +278,8 @@ void cg_emit_text_op(Codegen *g, const Expr *expr, StrBuf *out);       // EXPR_T
 void cg_emit_library(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_LIBRARY
 bool cg_library_effects(const Codegen *g, const Expr *expr);      // cg_has_effects for EXPR_LIBRARY
 void cg_emit_library_stmt(Codegen *g, const Stmt *stmt);          // STMT_LIBRARY
+void cg_emit_try(Codegen *g, const Stmt *stmt);                   // STMT_TRY
+void cg_emit_example(Codegen *g, const Stmt *stmt);               // STMT_EXAMPLE
 void cg_emit_characters(Codegen *g, const Expr *expr, StrBuf *out);    // EXPR_ITEM/EXPR_SLICE of text
 void cg_emit_text_search(Codegen *g, const Expr *expr, StrBuf *out);   // contains (text), starts with, ends with
 bool cg_text_op_effects(const Codegen *g, const Expr *expr);           // cg_has_effects for EXPR_TEXT_OP

@@ -1,0 +1,12 @@
+record order [1:4]
+  field amount: a number [1:17]
+  field region: text [1:41]
+record dog [2:3]
+  field age: a number [2:14]
+define total (numbers) [12:1]
+  do
+    give back [13:5]
+      number 0 [13:15]
+say [15:1]
+  call total [15:5]
+    name scores [15:14]

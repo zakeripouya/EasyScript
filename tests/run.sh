@@ -22,6 +22,8 @@
 #   tests/ast/NAME.es     like tests/tokens, but with `easyscript ast`
 #   examples/lexer/       like tests/tokens, expected stdout in NAME.tokens
 #   tests/data/NAME.es    like tests/tokens, but with `easyscript errors` (errors as data)
+#   tests/plan/NAME.es    like tests/tokens, but with `easyscript plan` (what each list
+#                         question, filter and sort became)
 #   examples/parser/      like tests/ast, expected stdout in NAME.ast
 #   unit tests            tests/unit/*.c, built into the UNIT binary
 #   CLI checks            at the bottom of this file
@@ -246,6 +248,7 @@ check_warnings "$ROOT/tests/warnings" warnings
 check_dump tokens "$ROOT/tests/tokens" tokens out
 check_dump ast "$ROOT/tests/ast" ast out
 check_dump errors "$ROOT/tests/data" data out
+check_dump plan "$ROOT/tests/plan" plan out
 
 # Examples back the docs, so every one of them must be checked.
 check_run "$ROOT/examples/programs" examples/programs
@@ -458,6 +461,17 @@ expect_failure "cli/o-twice" 2 "Give -o only once." \
     "$ES" build "$HELLO" -o x -o y
 expect_failure "cli/two-sources" 2 "Give one .es file at a time." \
     "$ES" emit "$HELLO" "$HELLO"
+expect_failure "cli/plan-with-o" 2 "--plan only prints the plan, so it doesn't take -o." \
+    "$ES" build --plan "$HELLO" -o x
+
+# "build --plan FILE" is "plan FILE", and neither makes a file.
+fresh_dir
+out=$(cd "$WORK/cwd" && "$ES" build --plan "$ROOT/tests/plan/questions.es" 2>&1)
+if [ "$out" != "$(cat "$ROOT/tests/plan/questions.out")" ]; then
+    not_ok "cli/build-plan" "$out"
+elif check_cwd_empty "cli/build-plan"; then
+    ok "cli/build-plan"
+fi
 
 # "run FILE WORDS...": everything after the file is given to the program,
 # even words that look like the compiler's own ("-o").
@@ -474,10 +488,10 @@ fi
 # What a program tells whoever started it: "stop the program with code N",
 # "saying it failed" (1), and "complain" writing to the error output only.
 exit_code_check() {
-    name=$1 want_status=$2 want_out=$3 want_err=$4 program=$5
+    name=$1 want_status=$2 want_out=$3 want_err=$4 program=$5 command=${6:-run}
     fresh_dir
     printf '%b' "$program" >"$WORK/code.es"
-    (cd "$WORK/cwd" && "$ES" run "$WORK/code.es") >"$WORK/stdout" 2>"$WORK/stderr"
+    (cd "$WORK/cwd" && "$ES" "$command" "$WORK/code.es") >"$WORK/stdout" 2>"$WORK/stderr"
     status=$?
     if [ $status -ne "$want_status" ] || [ "$(cat "$WORK/stdout")" != "$want_out" ] ||
         [ "$(cat "$WORK/stderr")" != "$want_err" ]; then
@@ -495,6 +509,25 @@ exit_code_check "system/complain-keeps-going" 0 "one
 two" "oops" 'say "one"\ncomplain "oops"\nsay "two"\n'
 exit_code_check "system/run-gives-its-code" 0 "5" "" \
     'run "sh" with "-c" and "exit 5" and call the result r\nsay r'"'"'s exit code\n'
+
+# "easyscript test": runs the program, then says how many examples were right.
+exit_code_check "cli/test-all-right" 0 "" "All 2 examples are right." \
+    'for example, 1 plus 1 is 2.\nfor example, "a" is "a".\n' test
+exit_code_check "cli/test-one-right" 0 "hi" "The 1 example is right." 'say "hi".\nfor example, 2 is above 1.\n' test
+exit_code_check "cli/test-wrong" 1 "" "Line 1 (a warning): This example isn't right.
+    for example, 2 is 3.
+                 ^^^^^^
+It's 2 here.
+Line 2 (a warning): This example isn't right.
+    for example, 2 is above 3.
+                 ^^^^^^^^^^^^
+0 of 2 examples are right." 'for example, 2 is 3.\nfor example, 2 is above 3.\n' test
+exit_code_check "cli/test-no-examples" 0 "" \
+    "This program has no examples to check. Write one like \"for example, total is 12.\"" 'let x be 1.\n' test
+exit_code_check "cli/run-keeps-going-after-a-wrong-example" 0 "after" "Line 1 (a warning): This example isn't right.
+    for example, \"ab\" is \"abc\".
+                 ^^^^^^^^^^^^^
+It's \"ab\" here." 'for example, "ab" is "abc".\nsay "after".\n'
 
 # The keyboard: on a real terminal (a pseudo-terminal), keys are read one at
 # a time, and the terminal is put back as it was however the program ends.
@@ -597,6 +630,36 @@ $out"
 
 check_readme_block "## A first program" "$ROOT/examples/programs/first_program.es" "docs/readme-first-program"
 check_readme_block "## A bigger example" "$ROOT/examples/programs/taste.es" "docs/readme-bigger-example"
+
+# Every program in the guide's "Your first programs" chapter runs (blocks
+# that ask for input, and the error shown as an example, are left out).
+first_programs() {
+    rm -rf "$WORK/first" && mkdir -p "$WORK/first" &&
+        awk -v dir="$WORK/first" '
+            /^## Your first programs/ { inside = 1; next }
+            inside && /^## / { exit }
+            inside && /^```/ { if (block) { block = 0 } else { block = 1; n++ }; next }
+            inside && block { print > (dir "/block" n ".es") }
+        ' "$ROOT/docs/language-guide.md"
+    failed=""
+    count=0
+    for program in "$WORK"/first/block*.es; do
+        if grep -q "^Line \|ask " "$program"; then continue; fi
+        count=$((count + 1))
+        fresh_dir
+        if ! out=$(cd "$WORK/cwd" && "$ES" run "$program" </dev/null 2>&1); then
+            failed="$failed
+$(cat "$program")
+$out"
+        fi
+    done
+    if [ -n "$failed" ] || [ "$count" -lt 5 ]; then
+        not_ok "docs/first-programs-run" "$count programs run;$failed"
+    else
+        ok "docs/first-programs-run"
+    fi
+}
+first_programs
 
 # --- Audits ---------------------------------------------------------------------
 #

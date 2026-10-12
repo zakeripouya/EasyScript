@@ -22,7 +22,7 @@ The English pass reshapes EasyScript so someone who has never coded can build re
 2. **Principles prompt:** done (rules in [docs/design-principles.md](design-principles.md), docs/english-pass.md, roadmap updated).
 3. **Step 21, modules and standard library:** plus dates and times, csv, files and folders, random, clear the screen.
 4. **Step 22, system tools:** plus raw keyboard input, a Snake example and a JSON parser.
-5. **English pass:** about 5 prompts, in the order of the sections below; every high-level form benchmarked against a hand-written loop.
+5. **English pass:** done (parts 1 to 5, tags `english-pass-part-2` to `english-pass-part-5`; see [english-pass-log.md](english-pass-log.md)). Every high-level form is benchmarked against a hand-written loop (`make bench`). What was left for later is in [Later](#later). Charts followed: `save a bar chart of X as F` (and line and pie charts), drawn by `lib/charts.es`, written in EasyScript.
 6. **Playground lite (1 to 2 days):** `easyscript playground` opens a local page with an editor, templates and output, running code through the real compiler. Used only for user testing.
 7. **Wizard of Oz study and first non-coder test:** 3 to 5 people, think-aloud, 30-minute quiz challenge; fix what they stumble on.
 8. **Starter templates,** license, install docs, then **v0.2.0** and **freeze the core grammar** (after this, only additions).
@@ -84,17 +84,17 @@ People ask "how many", "any", "all" and "per" far more than they write loops. Ea
 
 | Proposed phrase | Replaces today | When |
 | --- | --- | --- |
-| `how many scores are above 70` | A loop with a counter | English pass |
-| `if any score is above 90:` | A loop with a flag | English pass |
-| `if all scores are at least 50:`, `if every order's profit is above 0` | A loop with a flag | English pass |
-| `if no score is below 0:` | A loop with a flag | English pass |
-| `the average of scores`, `the total of scores`, `the median of scores` | `added together` and division | English pass |
-| `the top 5 scores`, `the lowest 3`, `the 10 most common` | Sort then slice | English pass |
-| `the customer with the highest total`, `the one with the most orders` | A search loop with two variables | English pass |
-| `the total amount of orders per region` (`per` only: `by` already means sorting and steps) | A map and a loop | English pass |
-| `half of total`, `twice price`, `20 percent of price` | Arithmetic | English pass |
+| `how many scores are above 70` | A loop with a counter | Done (part 2) |
+| `if any score is above 90:` | A loop with a flag | Done (part 2) |
+| `if all scores are at least 50:`, `if every order's profit is above 0` | A loop with a flag | Done (part 2) |
+| `if no score is below 0:` | A loop with a flag | Done (part 2) |
+| `the average of scores`, `the total of scores`, `the median of scores` | `added together` and division | Done (part 2) |
+| `the top 5 scores`, `the lowest 3`, `the 10 most common` | Sort then slice | Done (part 2) |
+| `the customer with the highest total`, `the one with the most orders` | A search loop with two variables | Done (part 2), except `the one ...`, which needs part 3's definitions to say which list |
+| `the total amount of orders per region` (`per` only: `by` already means sorting and steps) | A map and a loop | Done (part 2) |
+| `half of total`, `twice price`, `20 percent of price` | Arithmetic | Done (part 2) |
 | `price rounded to 2 decimal places` | Already built (step 21) | Done |
-| `how many questions there are` | `the number of items in` | English pass |
+| `how many questions there are` | `the number of items in` | Done (part 2) |
 
 ## Choices without if: the six patterns
 
@@ -102,12 +102,12 @@ Each pattern has its own trigger words, so the parser recognizes it without gues
 
 | # | Pattern | Trigger | Example | Effort |
 | --- | --- | --- | --- | --- |
-| 1 | Defaults | `, or X`, `starting at X`, `if there isn't one` | `the nickname, or "friend" if there isn't one` | Small (partly exists) |
-| 2 | Adjectives (definitions) | `a NAME is WORD if ...` at the top level | `a customer is loyal if they ordered more than 5 times.` | Small to medium |
-| 3 | Acting on a group | A verb + `every` / `the ... that` / `the ... whose` | `remove the tasks that are done.`, `give every loyal customer a 10 percent discount.` | Medium |
-| 4 | Depends-on tables | `... depends on X:` + indented `VALUE when it's CONDITION.` lines and `VALUE otherwise.` (no colon on the line); every case must be covered | `the shipping cost depends on the total:` / `0 when it's over 100.` / `5 when it's over 50.` / `10 otherwise.` | Medium |
-| 5 | Rules | `must`, `must not`, `must be between` | `an age must be between 0 and 150.` | Medium |
-| 6 | Events | `when` / `whenever` starting a sentence, `every N seconds`, `every Monday at 9am` (part 3) | `whenever the score passes 100, level up.` | Medium to large (needs an event loop) |
+| 1 | Defaults | `, or X`, `starting at X`, `if there isn't one` | `the nickname, or "friend" if there isn't one` | Done (part 3) |
+| 2 | Adjectives (definitions) | `a NAME is WORD if ...` at the top level | `a customer is loyal if they ordered more than 5 times.` | Done (part 3) |
+| 3 | Acting on a group | A verb + `every` / `the ... that` / `the ... whose` | `remove the tasks that are done.`, `give every loyal customer a 10 percent discount.` | Done (part 3), except `give every ... a discount` (see the update log) |
+| 4 | Depends-on tables | `... depends on X:` + indented `VALUE when it's CONDITION.` lines and `VALUE otherwise.` (no colon on the line); every case must be covered | `the shipping cost depends on the total:` / `0 when it's over 100.` / `5 when it's over 50.` / `10 otherwise.` | Done (part 3) |
+| 5 | Rules | `must`, `must not`, `must be between` | `an age must be between 0 and 150.` | Done (part 3) |
+| 6 | Events | `when` / `whenever` starting a sentence, `every N seconds`, `every Monday at 9am` (part 3) | `whenever the score passes 100, level up.` | Done (part 3) |
 
 **Also:** `unless` as the negative of `if`, and definitions of values, not just yes/no: `a customer's profit is their revenue minus their costs.`, `the best customers are the ones with the highest profit.`
 
@@ -657,6 +657,18 @@ The strongest single source is Pane's study of how non-programmers describe prog
 2. **A phrase corpus and a coverage number.** Collect those sentences plus questions from Spider, rewritten for EasyScript data. Track "percent of real requests EasyScript understands" at every milestone, like a benchmark.
 3. **Habitability over vocabulary size.** When something isn't understood, show the closest valid sentences instead of only adding synonyms.
 
+## Later
+
+Left out of the English pass, each with its reason (details under [Still open](#still-open) and in [the log](english-pass-log.md)):
+
+- **Exact money amounts** (`$19.99` kept exactly) and **units of measure** (`5 meters`, `meters per second`): each needs a new kind of value through the checker, code generation and runtime.
+- **Named kinds of text with rules** (`an email is text that must contain "@".`): how a value becomes one isn't settled.
+- **`try to` beyond files and folders:** other failures would need a safe way to undo a half-done sentence in the generated C.
+- **Actions with inputs in the middle** (`give every loyal customer a 10 percent discount`).
+- **The best group** (`the store with the highest total amount`) and `they ordered more than 5 times`.
+- **`each drink in drinks's name`** (a field after a transformed list) and other phrasings found while writing the examples.
+- **The notebook's own words** (`again`, `the result`, `undo`, `why is total 47?`, `explain this`): reserved or planned, built with the notebook.
+
 ## Open questions
 
 ### Decided (2026-10-11)
@@ -686,6 +698,16 @@ The strongest single source is Pane's study of how non-programmers describe prog
 
 ### Still open
 
+- [ ] **Actions with inputs in the middle** (`give every loyal customer a 10 percent discount`): methods today take their inputs after their name (`give discount to rex with 10`). A way to define `give KIND a N percent discount:` would make this sentence work; it needs a rule for where inputs can go. (Part 3)
+
+- [ ] **`try to` beyond files** (part 4): `try to` covers sentences that use a file or a folder, checked before they run. Should other failures (dividing by zero, a missing key, `as a number` on text that isn't one) be catchable too? Catching them in the generated C needs a way to undo a half-done sentence's memory; each already has its own form (`, or D`, `if ... is 0`).
+
+- [ ] **Exact money amounts and units of measure** (part 4, items 5 and 8, deferred): `$19.99` kept exactly needs exact decimals as a kind of value (or numbers of cents); units (`5 meters`, `meters per second`) need a unit carried by each number's kind and checked like kinds. Both are a step of their own. Also: should `as money` know other currencies?
+
+- [ ] **Named kinds of text with rules** (part 4, item 11, deferred): `an email is text that must contain "@".` How does a value become an email: `"a@b" as an email`, or any text put where an email is kept (a field, an input)? Can an email be used where text is wanted (`say`, `contains`)? Rules on fields (`a customer's email must contain "@".`) already work.
+
+- [ ] **The best group** (`the store with the highest total amount`, from the budget session): should `the X with the highest total Y` group by X when X is a field rather than the items? Today it needs `the first item of the keys of (the total Y of L per X, sorted biggest first)`.
+
 - [ ] **Who are the first 3 to 5 non-coder testers?** Aim for variety and no programmers: someone who has never coded, a teacher, a spreadsheet-heavy office or finance worker, a teenager, a non-native English speaker.
 
 ## Update log
@@ -711,6 +733,14 @@ The strongest single source is Pane's study of how non-programmers describe prog
 | 2026-10-11 | Merged the repo's step 22 notes (escapes, positions, helper name clashes, workarounds); heading renamed to "Rough spots to fix" so links from CHANGELOG and the roadmap still work |
 | 2026-10-11 | Part 1 decisions: file sentences say `file`; text `and` and input joiners recorded as planned changes; no "missing"; `every` triggers; the `it` rule; `per` only; `, then` chains; `the X of Y` rule; `exit code`; the comma rule; depends-on lines; already-built list; error counts and step 21 list updated |
 | 2026-10-12 | Part 1 built: `exit code`; `as a number` reads `1e5`, `as exact text`; counting up only (a warning for written counts that never run); `unless`, `give back X if/unless C`, `stop here`; line continuation; pieces in `say` and brackets in text (`[[`/`]]` for brackets), text `and` removed; `and`/`and then` between sentences (a function's name after `and` is a value, so it needs `and then`); `has` records with kinds from use (`some` dropped before a field); `can` methods; `the X of Y`; filters `that`/`whose`/`where` as postfixes and `each`; `for each score:`; `made of` kinds; docs/voice.md with the glossary ("name" for variables, "definition"/"how to X" for `to` functions) and `audit/plain-words`; errors as data (`diag_info`, `easyscript errors`). |
+| 2026-10-12 | Part 3 (choices without if), items 1 to 6 built: `, or X if there isn't one` for anything that can be nothing; `, starting at S` on map value changes; adjectives (`KIND is ADJ if ...`, `ADJ KIND is one whose ...`) as methods named "is ADJ", used as `X is ADJ`, `the ADJ Ls`, `are ADJ`, `every ADJ ITEM`; values (`KIND's FIELD is ...`) as methods named "the FIELD", used like fields; named values (`the NAME is the one with ...`, `the NAME are the ones whose ...`) read where they're used; tables (`NAME depends on X:` like `let`, `the FIELD of a KIND depends on X:` like a value), with every case covered by an `otherwise` line; rules (`FIELD must ...`, `KIND's FIELD must ...`) checked in `new`, `set` and changes; `remove the Ls that ...` and `set every ITEM's FIELD to X`. Decided while building: `a ... is one` describes and `the ... is the one` names (by the dropped `the`); a table that makes a name is worked out where it's written; `give every loyal customer a 10 percent discount` waits (it needs a way to name actions with inputs in the middle); `the one whose ...` and `the ones with the highest ...` are errors, since neither says exactly one thing. |
+| 2026-10-12 | Part 3 finished: events (`every N seconds:`, `every Monday at 9am:`, `every day at 17:00:`, `whenever C:`, `when C, S`, `whenever a key is pressed:`), run by one loop after the program's other sentences (rules checked each round, keys waited for until the next schedule, then the due schedules; keys from a file come one per round, so tests are repeatable); Snake rewritten with them; `9am` lexed as `9` `am`; sentence definitions written in place at their calls (the speed rule: a describing word in a question was 70% slower as a call); examples coffee_shop.es and shipping.es; benchmarks `adjective` and `table`. |
+| 2026-10-12 | Part 4 started: questions (`?`, `what is`, `is X ...?`, `how many`, `which ITEM has the highest`, `which Ls are`), requests (`show me`, `give me`, `tell me`, `list`), polite words, steps in a row with the `it` rule (a step's result kept in a hidden name only when the next step says "it"; `it` where an item could also be meant is an error), actions (`total the FIELD`, `average`, `median`, `count`), tables (`read the table in F`: a kind of row per sentence whose fields are the columns used, kinds from use, columns checked on reading; other columns kept for printing and saving; `per month` uses the `date` column), `save X as F` for maps and records. `me`, `undo` reserved. The "best months" example compiles (without its chart line). Decided: file sentences keep `file` (`write "milk" in file it`); a map saves as `key`,`value` columns. |
+| 2026-10-12 | Part 4 continued: `ask for a number`, `ask yes or no` (asking again), `as money`/`as a percent`/`with commas`, `the NAME is always VALUE.`, `the sum of`, `try to S. if that fails, ...` with `the reason` (file and folder sentences, checked before they run: no way to undo a half-done sentence safely in the generated C), `the text below:` blocks and `\r`/`\u{...}` escapes, guards in `when` (they don't count as covering the variant). Exact money and units of measure deferred (each a new kind of value). |
+| 2026-10-12 | Charts done: `save a bar chart of X as F [, titled T]` (also line and pie charts) and `make a ... chart of X called F`, drawn by `lib/charts.es` (EasyScript), joined to programs with a chart sentence; the best months example has its chart line. |
+| 2026-10-12 | Part 5 done: new values in lists and maps without parentheses, call sentences whose inputs are whole values, joiners between inputs (`to column of cell in grid:`), mixed lists of one interface, a better suggestion for `profit by customer`; the phrase audit (new exceptions in design-principles.md, every vocabulary example parsed); examples README with "Start here" first and older examples in the plain style; the "Your first programs" chapter (checked for banned words, every program in it run by the tests); `make bench` with an English-pass history row, the `sorted by FIELD` form (now 1.00 of its hand-written version) and the 20% check fixed; this file's [Later](#later) list. |
+| 2026-10-12 | Part 4: examples as tests (`for example, ...`, `easyscript test`), the closest sentences for a sentence that isn't understood, `as a table`, `sorted by FIELD`, `, one per line`, `what's in file F`/`what's in it`, table rows named after the table; examples `groceries.es` and `budget.es`. Named kinds of text with rules deferred (how a value becomes one isn't settled); `the store with the highest total amount` (best group) left as a rough spot. |
+| 2026-10-12 | Part 2 (questions and totals) built: `how many`, `any`/`every`/`no`/`all`/`none`, `the total`/`average`/`median of`, `the top N`/`lowest N`, `the N most common`, `the X with the highest Y`, `per FIELD` and `per month`/`year`/`day`/`weekday` (keys: "October 2026" text, years as numbers, so no date keys were needed), maps sorted by value, math words, the comma before `rounded`/`sorted`/`as`, plural verbs after `that`, and `easyscript plan`. Decided while building: built-in phrases win over fields (`the total of rex` is an error noting `rex's total`); a definition with the word keeps it, and `the` + that word is an error; `the one with the most Y` waits for part 3's definitions (it needs a list to refer to); action forms (`total the amount per month`) wait for part 4's `, then` chains, where `it` exists. |
 
 ## Sources
 

@@ -30,7 +30,9 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | ordinals | A whole number with `st`, `nd`, `rd` or `th`, only in `every 3rd item of L`. The ending has to be the right one (`2th` is an error) | `2nd`, `3rd`, `21st`, `7th` | Available |
 | decimals | Digits, a point, digits | `19.99` (but `3.` is the number 3 and then a period, and `.5` is an error: write `0.5`) | Available |
 | `"..."` | Text. It must end on the line it starts on | `"Hello, world!"` | Available |
-| `\n` `\t` `\"` `\\` | Escapes inside text: new line, tab, quote, backslash | `"Line one\nLine two"` | Available |
+| `\n` `\t` `\r` `\"` `\\` | Escapes inside text: new line, tab, back to the line's start, quote, backslash | `"Line one\nLine two"` | Available |
+| `\u{CODE}` / `\uXXXX` | The character with that code, in hex (1 to 10FFFF, not D800 to DFFF) | `"caf\u{e9}"`, `"\u{1F600}"` | Available |
+| `the text below:` + indented lines | Text of several lines, exactly as written (no escapes, no values in brackets), without the indentation they share; blank lines inside are kept, and it ends at the first line that isn't indented more than the sentence | `let page be the text below:` | Available |
 | `yes`, `true` | The yes value | `done is yes` | Available |
 | `no`, `false` | The no value | `ready is false` | Available |
 | `nothing` | What a function gives back when it gives back no value. Otherwise it can only be used where a record can be nothing (see [Records](#records)) | `return` (gives back nothing), `set node's next to nothing` | Available |
@@ -111,6 +113,19 @@ All arithmetic is **Available**.
 
 `times` multiplies only when a value follows it, so a sentence like `repeat 3 times:` keeps its own `times`.
 
+**Math words** (all **Available**):
+
+| Pattern | Means | Example |
+|---|---|---|
+| `half of X` | `X times 0.5` | `half of price` |
+| `twice X` | `X times 2` | `twice price` |
+| `N percent of X` | `N times X divided by 100` | `20 percent of price` |
+| `the remainder of X divided by Y` | `X mod Y` | `the remainder of 17 divided by 5` |
+| `X is infinite` / `X is not infinite` / `X isn't infinite` | Yes when X is infinity or minus infinity | `if total is infinite, say "Too big."` |
+| `X divided by Y, rounded down` | Whole-number division: a comma before `rounded` (or `sorted`, or `as`) puts it after the whole value | `minutes divided by 60, rounded down` |
+
+Like `length of`, `half of` and `twice` take a single value (`twice price plus 1` is `(twice price) plus 1`), and so does what comes after `percent of`. They mean the program's own definition instead when it defines one called `half`, `twice` or `remainder` (and `twice with 4` still calls a function kept in a name `twice`).
+
 Arithmetic needs numbers on both sides; anything else is an error before the program runs, such as "Line 12: I can't subtract text from a number." To join text, use `and` or `followed by` (which turns numbers into text for you). Dividing or taking the remainder by zero is the error "You divided by zero."
 
 ### Conversions
@@ -129,6 +144,7 @@ Arithmetic needs numbers on both sides; anything else is an error before the pro
 |---|---|---|---|
 | `length of X` | How many characters a text has, or how many items a list has | `length of name` | Available |
 | `contents of file X` | Everything in a file, as text | `contents of file "notes.txt"` | Available |
+| `what's in file X` / `what is in file X` | The same as `contents of file X`; `what's in it` works in a step right after one that made or wrote to a file | `show me what's in file "notes.txt"` | Available |
 
 These take a single value, so `length of name plus 1` means `(length of name) plus 1`. Write `length of (name plus 1)` for the other meaning.
 
@@ -142,7 +158,7 @@ These take a single value, so `length of name plus 1` means `(length of name) pl
 | `NAME using X, Y` | Same, with the inputs separated by commas (or `and`) | `area using 3, 4` | Available |
 | `NAME` | Call a function that takes no inputs (written like a variable) | `say pi times 2` | Available |
 
-- **Inputs are separated by `and`.** Each input is a single value: a number, text, a name, a negative number, a conversion, another call in parentheses, or anything in parentheses. So `"Hi " and name` as an input needs parentheses: `greet with ("Hi " and name)`. Every `and` straight after an input starts another input, and the checker then says if the count is wrong.
+- **Inputs are separated by `and`.** Each input is a single value: a number, text, a name, a negative number, a conversion, another call in parentheses, or anything in parentheses. So `"Hi " and name` as an input needs parentheses: `greet with ("Hi " and name)`. In a call that's a sentence of its own (`report with "bad" and "I expected " followed by word.`), each input is a whole value up to the next `and`: arithmetic and `followed by` belong to it, since the call's result isn't used. Every `and` straight after an input starts another input, and the checker then says if the count is wrong.
 - **Arithmetic straight after the inputs** could belong to the last input or to the whole result, so `double of 21 plus 1` is an error that asks you to write `(double of 21) plus 1` or `double of (21 plus 1)`. When the last input is already in parentheses it's clear, so `fib of (n minus 1) plus fib of (n minus 2)` adds two calls.
 - Comparisons, `or`, and `and call` end the inputs: `area of 3 and 4 is 12` compares the result with 12.
 
@@ -206,6 +222,7 @@ The words that start statements are only special at the start of a sentence, so 
 | `file X exists` / `folder X exists` | A condition: is there a file (a folder)? | `if file "notes.txt" exists:` | Available |
 | `put X in file F` / `write X in file F` | Like `write X to file F` | `put "hello" in file "notes.txt"` | Available |
 | `add X to the end of file F` | Like `append X to file F` | `add "more" to the end of file "notes.txt"` | Available |
+| `add A and B to the end of file F, one per line` | Each value on a line of its own (`A followed by` a new line `followed by B`, then a new line at the end); one list is its items joined with new lines | `add "eggs" and "bread" to the end of file "groceries.txt", one per line` | Available |
 
 More file and folder sentences are in [the standard library](#the-standard-library).
 
@@ -295,6 +312,7 @@ All function sentences are **Available**.
 |---|---|---|
 | `to NAME:` | Define a function with no inputs. NAME is every word before the colon | `to cheer:`, `to make tea:` |
 | `to NAME with INPUT and INPUT:` | Define a function with inputs (`of`, `using`, `to`, `for`, `from` and `in` work like `with`; commas work like `and`). NAME is every word before them | `to area with width and height:`, `to add tax to amount:`, `to pause for seconds:`, `to busiest artist from names:`, `to count vowels in word:` |
+| `to NAME of INPUT in INPUT:` (also `to`, `from`, `by`, `at` between inputs) | The word between two inputs, instead of `and`; a call can use it (or `and`) there | `to column of cell in grid:` (`the column of 7 in 4`), `to range from low to high:` (`range from 1 to 5`) |
 | `give back X` / `return X` | End the function and hand X back to whoever called it | `give back width times height` |
 | `return` | End the function early, handing back nothing (`give back nothing` is the same) | `return` |
 | `give back X if CONDITION` / `give back X unless CONDITION` | Leave early with X, but only when the condition is yes (`if`) or no (`unless`); otherwise go on to the next sentence. The same as `if CONDITION, give back X` | `give back 0 if scores is empty.`<br>`give back x unless x is below 0.` |
@@ -448,6 +466,36 @@ Sorting text, and sorting by length, keeps equal items in the order they were in
 
 These filters go after a single value, like `'s`, so a longer list goes in parentheses (`(item 1 of groups) where it is empty`), and `the number of items in (the dogs whose age is over 3)` needs them too. The comparisons after `that` are the usual ones with `are` for `is`: `are`, `are not`, `aren't`, `are equal to`, `are not equal to`, `aren't equal to`, `are greater than`, `are more than`, `are bigger than`, `are above`, `are over`, `are less than`, `are smaller than`, `are below`, `are under`, `are at least`, `are at most`, `are greater than or equal to`, `are more than or equal to`, `are bigger than or equal to`, `are less than or equal to`, and `are smaller than or equal to`.
 
+### Questions and totals
+
+All **Available**. Each goes through the list once, makes no list it doesn't give back, and stops early where it can (`easyscript plan FILE` shows what each became). L is a single value with its filters (`the orders whose amount is over 100`); in a test, `it` is the item.
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `how many L are COMPARISON X` / `how many L is ...` / `how many of L are ...` | How many items pass the test (also `are empty`, `start with`, `end with`, `contain`, `don't contain`, ...) | `how many scores are above 70` |
+| `how many L there are` / `how many L there is` | How many items | `how many guests there are` |
+| `how many L whose FIELD ...` / `how many L where C` | How many items the filter keeps | `how many orders whose amount is over 50` |
+| `the number of L` | How many items (`the number of items in L` too) | `the number of orders` |
+| `any ITEM TEST` / `every ITEM TEST` / `no ITEM TEST` | Yes if some, every, or no item passes, going through the list named like ITEM's plural; stops as soon as the answer is known. An empty list makes `every` and `no` yes and `any` no | `if any score is above 90:`, `if every order's amount is above 0:` |
+| `any ITEM in L TEST` / `no ITEM in L TEST` | The same, with the list named | `if any word in names starts with "Z":` |
+| `all L are ...` / `all of L are ...` / `any of L are ...` / `none of L are ...` | The same, with the plural list | `if all scores are at least 50:` |
+| `the total of L` / `the total FIELD of L` | All the numbers (or each item's FIELD) added up; 0 for an empty list | `the total amount of orders` |
+| `the average of L` / `the average FIELD of L` | The total divided by how many; an empty list is an error | `the average age of dogs` |
+| `the median of L` / `the median FIELD of L` | The middle number (halfway between the two middle ones for an even count); an empty list is an error | `the median of scores` |
+| `the top N L` / `the lowest N L` | A new list of the N biggest (or smallest) numbers or dates, biggest (or smallest) first; ties in the order they were in. All of them if there are fewer | `the top 3 scores` |
+| `the top N L by FIELD` / `the lowest N L by FIELD` | The N items with the biggest (smallest) FIELD | `the top 2 orders by amount` |
+| `the N most common L` | A new list of the N items (text or numbers) that come up most, most first; ties in the order they first came up | `the 10 most common words` |
+| `the ITEM with the highest FIELD` / `... the lowest FIELD` | The item with the biggest (smallest) FIELD, the first one on a tie; from the list named like ITEM's plural. Also `biggest`, `largest`, `greatest`, `most`, and `smallest`, `fewest`, `least`. A FIELD that's a list counts its items. An empty list is an error | `the customer with the highest total`, `the order with the most items` |
+| `the ITEM in L with the highest FIELD` | The same, with the list named | `the dog in pets with the lowest age` |
+| `... per FIELD` | After `the total`, `the average`, `the median` or `the number of`: a map from each value of the field to the result for the items with it, in the order each first came up | `the total amount of orders per region` |
+| `... per month` / `per year` / `per day` / `per weekday` | Grouped by the item's date (its one date field, or `per month of FIELD`): months as text like "October 2026", days like "Sunday, October 11, 2026", weekdays like "Sunday", years as numbers | `the number of sales per month` |
+| `M sorted` / `M sorted biggest first` | A map's copy with its entries in the order of their values (numbers, dates or text) | `the total amount of orders per region, sorted biggest first` |
+| `sort M` / `sort M biggest first` | The same order, changing the map itself | `sort totals biggest first` |
+
+Each is written in core terms in the [language guide](language-guide.md#21-questions-and-totals). The words `total`, `average`, `median`, `number`, `top`, `lowest`, `any`, `all`, `none` and `how` keep meaning the program's own definition when it defines one with that name (`total of scores` calls it); written with `the` (`the total of scores`), that's an error asking which was meant.
+
+The plural verbs after `that` and in `how many` are `contain`, `do not contain`, `don't contain`, `start with`, `do not start with`, `don't start with`, `end with`, `do not end with` and `don't end with`: `the words that start with "a"`.
+
 ### Sharing
 
 A list is **shared**: `let same be scores` gives the same list another name, and a function given a list can change it. Changes through any name show through all of them. Use `a copy of L` for a separate list. A variable keeps its kind, so a list variable can only be given another list of the same kind. A list kept with `keep` is fixed (see [Constants](#constants)).
@@ -548,7 +596,7 @@ A kind of record is written like any other kind: `(a dog)` for an input, `giving
 
 | Pattern | Meaning | Example |
 |---|---|---|
-| `a new NAME with FIELD X and FIELD Y` | A new record. Every field needs a value, unless it has a starting value or can be nothing. Fields are separated by `and` or commas; each value is a value up to the next `and` or comma (arithmetic and `followed by` are part of it). A `new` inside another `new` needs parentheses | `a new dog with name "Rex" and age 3` |
+| `a new NAME with FIELD X and FIELD Y` | A new record. Every field needs a value, unless it has a starting value or can be nothing. Fields are separated by `and` or commas; each value is a value up to the next `and` or comma (arithmetic and `followed by` are part of it). A `new` inside another `new` needs parentheses; in a list or a map, the next `new` or key ends it (`a list of a new point with x 1 and y 2, a new point with x 3 and y 4`) | `a new dog with name "Rex" and age 3` |
 | `a new NAME` | A new record whose fields all start at their starting values | `a new chain` |
 | `R's FIELD` | A field of a record. Chains work, and so does `it's` | `rex's name`, `the order's customer's name`, `it's age` |
 | `(X)'s FIELD` | A field of a value in parentheses | `(item 1 of dogs)'s name` |
@@ -614,7 +662,8 @@ All map words are **Available**. A map finds a value by its key: keys are text o
 | Pattern | Meaning | Example |
 |---|---|---|
 | `the value for K in M` | The value kept for key K. A key that isn't there stops the program with an error naming it | `the value for "tea" in prices` |
-| `the value for K in M, or D` | The same, but D (a single value, only worked out when it's needed) when K isn't there | `the value for "Bob" in ages, or 0` |
+| `the value for K in M, or D` | The same, but D (a single value, only worked out when it's needed) when K isn't there; `if there isn't one` (or `if there is not one`) can follow, and changes nothing | `the value for "Bob" in ages, or 0 if there isn't one` |
+| `add X to the value for K in M, starting at S` | Change a key's value, adding the key with S first if it isn't there (S is only worked out then); works with every change sentence and with lists (`add word to the value for letter in groups, starting at an empty list of text`) | `add 1 to the value for word in counts, starting at 0` |
 | `set the value for K in M to X` / `change ...` | Keep X for key K: changes its value, or adds it at the end | `set the value for "Paris" in ages to 19` |
 
 Number keys are the same key when they're the same to 12 significant digits, so numbers that differ only by rounding errors are one key (`0.1 plus 0.2` finds `0.3`). A name straight before `in` is the key: `the value for item in prices`. `value`, `keys`, `values`, `entries` and `map` are only special in these forms, so they can still be names.
@@ -655,6 +704,186 @@ A map needs both names; `for each name in ages:` is an error that suggests `for 
 
 A map is **shared** like a list: `let same be ages` gives the same map another name, and a function given a map can change it. Lists and maps in a map belong to it (`a copy of` copies them); text and records in it are shared. A map kept with `keep` is fixed (see [Constants](#constants)).
 
+## Choices without if
+
+All **Available** (English pass part 3). Each is a sentence at the start of a line, at the top level, and compiles to the same code as the `to` definition, loop or `if` it stands for.
+
+### Defaults
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `X, or D` / `X, or D if there isn't one` | X when it isn't nothing; otherwise D (a single value, only worked out then). X must be something that can be nothing | `the nickname, or "friend" if there isn't one` |
+| `..., starting at S` | See [Looking up and setting](#looking-up-and-setting) | `add 1 to the value for word in counts, starting at 0` |
+
+### Describing words (adjectives)
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `KIND is ADJECTIVE if CONDITION.` | Says when a record (or a value of a kind) is ADJECTIVE; in CONDITION, `it`, `its FIELD` and `their FIELD` are that value. Same as `to is ADJECTIVE, for a KIND: give back CONDITION` | `a customer is loyal if the number of items in their orders is at least 2.` |
+| `ADJECTIVE KIND is one whose FIELD ... .` / `... is one that ... .` / `... is one where ... .` | The same, said as a filter | `a big order is one whose amount is over 1000.` |
+| `X is ADJECTIVE` / `X is not ADJECTIVE` / `X isn't ADJECTIVE` | Yes or no | `if rex is loyal:` |
+| `the ADJECTIVE Ls` | The items of L it describes (a filter) | `the loyal customers` |
+| `how many L are ADJECTIVE`, `every ADJECTIVE ITEM ...`, `L that are ADJECTIVE` | In questions and filters too | `if every loyal customer's total is above 100` |
+
+An adjective is one word; where it's defined, `X is WORD` means the adjective, not a comparison with a name. Several kinds can define the same word. Using one that no kind defines is "I don't know what "loyal" means for a customer."; using it on another kind is "I know what "best" means for a customer, but not for a product.".
+
+### Values worked out from a record
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `KIND's FIELD is VALUE.` | A value every KIND has, worked out from it whenever it's used (`it`, `its`, `their` are the record): `rex's FIELD`, `the FIELD of rex`, `its FIELD`, `whose FIELD`, `the total FIELD of L` all work. Same as `to the FIELD, for a KIND: give back VALUE` | `an order's profit is its amount minus its cost.` |
+| `the NAME is the one with the highest FIELD.` | A named value: wherever `the NAME` is used, it means `the ITEM with the highest FIELD`, ITEM the last word of NAME (and its list the plural, like `for each score:`). Also `lowest`, `most`, `fewest`, ... | `the best customer is the one with the highest profit.` |
+| `the NAME are the ones whose ... .` / `... that ... .` / `... where ... .` | A named list: the items of the list named by NAME's last word that the filter keeps | `the big orders are the ones whose amount is over 1000.` |
+
+A named value is worked out where it's used, from what it says there, like the words written in its place. `the one whose ...` (which could be several) and `the ones with the highest ...` (how many?) are errors that say what to write instead.
+
+### Tables
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `NAME depends on X:` + lines | Makes NAME (like `let`) from the first line whose condition is yes for X | `the shipping cost depends on the total:` |
+| `the FIELD of a KIND depends on X:` + lines | A value every KIND has (like `KIND's FIELD is ...`), from the first line that applies | `the price of a drink depends on its size:` |
+| `VALUE when it's ...` / `VALUE when it is ...` / `VALUE when it starts with ...` (any comparison) | One line: in the comparison, `it` is X | `5 when it's over 50.` |
+| `VALUE otherwise.` | The last line: the value when no other line applies | `10 otherwise.` |
+
+Every table must end with an `otherwise` line, so every case has a value; one without it is an error naming the case that's missing when the lines make it clear ("when the total is 50 or less"). All the values must be the same kind.
+
+### Rules
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `FIELD must be between A and B.` | Every value a field called FIELD (in any kind) gets must be from A to B; checked in `new`, `set`, and the change sentences, and the program stops with "An age must be between 0 and 150, but this one is 200." if not | `an age must be between 0 and 150.` |
+| `KIND's FIELD must ... .` | The same, for one kind's field | `a customer's email must contain "@".` |
+| `must be ...` (any comparison after `is`), `must contain X`, `must start with X`, `must end with X`, and each with `not` (`must not be empty`) | What the rule checks, with the value as `it` | `a team's players must not be empty.` |
+
+A rule sees only constants and the value it checks.
+
+### Events
+
+All **Available**. Events run once the program's other sentences have, in the order they're written, until `stop the program` (or, with no schedules, until the rules have been checked and the keys have run out).
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `every N seconds:` / `every second:` (also `minutes`, `minute`, `hours`, `hour`, `milliseconds`, `millisecond`) + lines | Runs the lines every N seconds, the first time N seconds after the program's other sentences; N is worked out once, and must be more than 0 | `every 150 milliseconds:` |
+| `every day at TIME:` / `every Monday at TIME:` (any day of the week) + lines | Runs at that time of day (on the computer's calendar). TIME is `9am`, `9:30pm`, `12am` (midnight) or `17:00` | `every Monday at 9am:` |
+| `whenever CONDITION:` + lines / `whenever CONDITION, SENTENCE` | Runs each time CONDITION becomes yes (it's checked once the other sentences have run, and after each event) | `whenever score is over 100, say "Level up!".` |
+| `when CONDITION:` + lines / `when CONDITION, SENTENCE` | Runs the first time CONDITION is yes, and never again | `when score is over 50, say "Halfway there.".` |
+| `whenever a key is pressed:` + lines | Runs for each key pressed, with `it` the key (`"left"`, `"enter"`, `"a"`, ...; see [the keyboard](#system-tools)). Keys from a file come one before each round of the schedules | `whenever a key is pressed:` |
+
+Events can only be written at the top level, and they see every name the program makes. The exact meaning: after the other sentences, a loop that checks the `whenever`/`when` rules, then waits for a key until the next schedule is due, then runs the schedules that are due, and goes round again.
+
+### Acting on a whole group
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `remove the Ls that ... / whose ... / where ...` / `remove the ADJECTIVE Ls` | Takes the items the filter keeps out of the list itself (the same as `keep only the items in L where not ...`) | `remove the tasks that are done.` |
+| `set every ITEM's FIELD to X` (and `add X to every ITEM's FIELD`, `increase every ITEM's FIELD by X`, ...) | Does the sentence for each item of the list named like ITEM's plural (a `for each` loop); ITEM can start with an adjective | `set every monster's color to "blue".` |
+
+## Talking to it
+
+All **Available** (English pass part 4). A question or request means exactly what the same words mean in a program.
+
+### Questions and requests
+
+| Pattern | Means | Example |
+|---|---|---|
+| `...?` | A `?` ends a sentence, like `.` | `say total?` |
+| `what is X?` / `what's X?` / `what are X?` / `X?` | `say X` | `what is the total?` |
+| `is X ...?` (any comparison after `is`, or a describing word) | `say X is ...` | `is total above 100?`, `is rex big?` |
+| `how many ...?` | `say how many ...` | `how many orders are big?` |
+| `which ITEM has the highest FIELD?` / `which ITEM with the lowest FIELD?` | `say the ITEM with the highest FIELD` | `which customer has the highest total?` |
+| `which Ls are ...?` | `say the Ls that are ...` | `which orders are big?` |
+| `show me X` / `give me X` / `tell me X` / `list X` | `say X` | `show me the total.` |
+| `who ...?`, `where ...?`, `when ...?`, `why ...?` | An error for now: "I can't answer "who" questions yet." | |
+
+`me` and `undo` are kept for talking to EasyScript, so they can't be names.
+
+### Polite words
+
+`I want to`, `I'd like to`, `I would like to`, `let's`, `can you`, `could you`, `would you` and `please` before a sentence are left out: `can you show me the total?` is `show the total`.
+
+### Steps in a row
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `S1, then S2` / `S1, and then S2` / `S1 and then S2` / `S1 and S2` / `S1, after that S2` / `S1, next S2` / `S1, finally S2` | Do S1, then S2 (a line ending with `,`, `then` or `and` goes on to the next line) | `read the table in "sales.csv", then total the amount per month` |
+| `it` in a step | What the step before gave: the name it made (`let`, `and call it`), the list it changed (`sort`, `remove`, `add ... to the end of`), the file it wrote to (`write ... in file`), the table it read, or the value an action worked out. In a step where a loop's or a filter's item could also be meant, it's an error asking for a name | `let scores be a list of 5, 3 and 9, then sort it, then say it.` |
+| `first, ...` / `next, ...` / `after that, ...` / `finally, ...` / `then ...` | Before a sentence: only say the order | `first, say "Hello".` |
+
+### Actions
+
+| Pattern | Means | Example |
+|---|---|---|
+| `total the FIELD [of L] [per G]` | `let NAME be the total FIELD of L [per G]`; in a step, L is `it` | `total the amount per month` |
+| `average the FIELD [of L] [per G]` / `median the FIELD ...` | The same with the average or the middle | `average the score of students` |
+| `count L` / `count the Ls that ...` | `let NAME be the number of items in L` | `count the orders whose amount is over 50` |
+| `... and call it NAME` / `..., called NAME` / `called NAME` / `named NAME` | The name the action's value is kept in (otherwise a hidden one, for the next step's `it`) | `total the amount of orders and call it everything` |
+
+### Asking for numbers and yes or no
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `ask for a number Q and call it NAME` (or `and call the answer NAME`) | Asks Q until the answer is a number (otherwise "Please type a number, like 42." and Q again), and keeps it as a number. With no more input it's a runtime error | `ask for a number "How old are you? " and call it age.` |
+| `ask yes or no Q and call it NAME` | Asks Q until the answer is yes or no (`yes`, `y`, `no`, `n`, any case; otherwise "Please answer yes or no."), and keeps it as yes/no | `ask yes or no "More? " and call it more.` |
+
+### Writing numbers for people
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `X as money` | Text: a dollar sign, commas between thousands and two decimals (`-$5.00` for minus 5) | `1234.5 as money` is `"$1,234.50"` |
+| `X as a percent` | Text: X times 100 with up to 10 digits and a `%` | `0.25 as a percent` is `"25%"` |
+| `X with commas` | Text: the number with commas between thousands | `1234567 with commas` is `"1,234,567"` |
+
+They bind like `as text` (to the value just before them): `(price times 3) as money`. A constant can't use them.
+
+### Values that are always up to date
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `the NAME is always VALUE.` | A name whose value is worked out again each time it's read, so it follows the names it uses. It can't be set | `the total is always the sum of the prices.` |
+| `the sum of L` | The same as `the total of L` | `the sum of prices` |
+
+### When a file can't be used
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `try to S. if that fails, S2.` / `try to S.` + `if that fails:` and indented sentences | S is a sentence that reads, writes or adds to a file, reads a table or csv file, saves a csv file, or makes, deletes, renames, copies or moves a file or folder. Just before it, EasyScript checks it can be done; if not, S is skipped and the other sentences run instead of stopping the program. The file's name has to be text or a name (it's looked at twice). A name S makes exists after it either way; if S failed, it holds empty text (or 0, no, an empty list) | `try to read file "notes.txt" and call it notes. if that fails, say "No notes yet."` |
+| `the reason` | In `if that fails`: text saying why, the same words the error would have used | `say the reason.` |
+
+### Showing lists and maps as tables
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `X as a table` | Text with X laid out in columns: a list of records has a column per field with the fields' names on top (a table's rows: every column of the file); a map has its keys and values; any other list one item per line. Columns are as wide as their widest value, numbers on the right; text isn't quoted | `show the dogs as a table.` |
+| `L sorted by FIELD [biggest first \| smallest first]` | When FIELD isn't a definition, name or constant, but a field of some kind (or a column of a table): the items in order of that field (a number or a date), smallest first unless it says `biggest first`; equal ones keep their order | `the orders sorted by amount biggest first` |
+
+A table read with `... and call it purchases` has rows of a kind named after it: `a purchase` (the name without its plural ending, if that's not a kind already). So `a purchase is big if its amount is over 200.` and `the big purchases` work, and a row prints as `a purchase with date ...`.
+
+### Examples as tests
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `for example, X is Y.` (any yes/no value after the comma) | Checked where it's written. If it isn't right, a warning shows the line and what X really is ("It's 8 here."), and the program goes on. `easyscript test FILE` runs the program and then says how many examples were right ("2 of 3 examples are right."), failing if any weren't | `for example, double with 3 is 6.` |
+
+### Charts
+
+All **Available** (after the English pass), drawn by [`lib/charts.es`](../lib/charts.es), a module written in EasyScript ([stdlib.md](stdlib.md#charts)).
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `save a bar chart of X as F` / `save a line chart of X as F` / `save a pie chart of X as F` | Writes an SVG picture of X into the file F. X is a list of numbers, or a map from text or numbers to numbers | `save a bar chart of the total amount of sales per month as "sales.svg"` |
+| `make a bar chart of X called F` (also `line`, `pie`) | The same; in steps in a row, `it` afterwards is the file | `make a bar chart of it called "best months.svg"` |
+| `..., titled T` | A title at the top of the chart | `save a pie chart of votes as "votes.svg", titled "Votes"` |
+
+### Tables in files
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `read the table in F [and call it NAME]` / `..., called NAME` | The rows of the csv file F, as records of a kind made for it ("a row of sales.csv"). Their fields are the columns the program uses (`its amount`, `the total amount of sales`, `per region`), each the kind its use needs (a number, text, yes/no, or a date like 2026-10-31); other columns are kept as they are. Reading checks every column used is in the file ("sales.csv has no column called "amout". Did you mean "amount"?") and that each value is the right kind. `per month` uses the column called `date` | `read the table in "sales.csv" and call it sales.` |
+| `save X as F` (or `as csv file F`) | Saves a list of maps or records (a table's rows with all their columns), or a map (a `key` and a `value` column), as a csv file | `save it as "best months.csv"` |
+
+In a program that reads a table, a word where a field goes can be one of its columns even if no kind of record has that field.
+
 ## Kinds with variants
 
 All of these are **Available**. A kind with variants is a value that's one of several things, each with its own fields. Values never change once made, and are equal when they're the same variant with equal fields. See the [language guide](language-guide.md#14-kinds-with-variants).
@@ -670,6 +899,7 @@ All of these are **Available**. A kind with variants is a value that's one of se
 | `when it's VARIANT:` / `when it is VARIANT:` | The sentences indented below run when S is that variant. Inside, `it` is S, and S itself (if it's a name or a field) is checked to be that variant | `when it's a circle:` |
 | `when it's VARIANT or VARIANT:` | For any of several variants | `when it's a rectangle or a square:` |
 | `when it's nothing:` | When S (a kind or nothing) is nothing | `when it's nothing:` |
+| `when it's VARIANT whose FIELD ...:` / `... where C:` / `... that ...:` | Only when the test is yes too (`it` is S, checked to be that variant). It doesn't count as covering the variant: another `when` for it (or `otherwise`) is still needed | `when it's a circle whose radius is over 10:` |
 | `otherwise:` / `else:` | Last, for every variant without a `when`. Without it, every variant needs one; with it but nothing left to do, it's a warning | `otherwise:` |
 | `its FIELD` | `it's FIELD`: the field of `it` (only before a field's name; elsewhere `its` is an ordinary name) | `its radius` |
 | `S is VARIANT` / `S is not VARIANT` / `S isn't VARIANT` | Yes if S is (or isn't) that variant. The `a` or `an` before it is needed: `s is circle` compares with a name | `if s is a circle:` |
@@ -694,7 +924,7 @@ All of these are **Available**. An interface says what a value has to be able to
 Rules:
 
 - **Fitting:** a kind fits when it has a method for every way with the same name, the same kinds of input, and the same result (or, for a way that gives back an interface, any kind that fits it). Giving a value of a kind that doesn't fit is a compile error that names the missing way.
-- **Mixed lists:** `an empty list of things that can speak`, then add dogs, cats and birds. A list written out (`a list of rex and tom`) still holds one kind; the error says which interface both fit.
+- **Mixed lists:** a list written out with items of different kinds (`a list of rex and tom`) is a list of the one interface they all fit (here, things that can speak). If they fit none, it's the usual "All the items of a list have to be the same kind" error; if they fit several, an error asks for `an empty list of ...` with the one meant.
 - **Only ways:** a value of an interface has no fields, and only its ways can be called on it. It can be compared (`is`: the same record, or equal values of a kind with variants), printed, kept in lists, maps and fields, and be `or nothing`.
 
 ## Files that use other files
@@ -806,4 +1036,4 @@ Every value has a kind, worked out by the compiler before the program runs (**Av
 
 ## Later phases
 
-Modules (Phase 2), and everything after, will be added here as their designs settle. See the [roadmap](roadmap.md).
+The notebook's words (`again`, `the result`, `undo`), charts in replies, and everything after the English pass will be added here as their designs settle. See the [roadmap](roadmap.md) and [english-pass.md](english-pass.md).

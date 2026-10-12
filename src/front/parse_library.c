@@ -90,6 +90,39 @@ static Expr *parse_exists(Parser *p) {
     return expr;
 }
 
+// A word that introduces a call's inputs ("with", "of", "using", ...).
+static bool at_input_word(const Parser *p, size_t ahead) {
+    for (size_t i = 0; parser_input_intros[i]; i++) {
+        if (parser_at_word(p, ahead, parser_input_intros[i])) return true;
+    }
+    return false;
+}
+
+// the remainder of A divided by B: "A mod B".
+static Expr *parse_remainder(Parser *p) {
+    SourcePos start = parser_token_pos(parser_peek(p, 0));
+    parser_consume(p, 2);
+    Expr *a = parse_unary(p);
+    if (p->sentence_failed) return parser_error_expr(p);
+    size_t n = parser_match_words(p, "divided by");
+    if (!n) {
+        const Token *token = parser_peek(p, 0);
+        if (parser_error(p, token->span, "I expected \"divided by\" here, but found %s.", parser_describe(p, token))) {
+            diag_note(p->diag, "Write it like \"the remainder of 17 divided by 5\".");
+            diag_info(p->diag, DIAG_MISSING, "\"divided by\"", NULL);
+        }
+        return parser_error_expr(p);
+    }
+    Span op_span = parser_consume(p, n);
+    Expr *b = parse_unary(p);
+    Expr *mod = ast_new_expr(p->arena, EXPR_BINARY, ast_pos_join(start, b->pos));
+    mod->as.binary.op = BINARY_MODULO;
+    mod->as.binary.op_span = op_span;
+    mod->as.binary.left = a;
+    mod->as.binary.right = b;
+    return mod;
+}
+
 Expr *parser_parse_library_word(Parser *p) {
     if (parser_is_function(p, parser_peek(p, 0)->text)) return NULL;  // the program's own "to bigger of ..."
     Expr *system = parser_parse_system_word(p);
@@ -125,6 +158,11 @@ Expr *parser_parse_library_word(Parser *p) {
         return new_library(p, op, start, span, NULL, NULL);
     }
     if (at_exists(p)) return parse_exists(p);
+    if (parser_match_words(p, "half of")) return prefixed(p, LIB_HALF, 2);
+    if (parser_at_word(p, 0, "twice") && parser_starts_operand(parser_peek(p, 1)) && !at_input_word(p, 1)) {
+        return prefixed(p, LIB_TWICE, 1);  // not "twice with 4": a call of a function kept in "twice"
+    }
+    if (parser_match_words(p, "remainder of")) return parse_remainder(p);
     for (size_t i = 0; i < COUNT(date_parts); i++) {
         if (!parser_match_words(p, date_parts[i].words) || parser_is_function(p, parser_peek(p, 0)->text)) continue;
         Expr *expr = prefixed(p, LIB_DATE_PART, 2);
@@ -178,6 +216,11 @@ Expr *parser_parse_library_postfix(Parser *p, Expr *expr) {
         result->pos = ast_pos_join(expr->pos, (SourcePos){op_span, 0, 0, 0});
         return result;
     }
+    if (parser_match_words(p, "percent of")) {  // 20 percent of price
+        Span op_span = parser_consume(p, 2);
+        Expr *whole = parser_at(p, 0, TOK_MINUS) ? parse_unary(p) : parse_primary(p);
+        return new_library(p, LIB_PERCENT_OF, expr->pos, op_span, expr, whole);
+    }
     size_t n = parser_match_words(p, "to power of");
     if (n) {
         Span op_span = parser_consume(p, n);
@@ -202,6 +245,16 @@ Expr *parser_parse_library_test(Parser *p, Expr *left) {
         LibraryOp op = parser_at_word(p, 1, "before") ? LIB_BEFORE : LIB_AFTER;
         Span op_span = parser_consume(p, 2);
         return new_library(p, op, left->pos, op_span, left, parse_join(p));
+    }
+    static const char *const infinite[] = {"is infinite", "is not infinite", "isn't infinite"};
+    for (size_t i = 0; i < COUNT(infinite); i++) {
+        size_t n = parser_match_words(p, infinite[i]);
+        if (!n) continue;
+        Span op_span = parser_consume(p, n);
+        Expr *result = new_library(p, LIB_IS_INFINITE, left->pos, op_span, left, NULL);
+        result->as.library.part = i > 0;
+        result->pos = ast_pos_join(left->pos, (SourcePos){op_span, 0, 0, 0});
+        return result;
     }
     static const struct {
         const char *words;

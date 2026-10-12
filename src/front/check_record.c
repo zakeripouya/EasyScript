@@ -95,6 +95,12 @@ static TypeVar field_of(Checker *c, const Expr *expr, TypeVar base, Type type) {
     }
     size_t index;
     const Field *field = find_field(c, type_present(type), expr->as.field.name.text, &index);
+    const RecordKind *kind = &c->records->items[type_record_index(type)];
+    if (!field && kind->table) {  // a table's row: a column the program uses, added as a field
+        Field column = {expr->as.field.name, TYPE_UNKNOWN, NULL, expr->as.field.name.pos, {0}, {0}};
+        checker_add_column(c, kind->definition, column);
+        field = find_field(c, type_present(type), expr->as.field.name.text, &index);
+    }
     if (!field) {
         report_no_field(c, &expr->as.field.name, type);
         return error_var(c);
@@ -139,8 +145,43 @@ void checker_report_undecided_fields(Checker *c) {
     }
 }
 
+// "rex's profit" where "a dog's profit is ..." says how to work it out: a call
+// of that definition (named "the profit") on the record.
+static TypeVar computed_value(Checker *c, const Expr *expr, const char *value) {
+    Expr *e = (Expr *)expr;
+    Expr *record = e->as.field.record;
+    Name name = e->as.field.name;
+    memset(&e->as, 0, sizeof e->as);
+    e->kind = EXPR_CALL;
+    e->as.call.name = value;
+    e->display = name.display;
+    vec_push(c->arena, &e->as.call.args, record);
+    return checker_check_call(c, e, true);
+}
+
+static bool has_field(Checker *c, Type type, const char *name) {
+    size_t index;
+    if (type_is_record(type)) return find_field(c, type_present(type), name, &index) != NULL;
+    return type_is_sum(type) && checker_sum_with_field(c, name) == type_present(type);
+}
+
+static TypeVar field_with_base(Checker *c, const Expr *expr, TypeVar base);
+
 TypeVar checker_check_field(Checker *c, const Expr *expr) {
-    TypeVar base = checker_check_expr(c, expr->as.field.record);
+    const char *value = arena_sprintf(c->arena, "the %s", expr->as.field.name.text);
+    if (expr->as.field.name.text && checker_find_function(c, value)) {
+        if (!checker_field_owner(c, expr->as.field.name.text)) return computed_value(c, expr, value);
+        TypeVar base = checker_check_expr(c, expr->as.field.record);  // some kind has a field with the name
+        Type type = types_of(c, base);
+        if (type != TYPE_ERROR && (type_is_record(type) || type_is_sum(type)) && !has_field(c, type, expr->as.field.name.text)) {
+            return computed_value(c, expr, value);
+        }
+        return field_with_base(c, expr, base);
+    }
+    return field_with_base(c, expr, checker_check_expr(c, expr->as.field.record));
+}
+
+static TypeVar field_with_base(Checker *c, const Expr *expr, TypeVar base) {
     Type type = types_of(c, base);
     if (type == TYPE_ERROR) return error_var(c);
     if (type == TYPE_DATE) return checker_date_field(c, expr, base);  // today's year
@@ -355,4 +396,75 @@ void checker_check_record(Checker *c, Stmt *stmt) {
         if (field->initial) check_default(c, field);
         if (field->type == TYPE_UNKNOWN) checker_field_kind(c, field, field->pos.line);  // reported if nothing decides it
     }
+}
+
+// --- Tables' columns ----------------------------------------------------------------------
+
+// Adds a column to a table's kind of row. Its fields may move as they grow,
+// so what the checker keeps about them (their kinds, where to write them) is
+// moved too. Gives back the new field.
+Field *checker_add_column(Checker *c, Stmt *def, Field column) {
+    Field *before = def->as.record.fields.items;
+    size_t len = def->as.record.fields.len;
+    vec_push(c->arena, &def->as.record.fields, column);
+    Field *after = def->as.record.fields.items;
+    if (after != before) {
+        for (size_t i = 0; i < c->field_kinds.len; i++) {
+            FieldKind *kind = &c->field_kinds.items[i];
+            if (kind->field >= before && kind->field < before + len) kind->field = after + (kind->field - before);
+        }
+        for (size_t i = 0; i < c->slots.len; i++) {
+            TypedSlot *slot = &c->slots.items[i];
+            char *at = (char *)slot->slot, *start = (char *)before, *end = (char *)(before + len);
+            if (at >= start && at < end) slot->slot = (Type *)((char *)after + (at - start));
+        }
+    }
+    return &after[len];
+}
+
+// --- Rules ("an age must be between 0 and 150") ------------------------------------------
+
+// Every field the rule is about: the field with its name in the kind it
+// names, or in every kind of record. Its condition sees only constants, like
+// a definition's body, with "it" the field's value.
+void checker_check_rule(Checker *c, Stmt *stmt) {
+    const Name *name = &stmt->as.rule.field;
+    if (c->function || c->blocks > 0) {
+        diag_error(c->diag, stmt->pos.span, "A rule can only be at the top level, not inside %s.",
+                   c->function ? "a definition" : "an \"if\" or a loop");
+        diag_note(c->diag, "Move \"%s\" to the start of a line, outside every block.", stmt->as.rule.message);
+        return;
+    }
+    Vec(Field *) fields = {0};
+    for (size_t r = 0; r < c->records->len; r++) {
+        if (stmt->as.rule.kind != TYPE_UNKNOWN && type_record(r) != stmt->as.rule.kind) continue;
+        size_t index;
+        const Field *field = find_field(c, type_record(r), name->text, &index);
+        if (field) vec_push(c->arena, &fields, (Field *)field);
+    }
+    if (fields.len == 0) {
+        report_no_field(c, name, stmt->as.rule.kind == TYPE_UNKNOWN ? 0 : stmt->as.rule.kind);
+        return;
+    }
+    TypeVar var = checker_field_kind(c, fields.items[0], stmt->pos.line);
+    for (size_t i = 1; i < fields.len; i++) {
+        if (!types_unify(c, var, checker_field_kind(c, fields.items[i], stmt->pos.line))) {
+            diag_error(c->diag, name->pos.span, "The fields called \"%s\" aren't all the same kind, so one rule can't "
+                                                "cover them.", name->display);
+            diag_note(c->diag, "Say whose field it is, like \"a dog's %s must ...\".", name->display);
+            return;
+        }
+    }
+    size_t saved_floor = c->floor;
+    c->floor = c->made.len;  // like a definition: only constants, and "it"
+    Loop it = {true, var, false, NO_VARIANT, false};
+    vec_push(c->arena, &c->loops, it);
+    const Expr *condition = stmt->as.rule.condition;
+    c->in_rule = true;
+    checker_require(c, checker_check_expr(c, condition), TYPE_YESNO, condition, "A rule has to be yes or no", NULL);
+    c->in_rule = false;
+    c->loops.len--;
+    c->floor = saved_floor;
+    stmt->as.rule.id = ++c->rules;
+    for (size_t i = 0; i < fields.len; i++) vec_push(c->arena, &fields.items[i]->rules, stmt);
 }

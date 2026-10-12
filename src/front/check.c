@@ -95,6 +95,12 @@ static void check_change(Checker *c, const Stmt *stmt) {
     if (field) {
         var = field->kind == EXPR_MAP_GET ? checker_check_map_change(c, field) : check_field_target(c, field);
         if (types_of(c, var) == TYPE_ERROR) return;
+        const Expr *start = stmt->as.change.start;
+        TypeVar start_var = start ? checker_check_expr(c, start) : 0;
+        if (start && !types_unify(c, var, start_var)) {
+            diag_error(c->diag, start->pos.span, "The map's values are %s, so a value can't start at %s.",
+                       checker_kind(c, var), checker_kind(c, start_var));
+        }
     } else {
         const Symbol *symbol = check_target(c, &stmt->as.change.target);
         if (!symbol) return;
@@ -264,6 +270,10 @@ static void check_function(Checker *c, const Stmt *stmt) {
     c->loops.len = 0;
     c->function = f;
     check_params(c, f);
+    if (stmt->as.function.defines) {  // "a customer is loyal if its orders ...": "it" is the customer
+        Loop subject = {true, f->params.items[0], false, NO_VARIANT, false};
+        vec_push(c->arena, &c->loops, subject);
+    }
     checker_check_statements(c, &stmt->as.function.body);
     checker_end_scope(c, c->floor, stmt->pos.line, NULL);
     c->function = NULL;
@@ -328,9 +338,16 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
     case STMT_SAY: checker_check_expr(c, stmt->as.value); break;
     case STMT_USE: checker_check_use(c, stmt); break;
     case STMT_LIBRARY: checker_check_library_stmt(c, stmt); break;
+    case STMT_RULE: checker_check_rule(c, (Stmt *)stmt); break;
+    case STMT_EVENT: checker_check_event(c, stmt); break;
+    case STMT_TRY: checker_check_try(c, stmt); break;
+    case STMT_EXAMPLE:
+        checker_require(c, checker_check_expr(c, stmt->as.value), TYPE_YESNO, stmt->as.value,
+                        "An example says something that's yes or no, like \"total is 12\"", NULL);
+        break;
     case STMT_ASK:
         checker_check_expr(c, stmt->as.ask.prompt);
-        make_text(c, &stmt->as.ask.answer);
+        checker_make_or_store(c, &stmt->as.ask.answer, types_new(c, stmt->as.ask.kind, stmt->pos.line));
         break;
     case STMT_WRITE_FILE:
     case STMT_APPEND_FILE:
@@ -492,13 +509,21 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
     collect_functions(&c, program);
     checker_collect_constants(&c, program);
     collect_names(&c, program);
-    for (size_t pass = 0; pass < 4; pass++) {  // constants, kinds of record, functions, then the rest
+    for (size_t pass = 0; pass < 5; pass++) {  // constants, kinds of record, functions, the rest, then events
         for (size_t i = 0; i < program->len; i++) {
             const Stmt *stmt = program->items[i];
             int kind_pass = stmt->kind == STMT_CONSTANT ? 0 : stmt->kind == STMT_RECORD || stmt->kind == STMT_SUM || stmt->kind == STMT_INTERFACE ? 1
-                            : stmt->kind == STMT_FUNCTION ? 2 : 3;
+                            : stmt->kind == STMT_FUNCTION ? 2 : stmt->kind == STMT_EVENT ? 4 : 3;
             c.file = stmt->pos.file;
             if (kind_pass == (int)pass && checker_check_module_stmt(&c, stmt)) check_stmt(&c, stmt);
+        }
+    }
+    for (size_t r = 0; r < c.records->len; r++) {  // a table's columns that nothing decided are text, as in the file
+        if (!c.records->items[r].table) continue;
+        Stmt *def = c.records->items[r].definition;
+        for (size_t f = 0; f < def->as.record.fields.len; f++) {
+            TypeVar column = checker_field_kind(&c, &def->as.record.fields.items[f], def->pos.line);
+            if (types_of(&c, column) == TYPE_UNKNOWN) types_require(&c, column, TYPE_TEXT, def->pos.line);
         }
     }
     types_finish(&c, first_error);

@@ -10,6 +10,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | Chapter | Status |
 |---|---|
 | [0. Getting set up](#0-getting-set-up) | Available |
+| [Your first programs](#your-first-programs) | Available |
 | [1. How EasyScript reads your sentences](#1-how-easyscript-reads-your-sentences) | Available |
 | [2. Values and expressions](#2-values-and-expressions) | Available |
 | [3. Variables](#3-variables) | Available |
@@ -30,6 +31,9 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [18. The standard library](#18-the-standard-library) | Available |
 | [19. Programs and the system](#19-programs-and-the-system) | Available |
 | [20. The keyboard](#20-the-keyboard) | Available |
+| [21. Questions and totals](#21-questions-and-totals) | Available |
+| [22. Choices without if](#22-choices-without-if) | Available |
+| [23. Talking to it](#23-talking-to-it) | Available |
 
 ---
 
@@ -58,6 +62,158 @@ and run it:
 ```
 
 `easyscript build hello.es -o hello` makes a program you can run on its own (`./hello`). Running `./easyscript` with nothing after it starts the interactive shell, where you can type sentences and see the results straight away; end a line with `:` to type a block, and finish the block with a blank line. Two more commands show what the compiler sees: `easyscript tokens` (the words and symbols) and `easyscript ast` (the meaning, as a tree).
+
+---
+
+## Your first programs
+
+**Status: Available**
+
+This chapter is for you if you have never written a program. Each part is a short program you can copy into a file and run. Later chapters go into each idea in more depth.
+
+### Saying something
+
+A program is a list of sentences. EasyScript does them in order, one after the other.
+
+```
+say "Hello!".
+say "This is my first program.".
+```
+
+Save it as `hello.es` and run `./easyscript run hello.es`. It shows the two lines.
+
+Text goes in double quotes. A sentence ends with a period or at the end of the line.
+
+### Keeping a value
+
+Give a value a name with `let`. Then use the name wherever you want the value.
+
+```
+let name be "Ann".
+let age be 12.
+say name, "is", age.
+say "Next year [name] will be [age plus 1].".
+```
+
+Commas join pieces into one line, with spaces between them. Inside text, a value in square brackets is put in its place.
+
+To change a value, use `set`, `add` or `increase`:
+
+```
+let score be 0.
+add 10 to score.
+increase score by 5.
+say "Score:", score.
+set score to 100.
+say "Score:", score.
+```
+
+### Asking a question
+
+`ask` shows a question and waits for an answer. `ask for a number` keeps asking until the answer is a number.
+
+```
+ask "What's your name? " and call it name.
+ask for a number "How old are you? " and call it age.
+say "Hi, [name]! In ten years you'll be [age plus 10].".
+```
+
+### Making a choice
+
+`if` does something only when a test is yes. `otherwise` covers the rest. The sentences that belong to `if` are moved in by four spaces.
+
+```
+let temperature be 25.
+if temperature is above 20:
+    say "Warm today.".
+otherwise:
+    say "Bring a coat.".
+```
+
+A short choice fits on one line: `if temperature is above 30, say "Hot!".`
+
+### Doing something again
+
+```
+repeat 3 times:
+    say "Hip hip hooray!".
+count from 1 to 5:
+    say it.
+```
+
+Inside `count from 1 to 5`, `it` is the number it's at.
+
+### Lists
+
+A list keeps several values in order. You can ask questions about it in plain words.
+
+```
+let scores be a list of 72, 95, 88 and 61.
+say "Total:", the total of scores.
+say "Average:", the average of scores.
+say "Best:", the biggest of scores.
+say how many scores are above 80, "scores are above 80.".
+say "Good ones:", the scores that are above 80.
+for each score in scores:
+    if score is below 70, say score, "needs work.".
+```
+
+### Things with parts
+
+Some things have parts, like a pet with a name and an age. Say what parts it has, then make some.
+
+```
+a pet has a name and an age.
+let pets be a list of a new pet with name "Rex" and age 3, a new pet with name "Tom" and age 7.
+say the pet with the highest age.
+say the average age of pets.
+for each pet in pets:
+    say pet's name, "is", pet's age.
+```
+
+### Teaching it a new word
+
+Write `to` and a name, then the sentences it stands for, moved in by four spaces. `give back` says what it works out.
+
+```
+to double with number:
+    give back number times 2.
+
+say double with 21.
+
+for example, double with 3 is 6.
+```
+
+`for example, ...` says what a word should give. If it's ever wrong, EasyScript shows a warning, so your examples work as tests (`./easyscript test file.es` checks them all).
+
+### Steps in a row
+
+You can give several steps in one sentence. In each step, `it` means what the step before made.
+
+```
+make a new file called "shopping.txt", then write "milk" in file it,
+then add "eggs" and "bread" to the end of file it, one per line,
+and then show me what's in it.
+```
+
+A line that ends with a comma, `then` or `and` goes on to the next line.
+
+### When something goes wrong
+
+If EasyScript can't understand a sentence, it says which line, points to the words, and shows what it expected. For example, `sya "hi".` gets:
+
+```
+Line 1: I don't know a sentence that starts with "sya".
+    sya "hi".
+    ^^^
+Did you mean "say"?
+```
+
+It never guesses what you meant: when a sentence could mean two things, it asks you to say which.
+
+### What's next
+
+The chapters below explain each part of the language: values, names, choices, loops, lists, text, things with parts, and more. The [examples](../examples/README.md) start with programs written the same plain way.
 
 ---
 
@@ -130,10 +286,21 @@ Text goes in double quotes, and must end on the same line. Inside text, these es
 | `\t` | a tab |
 | `\"` | a double quote |
 | `\\` | a backslash |
+| `\r` | back to the start of the line |
+| `\u{e9}` or `\u00e9` | the character with that code, in hex (here `é`) |
 
 ```
 say "Two lines:\nfirst\nsecond".
 say "She said \"hi\"".
+```
+
+For text of several lines, end a sentence with `the text below:` and indent the lines under it. They're kept exactly as written: no escapes, no values in brackets, and the indentation they share is taken off.
+
+```
+let page be the text below:
+    {"name": "Ann", "path": "C:\notes"}
+    [this is just text]
+say page.
 ```
 
 Try it: [`examples/lexer/text.es`](../examples/lexer/text.es)
@@ -286,7 +453,7 @@ Line 2: "double using 21 plus 1" could mean two things.
 Use parentheses to say which: "(double using 21) plus 1" or "double using (21 plus 1)".
 ```
 
-This is the "no guessing" rule in action. See [`examples/parser/`](../examples/parser/) for more.
+This is the "no guessing" rule in action. A call that's a sentence of its own is different: its result isn't used, so arithmetic or `followed by` after an input can only belong to that input, and needs no parentheses: `report with "bad" and "I expected " followed by word.` See [`examples/parser/`](../examples/parser/) for more.
 
 ---
 
@@ -576,6 +743,17 @@ to add tax to amount:
     give back amount plus amount times tax rate.
 say add tax to 50.
 ``` Giving it the wrong number of inputs is an error that says how many it needs and where it's defined.
+
+Between two inputs, the definition can use `in`, `to`, `from`, `by` or `at` instead of `and`, and calls use the same word (or `and`):
+
+```
+to column of cell in grid:
+    give back cell mod grid.
+to range from low to high:
+    ...
+say the column of 7 in 4.
+say range from 1 to 5.
+```
 
 You don't write down what kind of value each input is: the compiler works it out from how the function uses it and what it's given, and tells you before the program runs if something doesn't fit. When it can't tell, you can say, like `to area with width (a number) and height (a number), giving back a number:`. See [chapter 9](#9-types).
 
@@ -1063,7 +1241,7 @@ Line 10: A new dog needs a value for "age".
                ^^^^^^^^^^^^^^^^^^^^^^^^^
 ```
 
-Fields can come in any order, separated by `and` or commas. A `new` inside another one needs parentheses, so it's clear which record the fields after it belong to: `a new person with name "Ann" and pet (a new dog with name "Rex" and age 3)`.
+Fields can come in any order, separated by `and` or commas. A `new` inside another one needs parentheses, so it's clear which record the fields after it belong to: `a new person with name "Ann" and pet (a new dog with name "Rex" and age 3)`. In a list or a map, the next `new` (or the map's next key) ends the one before, so no parentheses are needed there: `a list of a new point with x 1 and y 2, a new point with x 3 and y 4`.
 
 ### Fields
 
@@ -1400,6 +1578,18 @@ check which kind s is:
 
 `when it's a rectangle or a square:` covers several variants; `when it is a circle:` works too. If S is a name (or a field, like `the drawing's shape`), it's checked in the `when` too, so `s's radius` works there as well.
 
+A `when` can also test the value: `when it's a circle whose radius is over 10:` (or `where ...`, or `that ...`) runs only for those circles. It doesn't cover every circle, so a plain `when it's a circle:` (or an `otherwise`) is still needed after it:
+
+```
+check which kind s is:
+    when it's a circle whose radius is over 10:
+        say "a big circle".
+    when it's a circle:
+        say "a small circle".
+    otherwise:
+        say "not a circle".
+```
+
 Every variant needs a `when`, unless there's an `otherwise`. A missing one is an error before the program runs:
 
 ```
@@ -1680,9 +1870,7 @@ to speak, for a dog, giving back text:
 to speak, for a cat, giving back text:
     give back "Meow.".
 
-let zoo be an empty list of things that can speak.
-add (a new dog with name "Rex") to the end of zoo.
-add (a new cat with name "Tom") to the end of zoo.
+let zoo be a list of a new dog with name "Rex" and a new cat with name "Tom".
 for each animal in zoo:
     say speak animal.
 ```
@@ -1985,4 +2173,327 @@ Arrow keys are `"up"`, `"down"`, `"left"` and `"right"`; others with names are `
 While the keyboard is in use, keys aren't shown as you type them. The terminal goes back to normal when the program ends, however it ends (even with Ctrl+C or a mistake), and while `ask` reads a line or another program runs. Keys can also come from a file (`./game < keys.txt`), read one at a time, which is how games are tested.
 
 Try Snake: `./easyscript run examples/programs/snake/play.es`. The keyboard works on macOS and Linux; on Windows, use WSL until the Windows port.
+
+## 21. Questions and totals
+
+**Available.** Most of what people do with a list is ask about it: how many, is any, is every, what's the total, which is the biggest. EasyScript has a phrase for each, so you don't need a loop with a counter.
+
+```
+let scores be a list of 72, 45, 95, 60 and 88.
+say how many scores are above 70.            # 3
+if any score is above 90, say "Someone did great.".
+if every score is at least 40, say "Everyone passed.".
+if no score is below 0, say "No negatives.".
+say the total of scores, the average of scores, the median of scores.   # 360 72 72
+say the top 3 scores.                        # 95, 88 and 72
+```
+
+`any score` looks through the list named like its plural, `scores`. To name the list yourself, write `any score in results is ...`, or use the plural: `all scores are below 100`, `any of scores are above 95`, `none of scores are above 95`.
+
+### Records, fields and groups
+
+With records, say which field:
+
+```
+an order has a customer (text), a region (text) and an amount (a number).
+...
+say the total amount of orders.                      # 390
+say the total amount of orders per region.           # "east" is 140 and "west" is 250
+say the number of orders per region.                 # "east" is 2 and "west" is 1
+say the order with the highest amount's customer.    # Bo
+say the top 2 orders by amount.
+if every order's amount is above 10, say "All above 10.".
+say how many orders whose amount is over 50 there are.
+```
+
+`per` makes a map from each group to its result, in the order the groups first came up; add `, sorted biggest first` to put the biggest first, and go through it with `for each region and total in ...:`. With dates, `per month`, `per year`, `per day` and `per weekday` group by the item's date (`per month of signup` when it has more than one).
+
+### Math words
+
+`half of price`, `twice price`, `20 percent of price` and `the remainder of 17 divided by 5` mean what they say. `minutes divided by 60, rounded down` divides and then rounds: a comma before `rounded`, `sorted` or `as` puts it after the whole value. `total is infinite` asks whether a number is infinity.
+
+### What each one means exactly
+
+Each phrase is one pass over the list, written here with the loops it stands for (`it` is the item):
+
+- `how many L are ...` starts a count at 0 and adds 1 for each item that passes. `how many L there are` is the number of items.
+- `any ITEM ...` is no until an item passes, then yes, and stops. `every ITEM ...` is yes until an item fails, then no, and stops. `no ITEM ...` is yes until an item passes, then no, and stops.
+- `the total of L` starts at 0 and adds each item (or each item's field). `the average` is that total divided by the number of items, an error for an empty list. `the median` keeps the numbers, sorts them, and takes the middle one (or halfway between the two middle ones).
+- `the top N L` keeps the N biggest seen so far (in a small heap, so it never sorts the whole list) and gives them back biggest first; `the lowest N` the same for the smallest. Ties keep the item that came first.
+- `the N most common L` counts each item in a map, then takes the N biggest counts.
+- `the ITEM with the highest FIELD` keeps the best item seen so far; the first one wins a tie. An empty list is an error.
+- `... per FIELD` keeps a map from each group to its running result.
+- A filter in the list (`the orders whose amount is over 50`) is tested in the same pass, unless its test calls a definition (then the filter keeps its own pass, so calls happen in order).
+
+`easyscript plan FILE` (or `easyscript build --plan FILE`) prints one line for each of these, saying what it became:
+
+```
+Line 3: "how many": counted in 1 pass, no list made.
+Line 7: "the top": 1 pass keeping the best ones in a heap, no sort of the whole list.
+```
+
+### Things to watch
+
+- `the total of`, `the average of`, `the median of` and `the number of` mean the program's own definition when it has one with that name: `total of scores` calls `to total of numbers:`. Written with `the`, it's an error asking which was meant.
+- `the total of rex`, when `rex` is a record with a field called `total`, is an error: the phrase adds up a list. Write `rex's total` for the field.
+- These phrases are values, so `say how many scores are above 70.` works anywhere a value does.
+
+## 22. Choices without if
+
+**Available.** Most programs are full of `if`s that say what something *is*: an order is big when its amount is over 1000, shipping costs 5 when the total is over 50. EasyScript lets you say those things once, as sentences, and then use them anywhere.
+
+### Defaults
+
+```
+add 1 to the value for word in counts, starting at 0.
+say the nickname, or "friend" if there isn't one.
+```
+
+`starting at` gives a key that isn't in the map yet a value to start from, and `, or` gives another value when something is nothing. In both, the other value is only worked out when it's needed.
+
+### Describing words
+
+```
+an order is big if its amount is over 1000.
+a cheap order is one whose amount is under 100.
+
+if o is big, say "Big order!".
+say how many orders are big.
+say the cheap orders.
+if every order is big, say "All big.".
+```
+
+`its` (or `their`, or `it`) is the order being described. Once a word is defined, `X is big` means the word, and `the big orders` means the orders it describes.
+
+### Values worked out from a record, and named values
+
+```
+an order's profit is its amount minus its cost.
+a customer's profit is the total profit of their orders.
+the best customer is the one with the highest profit.
+the big orders are the ones whose amount is over 1000.
+
+say o's profit, the profit of o.
+say the best customer's name.
+```
+
+A value like `profit` is worked out each time it's used, from the record it belongs to, so it's always up to date with the record's fields. A named value (`the best customer`) means its words, worked out where it's used: `the customer with the highest profit`, going through `customers`.
+
+### Tables
+
+```
+the shipping cost depends on the total:
+    0 when it's over 100.
+    5 when it's over 50.
+    10 otherwise.
+
+the price of a drink depends on its size:
+    3 when it's "small".
+    4 when it's "medium".
+    5 otherwise.
+```
+
+The first table makes `shipping cost` right there, from the total as it is then (like `let`). The second says what every drink's price is, worked out whenever it's used: `latte's price`. Each line is a value and when it applies (`when it's ...`, `when it starts with ...`, any comparison), and the last line says `otherwise`, so there's always a value. Without it, EasyScript says which case is missing: ""the shipping cost" doesn't say what it is when the total is 50 or less."
+
+### Rules
+
+```
+an age must be between 0 and 150.
+a customer's email must contain "@".
+a team's players must not be empty.
+```
+
+A rule is checked every time a field gets a value: in `a new ...`, `set ...`, and `add ... to ...` (and the other changes). If it's broken, the program stops: "Line 12: An age must be between 0 and 150, but this one is 200."
+
+### Acting on a whole group
+
+```
+remove the tasks that are done.
+remove the scores that are below 10.
+set every monster's color to "blue".
+add 10 to every player's score.
+```
+
+### Events
+
+```
+let score be 0.
+every 2 seconds:
+    add 40 to score.
+    say "Score:", score.
+whenever score is over 100:
+    say "Level up!".
+    stop the program.
+whenever a key is pressed:
+    if it is "q", stop the program.
+every Monday at 9am:
+    say "Time for the meeting.".
+```
+
+Events run once the rest of the program has: `every 2 seconds:` runs its lines every 2 seconds, `every Monday at 9am:` at that time, `whenever ...:` each time its condition becomes yes, `when ..., ...` the first time, and `whenever a key is pressed:` for each key (`it` is the key). The program keeps going until `stop the program`. The Snake game (`examples/programs/snake/play.es`) is written this way.
+
+### What each one means exactly
+
+- `a customer is loyal if C.` is `to is loyal, for a customer: give back C`, with `it` the customer; `rex is loyal` calls it.
+- `an order's profit is V.` is a method giving back V; `o's profit` calls it.
+- `the best customer is the one with the highest profit.` puts `the customer with the highest profit` wherever `the best customer` is written.
+- A table is the first line's value whose condition is yes, tried in order: `if X is over 100 ... otherwise if X is over 50 ... otherwise ...`.
+- A rule is a check after the field gets its value, stopping the program when it's no.
+- Events are a loop after the program's other sentences: check each `whenever` (it runs when its condition is yes now and was no the round before) and `when` (the first time only), wait for a key until the next schedule is due, then run the schedules that are due.
+- `remove the tasks that are done.` is `keep only the tasks in tasks where not (it is done)`; `set every monster's color to "blue".` is `for each monster in monsters: set it's color to "blue"`.
+
+### Things to watch
+
+- Definitions (describing words, values, tables of a kind, rules) only see the value they're about and constants, like `to` definitions: "This only sees the value it's about ("it") and constants."
+- `a big order is one whose ...` (with "a ... one") describes, and `the big orders are the ones whose ...` (with "the ... the ones") names: the words `a` and `the` tell them apart.
+- A table that makes a name (`the shipping cost depends on the total:`) works it out once, where it's written; use `the price of a drink depends on ...` (or a value of a record) for one that's worked out each time.
+
+## 23. Talking to it
+
+**Available.** EasyScript reads questions, requests and steps in a row the way people say them, and each means exactly what the same words mean in a program.
+
+### Questions and requests
+
+```
+what is the total?          # say the total
+total?                      # say the total
+is total above 100?         # say total is above 100
+how many orders are big?
+which customer has the highest total?
+show me the total.
+can you show me the big orders?
+```
+
+A `?` ends a sentence like a period. `show me`, `give me`, `tell me` and `list` mean `say`, and polite words before a sentence (`please`, `can you`, `I want to`, `let's`, ...) are left out. Questions that start with `who`, `where`, `when` or `why` aren't understood yet, and EasyScript says so.
+
+### Steps in a row
+
+```
+read the table in "sales.csv", then total the amount per month,
+then sort it biggest first, then save it as "best months.csv".
+```
+
+Sentences joined by `, then`, `and then` or `and` are steps, done in order. In each step, `it` is what the step before gave: the table it read, the value it worked out, the list it sorted, the file it wrote to, or the name it made. A line that ends with a comma, `then` or `and` goes on to the next line. When `it` could also mean a loop's or a filter's item, EasyScript asks for a name instead.
+
+`total the amount per month`, `average the score`, `median the price` and `count the big orders` are actions: they work something out and keep it (`... and call it totals`, or for the next step's `it`).
+
+### Tables in files
+
+```
+read the table in "sales.csv" and call it sales.
+say the total amount of sales per region, sorted biggest first.
+say how many sales whose amount is over 100.
+save the sales whose region is "East" as "east.csv".
+```
+
+A table's rows are records whose fields are the columns the program uses: `amount` is a number because the program adds it up, `region` is text. The program checks the file when it reads it: a column that isn't there stops it with "sales.csv has no column called "amout". Did you mean "amount"?", and so does a value of the wrong kind. Saved rows keep every column of the file, with any changes the program made.
+
+### Asking for numbers and yes or no
+
+```
+ask for a number "How old are you? " and call it age.
+ask yes or no "Do you like tea? " and call it likes tea.
+```
+
+They ask again until the answer fits: "Please type a number, like 42." or "Please answer yes or no." (`y` and `n` work too, in any case).
+
+### Writing numbers for people
+
+```
+say 1234.5 as money.          # $1,234.50
+say 0.25 as a percent.        # 25%
+say 1234567 with commas.      # 1,234,567
+```
+
+Like `as text`, they take the value just before them, so write `(price times 3) as money`.
+
+### Values that are always up to date
+
+```
+let prices be a list of 3, 4 and 5.
+the total is always the sum of prices.
+add 10 to the end of prices.
+say total.                    # 22
+```
+
+### When a file can't be used
+
+```
+try to read file "notes.txt" and call it notes.
+if that fails:
+    say "No notes yet:", the reason.
+    let notes be "".
+```
+
+`try to` works with sentences that use a file or a folder. EasyScript checks first that the sentence can be done (the file is there, the folder for a new file exists, nothing is in the way of a new name); if it can't, the sentences after `if that fails` run instead, and `the reason` says why.
+
+### Showing lists and maps as tables
+
+```
+show the total amount of purchases per category, sorted biggest first, as a table.
+show the big purchases sorted by amount biggest first, as a table.
+```
+
+```
+rent           2400
+groceries    396.95
+date        store        category     amount
+2026-09-20  Whole Foods  groceries    312.75
+```
+
+`as a table` lays a list or a map out in columns: a list of records gets a column per field with the names on top, a map its keys and values. `sorted by amount` sorts by a field when `amount` isn't something the program made. A table read with `and call it purchases` has rows that are `a purchase`, so `a purchase is big if ...` describes them.
+
+### Several lines in a file, and what's in it
+
+```
+I want to make a new file called "groceries.txt", then write "milk" in file it,
+then add "eggs" and "bread" to the end of file it, one per line,
+and then show me what's in it.
+```
+
+`, one per line` puts each value on a line of its own. `what's in file F` is the contents of the file; right after a step that made or wrote to a file, `what's in it` reads that file.
+
+### Examples as tests
+
+```
+to double with x:
+    give back x times 2.
+
+for example, double with 3 is 6.
+for example, the total of a list of 1, 2 and 3 is 6.
+```
+
+An example says something that should be true. It's checked where it's written; if it isn't right, EasyScript shows a warning with the line and what the value really is, and the program goes on:
+
+```
+Line 4 (a warning): This example isn't right.
+    for example, double with 4 is 9.
+                 ^^^^^^^^^^^^^^^^^^
+It's 8 here.
+```
+
+`easyscript test FILE` runs the program the same way, then says how many examples were right ("All 2 examples are right.", or "1 of 2 examples are right." and a failed ending), so examples work as tests.
+
+### Charts
+
+```
+let sales be a map of "August" to 120, "September" to 405.5 and "October" to 222.25.
+save a bar chart of sales as "sales.svg", titled "Sales".
+save a pie chart of sales as "share.svg".
+make a line chart of a list of 3, 7, 2 and 9 called "trend.svg".
+```
+
+A chart is saved as an SVG picture, which any browser shows. Charts take a list of numbers or a map to numbers (like `the total amount of sales per month`), with the map's keys as labels. In steps in a row, `make a bar chart of it called "best months.svg"` draws what the step before gave. Charts are drawn by a module written in EasyScript itself ([`lib/charts.es`](../lib/charts.es)).
+
+### What each one means exactly
+
+- `for example, C.` is `C` checked where it's written: a warning if it's no, nothing if it's yes.
+- `ask for a number Q and call it age` asks Q until the answer reads as a number, then keeps that number. `ask yes or no` is the same with `yes`/`y`/`no`/`n`.
+- `X as money` is a dollar sign, X rounded to two decimals, with commas between thousands. `X as a percent` is X times 100 (up to 10 digits) followed by `%`.
+- `the total is always E` makes `total` mean E wherever it's read.
+- `try to S. if that fails, F` checks S's files first and runs S, or else F with `the reason`.
+- `what is X?` and `X?` are `say X`; `is X above 100?` is `say X is above 100`; `which customer has the highest total?` is `say the customer with the highest total`.
+- `S1, then S2` is S1, then (if S2 says "it") a hidden name for what S1 gave, then S2 with "it" meaning that name.
+- `total the amount per month` is `let (a hidden name) be the total amount of it per month`.
+- `read the table in F` reads the csv file, makes a record for each row with the columns the program uses, and keeps them in a list.
 

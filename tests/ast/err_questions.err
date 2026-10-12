@@ -1,0 +1,54 @@
+Line 3: Something is missing after "how many".
+    say how many.
+        ^^^^^^^^
+Write it like "how many scores are above 70".
+
+Line 4: I expected "there are" or a test like "are above 70" here, but found ".".
+    say how many scores.
+                       ^
+Write it like "how many scores are above 70" or "how many scores there are".
+
+Line 5: I expected a test like "are above 50" after "all scores", but found ".".
+    say all scores.
+                  ^
+Write it like "all scores are at least 50".
+
+Line 6: I expected a field after "per" here, but found ".".
+    say the average amount of orders per.
+                                     ^^^
+Write it like "the total amount of orders per region".
+
+Line 7: I expected a field after "by" here, but found ".".
+    say the top 3 orders by.
+                         ^^
+Write it like "the top 3 orders by amount".
+
+Line 8: I expected a field after "highest" here, but found ".".
+    say the dog in dogs with the highest.
+                                 ^^^^^^^
+Write it like "the dog with the highest age".
+
+Line 9: I expected "with the highest" here, but found "sorted".
+    say the dog in dogs sorted with the highest age.
+                        ^^^^^^
+Write it like "the customer in buyers with the highest total".
+
+Line 10: Something is missing after "of".
+    say the median of.
+                   ^^
+Write it like "the median of scores".
+
+Line 11: I expected "divided by" here, but found "plus".
+    say the remainder of 7 plus 2.
+                           ^^^^
+Write it like "the remainder of 17 divided by 5".
+
+Line 14: "the total" could mean two things here.
+    say the total of scores.
+            ^^^^^
+"total" is also a definition in this program. To use the definition, write "total of ..." without "the". To add up a list, write it like "scores added together".
+
+Line 16: I expected a test like "are above 50" after "any of scores", but found ".".
+    say any of scores.
+                     ^
+Write it like "any of scores are at least 50".

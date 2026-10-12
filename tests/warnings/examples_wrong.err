@@ -1,0 +1,16 @@
+Line 12 (a warning): This example isn't right.
+    for example, double with 4 is 9.
+                 ^^^^^^^^^^^^^^^^^^
+It's 8 here.
+Line 14 (a warning): This example isn't right.
+    for example, (a new drink with size "small")'s price is 4.
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+It's 3 here.
+Line 16 (a warning): This example isn't right.
+    for example, scores is a list of 1 and 3.
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+It's 1 and 2 here.
+Line 17 (a warning): This example isn't right.
+    for example, "ab" followed by "c" is "abd".
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+It's "abc" here.

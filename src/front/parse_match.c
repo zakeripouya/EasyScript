@@ -107,7 +107,14 @@ static bool parse_when(Parser *p, MatchBranch *branch) {
         return false;
     }
     parser_consume(p, it);
-    return parse_when_kinds(p, branch);
+    if (!parse_when_kinds(p, branch)) return false;
+    if (parser_at_word(p, 0, "whose") || parser_at_word(p, 0, "where") || parser_at_word(p, 0, "that")) {
+        Expr *it = ast_new_expr(p->arena, EXPR_IT, parser_token_pos(parser_peek(p, 0)));
+        Expr *only = parser_parse_filters(p, it);  // the filter's words, on the value checked
+        if (p->sentence_failed || only->kind != EXPR_ONLY) return false;
+        branch->guard = only->as.only.condition;
+    }
+    return true;
 }
 
 // A line inside "check which kind" that isn't a "when" or an "otherwise".

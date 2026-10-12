@@ -85,6 +85,20 @@ Reading follows the usual csv rules: a field in double quotes can hold commas, l
 
 Mistakes name the file and its line: "In sales.csv, line 14 has 3 values, but the header has 4.", "In sales.csv, the quote on line 7 never ends.", "The header of sales.csv has the column "name" twice.", "sales.csv is empty, so it has no header row."; and when saving, "Row 3 of the list has no value for "region", but the first row does."
 
+## Charts
+
+Charts are drawn by [`lib/charts.es`](../lib/charts.es), a module written in EasyScript that the compiler joins to a program that has a chart sentence. Each chart is an SVG picture (text that browsers and drawing programs show as an image).
+
+| Phrase | Example | Meaning |
+|---|---|---|
+| `save a bar chart of X as F.` | `save a bar chart of sales per month as "sales.svg".` | Writes a bar chart of X into the file F (replacing it). X is a list of numbers (labelled 1, 2, 3, ...), or a map from text or numbers to numbers (labelled by its keys, in its order) |
+| `save a line chart of X as F.` | `save a line chart of temperatures as "week.svg".` | The same as points joined by a line |
+| `save a pie chart of X as F.` | `save a pie chart of votes as "votes.svg".` | A circle cut into slices, one per value above 0, with a key beside it giving each value and its share |
+| `make a bar chart of X called F.` | `make a bar chart of it called "best months.svg".` | The same as `save a bar chart of X as F` (also `line` and `pie`) |
+| `..., titled T` | `save a bar chart of sales as "sales.svg", titled "Sales".` | A title (text) at the top |
+
+Exact meaning: `save a bar chart of X as F, titled T` is `write (bar chart of X with title T) in file F`, where the chart is worked out by the module: bars 48 points wide in slots of 64, a picture at least 400 wide, 300 high for the bars plus room for their labels (labels too wide for their slot are turned, and the picture is taller for them), each bar's value written above it with commas, the zero line drawn, colors from a palette people with color blindness can tell apart. A map's numbers keys are written as text. A pie chart leaves out values of 0 or less.
+
 ## The screen
 
 | Phrase | Example | Meaning |

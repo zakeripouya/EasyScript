@@ -14,6 +14,8 @@ typedef struct {
     size_t len;
     size_t count;         // files
     const char **names;   // "helpers.es"
+    const char **shown;   // the names messages show: NULL for the program's own file when the only other is
+                          // the charts file, so its messages read as they do for one file
     size_t *starts;       // where each file starts in source
     SourceFiles files;  // what each file is called by "use", and which files it uses
     Diag *diag;           // over source, already holding errors found while loading (a missing file, a circle)

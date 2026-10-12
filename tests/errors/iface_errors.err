@@ -38,10 +38,10 @@ Line 29: The way to greet takes 1 value after pet, but this gives it 0.
         ^^^^^^^^^
 It's "a way to greet with name (text), giving back text".
 
-Line 30: All the items of a list have to be the same kind: the first is a dog, but this is a cat.
+Line 30: The items of this list are different kinds, and they all fit more than one kind of thing, so it could be a list of either.
     let mixed be a list of (a new dog with name "Rex") and (a new cat with name "Tom").
-                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Both can be used as a speaker. To keep them in one list, start with "an empty list of speakers" and add each one to its end.
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Start with an empty list of the one you mean, like "an empty list of speakers", and add each one to its end.
 
 Line 32: Interfaces can only be defined at the top level, not inside an "if" or a loop.
         a thing is anything with:

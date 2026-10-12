@@ -247,12 +247,17 @@ void cg_emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     f.function = fn;
     f.loop_ids = g->loop_ids;
     f.closures = g->closures;
+    f.plan = g->plan;
     for (size_t i = 0; i < fn->as.function.cells.len; i++) vec_push(g->arena, &f.cells, fn->as.function.cells.items[i]);
     for (size_t i = 0; i < fn->as.function.captures.len; i++) {
         vec_push(g->arena, &f.borrowed, fn->as.function.captures.items[i].name);
     }
     sb_init(&f.body, g->arena);
     cg_push_scope(&f);
+    if (fn->as.function.defines) {  // "a customer is loyal if its orders ...": "it" is the first input
+        LoopCode subject = {NULL, 0, 0, fn->as.function.params.items[0].text, fn->as.function.param_types.items[0]};
+        vec_push(g->arena, &f.loops, subject);
+    }
     for (size_t i = 0; i < fn->as.function.body.len; i++) {
         cg_emit_stmt(&f, fn->as.function.body.items[i]);
     }
@@ -283,12 +288,46 @@ void cg_emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     sb_append(out, "}\n\n");
 }
 
-void codegen_c(Arena *arena, const Program *whole, const char *source_table, StrBuf *out) {
+void cg_plan(Codegen *g, SourcePos pos, const char *fmt, ...) {
+    if (!g->plan) return;
+    StrBuf text;
+    sb_init(&text, g->arena);
+    va_list args;
+    va_start(args, fmt);
+    sb_vappendf(&text, fmt, args);
+    va_end(args);
+    PlanLine line = {pos.line, pos.file, text.data};
+    vec_push(g->arena, &g->plan->lines, line);
+}
+
+// The plan's lines in the order of the program (stable for one line).
+static void write_plan(const Program *whole, PlanPool *pool, StrBuf *plan) {
+    for (size_t i = 1; i < pool->lines.len; i++) {  // insertion sort: plans are short
+        PlanLine x = pool->lines.items[i];
+        size_t j = i;
+        while (j > 0 && (pool->lines.items[j - 1].file > x.file ||
+                         (pool->lines.items[j - 1].file == x.file && pool->lines.items[j - 1].line > x.line))) {
+            pool->lines.items[j] = pool->lines.items[j - 1];
+            j--;
+        }
+        pool->lines.items[j] = x;
+    }
+    for (size_t i = 0; i < pool->lines.len; i++) {
+        const PlanLine *line = &pool->lines.items[i];
+        sb_appendf(plan, "Line %zu", line->line);
+        if (whole->files.len > 0) sb_appendf(plan, " of %s", whole->files.items[line->file].display);
+        sb_appendf(plan, ": %s\n", line->text);
+    }
+    if (pool->lines.len == 0) sb_append(plan, "There are no list questions, filters or sorts here.\n");
+}
+
+void codegen_c(Arena *arena, const Program *whole, const char *source_table, StrBuf *out, StrBuf *plan) {
     const Block *program = &whole->body;
     TextPool texts = {0};
     sb_init(&texts.code, arena);
     HelperPool helpers = {0};
     sb_init(&helpers.code, arena);
+    sb_init(&helpers.heads, arena);
     SitePool sites = {0};
     sb_init(&sites.code, arena);
     StrBuf inits;
@@ -298,6 +337,8 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     sb_init(&closures.code, arena);
     Codegen g = {0};
     g.closures = &closures;
+    PlanPool plan_pool = {0};
+    if (plan) g.plan = &plan_pool;
     for (size_t i = 0; i < whole->cells.len; i++) vec_push(arena, &g.cells, whole->cells.items[i]);
     g.arena = arena;
     g.records = &whole->records;
@@ -314,6 +355,7 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     for (size_t i = 0; i < program->len; i++) {
         cg_emit_stmt(&g, program->items[i]);
     }
+    cg_emit_events(&g);
     StrBuf functions;
     sb_init(&functions, arena);
     for (size_t i = 0; i < g.functions.len; i++) {
@@ -344,6 +386,7 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     sb_append(out, "static const EsSite es_sites[] = {\n    {0, 0, 0, 0},\n");  // where runtime calls come from
     sb_append_n(out, sites.code.data, sites.code.len);
     sb_append(out, "};\n\n");
+    sb_append_n(out, helpers.heads.data, helpers.heads.len);  // the rules' prototypes
     sb_append_n(out, helpers.code.data, helpers.code.len);  // "every" and "only", before the functions that use them
     sb_append_n(out, functions.data, functions.len);
     sb_append_n(out, closures.code.data, closures.code.len);
@@ -364,4 +407,5 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     cg_emit_drop_all(&g);
     sb_append_n(out, g.body.data, g.body.len);
     sb_append(out, "    es_finish(true);\n    return es_status;\n}\n");
+    if (plan) write_plan(whole, &plan_pool, plan);
 }

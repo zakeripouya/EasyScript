@@ -1,0 +1,4 @@
+Line 3: "column" needs 2 values, but this gives it 1.
+    say column of 7.
+        ^^^^^^^^^^^
+It's defined on line 1: "to column of cell in grid".

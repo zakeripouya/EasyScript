@@ -1,0 +1,67 @@
+Line 7: I don't know what "loyal" means for a customer.
+    if ann is loyal, say "yes".
+              ^^^^^
+Say what it means, like "a customer is loyal if ...".
+
+Line 8: I know what "best" means for a customer, but not for a product.
+    if pen is best, say "yes".
+       ^^^
+Say what it means, like "a product is best if ...".
+
+Line 9: I know how to work out a customer's discount, but not a product's.
+    say pen's discount.
+        ^^^
+Say how, like "a product's discount is ...".
+
+Line 10: This is a number, so it's never nothing.
+    say ann's total, or 0.
+        ^^^^^^^^^^^
+", or" gives another value when there isn't one. Leave it out here.
+
+Line 11: This gives a number when there isn't one, but the value is text.
+    say ann's nickname, or 5.
+                           ^
+The value after ", or" has to be the same kind as the one it stands in for.
+
+Line 13: The map's values are a number, so a value can't start at text.
+    add 1 to the value for "a" in counts, starting at "zero".
+                                                      ^^^^^^
+
+Line 17: All the values of a table have to be the same kind: the first is text, but this is a number.
+        5 otherwise.
+        ^
+
+Line 19: I can't compare a number with text.
+        "big" when it's "x".
+                   ^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 21: No kind of record has a field called "age".
+    an age must be between 0 and 150.
+       ^^^
+Fields are listed where a kind of record is defined, like "a name, which is text.".
+
+Line 22: A product doesn't have a field called "colour".
+    a product's colour must not be empty.
+                ^^^^^^
+Its fields are "name" and "price" (line 2).
+
+Line 23: I can't compare a number with text.
+    a product's price must be "cheap".
+                ^^^^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 24: I don't know anything called "x".
+    a customer's name must contain x.
+                                   ^
+This only sees the value it's about ("it") and constants. To use "x" in it, keep it with "keep x as ...".
+
+Line 26: A rule can only be at the top level, not inside an "if" or a loop.
+        a product's name must not be empty.
+          ^^^^^^^
+Move "A product's name must not be empty" to the start of a line, outside every block.
+
+Line 27: A constant can't be nothing, so ", or" would never be used.
+    keep fixed as pen's price, or 1.
+                  ^^^^^^^^^^^^^^^^^
+Leave out ", or ...": a constant is never nothing.

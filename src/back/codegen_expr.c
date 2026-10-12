@@ -130,12 +130,15 @@ bool cg_has_effects(const Codegen *g, const Expr *expr) {
         return false;
     case EXPR_CALL:
     case EXPR_APPLY:
+    case EXPR_AGGREGATE:
     case EXPR_FILE_CONTENTS:
     case EXPR_LIST_OP:
     case EXPR_EVERY:
     case EXPR_ONLY:
     case EXPR_MAP_GET:
     case EXPR_MAP_WITHOUT: return true;  // reads the map (and can fail)
+    case EXPR_DEFAULT: return cg_has_effects(g, expr->as.lookup.map) || cg_has_effects(g, expr->as.lookup.fallback);
+    case EXPR_TABLE: return true;  // sets its hidden name
     case EXPR_ITEM:
     case EXPR_SLICE: return true;  // can fail (a position past the end), for text too
     case EXPR_TEXT_OP: return cg_text_op_effects(g, expr);
@@ -253,8 +256,9 @@ static void emit_binary(Codegen *g, const Expr *expr, StrBuf *out) {
     switch (op) {
     case BINARY_AND:
     case BINARY_OR:  // && and || work left to right and stop early, as "and"/"or" do
-        sb_appendf(out, "(%s %s %s)", cg_operand(g, left, false), op == BINARY_AND ? "&&" : "||",
-                   cg_operand(g, right, false));
+        l = cg_operand(g, left, false);  // left first: plan notes keep the written order
+        r = cg_operand(g, right, false);
+        sb_appendf(out, "(%s %s %s)", l, op == BINARY_AND ? "&&" : "||", r);
         return;
     case BINARY_PIECES:
         operands(g, left, right, true, out, &l, &r, &close);
@@ -352,6 +356,7 @@ bool cg_ordered(Codegen *g, Expr *const *exprs, size_t n, const char **values, S
 }
 
 static void emit_call(Codegen *g, const Stmt *fn, Expr *const *args, size_t n, SourcePos pos, StrBuf *out) {
+    if (n == 1 && cg_emit_inline(g, fn, args[0], out)) return;  // "rex is big": the definition's value, in place
     const char **values = arena_alloc(g->arena, (n + 1) * sizeof(char *));
     bool opened = cg_ordered(g, args, n, values, out);
     cg_append_function(out, "es_f_", fn);
@@ -383,12 +388,18 @@ static void emit_convert(Codegen *g, const Expr *expr, StrBuf *out) {
     const Expr *operand_expr = expr->as.convert.operand;
     if (expr->as.convert.target == CONVERT_TO_TEXT) {
         cg_emit_text(g, operand_expr, out);
-    } else if (expr->as.convert.target == CONVERT_TO_EXACT_TEXT) {
-        sb_append(out, "es_number_exact_text(");
+    } else if (expr->as.convert.target == CONVERT_TO_TABLE) {
+        sb_appendf(out, "%s(%s)", type_is_map(operand_expr->type) ? "es_map_table" : "es_list_table",
+                   cg_operand(g, operand_expr, false));
+    } else if (expr->as.convert.target >= CONVERT_TO_EXACT_TEXT) {
+        static const char *const functions[] = {"es_number_exact_text", "es_money_text", "es_percent_text",
+                                                "es_commas_text"};
+        sb_appendf(out, "%s(", functions[expr->as.convert.target - CONVERT_TO_EXACT_TEXT]);
         cg_emit_expr(g, operand_expr, out);
         sb_append(out, ")");
     } else if (operand_expr->type == TYPE_TEXT) {
-        sb_appendf(out, "es_text_number(%zu, %s)", cg_site(g, expr->pos), cg_operand(g, operand_expr, false));
+        size_t site = cg_site(g, expr->pos);
+        sb_appendf(out, "es_text_number(%zu, %s)", site, cg_operand(g, operand_expr, false));
     } else {
         cg_emit_expr(g, operand_expr, out);
     }
@@ -441,6 +452,9 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     case EXPR_FUNCTION_REF: cg_emit_function_ref(g, expr, out); break;
     case EXPR_LAMBDA: cg_emit_lambda(g, expr, out); break;
     case EXPR_APPLY: cg_emit_apply(g, expr, out); break;
+    case EXPR_AGGREGATE: cg_emit_aggregate(g, expr, out); break;
+    case EXPR_DEFAULT: cg_emit_default(g, expr, out); break;
+    case EXPR_TABLE: cg_emit_table(g, expr, out); break;
     case EXPR_LIBRARY: cg_emit_library(g, expr, out); break;
     case EXPR_LENGTH:
         if (type_is_list(expr->as.operand->type)) {
@@ -450,8 +464,11 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
         }
         break;
     case EXPR_FILE_CONTENTS:
-        sb_appendf(out, "es_read_file(%zu, %s)", cg_site(g, expr->as.operand->pos), cg_operand(g, expr->as.operand, false));
+    {
+        size_t site = cg_site(g, expr->as.operand->pos);
+        sb_appendf(out, "es_read_file(%zu, %s)", site, cg_operand(g, expr->as.operand, false));
         break;
+    }
     case EXPR_UNARY:
         sb_appendf(out, "(%s%s)", expr->as.unary.op == UNARY_NEGATE ? "-" : "!",
                    cg_operand(g, expr->as.unary.operand, false));
