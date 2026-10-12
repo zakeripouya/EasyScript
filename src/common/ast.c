@@ -27,7 +27,7 @@ const char *ast_binary_op_name(BinaryOp op) {
         "or", "and", "equal", "not equal", "less", "less or equal", "greater",
         "greater or equal", "add", "subtract", "join", "multiply", "divide", "modulo",
         "contains", "does not contain", "starts with", "does not start with", "ends with", "does not end with",
-        "has", "does not have",
+        "has", "does not have", "pieces",
     };
     return names[op];
 }

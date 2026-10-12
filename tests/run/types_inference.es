@@ -8,7 +8,7 @@ to shout with words:
     give back words followed by "!"
 note: "and" joins text and is logical for yes/no, decided before the program runs
 to label with name and count:
-    give back name and ": " and count
+    give back name followed by ": " followed by count
 say label of "apples" and 3
 to both with first and second:
     give back first and second

@@ -252,14 +252,14 @@ static void emit_binary(Codegen *g, const Expr *expr, StrBuf *out) {
     const char *l, *r, *close;
     switch (op) {
     case BINARY_AND:
-    case BINARY_OR:
-        if (expr->type == TYPE_YESNO) {  // && and || work left to right and stop early, as "and"/"or" do
-            sb_appendf(out, "(%s %s %s)", cg_operand(g, left, false), op == BINARY_AND ? "&&" : "||",
-                       cg_operand(g, right, false));
-            return;
-        }
-        // "and" with text joins, like "followed by":
-        // fall through
+    case BINARY_OR:  // && and || work left to right and stop early, as "and"/"or" do
+        sb_appendf(out, "(%s %s %s)", cg_operand(g, left, false), op == BINARY_AND ? "&&" : "||",
+                   cg_operand(g, right, false));
+        return;
+    case BINARY_PIECES:
+        operands(g, left, right, true, out, &l, &r, &close);
+        sb_appendf(out, "es_join_spaced(%s, %s)%s", l, r, close);
+        return;
     case BINARY_JOIN:
         if (type_is_list(expr->type)) {  // two lists: one list
             operands(g, left, right, false, out, &l, &r, &close);

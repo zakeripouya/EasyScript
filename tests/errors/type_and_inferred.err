@@ -1,4 +1,4 @@
-Line 2: I can't use "and" between a yes/no value and text.
-        give back first and second
-                  ^^^^^^^^^^^^^^^^
-To join them, turn the yes/no value into text first with "as text".
+Line 3: "both" needs a yes/no value for "second", but this is text.
+    say both of yes and "x"
+                        ^^^
+"second" is a yes/no value because of line 2. An input has one kind of value everywhere; to make it clear, write it in the definition, like "to both with first and second (yes or no):".

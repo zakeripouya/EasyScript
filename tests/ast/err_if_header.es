@@ -6,8 +6,8 @@ if x is 1:
 say "nothing indented"
 if:
     say "no condition"
-if x is 1,
-if x is 1 then
+if x is 1,.
+if x is 1 then.
 if x is 1, if x is 2, say "nested one-line"
 if x plus:
     say "broken condition"

@@ -10,7 +10,7 @@ set late fee to 30
 add 5 to late fee
 increase late fee by 1
 multiply late fee total by 2
-say late fee and " " and late fee total
+say late fee followed by " " followed by late fee total
 let clientName be "Ada"
 say "Hello, " followed by clientname followed by " and " followed by ClientName
 
@@ -50,7 +50,7 @@ for each guest name in a list of "Ann" and "Bob":
     say "Welcome, " followed by guest name
 say every guest score in (a list of 1 and 2) plus 10
 ask "Your name? " and call the answer visitor name
-say "[" followed by visitor name followed by "]"
+say "[[" followed by visitor name followed by "]]"
 write "notes" to file "n.txt"
 read file "n.txt" and call it saved notes
 say saved notes
@@ -65,4 +65,4 @@ let total cost be 2
 let total cost now be 3
 say total plus total cost plus total cost now
 let late_fee be 99
-say late fee and " " and late_fee
+say late fee followed by " " followed by late_fee

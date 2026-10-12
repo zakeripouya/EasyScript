@@ -95,7 +95,7 @@ Line 28: I can't turn a list of numbers into a number.
     say scores as a number
         ^^^^^^^^^^^^^^^^^^
 
-Line 29: I can't use "and" between a list of numbers and a list of lists of numbers.
+Line 29: "and" needs yes or no on both sides, but the left side is a list of numbers.
     say scores and grid
         ^^^^^^^^^^^^^^^
 

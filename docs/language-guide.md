@@ -75,6 +75,15 @@ add 5 to total
 Say the total.
 ```
 
+A long sentence can go on over several lines: when a line ends with a comma, `then` or `and`, the sentence carries on to the next line, however that line is indented:
+
+```
+let colors be a list of "red", "green",
+    "blue" and "yellow".
+if ready then
+    say "Off we go.".
+```
+
 Capital letters don't matter for words, so `Set` and `set` are the same word. The words `the`, `a`, and `an` are ignored, so you can write naturally: `set the total to 0.` and `set total to 0.` are the same sentence. Because they're ignored, `the`, `a`, and `an` can't be used as names. (One phrase needs its `a`: `is a letter`, and `is a digit` and `is a space`, so that `x is letter` can still compare `x` with a variable called `letter`; see [Text](#checking-characters).)
 
 Try it: [`examples/lexer/sentences.es`](../examples/lexer/sentences.es). The output lists every word the compiler saw, and `the` isn't among them.
@@ -235,10 +244,16 @@ not done and ready
 
 ### Working with text
 
-`and` also joins text, and so does `followed by`; numbers are turned into text for you. Joining happens after the maths, so `"Sum: " followed by 2 plus 3` gives `Sum: 5`. (Between two yes/no values `and` means "both"; the compiler decides which before the program runs, from the kinds of the two sides. `and` between yes/no and text is an error.) A value can be turned into text with `as text`, and text into a number with `as a number`:
+There are three ways to put values into text, and numbers (or lists) are turned into text for you:
+
+- **Commas in `say`:** `say "Hello,", name, "!"` prints the pieces with a space between them, except next to punctuation, so it prints `Hello, Ann!`. `show`, `print`, `display` and `complain` take pieces too.
+- **Brackets in text:** `"Hello, [name]! You have [tasks plus 1] tasks."` works out each value in brackets and puts it exactly there. Write `[[` and `]]` for a bracket in the text itself.
+- **`followed by`** joins two values exactly as they are, anywhere: `"Total: " followed by total`.
+
+`and` doesn't join text: it means "both", for yes or no values. Joining happens after the maths, so `"Sum: " followed by 2 plus 3` gives `Sum: 5`. A value can be turned into text with `as text`, and text into a number with `as a number`:
 
 ```
-"Hello, " and name
+"Hello, [name]!"
 "Total: " followed by total as text
 "42" as a number plus 1
 length of name
@@ -365,9 +380,9 @@ show "Total: " followed by total as text.
 
 ```
 ask "What's your name? " and call the answer name.
-say "Nice to meet you, " and name and ".".
+say "Nice to meet you,", name, ".".
 ask "How old are you? " and call the answer age.
-say "Next year you'll be " and age as a number plus 1.
+say "Next year you'll be", age as a number plus 1, ".".
 ```
 
 `and call it name` works too, as in `read file`.
@@ -489,7 +504,7 @@ to make tea:
     say "Boil the water.".
 
 to greet with someone:
-    say "Hello, " and someone and "!".
+    say "Hello,", someone, "!".
 
 make tea.
 greet "Ada".
@@ -667,7 +682,7 @@ Write the kind in parentheses after an input, and what the function gives back w
 to area with width (a number) and height (a number), giving back a number:
     give back width times height.
 to greet with who (text), giving back nothing:
-    say "Hello, " and who.
+    say "Hello,", who.
 to both with first (yes or no) and second (yes or no):
     give back first and second.
 ```

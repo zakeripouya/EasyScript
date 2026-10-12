@@ -114,7 +114,7 @@ es_say(es_number_text((es_vn_total - 1.0)));
 ```
 
 - **Arithmetic and logic** are plain C: `+ - *`, `&&`, `||`, `!`. Division and `mod` are `es_div`/`es_mod`, which stop on zero (`es_mod` uses the integer remainder for whole numbers, which gives the same answer as `fmod`, much faster). Number equality and ordering use `es_close` (the 1e-12 tolerance); text uses `es_text_same`/`es_text_order`.
-- **`and`** was resolved by the checker: `&&` between yes/no values, `es_join` when it joins text.
+- **`and`** is `&&` between yes/no values (it doesn't join text). The pieces of `say A, B` are `es_join_spaced`, which adds a space where one is needed, and `"Hello, [name]!"` is `es_join` of its parts, like `followed by`.
 - **`if`** becomes C `if (C) { ... } else if (...) { ... } else { ... }`.
 - **Loops** become C loops inside their own `{ }`: a count is `EsCount es_cN = es_count_start(...)`, which works out the last round once, plus `for (long long es_iN = 0; es_iN <= es_cN.last; es_iN++)` with `es_vn_number = es_count_value(&es_cN, es_iN)`, so each number is worked out from the start (no drifting); `repeat N times` is a `for` over `es_times(...)`; `while`/`until` are C `while`; `forever` is `for (;;)`. `stop the loop` and `skip this one` are C `break` and `continue`. `it` becomes the innermost count's variable, or `((double)es_iN)` for a `times` loop.
 - **Constants** become C static initializers, worked out by the compiler: `static const double es_k_tax__rate = 0.2...;`, `static const bool ...`, or `static EsText *const es_k_shop = &es_s3;` (a static immortal text object). Even joined text is computed ahead of time, so constants cost nothing while the program runs.

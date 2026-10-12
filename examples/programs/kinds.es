@@ -3,7 +3,7 @@ note: before the program runs, mostly without being told.
 to average of first and second:
     give back (first plus second) divided by 2
 to describe with name and score:
-    give back name and " scored " and score
+    give back name followed by " scored " followed by score
 to passed with score (a number), giving back yes or no:
     give back score is at least 50
 let alice be average of 70 and 84

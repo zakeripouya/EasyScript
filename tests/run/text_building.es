@@ -5,7 +5,7 @@ let copy be story
 set story to story followed by " upon" followed by " a time"
 say story
 say copy
-set story to story and ", the end"
+set story to story followed by ", the end"
 say story
 note: The added part reads the text itself: worked out before anything changes.
 let echo be "ab"

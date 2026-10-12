@@ -111,6 +111,32 @@ static EsText *es_join(EsText *a, EsText *b) {
     return joined;
 }
 
+/* No space goes after a piece ending in one of these (or a space or new line). */
+static bool es_opens(char c) {
+    return c == ' ' || c == '\n' || c == '\t' || c == '(' || c == '[' || c == '$';
+}
+
+/* No space goes before a piece starting with one of these (or a space or new line). */
+static bool es_closes(char c) {
+    return c == ' ' || c == '\n' || c == '\t' || c == '.' || c == ',' || c == '!' || c == '?' || c == ';' ||
+           c == ':' || c == ')' || c == ']' || c == '%';
+}
+
+/* "say A, B": the two pieces with a space between them, unless either is
+ * empty, A ends with a space, a new line, "(", "[" or "$", or B starts with a
+ * space, a new line or ". , ! ? ; : ) ] %". Consumes both. */
+static EsText *es_join_spaced(EsText *a, EsText *b) {
+    if (a->len == 0 || b->len == 0 || es_opens(a->chars[a->len - 1]) || es_closes(b->chars[0])) return es_join(a, b);
+    char *p;
+    EsText *joined = es_text_new(a->len + 1 + b->len, &p);
+    memcpy(p, a->chars, a->len);
+    p[a->len] = ' ';
+    memcpy(p + a->len + 1, b->chars, b->len);
+    es_release(a);
+    es_release(b);
+    return joined;
+}
+
 /* "set T to T followed by X": adds b to the text in *slot. Text that only
  * this variable holds grows in place (doubling its room), so building text
  * piece by piece takes time in proportion to its length; shared text is

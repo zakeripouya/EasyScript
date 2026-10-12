@@ -12,7 +12,7 @@ keep from_text as "42" as a number plus 1
 keep as_text as 3.5 as text followed by "!"
 keep letters as length of "héllo"
 keep both as is_open and big
-keep joined as "rate=" and rate
+keep joined as "rate=" followed by rate
 keep remainder as 10 mod 3
 say label
 say doubled

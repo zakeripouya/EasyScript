@@ -1,0 +1,4 @@
+say [5:1]
+  text "a ] b" [5:5]
+say [8:1]
+  text "still checked" [8:5]

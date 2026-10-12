@@ -26,7 +26,7 @@ for each document in the text sent to the program split by "\n---\n":
 
 note: Pretty-printing a nested document.
 say "Pretty:"
-let nested be "{\"name\": \"Ada\", \"languages\": [\"English\", \"French\"], \"born\": {\"year\": 1815, \"month\": 12}, \"notes\": [], \"extra\": {}}"
+let nested be "{\"name\": \"Ada\", \"languages\": [[\"English\", \"French\"]], \"born\": {\"year\": 1815, \"month\": 12}, \"notes\": [[]], \"extra\": {}}"
 let parsed be parse json with nested.
 if parsed is a parsed document:
     say pretty json of parsed's root and "".
@@ -50,5 +50,5 @@ to total of v (a json value), giving back a number:
         otherwise:
             add 0 to sum.
     give back sum.
-let numbers be parse json with "[1, 2.5, \"skip me\", 4]".
+let numbers be parse json with "[[1, 2.5, \"skip me\", 4]]".
 if numbers is a parsed document, say "Total: " followed by total of numbers's root.

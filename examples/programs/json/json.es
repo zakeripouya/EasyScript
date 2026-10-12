@@ -55,7 +55,7 @@ privately to parse value in r, giving back a json value:
     skip spaces in r.
     let c be current character in r.
     if c is "{", give back parse object in r.
-    if c is "[", give back parse array in r.
+    if c is "[[", give back parse array in r.
     if c is "\"", give back a new json string with content (parse string in r).
     if c is "-" or c is a digit, give back parse number in r.
     if c is "t" and (take word in r and "true"), give back a new json boolean with truth yes.
@@ -78,7 +78,7 @@ privately to parse array in r, giving back a json value:
     advance in r.
     let collected be an empty list of json values.
     skip spaces in r.
-    if current character in r is "]":
+    if current character in r is "]]":
         advance in r.
         give back a new json array with elements collected.
     forever:
@@ -89,11 +89,11 @@ privately to parse array in r, giving back a json value:
         let c be current character in r.
         if c is ",":
             advance in r.
-        otherwise if c is "]":
+        otherwise if c is "]]":
             advance in r.
             give back a new json array with elements collected.
         otherwise:
-            report in r and "I expected \",\" or \"]\" here.".
+            report in r and "I expected \",\" or \"]]\" here.".
             give back a new json null.
 
 privately to parse object in r, giving back a json value:
@@ -335,7 +335,7 @@ to compact json of v (a json value), giving back text:
             let parts be an empty list of text.
             for each element in its elements:
                 add compact json of element to the end of parts.
-            give back "[" followed by (parts joined with ",") followed by "]".
+            give back "[[" followed by (parts joined with ",") followed by "]]".
         when it's a json object:
             let parts be an empty list of text.
             for each name and member in its members:
@@ -348,11 +348,11 @@ to pretty json of v (a json value) and indent (text), giving back text:
     let inner be indent followed by "  ".
     check which kind v is:
         when it's a json array:
-            if its elements is empty, give back "[]".
+            if its elements is empty, give back "[[]]".
             let parts be an empty list of text.
             for each element in its elements:
                 add inner followed by (pretty json of element and inner) to the end of parts.
-            give back "[\n" followed by (parts joined with ",\n") followed by "\n" followed by indent followed by "]".
+            give back "[[\n" followed by (parts joined with ",\n") followed by "\n" followed by indent followed by "]]".
         when it's a json object:
             if its members is empty, give back "{}".
             let parts be an empty list of text.

@@ -222,7 +222,7 @@ static bool reads(const Expr *expr, const char *name) {
     return true;
 }
 
-// "set T to T followed by A followed by B" (or "and"), where only the first
+// "set T to T followed by A followed by B" (or "[T][A]"), where only the first
 // part reads T: each part is added to T in place (es_append), so text built
 // piece by piece isn't copied every time. Returns false for anything else.
 bool cg_emit_append(Codegen *g, const Stmt *stmt) {
@@ -230,7 +230,7 @@ bool cg_emit_append(Codegen *g, const Stmt *stmt) {
     const Expr *value = stmt->as.assign.value;
     Vec(const Expr *) parts = {0};
     while (value->type == TYPE_TEXT && value->kind == EXPR_BINARY &&
-           (value->as.binary.op == BINARY_JOIN || value->as.binary.op == BINARY_AND)) {
+           value->as.binary.op == BINARY_JOIN) {
         if (reads(value->as.binary.right, name)) return false;
         vec_push(g->arena, &parts, value->as.binary.right);
         value = value->as.binary.left;

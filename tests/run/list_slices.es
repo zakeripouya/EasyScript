@@ -10,7 +10,7 @@ say the first 3 items in scores
 say the last 2 items of scores
 say the first n items in scores
 say the first 0 items in scores
-say "[" followed by the last 0 items in scores followed by "]"
+say "[[" followed by the last 0 items in scores followed by "]]"
 say the first 10 items in scores
 say the last 99 items in scores
 say scores without the first item

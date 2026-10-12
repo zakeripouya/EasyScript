@@ -15,7 +15,7 @@ give hello
 call
 call 5
 greet with
-say area of 3 and
+say area of 3 and.
 say area of 3 and 4 plus 1
 to area with width and height:
     give back width times height

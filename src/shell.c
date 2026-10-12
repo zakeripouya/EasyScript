@@ -10,12 +10,14 @@
 //   errors are shown) and the answers file is cut back.
 // - A line ending in ":" starts a block (an if, a loop, a function): lines
 //   are read until a blank one.
+// - A line ending in ",", "then" or "and" goes on to the next line.
 //
 // Input is read one byte at a time, so the shell never reads ahead into lines
 // meant for the program it's running (answers to "ask").
 
 #define _XOPEN_SOURCE 700
 
+#include <ctype.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -84,6 +86,23 @@ static bool opens_block(const StrBuf *line) {
     return len > 0 && line->data[len - 1] == ':';
 }
 
+// A line ending with ",", "then" or "and" carries its sentence on to the next line.
+static bool carries_on(const StrBuf *line) {
+    size_t len = trimmed_length(line->data, line->len);
+    if (len > 0 && line->data[len - 1] == ',') return true;
+    static const char *const words[] = {"then", "and"};
+    for (size_t w = 0; w < 2; w++) {
+        size_t n = strlen(words[w]);
+        if (len < n || (len > n && (isalnum((unsigned char)line->data[len - n - 1]) || line->data[len - n - 1] == '_'))) {
+            continue;
+        }
+        bool same = true;
+        for (size_t i = 0; i < n && same; i++) same = tolower((unsigned char)line->data[len - n + i]) == words[w][i];
+        if (same) return true;
+    }
+    return false;
+}
+
 static void prompt(const char *text) {
     fputs(text, stdout);
     fflush(stdout);
@@ -99,7 +118,14 @@ static bool read_entry(Shell *sh, StrBuf *entry, size_t *lines) {
     if (!read_line(sh)) return false;
     sb_append_n(entry, sh->line.data, sh->line.len);
     *lines = 1;
-    if (!opens_block(&sh->line)) return true;
+    while (!opens_block(&sh->line)) {
+        if (!carries_on(&sh->line)) return true;
+        prompt("... ");
+        if (!read_line(sh)) return true;
+        sb_append_char(entry, '\n');
+        sb_append_n(entry, sh->line.data, sh->line.len);
+        (*lines)++;
+    }
     for (;;) {
         prompt("... ");
         if (!read_line(sh) || is_blank(&sh->line)) return true;

@@ -155,10 +155,43 @@ static Stmt *parse_target_first(Parser *p, const Token *verb, const StmtForm *fo
     return stmt;
 }
 
+// After a piece, a comma followed by one of these keeps its own meaning
+// ("the value for K in M, or 0"), so it doesn't start another piece.
+static bool at_postfix_after_comma(const Parser *p) {
+    static const char *const words[] = {"or", "sorted", "as", "rounded", "starting"};
+    for (size_t i = 0; i < COUNT(words); i++) {
+        if (parser_at_word(p, 1, words[i])) return true;
+    }
+    return false;
+}
+
+// "say "Hello,", name, "!"": values separated by commas are pieces of one
+// text, with a space between them where it's needed (BINARY_PIECES).
+Expr *parser_parse_pieces(Parser *p) {
+    Expr *expr = parse_expression(p);
+    while (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) && !at_postfix_after_comma(p)) {
+        Span comma = parser_advance(p)->span;
+        if (parser_at_sentence_end(p)) {
+            if (parser_error(p, comma, "Something is missing after \",\".")) {
+                diag_note(p->diag, "Put the next piece after the comma, like \"say \"Hello,\", name\".");
+            }
+            return parser_error_expr(p);
+        }
+        Expr *piece = parse_expression(p);
+        Expr *joined = ast_new_expr(p->arena, EXPR_BINARY, ast_pos_join(expr->pos, piece->pos));
+        joined->as.binary.op = BINARY_PIECES;
+        joined->as.binary.op_span = comma;
+        joined->as.binary.left = expr;
+        joined->as.binary.right = piece;
+        expr = joined;
+    }
+    return expr;
+}
+
 static Stmt *parse_say(Parser *p, const Token *verb, const StmtForm *form) {
     (void)form;
     Stmt *stmt = parser_new_stmt(p, STMT_SAY, verb);
-    stmt->as.value = parse_expression(p);
+    stmt->as.value = parser_parse_pieces(p);
     return stmt;
 }
 

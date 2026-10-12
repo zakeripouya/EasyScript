@@ -190,39 +190,6 @@ static void report(Checker *c, const Expr *expr, const char *hint, const char *m
 
 // "and": logical for two yes/no values, joining when text is on either side
 // (the other side a number or text). Returns true once settled.
-static bool settle_and(Checker *c, const Deferred *d) {
-    Type left = types_of(c, d->left), right = types_of(c, d->right);
-    size_t line = d->expr->pos.line;
-    if (left == TYPE_ERROR || right == TYPE_ERROR) return types_require(c, d->result, TYPE_ERROR, line);
-    // A list or map joins text (as "72, 95 and 88"), nothing else.
-    if (type_is_list(left) || type_is_list(right) || type_is_map(left) || type_is_map(right)) {
-        if (left == TYPE_UNKNOWN || right == TYPE_UNKNOWN) return false;
-        if (left == TYPE_TEXT || right == TYPE_TEXT) return types_require(c, d->result, TYPE_TEXT, line);
-        report(c, d->expr, NULL, arena_sprintf(c->arena, "I can't use \"and\" between %s and %s.",
-                                               checker_type_name(c, left), checker_type_name(c, right)));
-        return types_require(c, d->result, TYPE_ERROR, line);
-    }
-    if (left == TYPE_YESNO || right == TYPE_YESNO) {
-        TypeVar other = left == TYPE_YESNO ? d->right : d->left;
-        if (types_require(c, other, TYPE_YESNO, line)) return types_require(c, d->result, TYPE_YESNO, line);
-        bool with_text = left == TYPE_TEXT || right == TYPE_TEXT;
-        report(c, d->expr, with_text ? "To join them, turn the yes/no value into text first with \"as text\"." : NULL,
-               arena_sprintf(c->arena, "I can't use \"and\" between %s and %s.", checker_type_name(c, left),
-                             checker_type_name(c, right)));
-        return types_require(c, d->result, TYPE_ERROR, line);
-    }
-    if (left == TYPE_NUMBER && right == TYPE_NUMBER) {
-        report(c, d->expr, "To add numbers, use \"plus\".", "I can't use \"and\" between a number and a number.");
-        return types_require(c, d->result, TYPE_ERROR, line);
-    }
-    if (left == TYPE_NUMBER) types_require(c, d->right, TYPE_TEXT, line);  // a number joins only with text
-    if (right == TYPE_NUMBER) types_require(c, d->left, TYPE_TEXT, line);
-    if (left == TYPE_UNKNOWN && right == TYPE_UNKNOWN) return false;
-    types_require(c, d->result, TYPE_TEXT, line);
-    // Text with a side not known yet: settled once that side turns out not to be yes/no.
-    return types_of(c, d->left) != TYPE_UNKNOWN && types_of(c, d->right) != TYPE_UNKNOWN;
-}
-
 static unsigned kind_bit(Type type) {
     if (type_is_list(type)) return KIND_LIST;
     if (type_is_map(type)) return KIND_MAP;
@@ -264,7 +231,6 @@ static bool settle_join(Checker *c, const Deferred *d) {
 }
 
 static bool settle(Checker *c, Deferred *d) {
-    if (d->kind == DEFER_AND) return settle_and(c, d);
     if (d->kind == DEFER_JOIN) return settle_join(c, d);
     if (d->kind == DEFER_ONE_OF) return settle_one_of(c, d);
     if (d->kind == DEFER_SEARCH) return checker_settle_search(c, d);

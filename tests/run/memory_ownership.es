@@ -23,7 +23,7 @@ say u
 say same with same with shout with t
 say describe of t and u
 say describe of t and "replaced"
-say greeting and " again"
+say greeting followed by " again"
 if u is at least "Hello", say "in order"
 let n be length of (u followed by u)
 say n

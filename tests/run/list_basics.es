@@ -10,7 +10,7 @@ say scores
 say names
 say flags
 say one
-say "[" followed by nothing_yet followed by "]"
+say "[[" followed by nothing_yet followed by "]]"
 note: items are worked out like any value
 let base be 10
 say a list of base, base plus 1, base times 2 and (base minus 1) times 2
@@ -64,6 +64,6 @@ say "Scores: " followed by scores
 let line be scores as text
 say line
 say length of line
-say "Names: " and names
+say "Names: " followed by names
 write names to file "names.txt"
 say contents of file "names.txt"

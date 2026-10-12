@@ -37,11 +37,64 @@ static Expr *parse_number(Parser *p) {
     return expr;
 }
 
-static Expr *parse_text(Parser *p) {
+static Expr *text_piece(Parser *p) {
     Expr *expr = literal(p, EXPR_TEXT);
     const Token *token = &p->tokens[p->pos - 1];
     expr->as.text.value = token->text;
     expr->as.text.len = token->text_len;
+    return expr;
+}
+
+static Expr *join(Parser *p, Expr *left, Expr *right, Span op_span) {
+    Expr *joined = ast_new_expr(p->arena, EXPR_BINARY, ast_pos_join(left->pos, right->pos));
+    joined->as.binary.op = BINARY_JOIN;
+    joined->as.binary.op_span = op_span;
+    joined->as.binary.left = left;
+    joined->as.binary.right = right;
+    return joined;
+}
+
+// "Hello, [name]!" is "Hello, " followed by name followed by "!": the
+// lexer splits it into STRING [ ... ] STRING. Empty pieces after the first
+// are left out.
+static Expr *parse_text(Parser *p) {
+    Expr *expr = text_piece(p);
+    while (parser_at(p, 0, TOK_LBRACKET)) {
+        size_t close = 1;
+        while (!parser_at(p, close, TOK_RBRACKET) && !parser_at(p, close, TOK_EOF)) close++;  // the lexer ends each value with one
+        if (parser_peek(p, close)->text_len == 0) {  // no "]" in the text: the lexer reported it
+            p->sentence_failed = true;
+            return parser_error_expr(p);
+        }
+        const Token *open = parser_advance(p);
+        if (parser_at(p, 0, TOK_RBRACKET)) {
+            if (parser_error(p, (Span){open->span.offset, parser_peek(p, 0)->span.offset + 1 - open->span.offset},
+                                    "There's no value between these brackets.")) {
+                diag_note(p->diag, "Put a value in them, like \"[name]\". To put a \"[\" in text, write it twice: "
+                                   "\"[[\".");
+            }
+            return parser_error_expr(p);
+        }
+        bool as_ends_value = p->as_ends_value, no_call = p->no_call;
+        p->as_ends_value = p->no_call = false;
+        Expr *value = parse_expression(p);
+        p->as_ends_value = as_ends_value;
+        p->no_call = no_call;
+        if (p->sentence_failed) return value;
+        if (!parser_at(p, 0, TOK_RBRACKET)) {
+            const Token *token = parser_peek(p, 0);
+            if (parser_error(p, token->span, "I expected \"]\" to end the value in the text, but found %s.",
+                             parser_describe(p, token))) {
+                diag_note(p->diag, "The brackets hold one value, like \"[total plus 1]\".");
+            }
+            return parser_error_expr(p);
+        }
+        parser_advance(p);
+        expr = join(p, expr, value, open->span);
+        Expr *rest = text_piece(p);  // the lexer always puts text after "]"
+        expr = rest->as.text.len > 0 ? join(p, expr, rest, open->span) : expr;
+        expr->pos = ast_pos_join(expr->pos, rest->pos);
+    }
     return expr;
 }
 

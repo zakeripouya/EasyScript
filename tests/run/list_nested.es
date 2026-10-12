@@ -36,7 +36,7 @@ say the biggest of (a list of -3, -1 and -2)
 say (every p in prices times 2) added together
 say (an empty list of numbers) added together
 let ties be a list of 3, 1, 3 and 1
-say the biggest of ties and " " and the smallest of ties
+say the biggest of ties followed by " " followed by the smallest of ties
 
 note: kinds of lists worked out from how functions use them and what they're given
 to total of marks:

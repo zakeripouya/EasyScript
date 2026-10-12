@@ -118,7 +118,7 @@ How a program talks to whoever (or whatever) started it: the words it was starte
 
 P is text: a program's name, found the way a terminal finds it (in the folders listed in the `PATH` setting), or a path with a `/` in it (`"./tool"`, `"/bin/ls"`). Each word after `with` is text, a number (turned into text, like `as text`) or a list of text (each item is one word); they're separated by `and` or commas, and given to P exactly as they are. **No shell is involved**: spaces, quotes, `;`, `|`, `$`, `*` and `~` in a word are just characters of that word, so text from a user can't run anything else. To use a shell's features on purpose, run it: `run "sh" with "-c" and "ls | wc -l"`.
 
-A program result is a kind of record the language defines: `a program result with output "hi", error output "" and code 0` when printed, `(a program result)` in a definition. A program can't define its own kind called `program result` and also use `run ... and call the result`.
+A program result is a kind of record the language defines: `a program result with output "hi", error output "" and exit code 0` when printed, `(a program result)` in a definition. A program can't define its own kind called `program result` and also use `run ... and call the result`.
 
 Errors: "I couldn't find a program called "gti"." (with a hint to check the name, and that a program in this folder is run as `"./tool"`), "I couldn't run "./notes.txt": it isn't a program I'm allowed to run.", "The name of the program to run is empty."
 

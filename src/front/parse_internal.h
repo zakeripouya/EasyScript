@@ -166,6 +166,7 @@ bool parser_parse_block(Parser *p, Block *body, SourcePos *header, const SourceP
 
 // parse_if.c
 bool parser_at_otherwise(const Parser *p);  // "otherwise" or "else"
+Expr *parser_parse_pieces(Parser *p);
 Stmt *parse_if(Parser *p, const Token *verb);
 Stmt *parser_finish_condition_after(Parser *p, Stmt *stmt);
 // An "otherwise" that doesn't belong to an if just above it.

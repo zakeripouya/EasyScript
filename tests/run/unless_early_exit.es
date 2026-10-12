@@ -31,7 +31,7 @@ unless ready then say "and again".
 to first word of line (text), giving back text:
     give back "" if line is empty.
     give back item 1 of the words of line.
-say "[" followed by (first word of "") followed by "]".
+say "[[" followed by (first word of "") followed by "]]".
 say first word of "hello there".
 to count up with limit:
     count from 1 to 10:

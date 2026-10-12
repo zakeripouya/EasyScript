@@ -6,6 +6,9 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Breaking
 
+- **`and` no longer joins text:** `"Hello, " and name` is an error that shows the new ways: commas in `say` (`say "Hello,", name, "!"`), brackets in text, or `followed by`. `and` between values now always means both (yes/no). Tests and examples that joined with `and` now use `followed by` or the new forms.
+- **`[` and `]` in text hold values** (`"Hello, [name]!"`), so a bracket in the text itself is written twice: `"[[draft]]"`. A single `]` is an error. The JSON example and a few tests now double their brackets.
+
 - **Counting goes up only, unless it says `count down`.** `count from 3 to 1` used to count down by itself; now a count whose start is above its end runs zero times, so `count from 1 to the number of items in L` does nothing for an empty list instead of running twice. A count written with two numbers that can never run gets a warning suggesting `count down from 3 to 1`. `examples/programs/loops.es` and `tests/run/loop_count.es` now say `count down`.
 
 - **A program result's `code` is now its `exit code`** (`say r's exit code`), so the field says what it is.
@@ -23,6 +26,10 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - **Runtime errors from `run`, and from a word past the end of the words given to the program, no longer leak** (LeakSanitizer on Linux found `argv` and a number shown in the message left unreachable).
 
 ### Added
+
+- **Pieces of text in `say`:** `say "Hello,", name, "!"` prints `Hello, Ann!`: the pieces are joined with a space between them, except next to punctuation (and empty pieces add nothing). `show`, `print`, `display` and `complain` take pieces too. **Values in text:** `"You have [tasks plus 1] tasks."` works out the value in brackets and puts it in the text (the same as `followed by`).
+
+- **Long sentences can go on over several lines:** a line ending with a comma, `then` or `and` carries its sentence on to the next line, whatever its indentation (the shell reads on too). Two parser tests that ended lines that way to test missing words now end them with a period.
 
 - **`unless`** (`unless ready:`, `unless ready, say "Not yet."`), the opposite of `if`, without an `otherwise`; and **leaving a function early with the condition after the sentence:** `give back 0 if scores is empty.`, `give back x unless x is below 0.`, `stop here if amount is 0.` (`stop here` is `return`). Each is the same `if` (or `if not`) written out, as a one-line if in the syntax tree.
 

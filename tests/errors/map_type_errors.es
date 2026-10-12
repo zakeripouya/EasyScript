@@ -34,5 +34,5 @@ let graph be an empty map from text to lists of numbers
 add 5 to the value for "a" in graph
 add "x" to the value for "a" in graph
 set ages to graph
-say "x" and ages and graph
+say "x" followed by ages followed by graph
 say ages and other

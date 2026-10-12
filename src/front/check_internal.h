@@ -37,7 +37,6 @@ typedef struct {
 } TypeSlot;
 
 typedef enum {
-    DEFER_AND,        // logical (yes/no) or joining (text)
     DEFER_ORDER,      // numbers or text
     DEFER_TO_NUMBER,  // "as a number": a number or text
     DEFER_ONE_OF,     // `left` has one of the kinds in `allowed` (e.g. text or a list for "length of")

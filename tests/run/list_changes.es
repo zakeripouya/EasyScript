@@ -63,7 +63,7 @@ let many be an empty list of numbers
 count down from 100 to 1:
     add (it times 37) mod 101 to the end of many
 sort many
-say item 1 of many and " " and item 50 of many and " " and item 100 of many
+say item 1 of many followed by " " followed by item 50 of many followed by " " followed by item 100 of many
 
 note: reversed makes a new list; the old one doesn't change
 let order be a list of 1, 2 and 3

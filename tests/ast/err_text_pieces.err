@@ -1,0 +1,34 @@
+Line 2: This "[" starts a value inside the text, but there's no "]" to end it.
+    say "Total: [the value for "Ann" in ages]".
+                ^
+End the value with "]", like "Hello, [name]!". To put a "[" in text, write it twice: "[[".
+
+Line 3: This "[" starts a value inside the text, but there's no "]" to end it.
+    say "Hello, [name".
+                ^
+End the value with "]", like "Hello, [name]!". To put a "[" in text, write it twice: "[[".
+
+Line 5: This "]" doesn't end a value.
+    say "a ] b".
+           ^
+To put a "]" in text, write it twice: "]]". A value in text goes between "[" and "]", like "Hello, [name]!".
+
+Line 1: Something is missing after ",".
+    say "Hello,", name, .
+                      ^
+Put the next piece after the comma, like "say "Hello,", name".
+
+Line 4: There's no value between these brackets.
+    say "Hello, []!".
+                ^^
+Put a value in them, like "[name]". To put a "[" in text, write it twice: "[[".
+
+Line 6: I expected a value here, but found "]".
+    say "[total plus]".
+                    ^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 7: I expected "]" to end the value in the text, but found "total".
+    say "[total total]".
+                ^^^^^
+The brackets hold one value, like "[total plus 1]".

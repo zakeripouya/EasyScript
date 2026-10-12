@@ -63,7 +63,7 @@ typedef enum {
 
 typedef enum {
     BINARY_OR,
-    BINARY_AND,  // logical for two yes/no values, joins text otherwise; the checker decides (its type)
+    BINARY_AND,  // both sides yes (two yes/no values)
     BINARY_EQUAL,
     BINARY_NOT_EQUAL,
     BINARY_LESS,
@@ -84,6 +84,7 @@ typedef enum {
     BINARY_NOT_ENDS_WITH,    // T does not end with X
     BINARY_HAS,              // M has K (M a map)
     BINARY_NOT_HAS,          // M does not have K
+    BINARY_PIECES,           // "say A, B": the pieces as text, with a space between them where it's needed
 } BinaryOp;
 
 typedef enum {

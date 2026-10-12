@@ -19,12 +19,12 @@ Line 7: Something is missing after "if".
 Add a condition that's yes or no, like "if x is 5:".
 
 Line 9: Something is missing after ",".
-    if x is 1,
+    if x is 1,.
              ^
 Add the sentence to do, like "if x is 5, say "five"".
 
 Line 10: Something is missing after "then".
-    if x is 1 then
+    if x is 1 then.
               ^^^^
 Add the sentence to do, like "if x is 5, say "five"".
 

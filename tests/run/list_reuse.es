@@ -37,9 +37,9 @@ let many be an empty list of numbers
 count from 1 to 10000:
     add (it times 7919) mod 10007 to the end of many
 sort many
-say item 1 of many and " " and item 5000 of many and " " and item 10000 of many
+say item 1 of many followed by " " followed by item 5000 of many followed by " " followed by item 10000 of many
 sort many, biggest first
-say item 1 of many and " " and item 10000 of many
+say item 1 of many followed by " " followed by item 10000 of many
 let same be a list of 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 and 1
 sort same
 say the first 2 items in same

@@ -19,7 +19,7 @@ let name be "Ada".
 let total be 0.
 add 5 to total.
 increase total by 10.
-say "Hello, " and name and "! Your total is " and total and ".".
+say "Hello, [name]! Your total is [total].".
 ```
 
 ```
@@ -40,7 +40,7 @@ repeat while count is greater than 0:
 say "Liftoff!".
 
 to greet using name:
-    say "Hello, " and name and "!".
+    say "Hello,", name, "!".
 
 greet using "Ada".
 ```
@@ -64,10 +64,11 @@ Hello, Ada!
 
 | Piece | What you can do |
 |---|---|
+| Sentences | End with a period or a new line; a line ending with a comma, `then` or `and` goes on to the next line |
 | Variables | `let total be 0`, `set`/`change ... to`, and `add 5 to total`, `subtract`, `increase`/`decrease`/`multiply`/`divide ... by` |
 | Names | A word (`total`, `clientName`) or several (`let late fee be 25`, `keep hourly rate as 150`, `to add tax to amount:`), recognized everywhere once made; matched without caring about capitals |
 | Constants | `keep tax rate as 0.2`, fixed lists (`keep weekdays as a list of "Mon", "Tue" and "Wed"`) and fixed maps (`keep prices as a map of "coffee" to 3, "tea" to 2`): worked out by the compiler, usable everywhere (including inside functions), and never changed |
-| Values and expressions | Numbers, text, yes/no; arithmetic in words or symbols; comparisons (`is at least`, `>=`, ...); `and`/`or`/`not`; joining text with `and` or `followed by`; `as a number`, `as text`, `length of`, `contents of file` |
+| Values and expressions | Numbers, text, yes/no; arithmetic in words or symbols; comparisons (`is at least`, `>=`, ...); `and`/`or`/`not`; joining text with commas in `say` (`say "Hello,", name`), brackets (`"Hello, [name]!"`) or `followed by`; `as a number`, `as text`, `as exact text`, `length of`, `contents of file` |
 | Output and input | `say` (or `print`, `show`, `display`, `write`), `ask "..." and call the answer name` |
 | Files | `write ... to file` (or `put ... in file`), `append ... to file` (or `add ... to the end of file`), `read file ... and call it ...`, `file ... exists` |
 | Several files | `use helpers.` reads `helpers.es`; files that are used only define things, `privately` keeps a definition to its own file, `helpers's double` says whose; errors name the file ([chapter](docs/language-guide.md#17-programs-in-several-files)) |

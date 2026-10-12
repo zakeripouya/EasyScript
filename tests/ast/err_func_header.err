@@ -51,7 +51,7 @@ Line 17: Something is missing after "with".
 Add the values to give it, like "greet with "Paris"", or leave out "with".
 
 Line 18: Something is missing after "and".
-    say area of 3 and
+    say area of 3 and.
                   ^^^
 Add a value there, like a number, some text in quotes, or a name.
 

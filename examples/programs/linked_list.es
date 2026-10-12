@@ -26,7 +26,7 @@ to describe, for a chain:
         set line to line followed by at's value.
         if at's next is not nothing, set line to line followed by " -> ".
         set at to at's next.
-    say "[" followed by line followed by "] (" followed by the chain's size followed by " nodes)".
+    say "[[" followed by line followed by "]] (" followed by the chain's size followed by " nodes)".
 
 note: Recursion follows the links: nothing at the end adds nothing.
 to sum of start:

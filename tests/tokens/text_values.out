@@ -1,0 +1,14 @@
+WORD          1:1     say
+STRING        1:5     "Hi "
+LBRACKET      1:9     [
+WORD          1:14    name  [after "the"]
+RBRACKET      1:18    ]
+STRING        1:19    "! [x] "
+LBRACKET      1:27    [
+WORD          1:28    n
+WORD          1:30    plus
+NUMBER        1:35    1
+RBRACKET      1:36    ]
+STRING        1:37    ""
+NEWLINE       1:38
+EOF           2:1

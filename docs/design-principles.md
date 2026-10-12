@@ -75,7 +75,7 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 
 Every phrase added from now on follows these too. They aren't audited by tests yet; the [English pass](english-pass.md) will add the audits and review the existing phrases against them.
 
-- **One meaning per word.** Synonyms are fine (`say` and `print`). A word with two meanings needs a documented exception below. Current overloads to review in the English pass: **`and`** (joins yes/no values, joins text, separates inputs and items) and **`is`** (compares values, and starts `is a circle`, `is empty`, `is anything with`, ...).
+- **One meaning per word.** Synonyms are fine (`say` and `print`). A word with two meanings needs a documented exception below. Current overloads to review in the English pass: **`and`** (combines yes/no values, separates inputs and items; it no longer joins text) and **`is`** (compares values, and starts `is a circle`, `is empty`, `is anything with`, ...).
 - **Keywords come from common everyday English.** No idioms unless a plain form is also accepted: `every other item` is an idiom, so `every 2nd item` works too.
 - **Messages beginners see stay at a grade 6 to 8 reading level,** and never use these words: variable, function, parameter, argument, return, string, boolean, integer, float, array, index, null, exception, syntax, compile, runtime, type, object, instance, iterate, initialize, declare, scope. Docs written for programmers ([architecture](architecture.md), [memory](memory.md), comments in the compiler) may use them.
 - **Every high-level phrase has an exact meaning in terms of the core language** (loops, `if`s, lists, maps), written down in its docs, so a programmer can trust it and write it out by hand. For example, `the numbers in scores where it is above 50` is a new empty list, then `for each` item of `scores` (as it was when it started), adding the item when the condition is yes.
@@ -91,7 +91,8 @@ Each exception exists because following the rule would cost more than it gives. 
 - **`a`, `an` and `the` can't be names.** Because they're filler, `let a be 5` would read as `let be 5`. The error explains this and suggests a name that says what it holds. Other single letters (`b`, `x`, `n`) are ordinary names.
 - **Map number keys are compared by rounding, not by `is`.** Keys are the same when they're the same to 12 significant digits, so `0.1 plus 0.2` finds the value kept for `0.3`, as `is` (within a relative 1e-12) would expect. A hash table needs every key to have one exact form, and "within 1e-12" isn't transitive (a can be close to b, and b to c, without a being close to c), so rounding can only come close to `is`: right at a rounding boundary, two numbers `is` calls equal can still be different keys. Printing rounds further, to 10 digits, so two different keys can print alike (`1` and `1.00000000001`).
 - **`times` is multiplication only when a value follows it,** so `repeat 3 times:` keeps its `times`.
-- **`and` joins text as well as combining yes/no values.** `"Hello, " and name` is natural English; the compiler decides which `and` it is from the kinds on both sides, and reports an error when the kinds don't settle it (`and` between two numbers).
+- **Commas in `say` join pieces, but only at the top level of the sentence.** A comma inside a value keeps its own meaning (list items, inputs after `using`, fields of `new`), and so does a comma followed by `or`, `sorted`, `as`, `rounded` or `starting`, so `say the value for K in M, or 0` is one piece. Commas are how people write "Hello, Ann", and the cases where a comma already means something are the ones a reader expects.
+- **Brackets in text hold values** (`"Hello, [name]!"`), so a bracket in the text itself is written twice (`[[`, `]]`). Text in quotes can't go inside the brackets, because its quote would end the text.
 - **`add X to L` is an error when L is a list of numbers,** because it could mean adding X to every item or adding it to the end. For other lists it adds to the end. The error shows both phrasings.
 - **`every other item` and `every second item` are different:** `every other` starts with the first item (1, 3, 5), `every second` with the second (2, 4, 6), as in everyday English.
 - **`ask` and `read file` both take `and call the answer NAME` and `and call it NAME`.** Each sentence reads most naturally with one of them, but accepting both means nobody has to remember which goes where.
@@ -124,7 +125,7 @@ The English pass's plan for new phrases, and the decisions already made about th
 
 Decided for the English pass ([english-pass.md](english-pass.md)); each breaks some existing programs, so each will be marked in the changelog when it lands.
 
-- **Joining text with `and` will be removed** (part 1). Pieces of text are joined with commas in `say` (`say "Hello,", name, "!"`) or with `followed by`; `"Hello, " and name` becomes an error showing the comma form. The "`and` joins text" exception above goes with it.
+- **Done (part 1): joining text with `and` was removed.** Pieces of text are joined with commas in `say` (`say "Hello,", name, "!"`), brackets in text, or `followed by`; `"Hello, " and name` is an error showing them.
 - **Inputs will get natural joiners where unambiguous** (part 5): `the column of cell in grid`, `from ... to ...`, besides `and`.
 
 ## Open questions

@@ -1,7 +1,7 @@
 note: making maps, reading, setting, asking, changing, removing, and printing
 
 let ages be an empty map from text to numbers.
-say "empty: [" followed by ages followed by "]"
+say "empty: [[" followed by ages followed by "]]"
 say ages is empty
 set the value for "Paris" in ages to 19.
 set the value for "Junie" in ages to 24.
@@ -91,7 +91,7 @@ for each name and price in prices:
 say prices
 
 note: as text, joined with other text
-say "Prices: " and prices
+say "Prices: " followed by prices
 say "Sizes: " followed by sizes
 let shown be sizes as text
 say the number of characters in shown

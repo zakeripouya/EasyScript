@@ -25,10 +25,10 @@ Line 6: I can't turn "12abc" into a number.
                ^^^^^^^^^^^^^^^^^^^
 A number is digits, with a "-" before them if it's negative, a "." for decimals and an "e" for powers of ten, like 42, -7, 3.5 or 1e5.
 
-Line 7: I can't use "and" between a yes/no value and text.
+Line 7: "and" doesn't join text: it means both, for yes or no values.
     keep k7 as yes and "x"
                ^^^^^^^^^^^
-To join them, turn the yes/no value into text first with "as text".
+To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name).
 
 Line 8: I can't make text negative.
     keep k8 as -"a"
@@ -37,7 +37,7 @@ Line 8: I can't make text negative.
 Line 9: I can't add text to a number.
     keep k9 as 1 plus "2"
                ^^^^^^^^^^
-To join text, use "and" or "followed by".
+To join text, use "followed by".
 
 Line 10: I can't find the remainder of text divided by a number.
     keep k10 as "a" mod 2

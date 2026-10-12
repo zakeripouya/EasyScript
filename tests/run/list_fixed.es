@@ -4,15 +4,15 @@ keep primes at a list of 2, 3, 5 and 7
 keep none_yet as an empty list of numbers
 keep day_count as length of weekdays
 say weekdays
-say day_count and " " and length of primes and " " and (none_yet is empty) as text
-say item 2 of weekdays and " " and the last item in primes
+say day_count followed by " " followed by length of primes followed by " " followed by (none_yet is empty) as text
+say item 2 of weekdays followed by " " followed by the last item in primes
 say weekdays contains "Tue"
 for each d in weekdays:
     say d
 say every p in primes times 10
 say only the primes that are above 2
 say items 2 to 3 of weekdays
-say primes added together and " " and the biggest of primes
+say primes added together followed by " " followed by the biggest of primes
 let mine be weekdays
 add "Thu" to the end of mine
 say mine

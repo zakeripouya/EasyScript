@@ -1,0 +1,18 @@
+Line 2: "and" doesn't join text: it means both, for yes or no values.
+    keep greeting as "Hello, " and "Ann".
+                     ^^^^^^^^^^^^^^^^^^^
+To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name).
+
+Line 3: "and" needs yes or no on both sides, but the right side is a number.
+    keep mixed as yes and 5.
+                  ^^^^^^^^^
+
+Line 5: "and" doesn't join text: it means both, for yes or no values.
+    say "Hello, " and name.
+        ^^^^^^^^^^^^^^^^^^
+To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name).
+
+Line 6: "and" doesn't join text: it means both, for yes or no values.
+    say name and yes.
+        ^^^^^^^^^^^^
+To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name).

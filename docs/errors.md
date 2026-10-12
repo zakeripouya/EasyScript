@@ -173,6 +173,8 @@ Try a name without it, like "price tax".
 
 Also: a mistyped name of several words ("I don't understand "fees" here." with "Did you mean "late fee"?"), a kind in parentheses straight after a function's name ("A kind in parentheses goes after an input, and inputs come after "with"."), and a sentence starting with the first word of a function's name ("I don't know a sentence that starts with "greet"." with a note that the function is called "greet someone" and how to give it an input).
 
+**Brackets in text and pieces in `say`** ([`err_text_pieces.err`](../tests/ast/err_text_pieces.err)): "This "[" starts a value inside the text, but there's no "]" to end it." (also when the value has text in quotes, whose quote ends the text), "This "]" doesn't end a value." (write `]]`), "There's no value between these brackets.", "I expected "]" to end the value in the text, but found "total"." and "Something is missing after ","." after the last piece.
+
 ### From the checker
 
 The checker makes sure every name you use has been made with `let` (or by `ask` or `read file`) before it's used, and that no name is made twice. It only runs when the program has no parser errors, so one mistake never causes a flood of follow-on errors.
@@ -312,11 +314,12 @@ Say which kind in the definition, like "to forever_down with n, giving back a nu
 
 | Problem | Message (summary) |
 |---|---|
-| Arithmetic with text or yes/no | "I can't add text to a number." With text, the hint suggests `and` or `followed by` |
+| Arithmetic with text or yes/no | "I can't add text to a number." With text, the hint suggests `followed by` |
 | An `if` condition that isn't yes or no (`if count:`) | "An "if" needs yes or no to decide, but this is a number." with a hint to compare it |
 | A `while`/`until` condition that isn't yes or no | "A loop needs yes or no to decide whether to keep going, but this is a number." |
 | A count, step, or number of times that isn't a number | "A count has to start at a number, but this is text." |
-| `and` between two numbers, or between yes/no and text | explains, and suggests `plus` or `as text` |
+| `and` with text on either side | ""and" doesn't join text: it means both, for yes or no values." with "To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name)." ([`and_not_text.err`](../tests/errors/and_not_text.err)) |
+| `and` between two numbers, or with something that isn't yes or no | "I can't use "and" between a number and a number." (suggesting `plus`), or ""and" needs yes or no on both sides, but the left side is a list of numbers." |
 | `or` / `not` without yes/no values | says which side wasn't yes or no |
 | Comparing different kinds, or ordering yes/no values | "I can't compare a number with text." with a hint to use `as a number` |
 | `as a number` on a yes/no value | "I can't turn a yes/no value into a number." |

@@ -80,7 +80,7 @@ void checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Sp
     case BINARY_ADD:
         diag_error(c->diag, span, "I can't add %s to %s.", r, l);
         if (types_of(c, left) == TYPE_TEXT || types_of(c, right) == TYPE_TEXT) {
-            diag_note(c->diag, "To join text, use \"and\" or \"followed by\".");
+            diag_note(c->diag, "To join text, use \"followed by\".");
         }
         break;
     case BINARY_SUBTRACT: diag_error(c->diag, span, "I can't subtract %s from %s.", r, l); break;
@@ -102,10 +102,32 @@ static void report_compare(Checker *c, const Expr *expr, TypeVar left, TypeVar r
     }
 }
 
-static void require_or_side(Checker *c, TypeVar var, const Expr *expr, const char *side) {
+static void require_logic_side(Checker *c, TypeVar var, const Expr *expr, const char *side) {
     if (types_require(c, var, TYPE_YESNO, expr->pos.line)) return;
-    diag_error(c->diag, expr->pos.span, "\"or\" needs yes or no on both sides, but the %s side is %s.", side,
-               checker_kind(c, var));
+    diag_error(c->diag, expr->pos.span, "\"%s\" needs yes or no on both sides, but the %s side is %s.",
+               expr->as.binary.op == BINARY_AND ? "and" : "or", side, checker_kind(c, var));
+}
+
+// "and" between two values means both are yes. It no longer joins text.
+static TypeVar check_and(Checker *c, const Expr *expr, TypeVar left, TypeVar right) {
+    Type l = types_of(c, left), r = types_of(c, right);
+    size_t line = expr->pos.line;
+    if (l == TYPE_ERROR || r == TYPE_ERROR) return types_new(c, TYPE_ERROR, line);
+    if (l == TYPE_TEXT || r == TYPE_TEXT) {
+        diag_error(c->diag, expr->pos.span, "\"and\" doesn't join text: it means both, for yes or no values.");
+        diag_note(c->diag, "To join text, use commas in \"say\" (say \"Hello,\", name) or \"followed by\" (\"Hello, \" followed "
+                           "by name).");
+        return types_new(c, TYPE_ERROR, line);
+    }
+    if (l == TYPE_NUMBER && r == TYPE_NUMBER) {
+        diag_error(c->diag, expr->pos.span, "I can't use \"and\" between a number and a number.");
+        diag_note(c->diag, "To add numbers, use \"plus\".");
+        return types_new(c, TYPE_ERROR, line);
+    }
+    size_t before = diag_count(c->diag);
+    require_logic_side(c, left, expr, "left");
+    if (diag_count(c->diag) == before) require_logic_side(c, right, expr, "right");
+    return types_new(c, TYPE_YESNO, line);
 }
 
 // Two records are the same record or not, even if one could be nothing.
@@ -125,15 +147,12 @@ static TypeVar check_binary(Checker *c, const Expr *expr) {
     c->present.len = outer;
     size_t line = expr->pos.line;
     switch (op) {
-    case BINARY_AND: {
-        TypeVar result = types_new(c, TYPE_UNKNOWN, line);
-        types_defer(c, DEFER_AND, expr, left, right, result);
-        return result;
-    }
+    case BINARY_AND: return check_and(c, expr, left, right);
     case BINARY_OR:
-        require_or_side(c, left, expr, "left");
-        require_or_side(c, right, expr, "right");
+        require_logic_side(c, left, expr, "left");
+        require_logic_side(c, right, expr, "right");
         return types_new(c, TYPE_YESNO, line);
+    case BINARY_PIECES: return types_new(c, TYPE_TEXT, line);  // any value can be a piece, like "say X"
     case BINARY_EQUAL:
     case BINARY_NOT_EQUAL:
         if (!same_record_kind(c, left, right) && !types_unify(c, left, right)) report_compare(c, expr, left, right);

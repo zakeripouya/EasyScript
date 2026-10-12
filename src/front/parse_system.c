@@ -192,7 +192,7 @@ static Stmt *parse_complain(Parser *p, const Token *verb) {
         }
         return NULL;
     }
-    stmt->as.library.a = parse_expression(p);
+    stmt->as.library.a = parser_parse_pieces(p);
     return p->sentence_failed ? NULL : stmt;
 }
 

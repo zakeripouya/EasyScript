@@ -328,7 +328,7 @@ static bool arithmetic(Eval *ev, const Expr *expr, ConstValue a, ConstValue b, C
     Span span = expr->pos.span;
     bool numbers = a.kind == CONST_NUMBER && b.kind == CONST_NUMBER;
     if (op == BINARY_ADD && !numbers) {
-        return fail(ev, span, (a.kind == CONST_TEXT || b.kind == CONST_TEXT) ? "To join text, use \"and\" or \"followed by\"." : NULL,
+        return fail(ev, span, (a.kind == CONST_TEXT || b.kind == CONST_TEXT) ? "To join text, use \"followed by\"." : NULL,
                     "I can't add %s to %s.", kind_name(ev, b), kind_name(ev, a));
     }
     if (op == BINARY_SUBTRACT && !numbers) return fail(ev, span, NULL, "I can't subtract %s from %s.", kind_name(ev, b), kind_name(ev, a));
@@ -355,14 +355,15 @@ static bool and_values(Eval *ev, const Expr *expr, ConstValue a, ConstValue b, C
         *out = b;
         return true;
     }
-    if (a.kind == CONST_YESNO || b.kind == CONST_YESNO) {
-        bool with_text = a.kind == CONST_TEXT || b.kind == CONST_TEXT;
-        return fail(ev, span, with_text ? "To join them, turn the yes/no value into text first with \"as text\"." : NULL,
-                    "I can't use \"and\" between %s and %s.", kind_name(ev, a), kind_name(ev, b));
+    if ((a.kind == CONST_YESNO || b.kind == CONST_YESNO) && a.kind != CONST_TEXT && b.kind != CONST_TEXT) {
+        return fail(ev, span, NULL, "\"and\" needs yes or no on both sides, but the %s side is %s.",
+                    a.kind == CONST_YESNO ? "right" : "left", kind_name(ev, a.kind == CONST_YESNO ? b : a));
     }
     if (a.kind == CONST_TEXT || b.kind == CONST_TEXT) {
-        *out = join(ev, a, b);
-        return true;
+        return fail(ev, span,
+                    "To join text, use commas in \"say\" (say \"Hello,\", name) or \"followed by\" (\"Hello, \" "
+                    "followed by name).",
+                    "\"and\" doesn't join text: it means both, for yes or no values.");
     }
     return fail(ev, span, "To add numbers, use \"plus\".", "I can't use \"and\" between %s and %s.", kind_name(ev, a),
                 kind_name(ev, b));

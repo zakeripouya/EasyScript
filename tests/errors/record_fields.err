@@ -48,7 +48,7 @@ Line 15: The field "age" is a number, but this is text.
 Line 16: I can't add text to a number.
     add "one" to rex's age.
     ^^^^^^^^^^^^^^^^^^^^^^
-To join text, use "and" or "followed by".
+To join text, use "followed by".
 
 Line 18: Only a record has fields, but this is a number.
     say count's name.

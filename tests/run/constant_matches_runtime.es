@@ -35,8 +35,8 @@ keep k9 as " -3.5 " as a number
 let v9 be " -3.5 " as a number
 say k9
 say v9
-keep k10 as "tab\there" and 7
-let v10 be "tab\there" and 7
+keep k10 as "tab\there" followed by 7
+let v10 be "tab\there" followed by 7
 say k10
 say v10
 keep k11 as 1000000000000000
@@ -79,8 +79,8 @@ keep k20 as "7" as a number mod 4
 let v20 be "7" as a number mod 4
 say k20
 say v20
-keep k21 as 2.5 as text and "!"
-let v21 be 2.5 as text and "!"
+keep k21 as 2.5 as text followed by "!"
+let v21 be 2.5 as text followed by "!"
 say k21
 say v21
 keep k22 as 0.1 times 3

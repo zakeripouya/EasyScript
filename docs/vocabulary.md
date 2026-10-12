@@ -14,6 +14,7 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | Word / symbol | Meaning | Example | Status |
 |---|---|---|---|
 | `.` or new line | Ends a sentence | `say "hi".` | Available |
+| `,`, `then` or `and` at the end of a line | The sentence carries on to the next line (whose indentation doesn't matter) | `let colors be a list of "red",`<br>`    "green" and "blue".` | Available |
 | `:` + indented lines | Opens a block of sentences | `if x is 1:`<br>`    say "one".` | Available |
 | indentation | Blocks are indented. A tab counts as 4 spaces. A line must line up with an enclosing block | (see [blocks.es](../examples/lexer/blocks.es)) | Available |
 | `the`, `a`, `an` | Filler words; ignored outside text, except that `is a letter`, `is a digit` and `is a space` need their `a` | `set the total to 0.` = `set total to 0.` | Available |
@@ -48,15 +49,25 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 
 Expressions combine values. They're listed here from the **loosest** to the **tightest** binding: `price plus tax times 2` means `price plus (tax times 2)`, because `times` binds tighter than `plus`. Use parentheses to group things differently.
 
-### Logic and joining text
+### Logic
 
 | Pattern | Meaning | Example | Status |
 |---|---|---|---|
 | `X or Y` | Yes if either side is yes | `day is "sat" or day is "sun"` | Available |
-| `X and Y` | With two yes/no values: yes if both are yes. If either side is text: joins them, turning a number or a list on the other side into text | `age is at least 13 and age is under 20`<br>`"Hello, " and name` | Available |
+| `X and Y` | Yes if both are yes (two yes/no values). It doesn't join text: use commas in `say`, brackets in text, or `followed by` | `age is at least 13 and age is under 20` | Available |
 | `not X` | The opposite of a yes/no value | `not done` | Available |
 
-Which `and` it is gets decided before the program runs, from the kinds of its sides. If the left side is `no`, the answer is `no` and the right side isn't worked out at all; likewise `or` stops at a `yes` on the left. `and` between yes/no and text, or between two numbers, is an error that explains what to write instead (`"as text"`, or `plus`). `and` followed by the word `call` ends the expression, so `ask ... and call the answer X` works.
+If the left side is `no`, the answer is `no` and the right side isn't worked out at all; likewise `or` stops at a `yes` on the left. `and` with text on either side is an error showing the ways to join text, and `and` between two numbers suggests `plus`. `and` followed by the word `call` ends the expression, so `ask ... and call the answer X` works. (`and` also separates the items of a list, `a list of 1, 2 and 3`, and the inputs of a call, `area of 3 and 4`.)
+
+### Joining text: pieces and brackets
+
+| Pattern | Meaning | Example | Status |
+|---|---|---|---|
+| `say A, B, C` | The pieces turned into text and joined, with a space between two pieces unless one of them is empty, the first ends with a space, a new line, `(`, `[` or `$`, or the second starts with a space, a new line or one of `. , ! ? ; : ) ] %`. Works in `say`, `show`, `print`, `display` and `complain`, at the top level only | `say "Hello,", name, "!"` prints `Hello, Ann!` | Available |
+| `"... [VALUE] ..."` | Text with a value in brackets: the value is worked out and put in the text exactly where it is (no spaces added); `"[name]!"` is `"" followed by name followed by "!"` | `say "You have [tasks] tasks."` | Available |
+| `[[` and `]]` in text | A `[` or `]` in the text itself (a single `]` outside a value is an error) | `"[[draft]]"` is `[draft]` | Available |
+
+Pieces are separated by commas at the top level of the sentence. A comma that belongs to a value keeps its meaning: the items of `a list of 1, 2 and 3`, the inputs after `using`, the fields of `a new dog with name "Rex", age 3`, and a comma followed by `or`, `sorted`, `as`, `rounded` or `starting` (`say the value for K in M, or 0` is one piece). The value in brackets can't contain text in quotes (its quote would end the text); give it a name first.
 
 ### Comparisons
 
@@ -82,7 +93,7 @@ Not available, with the error message suggesting the right one: `is not greater 
 | `X followed by Y` | Turns both sides into text and joins them | `"Total: " followed by total` | Available |
 | `L followed by M` | Two lists of the same kind: a new list with L's items, then M's (lists inside are copied). Lists of different kinds are an error | `morning slots followed by evening slots` | Available |
 
-`followed by` binds more loosely than arithmetic, so the maths happens first: `"Sum: " followed by 2 plus 3` gives `Sum: 5`. It binds more tightly than comparisons, so `name followed by "!" is "Ada!"` compares the joined text. (`and` joins text too, and it binds more loosely still: `"Sum: " and 2 plus 3` also gives `Sum: 5`.)
+`followed by` binds more loosely than arithmetic, so the maths happens first: `"Sum: " followed by 2 plus 3` gives `Sum: 5`. It binds more tightly than comparisons, so `name followed by "!" is "Ada!"` compares the joined text. 
 
 ### Arithmetic
 

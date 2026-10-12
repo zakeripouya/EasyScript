@@ -1,4 +1,4 @@
 ask "Name? " and call the answer name
-say "Hello, " and name and "!"
+say "Hello, " followed by name followed by "!"
 ask "Age? " and call the answer age
 say age as a number plus 1

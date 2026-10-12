@@ -18,6 +18,7 @@ typedef struct {
     size_t indent;         // indentation width, tabs counted as TAB_WIDTH
     bool indent_has_tab;
     bool line_has_tokens;
+    bool continued;        // the last line ended with ",", "then" or "and", so this one carries on its sentence
 
     size_t col_offset;     // column() cache: the column of col_offset
     size_t col;
@@ -292,6 +293,41 @@ static void lex_escape(Lexer *lx, StrBuf *value) {
     lx->pos += 2;
 }
 
+static void skip_to_line_end(Lexer *lx) {
+    while (lx->pos < lx->len && lx->src[lx->pos] != '\n') lx->pos++;
+}
+
+static void lex_token(Lexer *lx);
+
+// "[VALUE]" inside text: LBRACKET, the value's tokens, RBRACKET. A quote or
+// the end of the line before the "]" is an error: the rest of the line is
+// skipped, and an RBRACKET with no text tells the parser not to report it again.
+static void lex_text_value(Lexer *lx) {
+    size_t open = lx->pos++;
+    emit_content(lx, TOK_LBRACKET, open, open + 1, "[", 1);
+    for (;;) {
+        while (lx->pos < lx->len && (lx->src[lx->pos] == ' ' || lx->src[lx->pos] == '\t')) lx->pos++;
+        if (at_line_end(lx, lx->pos) || lx->src[lx->pos] == '"') {
+            diag_error(lx->diag, span_between(open, open + 1),
+                       "This \"[\" starts a value inside the text, but there's no \"]\" to end it.");
+            diag_note(lx->diag, "End the value with \"]\", like \"Hello, [name]!\". To put a \"[\" in text, write it "
+                                "twice: \"[[\".");
+            skip_to_line_end(lx);
+            emit_content(lx, TOK_RBRACKET, lx->pos, lx->pos, "", 0);
+            return;
+        }
+        if (lx->src[lx->pos] == ']') {
+            emit_content(lx, TOK_RBRACKET, lx->pos, lx->pos + 1, "]", 1);
+            lx->pos++;
+            return;
+        }
+        lex_token(lx);
+    }
+}
+
+// Text in quotes. A value in brackets splits it: STRING, LBRACKET, the
+// value's tokens, RBRACKET, STRING (each STRING possibly empty). "[[" is "["
+// and "]]" is "]".
 static void lex_string(Lexer *lx) {
     size_t start = lx->pos++;
     StrBuf value;
@@ -306,7 +342,22 @@ static void lex_string(Lexer *lx) {
             lx->pos++;
             break;
         }
-        if (c == '\\' && !at_line_end(lx, lx->pos + 1)) {
+        if ((c == '[' || c == ']') && peek_at(lx, lx->pos + 1) == c) {
+            sb_append_char(&value, c);
+            lx->pos += 2;
+        } else if (c == ']') {
+            diag_error(lx->diag, span_between(lx->pos, lx->pos + 1), "This \"]\" doesn't end a value.");
+            diag_note(lx->diag, "To put a \"]\" in text, write it twice: \"]]\". A value in text goes between "
+                                "\"[\" and \"]\", like \"Hello, [name]!\".");
+            sb_append_char(&value, c);
+            lx->pos++;
+        } else if (c == '[') {
+            emit_content(lx, TOK_STRING, start, lx->pos, value.data, value.len);
+            lex_text_value(lx);
+            start = lx->pos;
+            sb_init(&value, lx->arena);
+            if (vec_last(&lx->tokens).text_len == 0) break;  // a broken value: the line is skipped
+        } else if (c == '\\' && !at_line_end(lx, lx->pos + 1)) {
             lex_escape(lx, &value);
         } else if (c == '\\') {
             lx->pos++;  // a backslash at the end of the line; the text is unterminated
@@ -414,15 +465,12 @@ static void lex_symbol(Lexer *lx) {
 
 // --- Lines ------------------------------------------------------------------
 
-static void skip_to_line_end(Lexer *lx) {
-    while (lx->pos < lx->len && lx->src[lx->pos] != '\n') lx->pos++;
-}
 
 static void begin_line(Lexer *lx) {
     lx->line_start = lx->pos;
     lx->indent = 0;
     lx->indent_has_tab = false;
-    lx->line_has_tokens = false;
+    lx->line_has_tokens = lx->continued;  // a line carrying on a sentence has no indentation of its own
     while (lx->pos < lx->len && (lx->src[lx->pos] == ' ' || lx->src[lx->pos] == '\t')) {
         bool tab = lx->src[lx->pos] == '\t';
         lx->indent += tab ? TAB_WIDTH : 1;
@@ -472,9 +520,25 @@ static void lex_line(Lexer *lx) {
     }
 }
 
+// A sentence whose line ends with ",", "then" or "and" carries on to the
+// next line that has words.
+static bool carries_on(const Lexer *lx) {
+    if (!lx->line_has_tokens) return false;
+    const Token *last = &vec_last(&lx->tokens);
+    return last->kind == TOK_COMMA ||
+           (last->kind == TOK_WORD && (strcmp(last->text, "then") == 0 || strcmp(last->text, "and") == 0));
+}
+
 // The NEWLINE token covers "\r\n" when the line ends with one.
 static void end_line(Lexer *lx) {
     size_t start = lx->pos > lx->line_start && lx->src[lx->pos - 1] == '\r' ? lx->pos - 1 : lx->pos;
+    lx->continued = carries_on(lx);
+    if (lx->continued) {
+        lx->pos++;
+        lx->line++;
+        lx->line_start = lx->pos;
+        return;
+    }
     if (lx->line_has_tokens) emit_layout(lx, TOK_NEWLINE, start, lx->pos + 1);
     lx->line_has_tokens = false;
     lx->pending_filler.length = 0;  // a filler-only line gives nothing to the next line
@@ -495,7 +559,7 @@ static void finish(Lexer *lx) {
 // At the end of a file: its last line's NEWLINE, and a DEDENT for each block still open.
 static void close_blocks(Lexer *lx, size_t at) {
     if (lx->line_has_tokens) emit_layout(lx, TOK_NEWLINE, at, at);
-    lx->line_has_tokens = false;
+    lx->line_has_tokens = lx->continued = false;
     while (lx->indents.len > 1) {
         (void)vec_pop(&lx->indents);
         emit_layout(lx, TOK_DEDENT, at, at);
@@ -542,7 +606,7 @@ const char *token_kind_name(TokenKind kind) {
         "EOF", "NEWLINE", "INDENT", "DEDENT", "WORD", "NUMBER", "STRING", "ORDINAL",
         "PERIOD", "COMMA", "COLON", "LPAREN", "RPAREN", "PLUS", "MINUS",
         "STAR", "SLASH", "PERCENT", "EQUAL", "LESS", "GREATER",
-        "LESS_EQUAL", "GREATER_EQUAL", "NOT_EQUAL", "EQUAL_EQUAL", "POSSESSIVE",
+        "LESS_EQUAL", "GREATER_EQUAL", "NOT_EQUAL", "EQUAL_EQUAL", "LBRACKET", "RBRACKET", "POSSESSIVE",
     };
     return names[kind];
 }

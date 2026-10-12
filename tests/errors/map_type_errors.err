@@ -129,6 +129,6 @@ Line 36: "ages" is a map from text to numbers (made on line 2), but this is a ma
                 ^^^^^
 A variable keeps the kind of value it was made with. To keep a map from text to lists of numbers, make a new variable for it.
 
-Line 38: I can't use "and" between a map from text to numbers and a map from numbers to numbers.
+Line 38: "and" needs yes or no on both sides, but the left side is a map from text to numbers.
     say ages and other
         ^^^^^^^^^^^^^^
