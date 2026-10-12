@@ -318,6 +318,7 @@ Say which kind in the definition, like "to forever_down with n, giving back a nu
 | `or` / `not` without yes/no values | says which side wasn't yes or no |
 | Comparing different kinds, or ordering yes/no values | "I can't compare a number with text." with a hint to use `as a number` |
 | `as a number` on a yes/no value | "I can't turn a yes/no value into a number." |
+| `as exact text` on something that isn't a number | ""as exact text" needs a number, but this is text." |
 | `length of` something that isn't text or a list | "I can only find the length of text or a list, but this is a number." |
 | A file name that isn't text | "The name of a file has to be text, but this is a number." |
 | Storing another kind in a variable | ""total" is a number (made on line 1), but this is text." |
@@ -844,7 +845,7 @@ Positions start at 1: the first item is item 1.
 | A function that keeps calling itself | "Functions are calling each other too deeply (more than 10000 calls inside each other)." with a hint to check that it stops |
 | A count step that's zero or negative | "The step of a count has to be more than zero, but it's -1." with a hint that counting picks its own direction |
 | `repeat N times` with N that isn't a whole number of zero or more | "The number of times has to be a whole number, but it's 2.5." (or "can't be negative") |
-| `as a number` on text that isn't a number | "I can't turn "12abc" into a number." (or "I can't turn empty text into a number."), with the hint "A number is digits, with a "-" before them if it's negative and a "." for decimals, like 42, -7 or 3.5." Long text is cut short after 60 characters |
+| `as a number` on text that isn't a number | "I can't turn "12abc" into a number." (or "I can't turn empty text into a number."), with the hint "A number is digits, with a "-" before them if it's negative, a "." for decimals and an "e" for powers of ten, like 42, -7, 3.5 or 1e5." Long text is cut short after 60 characters |
 | A file that can't be read or written | "I couldn't read the file "nope.txt": it doesn't exist." |
 | A function that gives back a value but reaches its end without `give back` | "The function "sign" ended without giving anything back." with a hint |
 | A list item that isn't there | "There's no item 4 in the list: it has 3 items." (or "it's empty"); item 0 adds "Positions start at 1: the first item is item 1." |

@@ -43,6 +43,34 @@ static EsText *es_number_text(double x) {
     return es_text_copy(digits, strlen(digits));
 }
 
+/* "as exact text": the shortest digits that read back as exactly the same
+ * number (whole numbers up to 2^53 as they are), with an exponent as
+ * "1e20" or "1e-7" when printf picks one. consteval.c's const_exact_text
+ * does exactly the same. */
+static EsText *es_number_exact_text(double x) {
+    if (isnan(x)) return &es_lit_nan;
+    if (isinf(x)) return x > 0 ? &es_lit_infinity : &es_lit_minus_infinity;
+    if (x == 0) x = 0; /* no "-0" */
+    char digits[40]; /* "%.17g" takes at most 24 characters */
+    if (x == floor(x) && fabs(x) <= ES_EXACT_WHOLE) {
+        snprintf(digits, sizeof digits, "%.0f", x);
+    } else {
+        for (int precision = 15; precision <= 17; precision++) {
+            snprintf(digits, sizeof digits, "%.*g", precision, x);
+            if (strtod(digits, NULL) == x) break;
+        }
+        char *e = strchr(digits, 'e');
+        if (e) { /* "1e+20" is "1e20", "1e-07" is "1e-7" */
+            char *from = e + 1, *to = e + 1;
+            if (*from == '+') from++;
+            else if (*from == '-') *to++ = *from++;
+            while (*from == '0' && from[1]) from++;
+            memmove(to, from, strlen(from) + 1);
+        }
+    }
+    return es_text_copy(digits, strlen(digits));
+}
+
 /* A number as text for an error message. The program stops right after,
  * so the text is never released; every one made is kept in a static list,
  * so it stays reachable and leak checkers (LeakSanitizer on Linux checks
@@ -166,7 +194,8 @@ static bool es_is_digit(char c) {
     return c >= '0' && c <= '9';
 }
 
-/* Spaces around it, an optional "-", digits, and optionally "." and digits. */
+/* Spaces around it, an optional "-", digits, optionally "." and digits, and
+ * optionally "e" (or "E"), a sign and digits for a power of ten (1e5). */
 static bool es_parse_number(const char *s, size_t len, double *out) {
     size_t i = 0, end = len;
     while (i < end && s[i] == ' ') i++;
@@ -181,6 +210,13 @@ static bool es_parse_number(const char *s, size_t len, double *out) {
         while (i < end && es_is_digit(s[i])) i++;
         if (i == frac) return false;
     }
+    if (i < end && (s[i] == 'e' || s[i] == 'E')) {
+        i++;
+        if (i < end && (s[i] == '-' || s[i] == '+')) i++;
+        size_t power = i;
+        while (i < end && es_is_digit(s[i])) i++;
+        if (i == power) return false;
+    }
     if (i != end) return false;
     *out = strtod(s + start, NULL);
     return true;
@@ -194,8 +230,8 @@ static double es_text_number(int site, EsText *t) {
         es_release(t);
         return x;
     }
-    static const char *const hint = "A number is digits, with a \"-\" before them if it's negative and a \".\" "
-                                    "for decimals, like 42, -7 or 3.5.";
+    static const char *const hint = "A number is digits, with a \"-\" before them if it's negative, a \".\" for "
+                                    "decimals and an \"e\" for powers of ten, like 42, -7, 3.5 or 1e5.";
     if (t->len == 0) es_fail(site, hint, "I can't turn empty text into a number.");
     size_t shown = 0;
     for (size_t chars = 0; shown < t->len && chars < 60; chars++) {

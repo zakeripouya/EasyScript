@@ -1,4 +1,4 @@
 Line 1: I can't turn "12abc" into a number.
     say "12abc" as a number
         ^^^^^^^^^^^^^^^^^^^
-A number is digits, with a "-" before them if it's negative and a "." for decimals, like 42, -7 or 3.5.
+A number is digits, with a "-" before them if it's negative, a "." for decimals and an "e" for powers of ten, like 42, -7, 3.5 or 1e5.

@@ -167,6 +167,7 @@ static const Phrase multiplicative_ops[] = {
 static const Phrase conversions[] = {
     {"as number", "as a number", CONVERT_TO_NUMBER, false},
     {"as text", "as text", CONVERT_TO_TEXT, false},
+    {"as exact text", "as exact text", CONVERT_TO_EXACT_TEXT, false},
 };
 
 typedef Expr *(*ParseFn)(Parser *p);

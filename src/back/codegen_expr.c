@@ -383,6 +383,10 @@ static void emit_convert(Codegen *g, const Expr *expr, StrBuf *out) {
     const Expr *operand_expr = expr->as.convert.operand;
     if (expr->as.convert.target == CONVERT_TO_TEXT) {
         cg_emit_text(g, operand_expr, out);
+    } else if (expr->as.convert.target == CONVERT_TO_EXACT_TEXT) {
+        sb_append(out, "es_number_exact_text(");
+        cg_emit_expr(g, operand_expr, out);
+        sb_append(out, ")");
     } else if (operand_expr->type == TYPE_TEXT) {
         sb_appendf(out, "es_text_number(%zu, %s)", cg_site(g, expr->pos), cg_operand(g, operand_expr, false));
     } else {

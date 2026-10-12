@@ -1,0 +1,3 @@
+Line 1: "as exact text" needs a number, but this is text.
+    keep shown as "12" as exact text.
+                  ^^^^

@@ -90,6 +90,36 @@ const char *const_number_text(Arena *arena, double x, size_t *len) {
     return s;
 }
 
+// "as exact text" (= es_number_exact_text): the shortest digits that read
+// back as the same number, exponents written "1e20" / "1e-7".
+static const char *const_exact_text(Arena *arena, double x, size_t *len) {
+    const char *special = isnan(x) ? "not a number" : isinf(x) ? (x > 0 ? "infinity" : "-infinity") : NULL;
+    if (special) {
+        *len = strlen(special);
+        return special;
+    }
+    if (x == 0) x = 0;  // no "-0"
+    char *s = NULL;
+    if (x == floor(x) && fabs(x) <= EXACT_WHOLE) {
+        s = arena_sprintf(arena, "%.0f", x);
+    } else {
+        for (int precision = 15; precision <= 17; precision++) {
+            s = arena_sprintf(arena, "%.*g", precision, x);
+            if (strtod(s, NULL) == x) break;
+        }
+        char *e = strchr(s, 'e');
+        if (e) {
+            char *from = e + 1, *to = e + 1;
+            if (*from == '+') from++;
+            else if (*from == '-') *to++ = *from++;
+            while (*from == '0' && from[1]) from++;
+            memmove(to, from, strlen(from) + 1);
+        }
+    }
+    *len = strlen(s);
+    return s;
+}
+
 const char *const_key_text(Arena *arena, double x) {
     if (isnan(x)) return "not a number";
     if (isinf(x)) return x > 0 ? "infinity" : "-infinity";
@@ -415,8 +445,8 @@ static bool unary(Eval *ev, const Expr *expr, ConstValue *out) {
     return true;
 }
 
-// Spaces around it, an optional "-", digits, and optionally "." and digits
-// (as es_parse_number).
+// Spaces around it, an optional "-", digits, optionally "." and digits, and
+// optionally "e", a sign and digits (as es_parse_number).
 static bool parse_number(const char *s, size_t len, double *out) {
     size_t i = 0, end = len;
     while (i < end && s[i] == ' ') i++;
@@ -431,6 +461,13 @@ static bool parse_number(const char *s, size_t len, double *out) {
         while (i < end && s[i] >= '0' && s[i] <= '9') i++;
         if (i == frac) return false;
     }
+    if (i < end && (s[i] == 'e' || s[i] == 'E')) {
+        i++;
+        if (i < end && (s[i] == '-' || s[i] == '+')) i++;
+        size_t power = i;
+        while (i < end && s[i] >= '0' && s[i] <= '9') i++;
+        if (i == power) return false;
+    }
     if (i != end) return false;
     *out = strtod(s + start, NULL);
     return true;
@@ -438,8 +475,8 @@ static bool parse_number(const char *s, size_t len, double *out) {
 
 // The runtime's message (es_text_number): the text up to its 60th character.
 static bool not_a_number(Eval *ev, Span span, ConstValue a) {
-    static const char *const hint = "A number is digits, with a \"-\" before them if it's negative and a \".\" for "
-                                    "decimals, like 42, -7 or 3.5.";
+    static const char *const hint = "A number is digits, with a \"-\" before them if it's negative, a \".\" for "
+                                    "decimals and an \"e\" for powers of ten, like 42, -7, 3.5 or 1e5.";
     if (a.len == 0) return fail(ev, span, hint, "I can't turn empty text into a number.");
     size_t shown = 0;
     for (size_t chars = 0; shown < a.len && chars < 60; chars++) {
@@ -455,6 +492,16 @@ static bool convert(Eval *ev, const Expr *expr, ConstValue *out) {
     if (reject_list_operand(ev, expr->pos.span, a, a)) return false;
     if (expr->as.convert.target == CONVERT_TO_TEXT) {
         *out = to_text(ev, a);
+        return true;
+    }
+    if (expr->as.convert.target == CONVERT_TO_EXACT_TEXT) {
+        if (a.kind != CONST_NUMBER) {
+            return fail(ev, expr->as.convert.operand->pos.span, NULL, "\"as exact text\" needs a number, but this is %s.",
+                        a.kind == CONST_TEXT ? "text" : "a yes/no value");
+        }
+        size_t len;
+        const char *s = const_exact_text(ev->arena, a.number, &len);
+        *out = text(s, len);
         return true;
     }
     double x;

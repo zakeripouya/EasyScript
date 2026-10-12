@@ -23,7 +23,7 @@ Turn the text into a number first with "as a number".
 Line 6: I can't turn "12abc" into a number.
     keep k6 as "12abc" as a number
                ^^^^^^^^^^^^^^^^^^^
-A number is digits, with a "-" before them if it's negative and a "." for decimals, like 42, -7 or 3.5.
+A number is digits, with a "-" before them if it's negative, a "." for decimals and an "e" for powers of ten, like 42, -7, 3.5 or 1e5.
 
 Line 7: I can't use "and" between a yes/no value and text.
     keep k7 as yes and "x"

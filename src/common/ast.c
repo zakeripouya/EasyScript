@@ -136,7 +136,9 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
     case EXPR_FILE_CONTENTS: return "contents of file";
     case EXPR_UNARY: return ast_unary_op_name(expr->as.unary.op);
     case EXPR_BINARY: return ast_binary_op_name(expr->as.binary.op);
-    case EXPR_CONVERT: return expr->as.convert.target == CONVERT_TO_NUMBER ? "as number" : "as text";
+    case EXPR_CONVERT: return expr->as.convert.target == CONVERT_TO_NUMBER ? "as number"
+                                         : expr->as.convert.target == CONVERT_TO_TEXT ? "as text"
+                                                                                       : "as exact text";
     case EXPR_LIST: return "list of";
     case EXPR_EMPTY_LIST:
         sb_appendf(scratch, "empty %s", ast_type_name(scratch->arena, records, expr->as.list_type) + 2);  // without "a "

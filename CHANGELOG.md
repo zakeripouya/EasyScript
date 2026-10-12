@@ -22,6 +22,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **`as a number` reads powers of ten** (`"1e5"`, `"2.5E-3"`), and **`X as exact text`** turns a number into the shortest text that reads back as exactly the same number (`as text` keeps 10 significant digits), so numbers survive a round trip through a file. Constants work out both the same way.
+
 - **System tools** (Phase 2, step 22). See [stdlib.md](docs/stdlib.md#system-tools) and the new [chapter 19](docs/language-guide.md#19-programs-and-the-system).
   - **What the program is given:** `the words given to the program`, `the number of words given to the program`, `word N given to the program` (with "There's no word 2: the program was given 1 word."), `the text sent to the program` and `the lines sent to the program` (piped input, read once, after whatever `ask` has read).
   - **Settings:** `the setting called X`, text or nothing.

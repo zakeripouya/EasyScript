@@ -245,6 +245,8 @@ length of name
 contents of file "notes.txt"
 ```
 
+`as a number` also reads a power of ten written with `e`: `"1e5" as a number` is 100000. Numbers print with at most 10 significant digits, so `0.1 plus 0.2` shows `0.3`; when every digit matters (a number written to a file and read back), use `as exact text`, which gives the shortest digits that read back as exactly the same number (`(0.1 plus 0.2) as exact text` is `0.30000000000000004`, and `100000000000000000000 as exact text` is `1e20`).
+
 Taking text apart, searching it, splitting it into words and changing its case have [a chapter of their own](#11-text).
 
 Try it: `./easyscript ast examples/parser/text.es`

@@ -89,6 +89,7 @@ typedef enum {
 typedef enum {
     CONVERT_TO_NUMBER,
     CONVERT_TO_TEXT,
+    CONVERT_TO_EXACT_TEXT,  // "as exact text": digits that read back as the same number
 } ConvertTarget;
 
 // Which item of a list: item N, the first item, or the last item.

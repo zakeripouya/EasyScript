@@ -467,6 +467,11 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_CONVERT: {
         TypeVar operand = checker_check_expr(c, expr->as.convert.operand);
         if (expr->as.convert.target == CONVERT_TO_TEXT) return types_new(c, TYPE_TEXT, line);
+        if (expr->as.convert.target == CONVERT_TO_EXACT_TEXT) {
+            checker_require(c, operand, TYPE_NUMBER, expr->as.convert.operand, "\"as exact text\" needs a number",
+                            NULL);
+            return types_new(c, TYPE_TEXT, line);
+        }
         types_defer(c, DEFER_TO_NUMBER, expr, operand, operand, operand);
         return types_new(c, TYPE_NUMBER, line);
     }

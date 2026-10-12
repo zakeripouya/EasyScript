@@ -107,8 +107,9 @@ Arithmetic needs numbers on both sides; anything else is an error before the pro
 |---|---|---|---|
 | `X as a number` | Turns text into a number | `"42" as a number` | Available |
 | `X as text` | Turns a value into text | `total as text` | Available |
+| `X as exact text` | Turns a number into text with every digit it needs to read back as exactly the same number (`as text` keeps 10) | `(1 divided by 3) as exact text` | Available |
 
-`as a number` accepts text like `"42"`, `"-3.5"` or `" 12 "` (spaces around it are fine); anything else, such as `"12abc"`, is a runtime error. Conversions bind tightest of all: `-x as text` means `-(x as text)`, and `"42" as a number plus 1` means `("42" as a number) plus 1`.
+`as a number` accepts text like `"42"`, `"-3.5"`, `"1e5"` (a power of ten, also `2.5E-3`) or `" 12 "` (spaces around it are fine); anything else, such as `"12abc"`, is a runtime error. Conversions bind tightest of all: `-x as text` means `-(x as text)`, and `"42" as a number plus 1` means `("42" as a number) plus 1`.
 
 ### Built-in values
 
