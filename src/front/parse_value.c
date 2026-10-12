@@ -157,7 +157,7 @@ static Expr *reject_ambiguous_call(Parser *p, Expr *call) {
 }
 
 static bool at_argument_separator(const Parser *p, bool commas) {
-    if (parser_at_word(p, 0, "and") && !parser_at_word(p, 1, "call")) return true;
+    if (parser_at_and(p)) return true;
     return commas && parser_at(p, 0, TOK_COMMA);
 }
 

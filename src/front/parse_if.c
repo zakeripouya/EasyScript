@@ -142,10 +142,8 @@ static bool parse_one_line_body(Parser *p, IfBranch *branch) {
         }
         return false;
     }
-    Stmt *body = parse_statement(p);
-    if (!body || p->sentence_failed) return false;
-    vec_push(p->arena, &branch->body, body);
-    return true;
+    Stmt *body = parser_parse_actions(p, &branch->body);  // "if x, say "a" and stop": both belong to it
+    return body && !p->sentence_failed;
 }
 
 // "unless C:" can't have an "otherwise": the opposite "if" reads better.

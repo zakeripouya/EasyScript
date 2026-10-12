@@ -15,6 +15,7 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 |---|---|---|---|
 | `.` or new line | Ends a sentence | `say "hi".` | Available |
 | `,`, `then` or `and` at the end of a line | The sentence carries on to the next line (whose indentation doesn't matter) | `let colors be a list of "red",`<br>`    "green" and "blue".` | Available |
+| `SENTENCE and SENTENCE` / `... and then SENTENCE` | Two sentences, one after the other. `and` starts a new sentence when a sentence word (`say`, `add`, `stop`, ...) follows it and then something that starts a value (`and stop` and `and skip` need nothing after them); a function's name after `and` is a value, so use `and then` to call it as a sentence. Block sentences (`if`, loops) can't follow `and` | `add 5 to total and say total.`<br>`if done, say "bye" and stop the loop.`<br>`greet with "Ann" and then greet with "Bo".` | Available |
 | `:` + indented lines | Opens a block of sentences | `if x is 1:`<br>`    say "one".` | Available |
 | indentation | Blocks are indented. A tab counts as 4 spaces. A line must line up with an enclosing block | (see [blocks.es](../examples/lexer/blocks.es)) | Available |
 | `the`, `a`, `an` | Filler words; ignored outside text, except that `is a letter`, `is a digit` and `is a space` need their `a` | `set the total to 0.` = `set total to 0.` | Available |

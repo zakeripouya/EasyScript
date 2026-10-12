@@ -252,7 +252,7 @@ static Expr *parse_not(Parser *p);
 
 static Expr *parse_and(Parser *p) {
     Expr *left = parse_not(p);
-    while (parser_at_word(p, 0, "and") && !parser_at_word(p, 1, "call")) {
+    while (parser_at_and(p)) {
         Span op_span = parser_consume(p, 1);
         Expr *right = parse_not(p);
         left = new_binary(p, BINARY_AND, op_span, left, right);

@@ -27,6 +27,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **`and` between two sentences:** `add 5 to total and say total.`, `if done, say "bye" and stop the loop.` (both belong to the one-line if), `greet with "Ann" and then greet with "Bo".` `and` starts a new sentence when a sentence word follows it with a value after that word (`and stop`/`and skip` need nothing); between values it still means both.
+
 - **Pieces of text in `say`:** `say "Hello,", name, "!"` prints `Hello, Ann!`: the pieces are joined with a space between them, except next to punctuation (and empty pieces add nothing). `show`, `print`, `display` and `complain` take pieces too. **Values in text:** `"You have [tasks plus 1] tasks."` works out the value in brackets and puts it in the text (the same as `followed by`).
 
 - **Long sentences can go on over several lines:** a line ending with a comma, `then` or `and` carries its sentence on to the next line, whatever its indentation (the shell reads on too). Two parser tests that ended lines that way to test missing words now end them with a period.

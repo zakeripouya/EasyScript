@@ -330,7 +330,7 @@ static Expr *parse_list_literal(Parser *p) {
         Expr *item = parse_list_item(p);
         vec_push(p->arena, &list->as.items, item);
         list->pos = ast_pos_join(list->pos, item->pos);
-        if (parser_at_word(p, 0, "and") && !parser_at_word(p, 1, "call")) {
+        if (parser_at_and(p)) {
             after_and = true;
         } else if (after_and || !parser_at(p, 0, TOK_COMMA)) {
             return list;

@@ -451,6 +451,9 @@ static bool reject_reserved_inside(Parser *p, size_t n, const char *const *next)
     if (word->kind != TOK_WORD || word_among(word, next) || is_inner_word(word) || !is_inner_word(parser_peek(p, n + 1))) {
         return false;
     }
+    Parser ahead = *p;  // "add 5 to total and say total": the name ends before the next action
+    ahead.pos += n;
+    if (parser_at_next_action(&ahead)) return false;
     size_t total = n + 1;
     while (is_inner_word(parser_peek(p, total)) && !word_among(parser_peek(p, total), next)) total++;
     if (parser_error(p, word->span, "\"%s\" can't be part of a name, because it already means something in EasyScript.",

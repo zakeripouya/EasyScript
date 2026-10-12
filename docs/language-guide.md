@@ -75,6 +75,8 @@ add 5 to total
 Say the total.
 ```
 
+Two sentences can be joined with `and` (or `and then`), and they run one after the other: `add 5 to total and say total.` Between two values `and` still means "both" (`if ready and total is 5`); it starts a new sentence only when a sentence word like `say`, `add` or `stop` follows it, with a value after that word. A one-line `if` keeps both: `if done, say "bye" and stop the loop.` To call a function of your own as the second sentence, write `and then`: `greet with "Ann" and then greet with "Bo".`
+
 A long sentence can go on over several lines: when a line ends with a comma, `then` or `and`, the sentence carries on to the next line, however that line is indented:
 
 ```
