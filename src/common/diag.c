@@ -213,7 +213,8 @@ static void render_error(const Diag *diag, const DiagError *error, StrBuf *out) 
     if (carets == 0) carets = 1;
 
     sb_appendf(out, "Line %zu", diag_line(diag, error->span.offset));
-    if (diag->files > 1) sb_appendf(out, " of %s", diag->file_names[file_of(diag, error->span.offset)]);
+    const char *file = diag->files > 1 ? diag->file_names[file_of(diag, error->span.offset)] : NULL;
+    if (file) sb_appendf(out, " of %s", file);  // NULL: a name not shown
     sb_appendf(out, "%s: %s\n", error->warning ? " (a warning)" : "", error->message);
     sb_append(out, SOURCE_INDENT);
     sb_append_n(out, diag->source + start, end - start);

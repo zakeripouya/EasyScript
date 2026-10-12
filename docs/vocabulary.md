@@ -865,6 +865,16 @@ A table read with `... and call it purchases` has rows of a kind named after it:
 |---|---|---|
 | `for example, X is Y.` (any yes/no value after the comma) | Checked where it's written. If it isn't right, a warning shows the line and what X really is ("It's 8 here."), and the program goes on. `easyscript test FILE` runs the program and then says how many examples were right ("2 of 3 examples are right."), failing if any weren't | `for example, double with 3 is 6.` |
 
+### Charts
+
+All **Available** (after the English pass), drawn by [`lib/charts.es`](../lib/charts.es), a module written in EasyScript ([stdlib.md](stdlib.md#charts)).
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `save a bar chart of X as F` / `save a line chart of X as F` / `save a pie chart of X as F` | Writes an SVG picture of X into the file F. X is a list of numbers, or a map from text or numbers to numbers | `save a bar chart of the total amount of sales per month as "sales.svg"` |
+| `make a bar chart of X called F` (also `line`, `pie`) | The same; in steps in a row, `it` afterwards is the file | `make a bar chart of it called "best months.svg"` |
+| `..., titled T` | A title at the top of the chart | `save a pie chart of votes as "votes.svg", titled "Votes"` |
+
 ### Tables in files
 
 | Pattern | Meaning | Example |

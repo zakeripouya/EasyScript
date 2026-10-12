@@ -28,6 +28,10 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 - **`the position of X in T` (and `in L`) is `a number or nothing`,** and gives **nothing** instead of 0 when X isn't there, following the design rule that "not found" results use `or nothing`. Using it as a number now needs a check first: `if at is not nothing:`, `if at is nothing, ...`, or `check which kind at is:`. Programs that compared it with 0 (`if the position of "@" in address is 0`) write `is nothing` instead. The exception for it is gone from the design principles.
 
+### Added (charts)
+
+- `save a bar chart of X as F` (also `line chart`, `pie chart`), `make a bar chart of X called F`, and `..., titled T`: SVG pictures of a list of numbers or a map to numbers, drawn by `lib/charts.es`, a module written in EasyScript that the compiler joins to programs with a chart sentence. The "best months" example now ends with its chart.
+
 ### Added (English pass part 4, continued)
 
 - `ask for a number Q and call it NAME` and `ask yes or no Q and call it NAME`, asking again until the answer fits.

@@ -287,6 +287,7 @@ typedef enum {
     DO_READ_CSV,       // read csv file A and call it NAME
     DO_SAVE_CSV,       // save A as csv file B (or "save A as B"): a list of maps or records, or a map
     DO_READ_TABLE,     // read the table in A [and call it NAME]: rows of a kind made for it (`type`)
+    DO_SAVE_CHART,     // save a bar chart of A as B [, titled parts[0]] (scale: 0 bar, 1 line, 2 pie; see lib/charts.es)
     DO_COMPLAIN,       // complain A (to the error output)
     DO_RUN,            // run A [with parts...] [and call the result NAME]
     DO_WAIT_KEY,       // wait for a key and call it NAME
@@ -509,7 +510,8 @@ struct Stmt {
             bool folder;      // DO_RENAME, DO_MOVE: "the folder A" rather than "the file A"
             Name name;        // DO_READ_CSV, DO_RUN, DO_WAIT_KEY: the name made (text NULL: none)
             Type type;        // DO_SAVE_CSV, DO_RUN: filled in by the checker: the list's kind, the parts' kinds
-            Vec(Expr *) parts;  // DO_RUN: the words after "with", each text, a number or a list of text
+            Vec(Expr *) parts;  // DO_RUN: the words after "with", each text, a number or a list of text;
+                                // DO_SAVE_CHART: the title (or NULL), then the checker's call of lib/charts.es
         } library;
         Expr *stop_code;  // STMT_STOP: "with code N" or "saying it failed" (1); NULL: 0
         struct {

@@ -2,6 +2,7 @@
 // (es_math.h, es_time.h, es_files.h, es_csv.h), its parts worked out left to right.
 
 #include <assert.h>
+#include <string.h>
 #include "back/codegen_internal.h"
 
 // The parts a and b (either can be NULL), in order; returns whether a "(" was opened.
@@ -123,9 +124,36 @@ static void action(Codegen *g, const char *format_two, const char *a, const char
     sb_appendf(&g->body, "%s;\n", close);
 }
 
+// "save a bar chart of X as F": X (and the title) kept in the hidden names
+// the checker's call reads, then that call's picture written into F.
+static void emit_chart(Codegen *g, const Stmt *stmt) {
+    const char *name = stmt->as.library.name.text;
+    const Expr *values = stmt->as.library.a, *title = stmt->as.library.parts.items[0];
+    StrBuf code;
+    sb_init(&code, g->arena);
+    cg_emit_expr(g, values, &code);
+    cg_declare_name(g, name, values->type);
+    cg_emit_store(g, name, values->type, code.data);
+    if (title) {
+        const char *title_name = arena_sprintf(g->arena, "%st", name);
+        cg_declare_name(g, title_name, TYPE_TEXT);
+        cg_emit_store(g, title_name, TYPE_TEXT, cg_operand(g, title, false));
+    }
+    Stmt write = *stmt;
+    write.kind = STMT_WRITE_FILE;
+    memset(&write.as, 0, sizeof write.as);
+    write.as.file_write.text = stmt->as.library.parts.items[1];
+    write.as.file_write.path = stmt->as.library.b;
+    cg_emit_stmt(g, &write);
+}
+
 void cg_emit_library_stmt(Codegen *g, const Stmt *stmt) {
     if (stmt->as.library.op >= DO_COMPLAIN) {
         cg_emit_system_stmt(g, stmt);
+        return;
+    }
+    if (stmt->as.library.op == DO_SAVE_CHART) {
+        emit_chart(g, stmt);
         return;
     }
     Expr *exprs[] = {stmt->as.library.a, stmt->as.library.b};

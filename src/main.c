@@ -148,7 +148,7 @@ static StrBuf generate(const char *source_path, StrBuf *plan) {
 
     StrBuf lines;  // the source lines, for runtime errors to show
     sb_init(&lines, arena);
-    source_table_c(arena, sources->source, sources->len, sources->names, sources->starts, sources->count, &lines);
+    source_table_c(arena, sources->source, sources->len, sources->shown, sources->starts, sources->count, &lines);
     StrBuf code;
     sb_init(&code, arena);
     codegen_c(arena, program, lines.data, &code, plan);

@@ -382,7 +382,9 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
     case STMT_USE: sb_appendf(scratch, "use %s", stmt->as.module.text); break;
     case STMT_LIBRARY:
         sb_append(scratch, ast_library_action_name(stmt->as.library.op));
-        if (stmt->as.library.name.text) sb_appendf(scratch, ", call it %s", stmt->as.library.name.text);
+        if (stmt->as.library.name.text && stmt->as.library.op != DO_SAVE_CHART) {  // a chart's name is hidden
+            sb_appendf(scratch, ", call it %s", stmt->as.library.name.text);
+        }
         if (stmt->as.library.everything) sb_append(scratch, " and everything in it");
         if (stmt->as.library.op == DO_WAIT && stmt->as.library.scale != 1) {
             sb_appendf(scratch, " (%s)", stmt->as.library.scale > 1 ? "minutes" : "milliseconds");
@@ -572,6 +574,12 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
         break;
     case STMT_LIBRARY:
         dump_children(stmt->as.library.a, stmt->as.library.b, depth, d);
+        if (stmt->as.library.op == DO_SAVE_CHART) {  // "a bar chart", its title (if any), not the checker's call
+            static const char *const kinds[] = {"a bar chart", "a line chart", "a pie chart"};
+            dump_label(depth + 1, d, kinds[(int)stmt->as.library.scale]);
+            if (stmt->as.library.parts.items[0]) dump_section("titled", stmt->as.library.parts.items[0], depth + 1, d);
+            break;
+        }
         for (size_t i = 0; i < stmt->as.library.parts.len; i++) dump_expr(stmt->as.library.parts.items[i], depth + 1, d);
         break;
     case STMT_CONSTANT: dump_expr(stmt->as.constant.value, depth + 1, d); break;

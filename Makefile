@@ -12,8 +12,11 @@ BACK_SRC = src/back/codegen_c.c src/back/codegen_program.c src/back/codegen_expr
 # array by tools/embed.c.
 RUNTIME = runtime/es_memory.h runtime/es_program.h runtime/es_runtime.h runtime/es_list.h runtime/es_sort.h runtime/es_text.h runtime/es_record.h runtime/es_map.h runtime/es_kind.h runtime/es_closure.h runtime/es_math.h runtime/es_time.h runtime/es_files.h runtime/es_csv.h runtime/es_keys.h runtime/es_system.h runtime/es_totals.h runtime/es_events.h
 GEN_RUNTIME = build/gen/es_runtime_embed.c
+# Modules written in EasyScript that the compiler joins to a program that needs them.
+LIBRARY = lib/charts.es
+GEN_LIBRARY = build/gen/es_charts_embed.c
 EMBED = build/tools/embed
-COMPILER_SRC = src/main.c src/modules.c src/shell.c $(FRONT_SRC) $(BACK_SRC) $(COMMON_SRC) $(GEN_RUNTIME)
+COMPILER_SRC = src/main.c src/modules.c src/shell.c $(FRONT_SRC) $(BACK_SRC) $(COMMON_SRC) $(GEN_RUNTIME) $(GEN_LIBRARY)
 UNIT_SRC = $(wildcard tests/unit/*.c) $(FRONT_SRC) $(COMMON_SRC)
 
 RELEASE_DIR = build/release
@@ -37,6 +40,10 @@ $(EMBED): tools/embed.c
 $(GEN_RUNTIME): $(RUNTIME) $(EMBED)
 	@mkdir -p $(dir $@)
 	$(EMBED) $@ es_runtime_source $(RUNTIME)
+
+$(GEN_LIBRARY): $(LIBRARY) $(EMBED)
+	@mkdir -p $(dir $@)
+	$(EMBED) $@ es_charts_source $(LIBRARY)
 
 easyscript: $(call release_objs,$(COMPILER_SRC))
 	$(CC) $(CFLAGS) $(RELEASE_FLAGS) -o $@ $^ $(LDLIBS)

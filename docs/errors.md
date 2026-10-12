@@ -1081,6 +1081,15 @@ Line 12 (a warning): This example isn't right.
 It's 8 here.
 ```
 
+A chart of something that isn't numbers:
+
+```
+Line 3: A chart needs a list of numbers or a map to numbers, but this is a list of text.
+    save a pie chart of names as "b.svg".
+                        ^^^^^
+Write it like "save a bar chart of the total amount of sales per month as "sales.svg"".
+```
+
 While the program runs, `ask for a number` with no more answers stops with:
 
 ```

@@ -27,7 +27,7 @@ void source_table_c(Arena *arena, const char *source, size_t len, const char *co
     sb_append(out, "static const EsSourceFile es_source_files[] = {");
     for (size_t f = 0; f < files; f++) {
         sb_append(out, f ? ", {" : "{");
-        if (files > 1) {
+        if (files > 1 && names[f]) {  // NULL: a name not shown
             cg_append_c_string(out, names[f], strlen(names[f]));
         } else {
             sb_append(out, "NULL");

@@ -2,6 +2,37 @@
 
 A running record of the unattended English-pass run (parts 2 to 5, then charts), on the `english-pass` branch. Part 1 was finished before this run (see the update log in [english-pass.md](english-pass.md)). The plan and decisions live in [english-pass.md](english-pass.md); this file records what was done, when, and what's left for review.
 
+## Summary (for review)
+
+**Finished:** parts 2, 3, 4 and 5 of the English pass, then the charts module. Part 1 was done before this run. Everything is on the `english-pass` branch: not merged, not pushed.
+
+**Tags:** `english-pass-part-2` (e3c55e2), `english-pass-part-3` (ffbaafb), `english-pass-part-4` (8d896aa), `english-pass-part-5` (9359cbc). Charts are the commit after part 5 (untagged; the request didn't ask for a tag). There's no `english-pass-part-1` tag: part 1 was finished before the branch.
+
+**Tests at the end:** `make test` 712 passed, `make test-gcc` 712 passed, `make test-debug` 711 passed (it skips the strict-C check by design) with 0 leaking processes. Up from 629 on master. `make bench` passes, including the 20% rule for every high-level form.
+
+**Skipped, and why** (each also in [english-pass.md's Later list](english-pass.md#later) and under Open questions):
+
+- **Exact money amounts and units of measure** (part 4, items 5 and 8): each needs a new kind of value through the checker, code generation and runtime: a step of its own. `as money`, `as a percent` and `with commas` were built.
+- **Named kinds of text with rules** (part 4, item 11, second half): the plan doesn't say how a value becomes one (`"a@b" as an email`?). Guards in `check which kind` were built.
+- **`try to` beyond files and folders**: built as a check before the sentence (no safe way to undo a half-done sentence in the generated C), so it covers file and folder sentences only.
+- **Actions with inputs in the middle** (`give every loyal customer a 10 percent discount`) and **the best group** (`the store with the highest total amount`): no settled wording.
+- **`they ordered more than 5 times`** (part 3) and **`each drink in drinks's name`**: logged as rough spots.
+
+**Open questions for you** (details under [Open questions](english-pass.md#open-questions)):
+
+1. Actions with inputs in the middle: how should a definition name them?
+2. Should `try to` cover other failures, and how?
+3. Exact money (`$19.99`) and units: as kinds of value, how should they mix with plain numbers? Other currencies in `as money`?
+4. Named kinds of text: how does a value become one, and where can it be used as text?
+5. The best group: should `the X with the highest total Y` group by X when X is a field?
+6. Who are the first non-coder testers?
+
+**Breaking changes** (all marked in [CHANGELOG.md](../CHANGELOG.md)): `total`, `average`, `median` and the other question words start phrases when no definition has the name (`total of 3` with a variable `total`); `F of X` where F is both a definition and a field is an error; `every`, `whenever` and `when` start event sentences at the top level; a word a kind defines with `is ... if` is that word everywhere; sentences starting `NAME must`, `NAME depends on`, `KIND's FIELD is` and `the NAME is the one ...` now define things; `me` and `undo` are reserved, `tell` and `list` start sentences; in a program that reads a table, a misspelled field is reported by the checker; a table's rows are a kind named after it (`purchases`: `a purchase`), so they print as `a purchase with ...`. Changed expected files (each read before it was rewritten): `tests/ast/err_library.err`, `err_missing_values.err` (and `.out`), `err_missing_words.err` (and `.out`), `err_names.err`, `err_stmt_unknown.err`, `tests/errors/call_variable.err`, `iface_errors.err`, `library_errors.err`, `tests/tokens/err_unknown_escape.err`, `tests/run/table_files.out`. `make bless` was never run; new expected files were written from runs whose output was checked.
+
+**Benchmarks** (Apple M4, best of 3; [performance.md](performance.md)): fib 0.25 s, count 0.05 s, nested 0.11 s, sort 0.06 s and 9.0 MB, words 0.10 s, pipeline 0.13 s, sales 0.04 s: unchanged from step 21. Every list question is at most as slow as its hand-written loop (ratios 0.03 to 1.05; `sorted by value` went from 2.1 to 1.00 in part 5). Found and fixed on the way: `benchmarks/run.sh` never actually applied its 20% check, and two benchmarks didn't build since part 1.
+
+**Worth a look first:** the "Your first programs" chapter in the [language guide](language-guide.md#your-first-programs); `examples/programs/budget.es`, `groceries.es`, `best_months.es` (with its chart) and `tip_calculator.es`; `lib/charts.es` (a module written in EasyScript).
+
 **Checks before every commit:** `make test`, `make test-gcc` and `make test-debug` (with the leak sweep), all passing. Baseline on master before the run: 629 / 629 / 628 tests, 0 leaks (test-debug skips one strict-C check by design).
 
 ## Part 2: questions and totals
@@ -160,4 +191,22 @@ A running record of the unattended English-pass run (parts 2 to 5, then charts),
 - **"Your first programs" (item 4):** a chapter before chapter 1 (unnumbered, so links to the others stay the same): saying, names, asking, choices, repeating, lists, things with parts, new words with `for example`, steps in a row, errors. Grade 2.6 by the audit's measure, no banned words (checked), every program run by `make test`.
 - **Benchmarks (item 5):** `make bench` passes; history row "0.1.0 + system tools and the English pass"; README and Latest results updated. Every form is within 20% of its hand-written loop: `sorted by value` was 2.1 times slower (a heap of every item) and is now 1.00 (the items kept and their keys gathered in the pass, then the stable key sort; a first version sorted every item and lost the filter in `the big purchases whose ..., sorted by amount`, which the budget example caught). `benchmarks/run.sh`'s ratio was never worked out (`>` inside awk's `printf` is a redirection), so the 20% check couldn't fail before: fixed. The `sort` and `words` benchmarks still joined text with `and` (removed in part 1) and didn't build: fixed.
 - **english-pass.md (item 6):** the pass marked done in "Where it fits", a [Later](english-pass.md#later) list of everything left out, and update-log rows.
+
+## Charts
+
+### Done
+
+- `save a bar chart of X as F`, `save a line chart of X as F`, `save a pie chart of X as F`, `make a bar chart of X called F`, `..., titled T`; X a list of numbers or a map from text or numbers to numbers.
+- The charts are drawn by `lib/charts.es`, written in EasyScript (bars, a line with points, a pie with a key; labels turned when they're too wide, the picture taller for them; widths that grow with the number of bars; value labels with commas; text escaped for SVG; the Okabe-Ito palette; sine and cosine worked out by their series, so the language needed no new math words).
+- The compiler embeds the module and joins it, as a hidden file, to programs with a chart sentence; messages in a one-file program read exactly as before (no "of main.es").
+- `best_months.es` ends with `and then make a bar chart of it called "best months.svg"`, as the plan wrote it.
+- Tests: `tests/run/charts` compares the SVG text of each kind (a title with `&` and `<`, negative values, number keys, a single slice, an empty list, a chart made in steps with `what's in it`); `errors/chart_errors`; `ast/charts` and `ast/err_charts`.
+
+### Decisions made
+
+- **Two wordings:** the user's request says `save a bar chart of X as "file.svg"`; the plan's example says `make a bar chart of it called "best months.svg"`. Both are accepted (same meaning), like `make a new file called`.
+- **The module joins itself only when needed,** found by its words (`bar chart of`, `line chart of`, `pie chart of`) before parsing, so other programs don't pay for it and their messages don't change.
+- **The module calls its own definitions with `with`:** in a program that reads a table, `place of x` would also read as a column called `place` (found by the first example that used both).
+- **A title is optional** (`, titled T`); labels come from a map's keys in their order, or 1, 2, 3 for a list.
+- **SVG only**, as asked; PNG waits for Phase 4.
 

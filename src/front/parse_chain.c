@@ -78,6 +78,7 @@ static Expr *step_result(Parser *p, const Stmt *stmt) {
         case DO_SHUFFLE:
         case DO_MAKE_FILE:
         case DO_MAKE_FOLDER: return copy_simple(p, stmt->as.library.a);
+        case DO_SAVE_CHART: return copy_simple(p, stmt->as.library.b);  // the chart's file
         default: return NULL;
         }
     default: return NULL;
@@ -94,7 +95,8 @@ Stmt *parser_parse_actions(Parser *p, Block *block) {
         parser_consume(p, n);
         Expr *result = step_result(p, stmt);
         p->chain_file = stmt->kind == STMT_WRITE_FILE || stmt->kind == STMT_APPEND_FILE ||
-                        (stmt->kind == STMT_LIBRARY && stmt->as.library.op == DO_MAKE_FILE);
+                        (stmt->kind == STMT_LIBRARY &&
+                         (stmt->as.library.op == DO_MAKE_FILE || stmt->as.library.op == DO_SAVE_CHART));
         Stmt *keep = NULL;
         if (result && result->kind == EXPR_NAME && strncmp(result->as.name, "0step", 5) == 0) {
             p->chain_it = result->as.name;  // already kept in a hidden name
