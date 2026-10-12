@@ -402,6 +402,7 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 ## Performance records
 
 - `make bench` (`benchmarks/run.sh`) builds every program in `benchmarks/NAME/` (`NAME.es`, plus `.c`, `.go`, `.py` where present). It runs each 3 times (`BENCH_RUNS`) under `/usr/bin/time`, prints the fastest time and peak RSS, and fails if any language's first output line differs from EasyScript's.
+- **The speed rule (English pass):** `benchmarks/forms/NAME.es` (a high-level form) and `NAME_loop.es` (the same work by hand) are timed by `make bench`, which fails when a form's result differs or it takes more than 20% longer; the table is in `docs/performance.md`.
 - `docs/performance.md` has the latest full table (machine, tool versions, date) and a **History** table with one EasyScript row per milestone. **Never edit past history rows' results; only add new rows.** A benchmark added later gets a new column, with "(none)" in the rows from before it existed. At each milestone, run `make bench`, replace the "Latest results" table, add a history row, and update the README's compact Performance table to match.
 
 ## Working efficiently

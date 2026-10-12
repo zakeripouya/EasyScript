@@ -31,6 +31,10 @@ A running record of the unattended English-pass run (parts 2 to 5, then charts),
 - **`the one with the most Y`** needs a list to refer to; it fits part 3's definitions (`the best customers are the ones with ...`), so it moves there.
 - **Action forms** (`total the amount per month`, `count the big orders`) only make sense with somewhere to put the result: they move to part 4's `, then` chains, where `it` is the previous step's result. `sort it biggest first` already exists as `sort L biggest first` (now for maps too).
 
+### Benchmarks (the speed rule)
+
+`benchmarks/forms/` has a pair per form (`NAME.es`, `NAME_loop.es`); `make bench` fails if a form prints a different result or takes more than 20% longer than its loop. Every form came out faster (ratios 0.03 to 0.74; the table is in [performance.md](performance.md#questions-about-lists-against-hand-written-loops)).
+
 ### Commits
 
-(filled in below as they land)
+- `5bc8505` Add questions and totals about lists, math words and easyscript plan (test 647, gcc 647, debug 646 + 0 leaks). Blessed nothing; new golden files written by hand-checked runs: `tests/run/questions*`, `math_words`, `err_average_empty`, `err_median_empty`, `err_best_empty`, `err_top_count`, `tests/errors/question_errors`, `tests/ast/questions`, `err_questions`, `tests/plan/*`, `tests/memory/questions_loop`, the two examples. Changed: `tests/errors/call_variable.es/.err` (uses `price`, see decisions).

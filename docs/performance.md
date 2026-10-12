@@ -53,6 +53,24 @@ Machine: Apple M4, 24 GB, macOS 15.3.1. Apple clang 17.0.0, Go 1.27.1, Python 3.
 - **Reading a csv file is twice as fast as Python's `csv` module, in five times its memory.** `read csv file` parses the whole file in C and gives back every row at once, a map per row holding each field as its own text (about 580 bytes a row here); Python's `DictReader` hands over one row at a time, so only one is alive at once. Splitting fields, quotes and line endings are a single pass over the file's bytes.
 - **Memory stays flat.** Text is freed as soon as nothing uses it ([how](memory.md)), so building a 50,000-character text by adding to it 10,000 times takes 1.3 MB at its peak, less than Go or Python (it was 280 MB before reference counting).
 
+## Questions about lists against hand-written loops
+
+The English pass's speed rule: every high-level form must take at most 20% longer than the same work written as a loop, and print the same result. `make bench` checks each pair in [`benchmarks/forms/`](../benchmarks/forms/) (`NAME.es` against `NAME_loop.es`) and fails on a mismatch or a form more than 20% slower. Each program builds a million pseudo-random numbers (or 200,000 records), then asks its question many times; the times include building the list.
+
+| Form | Work | Form | By hand | Ratio |
+|---|---|---|---|---|
+| `how many numbers are above 500` | 300 times over a million numbers | 0.35 s | 0.47 s | 0.74 |
+| `any number is above 5000` (no item passes, so every item is looked at) | 300 times | 0.15 s | 0.28 s | 0.54 |
+| `the total of numbers` | 300 times | 0.15 s | 0.27 s | 0.56 |
+| `the average of numbers` | 300 times | 0.20 s | 0.33 s | 0.61 |
+| `the top 10 numbers` (by hand: sorted, then the first 10) | 30 times | 0.03 s | 0.87 s | 0.03 |
+| `the 10 most common numbers` (by hand: a map, then sorted) | 30 times | 0.23 s | 0.38 s | 0.61 |
+| `the entry with the highest value` | 300 times over 200,000 records | 0.10 s | 0.20 s | 0.50 |
+| `the total value of entries per group` (by hand: a map with `, or 0`) | 100 times | 0.29 s | 0.47 s | 0.62 |
+| `how many entries whose value is over 500` (the filter in the same pass) | 300 times | 0.10 s | 0.22 s | 0.45 |
+
+Apple M4, macOS 15.3.1, Apple clang 17.0.0, best of 3, 2026-10-12. Every form is faster than its loop: a `for each` loop goes through a copy of the list it can't prove nothing changes (`es_list_snapshot`), while a question that calls no definition can't change the list and reads it directly; the top 10 keep a heap of 10 instead of sorting a million numbers; and `per` finds each group's place in the map once instead of looking it up twice.
+
 ## History
 
 One row per milestone, with EasyScript's numbers on that milestone's machine. **Never edit past rows' results; only add new rows**, so the history shows real progress (or regressions). A benchmark added later shows "(none)" in the rows from before it existed.
