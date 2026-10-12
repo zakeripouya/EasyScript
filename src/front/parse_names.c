@@ -400,8 +400,25 @@ static size_t find_interface(Parser *p, size_t i, size_t n) {
 // Every record kind and kind with variants, in order, every variant, and
 // every field name: "NAME, which is" in a record, "with NAME (KIND)" in a
 // variant; and every interface with the names of its ways.
+// "an email is text that must ...": the kind's words at the start of a line, or 0.
+size_t parser_text_kind_words(const Parser *p, size_t i) {
+    if (!at_line_start(p, i)) return 0;
+    size_t n = name_words(p, i);
+    return n > 0 && word_at(p, i + n, "is") && word_at(p, i + n + 1, "text") && word_at(p, i + n + 2, "that") &&
+                   word_at(p, i + n + 3, "must")
+               ? n
+               : 0;
+}
+
 static void find_records(Parser *p) {
     for (size_t i = 0; i < p->count; i++) {
+        size_t text = parser_text_kind_words(p, i);
+        if (text > 0) {  // a kind of text
+            const char *name = join_words(p, i, text, false, ' ');
+            RecordKind kind = {name, join_words(p, i, text, true, ' '), parser_plural_of(p->arena, name), NULL, false};
+            vec_push(p->arena, &p->records->texts, kind);
+            continue;
+        }
         size_t interface = parser_interface_words(p, i);
         if (interface > 0) {
             i = find_interface(p, i, interface) - 1;

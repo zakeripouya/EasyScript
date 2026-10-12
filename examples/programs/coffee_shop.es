@@ -2,12 +2,12 @@ note: The coffee shop's rules from the English pass plan, without the web parts:
 note: drinks priced by a table, describing words, values, rules, questions,
 note: a group discount, and an evening report on a schedule.
 
+an email is text that must contain "@".
 a drink has a name, a size and an extra shot.
 an order has a customer (text), some drinks (a list of drinks) and a discount (a number).
 a customer has a name and an email.
 
 a drink's size must not be empty.
-a customer's email must contain "@".
 an order's discount must be between 0 and 50.
 
 the price of a drink depends on its size:

@@ -126,6 +126,7 @@ struct Expr {
             ConvertTarget target;
             Span op_span;
             Expr *operand;
+            Type kind;  // CONVERT_TO_TEXT_KIND: the kind of text ("as an email")
         } convert;
         Vec(Expr *) items;  // EXPR_LIST, in order (at least one); EXPR_MAP: key, value, key, value, ...
         Type list_type;     // EXPR_EMPTY_LIST, EXPR_EMPTY_MAP: its type, e.g. a list of numbers
@@ -492,6 +493,7 @@ struct Stmt {
             Expr *condition;    // yes or no for "it", the field's value
             const char *message;  // "An age must be between 0 and 150", as written
             size_t id;          // filled in by the checker: its C function (es_rule1, ...)
+            Type text;          // "an email is text that must ...": the kind of text it defines, or 0
         } rule;
         struct {
             struct Stmt *attempt;  // the sentence tried

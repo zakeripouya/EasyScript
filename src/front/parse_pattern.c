@@ -37,6 +37,7 @@ static bool after_a(const Parser *p, size_t i) {  // the token had "a" or "an" b
 }
 
 static const RecordKind *kind_of(const Parser *p, Type type) {
+    if (type_is_textkind(type)) return &p->records->texts.items[type_textkind_index(type)];
     if (type_is_iface(type)) return &p->records->interfaces.items[type_iface_index(type)];
     if (type_is_sum(type)) return &p->records->sums.items[type_sum_index(type)];
     return &p->records->items[type_record_index(type)];

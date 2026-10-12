@@ -181,6 +181,14 @@ static bool report_unknown_adjective(Checker *c, const Expr *expr, TypeVar left)
     return true;
 }
 
+// An email and text (or two emails): compared as text.
+static bool text_and_kind(Checker *c, TypeVar left, TypeVar right) {
+    Type l = types_of(c, left), r = types_of(c, right);
+    if (!type_is_textkind(l) && !type_is_textkind(r)) return false;
+    return (l == TYPE_TEXT || type_is_textkind(l)) && (r == TYPE_TEXT || type_is_textkind(r)) &&
+           (!type_is_textkind(l) || !type_is_textkind(r) || l == r);
+}
+
 static TypeVar check_binary(Checker *c, const Expr *expr) {
     BinaryOp op = expr->as.binary.op;
     TypeVar result;
@@ -203,13 +211,17 @@ static TypeVar check_binary(Checker *c, const Expr *expr) {
     case BINARY_PIECES: return types_new(c, TYPE_TEXT, line);  // any value can be a piece, like "say X"
     case BINARY_EQUAL:
     case BINARY_NOT_EQUAL:
-        if (!same_record_kind(c, left, right) && !types_unify(c, left, right)) report_compare(c, expr, left, right);
+        if (!same_record_kind(c, left, right) && !text_and_kind(c, left, right) && !types_unify(c, left, right)) {
+            report_compare(c, expr, left, right);
+        }
         return types_new(c, TYPE_YESNO, line);
     case BINARY_LESS:
     case BINARY_LESS_EQUAL:
     case BINARY_GREATER:
     case BINARY_GREATER_EQUAL:
-        if (types_unify(c, left, right)) {
+        if (text_and_kind(c, left, right)) {
+            // an email and text compare as text
+        } else if (types_unify(c, left, right)) {
             types_defer(c, DEFER_ORDER, expr, left, left, left);
         } else {
             report_compare(c, expr, left, right);
@@ -592,6 +604,12 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_CONVERT: {
         TypeVar operand = checker_check_expr(c, expr->as.convert.operand);
         if (expr->as.convert.target == CONVERT_TO_TEXT) return types_new(c, TYPE_TEXT, line);
+        if (expr->as.convert.target == CONVERT_TO_TEXT_KIND) {  // "X as an email": text, checked by its rule
+            const char *kind = checker_type_name(c, expr->as.convert.kind);
+            checker_require(c, operand, TYPE_TEXT, expr->as.convert.operand,
+                            arena_sprintf(c->arena, "Only text can become %s", kind), NULL);
+            return types_new(c, expr->as.convert.kind, line);
+        }
         if (expr->as.convert.target == CONVERT_TO_TABLE) {
             types_defer_one_of(c, expr->as.convert.operand, operand, operand, KIND_LIST | KIND_MAP,
                                "\"as a table\" needs a list or a map");

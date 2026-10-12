@@ -160,6 +160,8 @@ typedef struct {
     size_t blocks;                    // how many if/loop blocks we're inside
     size_t rules;                     // "must" rules so far (each gets a C function, es_rule1, ...)
     bool in_rule;                     // checking a rule's condition (it sees only constants and "it")
+    bool storing_field;               // storing a field's value (new, set): text can become its kind of text
+                                      // there, as the field's rules check it
     Vec(Symbol) made;    // names that exist here: made so far, in blocks still open
     Vec(Symbol) later;   // every name the program makes anywhere, for "you make it later"
     Vec(Symbol) ended;   // names whose block has ended; line = the if or loop that held them

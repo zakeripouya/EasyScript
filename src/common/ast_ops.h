@@ -102,6 +102,7 @@ typedef enum {
     CONVERT_TO_PERCENT,     // "as a percent": 0.25 is "25%"
     CONVERT_WITH_COMMAS,    // "with commas": "1,234,567.5"
     CONVERT_TO_TABLE,       // "as a table": a list or a map laid out in columns
+    CONVERT_TO_TEXT_KIND,   // "as an email": text checked by a kind of text's rule
 } ConvertTarget;
 
 // Which item of a list: item N, the first item, or the last item.

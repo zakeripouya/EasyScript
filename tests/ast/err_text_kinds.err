@@ -1,0 +1,9 @@
+Line 2: I expected "be", "contain", "start with" or "end with" here, but found ".".
+    an email is text that must.
+                              ^
+Write a rule like "an age must be between 0 and 150" or "an email must contain "@"".
+
+Line 3: Something is missing after "as".
+    say "x" as an.
+            ^^
+Did you mean "as a number", "as text", "as money", "as a percent" or "as a table"?

@@ -152,6 +152,7 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
                                          : expr->as.convert.target == CONVERT_TO_MONEY      ? "as money"
                                          : expr->as.convert.target == CONVERT_TO_PERCENT    ? "as a percent"
                                          : expr->as.convert.target == CONVERT_TO_TABLE      ? "as a table"
+                                         : expr->as.convert.target == CONVERT_TO_TEXT_KIND  ? "as a kind of text"
                                                                                            : "with commas";
     case EXPR_LIST: return "list of";
     case EXPR_EMPTY_LIST:

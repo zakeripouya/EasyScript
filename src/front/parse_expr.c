@@ -538,6 +538,18 @@ Expr *parser_continue_postfix(Parser *p, Expr *expr) {
             expr = without;
             continue;
         }
+        size_t text_words;
+        Type text = parser_at_word(p, 0, "as") ? parser_match_kind_name(p, 1, false, &text_words) : TYPE_UNKNOWN;
+        if (type_is_textkind(text)) {  // "X as an email": checked by the kind's rule
+            Span op_span = parser_consume(p, 1 + text_words);
+            Expr *converted = ast_new_expr(p->arena, EXPR_CONVERT, ast_pos_join(expr->pos, (SourcePos){op_span, 0, 0, 0}));
+            converted->as.convert.target = CONVERT_TO_TEXT_KIND;
+            converted->as.convert.op_span = op_span;
+            converted->as.convert.operand = expr;
+            converted->as.convert.kind = text;
+            expr = converted;
+            continue;
+        }
         const Phrase *conversion = parser_match_phrase(p, conversions, COUNT(conversions), &len);
         if (!conversion && !p->sentence_failed && (len = parser_match_words(p, with_commas.words)) > 0) {
             conversion = &with_commas;

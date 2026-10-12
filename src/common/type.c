@@ -22,6 +22,10 @@ static const RecordKind *record_kind(const Records *records, Type type) {
         size_t index = type_iface_index(type);
         return index < records->interfaces.len ? &records->interfaces.items[index] : NULL;
     }
+    if (type_is_textkind(type)) {
+        size_t index = type_textkind_index(type);
+        return index < records->texts.len ? &records->texts.items[index] : NULL;
+    }
     size_t index = type_record_index(type);
     return type_is_record(type) && index < records->len ? &records->items[index] : NULL;
 }

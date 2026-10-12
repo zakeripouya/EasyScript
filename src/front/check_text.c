@@ -64,6 +64,8 @@ bool checker_settle_search(Checker *c, const Deferred *d) {
     const Expr *in, *wanted;
     search_parts(d->expr, &in, &wanted);
     Type in_type = types_of(c, d->left), wanted_type = types_of(c, d->right);
+    if (type_is_textkind(in_type)) in_type = TYPE_TEXT;  // an email is looked in like text
+    if (type_is_textkind(wanted_type)) wanted_type = TYPE_TEXT;
     if (in_type == TYPE_ERROR || wanted_type == TYPE_ERROR) return true;
     if (in_type == TYPE_UNKNOWN) {
         // Text only holds text, so looking for anything else means a list.

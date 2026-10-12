@@ -1,0 +1,18 @@
+Line 4: This has to be an email, but this is text.
+    send with "hi" and "plain".
+                       ^^^^^^^
+Write "as an email" after it, so its rule checks it.
+
+Line 6: This has to be an email, but this is text.
+    set typed to "plain".
+                 ^^^^^^^
+Write "as an email" after it, so its rule checks it.
+
+Line 7: Only text can become an email, but this is a number.
+    say 5 as an email.
+        ^
+
+Line 8: A constant can't be a kind of text with a rule yet.
+    keep office as "a@b.c" as an email.
+                   ^^^^^^^^^^^^^^^^^^^
+Make it with "let".

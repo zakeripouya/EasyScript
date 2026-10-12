@@ -43,7 +43,25 @@ static int match_interface(const Parser *p, size_t ahead, bool plural, size_t *w
     return found;
 }
 
+// The kind of text ("an email is text that must ...") whose name (or plural) the tokens `ahead` spell, or -1.
+static int match_text(const Parser *p, size_t ahead, bool plural, size_t *words) {
+    int found = -1;
+    *words = 0;
+    for (size_t i = 0; i < p->records->texts.len; i++) {
+        const RecordKind *kind = &p->records->texts.items[i];
+        size_t n = parser_match_words_at(p, ahead, plural ? kind->plural : kind->name);
+        if (n > *words) *words = n, found = (int)i;
+    }
+    return found;
+}
+
 Type parser_match_kind_name(const Parser *p, size_t ahead, bool plural, size_t *words) {
+    size_t text_words;
+    int text = match_text(p, ahead, plural, &text_words);
+    if (text >= 0) {
+        *words = text_words;
+        return type_textkind((size_t)text);
+    }
     size_t record_words, sum_words, interface_words;
     int interface = match_interface(p, ahead, plural, &interface_words);
     int record = parser_match_record(p, ahead, plural, &record_words);

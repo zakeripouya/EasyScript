@@ -222,6 +222,9 @@ Stmt *parser_parse_has(Parser *p) {
         if (parser_at_word(p, 0, "some") && parser_is_name_word(parser_peek(p, 1))) parser_advance(p);  // "some pets"
         if (!parser_parse_name(p, &field.name, after_field)) return NULL;
         if (parser_at(p, 0, TOK_LPAREN) && !parse_has_details(p, &field)) return NULL;
+        for (size_t t = 0; field.type == TYPE_UNKNOWN && t < p->records->texts.len; t++) {  // "an email": that kind
+            if (strcmp(p->records->texts.items[t].name, field.name.text) == 0) field.type = type_textkind(t);
+        }
         field.pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0, 0});
         vec_push(p->arena, &stmt->as.record.fields, field);
         if (parser_at_sentence_end(p)) break;

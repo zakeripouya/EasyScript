@@ -239,7 +239,7 @@ void cg_emit_table(Codegen *g, const Expr *expr, StrBuf *out) {
 // static double es_rule1(int es_site, double es_vn_0rule) {...}
 void cg_emit_rule(Codegen *g, const Stmt *stmt) {
     const char *item = "0rule";
-    Type type = TYPE_UNKNOWN;  // the kind of the fields it's about (the checker made them the same)
+    Type type = stmt->as.rule.text ? TYPE_TEXT : TYPE_UNKNOWN;  // a kind of text's rule is about text; another
     for (size_t r = 0; r < g->records->len && type == TYPE_UNKNOWN; r++) {
         const Stmt *def = g->records->items[r].definition;
         for (size_t f = 0; def && f < def->as.record.fields.len; f++) {

@@ -2370,6 +2370,17 @@ a team's players must not be empty.
 
 A rule is checked every time a field gets a value: in `a new ...`, `set ...`, and `add ... to ...` (and the other changes). If it's broken, the program stops: "Line 12: An age must be between 0 and 150, but this one is 200."
 
+### Kinds of text with a rule
+
+```
+an email is text that must contain "@".
+a customer has a name and an email.
+let ann be a new customer with name "Ann" and email "ann@example.com".
+let typed be "bob@example.com" as an email.
+```
+
+`an email is text that must ...` makes a kind of text. A field called `email` is one; text becomes one when it's kept in such a field (the rule is checked then) or written `X as an email` (checked there). An email works anywhere text does (`say`, `contains`, `in uppercase`, comparisons). But plain text can't go where an email has to be, like a definition's input written `(an email)`: that's an error before the program runs, saying to write `as an email`. A broken rule stops the program: "An email must contain "@", but this one is "nobody"."
+
 ### Acting on a whole group
 
 ```

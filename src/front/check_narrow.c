@@ -178,6 +178,16 @@ bool checker_fits(Checker *c, TypeVar target, TypeVar value, const Expr *expr, s
         return true;
     }
     if (checker_iface_fits(c, target, value, expr)) return true;  // a dog where something that can speak goes
+    if (c->storing_field && type_is_textkind(t) && (v == TYPE_TEXT || v == TYPE_UNKNOWN)) {
+        return types_require(c, value, TYPE_TEXT, line);  // the field's rules check it ("ann@example.com")
+    }
+    if (type_is_textkind(t) && v == TYPE_TEXT && expr) {
+        diag_error(c->diag, expr->pos.span, "This has to be %s, but this is text.", checker_kind(c, target));
+        diag_note(c->diag, "Write \"as %s\" after it, so its rule checks it.", checker_kind(c, target));
+        diag_info(c->diag, DIAG_WRONG_KIND, NULL, checker_kind(c, target));
+        types_require(c, value, TYPE_ERROR, line);
+        return true;  // reported here
+    }
     return types_unify(c, target, value);
 }
 

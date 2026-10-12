@@ -541,7 +541,9 @@ void parser_add_name_words(Parser *p, const char *text, size_t words);  // a kno
 // --- Yes/no fields as describing words (parse_record.c, parse_define.c) -------------------
 
 bool parser_is_yes_field(const Parser *p, const char *name);  // written as yes or no, or "can be NAME"
-bool parser_is_describing(const Parser *p, const char *word);  // an adjective a kind defines, or such a field
+bool parser_is_describing(const Parser *p, const char *word);
+size_t parser_text_kind_words(const Parser *p, size_t i);  // "an email is text that must": the kind's words, or 0
+Stmt *parser_parse_text_kind(Parser *p);                    // parse_define.c  // an adjective a kind defines, or such a field
 bool parser_at_can_be(const Parser *p);                         // "a parcel can be fragile."
 Stmt *parser_parse_can_be(Parser *p);
 Stmt *parser_parse_mark(Parser *p, const Token *verb);           // "mark box as fragile"

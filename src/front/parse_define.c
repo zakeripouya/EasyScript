@@ -416,6 +416,32 @@ static Stmt *parse_rule(Parser *p, size_t kind_words) {
     return stmt;
 }
 
+// "an email is text that must contain "@".": a kind of text, and its rule (a
+// STMT_RULE whose `text` is the kind). The message leaves out "is text that":
+// "An email must contain "@"".
+Stmt *parser_parse_text_kind(Parser *p) {
+    const Token *first = parser_peek(p, 0);
+    size_t start = first->filler.length ? first->filler.offset : first->span.offset;
+    Stmt *stmt = parser_new_stmt(p, STMT_RULE, first);
+    stmt->as.rule.kind = TYPE_UNKNOWN;
+    size_t words;
+    stmt->as.rule.text = parser_match_kind_name(p, 0, false, &words);
+    parser_take_name(p, parser_text_kind_words(p, p->pos), &stmt->as.rule.field);
+    SourcePos at = stmt->as.rule.field.pos;
+    parser_consume(p, 3);  // is text that
+    size_t must = parser_peek(p, 0)->span.offset;
+    parser_advance(p);  // must
+    stmt->as.rule.condition = parse_must(p, at);
+    if (!stmt->as.rule.condition) return NULL;
+    size_t end = p->prev_span.offset + p->prev_span.length;
+    size_t name_end = stmt->as.rule.field.pos.span.offset + stmt->as.rule.field.pos.span.length;
+    char *message = arena_sprintf(p->arena, "%.*s %.*s", (int)(name_end - start), p->source + start, (int)(end - must),
+                                  p->source + must);
+    message[0] = (char)toupper((unsigned char)message[0]);
+    stmt->as.rule.message = message;
+    return stmt;
+}
+
 static Stmt *parse_shape(Parser *p) {
     size_t words = 0;
     switch (shape_here(p, &words)) {

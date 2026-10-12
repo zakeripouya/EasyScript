@@ -782,6 +782,13 @@ Every table must end with an `otherwise` line, so every case has a value; one wi
 
 A rule sees only constants and the value it checks.
 
+| Pattern | Meaning | Example |
+|---|---|---|
+| `KIND is text that must ... .` | A kind of text with a rule (the same `must` forms). A field with that name is that kind; it's written `(an email)` and `a list of emails` like other kinds | `an email is text that must contain "@".` |
+| `X as KIND` | X (text) as that kind, checked by its rule there: "An email must contain "@", but this one is "nobody"." | `"bob@example.com" as an email` |
+
+A kind of text works anywhere text does. Text becomes one when it's kept in a field of that kind (checked like a rule) or written `as an email`; anywhere else (an input, a name made with it) plain text is an error suggesting `as an email`.
+
 ### Events
 
 All **Available**. Events run once the program's other sentences have, in the order they're written, until `stop the program` (or, with no schedules, until the rules have been checked and the keys have run out).

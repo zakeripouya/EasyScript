@@ -162,6 +162,7 @@ bool cg_has_effects(const Codegen *g, const Expr *expr) {
     case EXPR_UNARY: return cg_has_effects(g, expr->as.unary.operand);
     case EXPR_CONVERT:
         return (expr->as.convert.target == CONVERT_TO_NUMBER && expr->as.convert.operand->type == TYPE_TEXT) ||
+               expr->as.convert.target == CONVERT_TO_TEXT_KIND ||  // its rule can fail
                cg_has_effects(g, expr->as.convert.operand);
     case EXPR_BINARY:
         return expr->as.binary.op == BINARY_DIVIDE || expr->as.binary.op == BINARY_MODULO ||
@@ -432,7 +433,11 @@ static void emit_name(Codegen *g, const Expr *expr, StrBuf *out) {
 
 static void emit_convert(Codegen *g, const Expr *expr, StrBuf *out) {
     const Expr *operand_expr = expr->as.convert.operand;
-    if (expr->as.convert.target == CONVERT_TO_TEXT) {
+    if (expr->as.convert.target == CONVERT_TO_TEXT_KIND) {  // "X as an email": the kind's rule checks it
+        const Stmt *rule = g->records->texts.items[type_textkind_index(expr->as.convert.kind)].definition;
+        size_t site = cg_site(g, expr->pos);
+        sb_appendf(out, "es_rule%zu(%zu, %s)", rule->as.rule.id, site, cg_operand(g, operand_expr, false));
+    } else if (expr->as.convert.target == CONVERT_TO_TEXT) {
         cg_emit_text(g, operand_expr, out);
     } else if (expr->as.convert.target == CONVERT_TO_TABLE) {
         sb_appendf(out, "%s(%s)", type_is_map(operand_expr->type) ? "es_map_table" : "es_list_table",

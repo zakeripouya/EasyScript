@@ -479,6 +479,7 @@ Stmt *parse_statement(Parser *p) {
     if (parser_at_can_method(p)) return parser_parse_can(p);
     if (parser_at_sum_definition(p)) return parse_sum(p);
     if (parser_at_made_of(p)) return parser_parse_made_of(p);
+    if (parser_text_kind_words(p, p->pos)) return parser_parse_text_kind(p);  // an email is text that must ...
     if (parser_at_definition(p)) return parser_parse_definition(p);  // a customer is loyal if ...
     if (parser_at_table(p)) return parser_parse_table(p);            // the shipping cost depends on the total:
     if (parser_at_event(p)) return parser_parse_event(p);            // every 2 seconds: / whenever C:

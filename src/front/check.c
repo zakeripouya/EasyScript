@@ -68,7 +68,10 @@ static void check_set(Checker *c, const Stmt *stmt) {
     }
     if (field) {
         TypeVar var = check_field_target(c, field);
-        if (!checker_fits(c, var, value, value_expr, value_expr->pos.line)) {
+        c->storing_field = true;
+        bool fits = checker_fits(c, var, value, value_expr, value_expr->pos.line);
+        c->storing_field = false;
+        if (!fits) {
             diag_error(c->diag, value_expr->pos.span, "The field \"%s\" is %s, but this is %s.",
                        field->as.field.name.display, checker_kind(c, var), checker_kind(c, value));
         }

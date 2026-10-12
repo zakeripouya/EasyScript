@@ -178,6 +178,7 @@ bool types_require(Checker *c, TypeVar var, Type type, size_t line) {
         slot->line = line;
         return true;
     }
+    if (type == TYPE_TEXT && type_is_textkind(types_of(c, var))) return true;  // an email can be used as text
     return types_unify(c, var, types_new(c, type, line));
 }
 
@@ -197,6 +198,7 @@ static unsigned kind_bit(Type type) {
     if (type_is_object(type) || type == TYPE_MAYBE) return KIND_OTHER;
     if (type == TYPE_DATE) return KIND_DATE;
     if (type_is_money(type)) return KIND_MONEY;
+    if (type_is_textkind(type)) return KIND_TEXT;
     return type == TYPE_NUMBER ? KIND_NUMBER : type == TYPE_TEXT ? KIND_TEXT : type == TYPE_YESNO ? KIND_YESNO : 0;
 }
 
@@ -381,6 +383,18 @@ static void report_undecided(Checker *c, const Function *f) {
     types_require(c, f->result, TYPE_ERROR, 0);
 }
 
+// A kind with every kind of text in it made plain text: codegen keeps an email as text.
+static Type erase_text_kinds(Checker *c, Type type) {
+    Type base = type_base(type);
+    if (type_is_textkind(base)) return type - base + TYPE_TEXT;
+    if (type_is_map(base) && base != TYPE_MAP) {
+        Type key = ast_map_key(c->records, base), value = ast_map_value(c->records, base);
+        Type plain = ast_map_type(c->arena, c->records, erase_text_kinds(c, key), erase_text_kinds(c, value));
+        return type - base + plain;
+    }
+    return type;
+}
+
 void types_finish(Checker *c, size_t first_error) {
     types_default_numbers(c);
     // A kind left undecided is usually a side effect of another mistake, so
@@ -396,19 +410,25 @@ void types_finish(Checker *c, size_t first_error) {
     if (diag_count(c->diag) == first_error) checker_report_undecided_lambdas(c);
     if (diag_count(c->diag) == first_error) checker_report_undecided_fields(c);
     for (size_t i = 0; i < c->typed.len; i++) {
-        c->typed.items[i].expr->type = types_of(c, c->typed.items[i].var);
+        c->typed.items[i].expr->type = erase_text_kinds(c, types_of(c, c->typed.items[i].var));
     }
     for (size_t i = 0; i < c->slots.len; i++) {
-        *c->slots.items[i].slot = types_of(c, c->slots.items[i].var);
+        *c->slots.items[i].slot = erase_text_kinds(c, types_of(c, c->slots.items[i].var));
     }
     for (size_t i = 0; i < c->functions.len; i++) {
         Function *f = &c->functions.items[i];
         Stmt *def = f->definition;
         def->as.function.param_types.len = 0;
         for (size_t p = 0; p < f->params.len; p++) {
-            vec_push(c->arena, &def->as.function.param_types, types_of(c, f->params.items[p]));
+            vec_push(c->arena, &def->as.function.param_types, erase_text_kinds(c, types_of(c, f->params.items[p])));
         }
-        def->as.function.result = types_of(c, f->result);
+        def->as.function.result = erase_text_kinds(c, types_of(c, f->result));
+    }
+    for (size_t r = 0; r < c->records->len; r++) {  // a field that's an email is kept as text
+        Stmt *def = c->records->items[r].definition;
+        for (size_t f = 0; def && f < def->as.record.fields.len; f++) {
+            def->as.record.fields.items[f].type = erase_text_kinds(c, def->as.record.fields.items[f].type);
+        }
     }
     checker_write_lambdas(c);
 }
