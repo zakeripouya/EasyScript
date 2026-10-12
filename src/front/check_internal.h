@@ -73,6 +73,13 @@ typedef struct {
     TypeVar var;
 } TypedSlot;
 
+// A field written without a kind ("a dog has a name"): one kind everywhere,
+// worked out from how it's used.
+typedef struct {
+    Field *field;
+    TypeVar var;
+} FieldKind;
+
 typedef struct {
     const char *name;     // as matched (lowercased)
     const char *display;  // as first written, for messages
@@ -158,6 +165,7 @@ typedef struct {
     Vec(Deferred) deferred;
     Vec(TypedExpr) typed;  // every expression checked, to receive its kind at the end
     Vec(TypedSlot) slots;  // other kinds to fill in at the end
+    Vec(FieldKind) field_kinds;  // fields whose kinds are worked out from use
     LambdaScope *lambda;   // the innermost function made inside a value being checked, if any
     Vec(Function *) lambdas;          // every function made inside a value
     Program *program;                 // its cells (names functions made inside the main program use)
@@ -339,6 +347,8 @@ bool checker_settle_search(Checker *c, const Deferred *d);
 // check_record.c
 void checker_collect_records(Checker *c, const Block *program);  // reports kinds defined twice
 void checker_check_record(Checker *c, Stmt *stmt);               // STMT_RECORD: its fields and starting values
+TypeVar checker_field_kind(Checker *c, Field *field, size_t line);
+void checker_report_undecided_fields(Checker *c);
 TypeVar checker_check_field(Checker *c, const Expr *expr);       // EXPR_FIELD
 TypeVar checker_check_new(Checker *c, const Expr *expr);         // EXPR_NEW
 const char *checker_capitalized(Checker *c, Type type);           // "A dog", for the start of a sentence

@@ -1025,9 +1025,7 @@ Try it: `./easyscript run examples/programs/word_counter.es`
 **Available.** A record keeps several named values together: a dog has a name and an age, an order has a customer and a total. You define a **kind of record** once, then make as many records of that kind as you like.
 
 ```
-a dog is a kind of thing with:
-    a name, which is text.
-    an age, which is a number, starting at 0.
+a dog has a name (text) and an age (a number, starting at 0).
 
 let rex be a new dog with name "Rex" and age 3.
 say rex.
@@ -1041,9 +1039,13 @@ Rex
 
 ### Defining a kind of record
 
-A definition is `NAME is a kind of thing with:` at the start of a line (never inside an `if`, a loop or a function), with its **fields** indented below, one per line: `a NAME, which is KIND.` The kind is any kind of value: `a number`, `text`, `yes or no`, a list like `a list of numbers`, or another kind of record. Names of several words work for kinds and fields alike: `a tree node`, `a start time`.
+A definition is one sentence at the start of a line (never inside an `if`, a loop or a function): `NAME has` and its **fields**, separated by commas and `and`, each followed by its kind in parentheses: `a dog has a name (text) and an age (a number).` The kind is any kind of value: `a number`, `text`, `yes or no`, a list like `a list of numbers`, or another kind of record. A long list of fields can go on over several lines (end a line with a comma or `and`). Names of several words work for kinds and fields alike: `a tree node`, `a start time`. `some` before a field's name is left out like `a`: `an order has a customer and some drinks.`
 
-A field can have a **starting value** (`an age, which is a number, starting at 0.`). It's fixed before the program runs, like a constant: a number, text, yes or no, a constant, a fixed list, or an empty list (each record gets its own copy of a list).
+The kinds can be left out: `a cat has a name and a favorite toy.` Then each field's kind is worked out from how the program uses it (`a new cat with name "Tom"` makes `name` text), and it's the same everywhere. If nothing decides it, that's an error asking you to write it, like `favorite toy (text)`.
+
+The older form does the same, with one field per line: `a dog is a kind of thing with:` and, indented below, `a name, which is text.` and `an age, which is a number, starting at 0.`
+
+A field can have a **starting value** (`an age (a number, starting at 0)`, or `an age (starting at 0)`, whose kind is the value's). It's fixed before the program runs, like a constant: a number, text, yes or no, a constant, a fixed list, or an empty list (each record gets its own copy of a list).
 
 ### Making records
 

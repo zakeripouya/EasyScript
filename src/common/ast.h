@@ -472,7 +472,8 @@ struct Stmt {
         struct {
             Name name;
             size_t index;      // in the program's Records
-            Vec(Field) fields;
+            Vec(Field) fields;  // a field's type is TYPE_UNKNOWN until the checker works it out (a "has" field without a kind)
+            bool has;          // written "a dog has a name and an age." (one sentence)
         } record;
         struct {
             Name name;

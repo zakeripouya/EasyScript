@@ -379,6 +379,7 @@ void types_finish(Checker *c, size_t first_error) {
         report_undecided(c, &c->functions.items[i]);
     }
     if (diag_count(c->diag) == first_error) checker_report_undecided_lambdas(c);
+    if (diag_count(c->diag) == first_error) checker_report_undecided_fields(c);
     for (size_t i = 0; i < c->typed.len; i++) {
         c->typed.items[i].expr->type = types_of(c, c->typed.items[i].var);
     }

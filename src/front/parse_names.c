@@ -156,6 +156,42 @@ static size_t record_definition_words(const Parser *p, size_t i) {
     return kind ? n : 0;
 }
 
+// "a dog has a name (text) and an age.": the kind's words, at the start of a
+// line before "has" and a field's name (0 if it isn't one). The first word
+// can't start sentences, so "if ages has ..." and "while ..." stay sentences.
+size_t parser_has_definition_words(const Parser *p, size_t i) {
+    if (!at_line_start(p, i) || !parser_is_name_word(&p->tokens[i]) || parser_is_statement_word(p->tokens[i].text) ||
+        word_at(p, i, "otherwise") || word_at(p, i, "else") || word_at(p, i, "when")) {
+        return 0;
+    }
+    size_t n = 1;
+    while (i + n < p->count && is_inner_word(&p->tokens[i + n]) && !word_at(p, i + n, "has")) n++;
+    return word_at(p, i + n, "has") && (at_sentence_end_index(p, i + n + 1) || parser_is_name_word(&p->tokens[i + n + 1]))
+               ? n
+               : 0;
+}
+
+static void add_field_name(Parser *p, size_t i, size_t n);
+
+// The fields after "has": NAME [(...)] separated by "," and "and". Returns
+// the index after the sentence.
+static size_t find_has_fields(Parser *p, size_t i) {
+    for (;;) {
+        if (word_at(p, i, "some") && name_words(p, i) > 1) i++;  // "some pets": like "a" or "an"
+        size_t n = name_words(p, i);
+        if (n == 0) return i;
+        add_field_name(p, i, n);
+        i += n;
+        if (i < p->count && p->tokens[i].kind == TOK_LPAREN) {
+            while (i < p->count && p->tokens[i].kind != TOK_RPAREN && !at_sentence_end_index(p, i)) i++;
+            if (i < p->count && p->tokens[i].kind == TOK_RPAREN) i++;
+        }
+        if (i < p->count && p->tokens[i].kind == TOK_COMMA) i++;
+        if (word_at(p, i, "and")) i++;
+        if (at_sentence_end_index(p, i)) return i;
+    }
+}
+
 static void add_field_name(Parser *p, size_t i, size_t n) {
     for (size_t k = 0; k < p->fields.len; k++) {
         if (p->fields.items[k].words == n && strcmp(p->fields.items[k].text, join_words(p, i, n, false, ' ')) == 0) return;
@@ -308,6 +344,12 @@ static void find_records(Parser *p) {
         size_t n = record_definition_words(p, i);
         if (n > 0) {
             add_kind(p, i, n, false);
+            continue;
+        }
+        n = parser_has_definition_words(p, i);
+        if (n > 0) {
+            add_kind(p, i, n, false);
+            i = find_has_fields(p, i + n + 1) - 1;
             continue;
         }
         n = sum_definition_words(p, i);

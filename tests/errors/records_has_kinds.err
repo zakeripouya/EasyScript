@@ -1,0 +1,12 @@
+Line 3: The field "label" of a box is text, but this is a number.
+    let second be a new box with label 5 and size 4.
+                                       ^
+
+Line 4: The field "size" is a number, but this is text.
+    set first's size to "big".
+                        ^^^^^
+
+Line 6: Kinds of record can only be defined at the top level, not inside an "if" or a loop.
+        a lamp has a color.
+          ^^^^
+Move "a lamp has ..." to the start of a line, outside every block.

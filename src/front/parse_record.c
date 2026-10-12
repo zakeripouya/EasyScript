@@ -162,6 +162,77 @@ Stmt *parse_record(Parser *p) {
     return stmt;
 }
 
+// --- "a dog has a name (text) and an age (a number)." ---------------------------------
+
+bool parser_at_has_definition(const Parser *p) {
+    size_t n = parser_has_definition_words(p, p->pos), words;
+    return n > 0 && parser_match_record(p, 0, false, &words) >= 0 && words == n;
+}
+
+static const char *const has_example = "a dog has a name (text) and an age (a number).";
+
+// "(KIND)", "(KIND, starting at E)" or "(starting at E)" after a field's name.
+static bool parse_has_details(Parser *p, Field *field) {
+    const Token *open = parser_advance(p);
+    if (!parser_at_word(p, 0, "starting")) {
+        if (!parser_parse_kind(p, false, &field->type)) return false;
+        if (parser_at(p, 0, TOK_COMMA) && parser_at_word(p, 1, "starting")) parser_advance(p);
+    }
+    if (parser_at_word(p, 0, "starting")) {
+        if (!parser_expect_phrase(p, "starting at", "starting at", "an age (a number, starting at 0)")) return false;
+        field->initial = parse_expression(p);
+        if (p->sentence_failed) return false;
+    }
+    if (parser_at(p, 0, TOK_RPAREN)) {
+        parser_advance(p);
+        return true;
+    }
+    const Token *token = parser_peek(p, 0);
+    if (parser_error(p, token->span, "I expected \")\" to close the \"(\" on line %zu, but found %s.", open->line,
+                     parser_describe(p, token))) {
+        diag_note(p->diag, "Write a field's kind in parentheses after its name, like \"%s\".", has_example);
+    }
+    return false;
+}
+
+// NAME has FIELD [(...)] [, | and] FIELD [(...)] ...
+Stmt *parser_parse_has(Parser *p) {
+    static const char *const has[] = {"has", NULL};
+    static const char *const after_field[] = {"and", NULL};
+    Stmt *stmt = parser_new_stmt(p, STMT_RECORD, parser_peek(p, 0));
+    size_t words;
+    stmt->as.record.index = (size_t)parser_match_record(p, 0, false, &words);
+    stmt->as.record.has = true;
+    if (!parser_parse_name(p, &stmt->as.record.name, has)) return NULL;
+    parser_advance(p);  // has
+    for (;;) {
+        Field field = {0};
+        field.type = TYPE_UNKNOWN;
+        SourcePos start = parser_token_pos(parser_peek(p, 0));
+        if (parser_at_word(p, 0, "some") && parser_is_name_word(parser_peek(p, 1))) parser_advance(p);  // "some pets"
+        if (!parser_parse_name(p, &field.name, after_field)) return NULL;
+        if (parser_at(p, 0, TOK_LPAREN) && !parse_has_details(p, &field)) return NULL;
+        field.pos = ast_pos_join(start, (SourcePos){p->prev_span, 0, 0, 0});
+        vec_push(p->arena, &stmt->as.record.fields, field);
+        if (parser_at_sentence_end(p)) break;
+        bool comma = parser_at(p, 0, TOK_COMMA);
+        if (comma) parser_advance(p);
+        bool and = parser_at_word(p, 0, "and");
+        if (and) parser_advance(p);
+        if (!comma && !and) {
+            const Token *token = parser_peek(p, 0);
+            if (parser_error(p, token->span, "I expected \",\" or \"and\" before the next field, but found %s.",
+                             parser_describe(p, token))) {
+                diag_note(p->diag, "Write the fields like \"%s\".", has_example);
+            }
+            return NULL;
+        }
+    }
+    RecordKind *kind = &p->records->items[stmt->as.record.index];
+    if (!kind->definition) kind->definition = stmt;
+    return stmt;
+}
+
 // --- Fields ----------------------------------------------------------------------------
 
 size_t parser_known_field_words(const Parser *p, size_t ahead) {

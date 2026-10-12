@@ -100,7 +100,40 @@ static TypeVar field_of(Checker *c, const Expr *expr, TypeVar base, Type type) {
         return error_var(c);
     }
     ((Expr *)expr)->as.field.index = index;
-    return types_new(c, field->type, expr->pos.line);
+    return checker_field_kind(c, (Field *)field, expr->pos.line);
+}
+
+// A field's kind as a variable: written down, or worked out from use (one
+// variable for the field, shared by every use).
+TypeVar checker_field_kind(Checker *c, Field *field, size_t line) {
+    if (field->type != TYPE_UNKNOWN) return types_new(c, field->type, line);
+    for (size_t i = 0; i < c->field_kinds.len; i++) {
+        if (c->field_kinds.items[i].field == field) return c->field_kinds.items[i].var;
+    }
+    FieldKind kind = {field, types_new(c, TYPE_UNKNOWN, field->pos.line)};
+    vec_push(c->arena, &c->field_kinds, kind);
+    TypedSlot slot = {&field->type, kind.var};
+    vec_push(c->arena, &c->slots, slot);
+    return kind.var;
+}
+
+// Fields whose kind nothing decided (reported only when there's no other mistake).
+void checker_report_undecided_fields(Checker *c) {
+    for (size_t i = 0; i < c->field_kinds.len; i++) {
+        const FieldKind *kind = &c->field_kinds.items[i];
+        Type type = types_of(c, kind->var);
+        bool nothing = type == TYPE_NOTHING || type == TYPE_MAYBE;
+        if (!nothing && !ast_type_undecided(c->records, type)) continue;
+        const Field *field = kind->field;
+        diag_error(c->diag, field->name.pos.span, "I can't tell what kind of value \"%s\" holds.", field->name.display);
+        if (nothing) {
+            diag_note(c->diag, "It's only ever given nothing. Say its kind in parentheses, like \"%s (a dog or "
+                               "nothing)\".", field->name.display);
+        } else {
+            diag_note(c->diag, "Say it in parentheses after the field, like \"%s (a number)\" or \"%s (text)\".",
+                      field->name.display, field->name.display);
+        }
+    }
 }
 
 TypeVar checker_check_field(Checker *c, const Expr *expr) {
@@ -191,9 +224,10 @@ TypeVar checker_check_new(Checker *c, const Expr *expr) {
             continue;
         }
         given[index] = true;
-        if (!checker_fits(c, types_new(c, field->type, field->pos.line), value, v->value, v->value->pos.line)) {
+        TypeVar kind = checker_field_kind(c, (Field *)field, field->pos.line);
+        if (!checker_fits(c, kind, value, v->value, v->value->pos.line)) {
             diag_error(c->diag, v->value->pos.span, "The field \"%s\" of %s is %s, but this is %s.", field->name.display,
-                       checker_type_name(c, type), checker_type_name(c, field->type), checker_kind(c, value));
+                       checker_type_name(c, type), checker_kind(c, kind), checker_kind(c, value));
         }
     }
     report_missing(c, expr, given);
@@ -270,6 +304,7 @@ static void check_default(Checker *c, Field *field) {
         }
     }
     Type type = checker_const_type(c, &field->folded);
+    if (field->type == TYPE_UNKNOWN) field->type = type;  // "an age (starting at 0)": a number
     if (type == field->type || (type_is_list(field->type) && type == type_list_of(TYPE_UNKNOWN))) return;
     diag_error(c->diag, initial->pos.span, "The field \"%s\" is %s, but its starting value is %s.", field->name.display,
                checker_type_name(c, field->type), checker_type_name(c, type));
@@ -292,7 +327,8 @@ void checker_check_record(Checker *c, Stmt *stmt) {
     if (c->function || c->blocks > 0) {
         diag_error(c->diag, name->pos.span, "Kinds of record can only be defined at the top level, not inside %s.",
                    c->function ? "a function" : "an \"if\" or a loop");
-        diag_note(c->diag, "Move \"%s is a kind of thing with:\" to the start of a line, outside every block.",
+        diag_note(c->diag, stmt->as.record.has ? "Move \"%s has ...\" to the start of a line, outside every block."
+                                               : "Move \"%s is a kind of thing with:\" to the start of a line, outside every block.",
                   checker_type_name(c, type_record(stmt->as.record.index)));
         return;
     }
@@ -314,5 +350,6 @@ void checker_check_record(Checker *c, Stmt *stmt) {
                       checker_type_name(c, field->type));
         }
         if (field->initial) check_default(c, field);
+        if (field->type == TYPE_UNKNOWN) checker_field_kind(c, field, field->pos.line);  // reported if nothing decides it
     }
 }

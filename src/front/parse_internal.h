@@ -170,6 +170,9 @@ Expr *parser_parse_pieces(Parser *p);
 Stmt *parser_parse_actions(Parser *p, Block *block);
 bool parser_at_next_action(const Parser *p);
 bool parser_at_and(const Parser *p);
+size_t parser_has_definition_words(const Parser *p, size_t i);
+bool parser_at_has_definition(const Parser *p);
+Stmt *parser_parse_has(Parser *p);
 Stmt *parse_if(Parser *p, const Token *verb);
 Stmt *parser_finish_condition_after(Parser *p, Stmt *stmt);
 // An "otherwise" that doesn't belong to an if just above it.

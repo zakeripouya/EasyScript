@@ -411,7 +411,11 @@ static void dump_fields(const Field *fields, size_t n, size_t depth, Dump *d) {
     for (size_t i = 0; i < n; i++) {
         StrBuf label;
         sb_init(&label, d->out->arena);
-        sb_appendf(&label, "field %s: %s", fields[i].name.text, ast_type_name(d->out->arena, d->records, fields[i].type));
+        if (fields[i].type == TYPE_UNKNOWN) {  // "a dog has a name": worked out by the checker
+            sb_appendf(&label, "field %s (kind from use)", fields[i].name.text);
+        } else {
+            sb_appendf(&label, "field %s: %s", fields[i].name.text, ast_type_name(d->out->arena, d->records, fields[i].type));
+        }
         dump_line(&fields[i].pos, depth, d, label.data);
         dump_section("starting at", fields[i].initial, depth + 1, d);
     }

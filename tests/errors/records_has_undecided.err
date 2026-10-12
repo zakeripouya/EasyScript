@@ -1,0 +1,9 @@
+Line 4: I can't tell what kind of value "lid" holds.
+    a crate has a lid.
+                  ^^^
+It's only ever given nothing. Say its kind in parentheses, like "lid (a dog or nothing)".
+
+Line 6: I can't tell what kind of value "code" holds.
+    a tag has a code.
+                ^^^^
+Say it in parentheses after the field, like "code (a number)" or "code (text)".

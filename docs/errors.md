@@ -470,6 +470,8 @@ Give it after "with", like "with name ...", or give the field a starting value w
 
 Mistakes in how a definition or a field is written are parser errors, like "I expected "," here, but found "which"." (a field without its comma), "A list can't be "or nothing"." (or a map), "A new record inside another one needs parentheses.", ""let" makes a new name, so it can't change a field." and "A method is for a kind of record, but this is a number.". The full set is in [`err_records.err`](../tests/ast/err_records.err) and the `record_*.err` files in [`tests/errors/`](../tests/errors/).
 
+**Kinds of record written with `has`:** a field whose kind nothing decides is "I can't tell what kind of value "code" holds." with a note to write it in parentheses (or "It's only ever given nothing..." for a field only ever given nothing), see [`records_has_undecided.err`](../tests/errors/records_has_undecided.err); the parser's mistakes ("I expected ")" to close the "(" on line 1, but found "and".", "I expected "," or "and" before the next field, but found "handle".") are in [`err_records_has.err`](../tests/ast/err_records_has.err).
+
 ### Maps
 
 A map has one kind of key (text or numbers) and one kind of value, so a key or value of another kind is a compile error, and so is using something that isn't a map where one goes.

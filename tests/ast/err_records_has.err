@@ -1,0 +1,19 @@
+Line 1: I expected ")" to close the "(" on line 1, but found "and".
+    a box has a label (text and a size.
+                            ^^^
+Write a field's kind in parentheses after its name, like "a dog has a name (text) and an age (a number).".
+
+Line 2: I expected "," or "and" before the next field, but found "handle".
+    a crate has a lid (a number) a handle.
+                                   ^^^^^^
+Write the fields like "a dog has a name (text) and an age (a number).".
+
+Line 3: I expected "starting at" here, but found "starting 3".
+    a bag has a strap (starting 3).
+                       ^^^^^^^^^^
+Write it like "an age (a number, starting at 0)".
+
+Line 4: Something is missing after "has".
+    a cup has.
+          ^^^
+Add a name there, like "total".

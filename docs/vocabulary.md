@@ -528,7 +528,11 @@ All record words are **Available**. A record holds named values, its **fields**,
 
 | Pattern | Meaning | Example |
 |---|---|---|
-| `NAME is a kind of thing with:` + indented fields | Defines a kind of record called NAME (one or more words). Only at the top level | `a dog is a kind of thing with:` |
+| `NAME has FIELD (KIND) and FIELD (KIND).` | Defines a kind of record in one sentence (the main form): fields separated by commas and `and`, each with its kind in parentheses. Only at the top level | `a dog has a name (text) and an age (a number).` |
+| `FIELD` (no kind) | The kind is worked out from how the field is used (`a new dog with name "Rex"` makes `name` text). If nothing decides it, it's an error asking for `(KIND)` | `a cat has a name and a favorite toy.` |
+| `FIELD (starting at X)` / `FIELD (KIND, starting at X)` | A field with a starting value (its kind is the value's, unless written) | `an age (starting at 0)`, `some pets (a list of cats, starting at an empty list of cats)` |
+| `some FIELD` | `some` before a field's name is left out, like `a` and `an`: `some drinks` is the field `drinks` | `an order has a customer and some drinks.` |
+| `NAME is a kind of thing with:` + indented fields | The same, a field per line (a synonym of `has`) | `a dog is a kind of thing with:` |
 | `NAME, which is KIND.` | A field, one per line (or sentence). KIND is any kind: `a number`, `text`, `yes or no`, a list, or a kind of record | `a name, which is text.`<br>`a start time, which is a number.` |
 | `NAME, which is KIND, starting at X.` | A field with a starting value, used when `new` doesn't give one. X is fixed before the program runs, like a constant: numbers, text, yes or no, constants, fixed lists, or an empty list | `an age, which is a number, starting at 0.` |
 | `NAME, which is KIND or nothing.` | A field that can be nothing (any kind but a list or map). It starts as nothing | `a next, which is a node or nothing.`<br>`a nickname, which is text or nothing.` |

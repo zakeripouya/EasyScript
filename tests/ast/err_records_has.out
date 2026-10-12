@@ -1,0 +1,2 @@
+say [5:1]
+  text "still checked" [5:5]
