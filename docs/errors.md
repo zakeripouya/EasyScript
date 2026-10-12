@@ -1081,13 +1081,20 @@ Line 12 (a warning): This example isn't right.
 It's 8 here.
 ```
 
-A chart of something that isn't numbers:
+A chart of something that isn't numbers or amounts. The note names a value the program has that a chart can show, or says what a chart needs when there's none:
 
 ```
-Line 3: A chart needs a list of numbers or a map to numbers, but this is a list of text.
+Line 5: A chart needs a list of numbers or amounts, or a map to them, but this is a list of text.
+    save a bar chart of months as "months.svg".
+                        ^^^^^^
+Try a chart of "spending", which is a map from text to amounts in dollars.
+```
+
+```
+Line 3: A chart needs a list of numbers or amounts, or a map to them, but this is a list of text.
     save a pie chart of names as "b.svg".
                         ^^^^^
-Write it like "save a bar chart of the total amount of sales per month as "sales.svg"".
+A chart shows numbers or amounts, like "a list of 3, 5 and 2" or "the total price of orders per day".
 ```
 
 While the program runs, `ask for a number` with no more answers stops with:

@@ -1,0 +1,4 @@
+Line 5: A chart needs a list of numbers or amounts, or a map to them, but this is a list of text.
+    save a bar chart of months as "months.svg".
+                        ^^^^^^
+Try a chart of "spending", which is a map from text to amounts in dollars.

@@ -4,6 +4,10 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Fixed (shell and money fixes)
+
+- Charts accept money: bar, line and pie charts of a list of amounts or a map to amounts (`save a bar chart of the total amount of purchases per category as "spending.svg"`), in both wordings and in steps in a row. Their values are written as money in their currency (`$1,296.40`, `€2.50 (33.3%)`). A chart of something it can't draw now says "A chart needs a list of numbers or amounts, or a map to them, ..." with a note naming a value the program has that a chart can show, or what a chart needs, instead of repeating a sentence like the one that failed. `budget.es` ends with a chart of its spending per category (same output).
+
 ### Added (reads like text)
 
 - Definitions with inputs in the middle of their first line: `to give a customer a discount of some percent:` (`a KIND`, `another KIND` and `some NAME` are inputs, called `the customer`, `the other person`, `the percent` inside), called with the same words: `give ann a discount of 10 percent.`, `introduce ann to bob.`, `give every loyal customer a discount of 10 percent.` (once per item).

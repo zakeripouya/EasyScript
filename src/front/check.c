@@ -539,6 +539,7 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
             if (types_of(&c, column) == TYPE_UNKNOWN) types_require(&c, column, TYPE_TEXT, def->pos.line);
         }
     }
+    checker_finish_charts(&c);
     types_finish(&c, first_error);
     diag_sort(diag, first_error);
     if (diag_count(diag) == first_error) checker_rename_modules(&c);

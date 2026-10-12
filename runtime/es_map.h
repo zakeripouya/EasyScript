@@ -312,6 +312,18 @@ static EsMap *es_map_copy(EsMap *m) {
     return copy;
 }
 
+/* A chart of amounts: the map with its values as plain numbers of units.
+ * Consumes m. */
+static EsMap *es_map_units(EsMap *m) {
+    if (!es_items_money(m->values)) return m;
+    m = es_map_copy(m);
+    for (size_t i = 0; i < m->used; i++) {
+        if (m->entries[i].hash) m->entries[i].value.n /= 100;
+    }
+    m->values = ES_ITEMS_NUMBER;
+    return m;
+}
+
 /* The map as it is now, for a "for each" loop to go through: changes the
  * loop makes don't affect which entries it visits. A map nobody else holds
  * (or a fixed one) can't change, so it's given back as it is. */

@@ -160,6 +160,16 @@ static EsList *es_list_copy(EsList *l) {
     return copy;
 }
 
+/* A chart of amounts: the list as plain numbers of units ($12.50 is 12.5).
+ * Consumes l. */
+static EsList *es_list_units(EsList *l) {
+    if (!es_items_money(l->items)) return l;
+    l = es_list_copy(l);
+    for (size_t i = 0; i < l->len; i++) l->at.n[i] /= 100;
+    l->items = ES_ITEMS_NUMBER;
+    return l;
+}
+
 /* --- Slices ------------------------------------------------------------------
  *
  * Every slice is a new list. Text in it is shared (text never changes); lists

@@ -148,6 +148,13 @@ typedef struct {
     size_t variant;  // checked to be this variant ("if s is a circle"), or NO_VARIANT
 } Narrowing;
 
+// A chart's values ("save a bar chart of X as F"): which currency, if any,
+// is decided once every kind is known.
+typedef struct {
+    Expr *currency;  // the text handed to lib/charts.es: "", "dollars", "euros" or "pounds"
+    TypeVar item;    // the kind of X's items (a list's, or a map's values)
+} ChartValues;
+
 typedef struct {
     Arena *arena;
     Diag *diag;
@@ -183,6 +190,7 @@ typedef struct {
     unsigned main_file;               // the file that's run: the last one
     unsigned only_file;               // "helpers's double": names are looked up only in this file (1 + its index), or 0
     Vec(struct ModuleUse) module_uses;  // names used from other files, renamed once the program is checked
+    Vec(ChartValues) charts;          // every chart sentence, for its currency
 } Checker;
 
 // A name in a value that means another file's function or constant.
@@ -203,6 +211,7 @@ void checker_make_or_store(Checker *c, const Name *name, TypeVar value);
 // check_library.c: the standard library
 TypeVar checker_check_library(Checker *c, const Expr *expr);  // EXPR_LIBRARY
 void checker_check_library_stmt(Checker *c, const Stmt *stmt);  // STMT_LIBRARY
+void checker_finish_charts(Checker *c);  // check_library.c: each chart's currency, once kinds are known
 TypeVar checker_check_system(Checker *c, const Expr *expr);      // check_system.c: LIB_PROGRAM_WORDS and later
 void checker_check_system_stmt(Checker *c, const Stmt *stmt);    // DO_COMPLAIN, DO_RUN, DO_WAIT_KEY
 void checker_check_stop(Checker *c, const Stmt *stmt);           // STMT_STOP

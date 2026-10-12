@@ -136,16 +136,22 @@ static void action(Codegen *g, const char *format_two, const char *a, const char
     sb_appendf(&g->body, "%s;\n", close);
 }
 
-// "save a bar chart of X as F": X (and the title) kept in the hidden names
-// the checker's call reads, then that call's picture written into F.
+// "save a bar chart of X as F": X as plain numbers (amounts in units, not
+// cents) and the title kept in the hidden names the checker's call reads,
+// then that call's picture written into F.
 static void emit_chart(Codegen *g, const Stmt *stmt) {
     const char *name = stmt->as.library.name.text;
     const Expr *values = stmt->as.library.a, *title = stmt->as.library.parts.items[0];
+    const Expr *call = stmt->as.library.parts.items[1];
+    Type shown = call->as.call.args.items[0]->type;
     StrBuf code;
     sb_init(&code, g->arena);
     cg_emit_expr(g, values, &code);
-    cg_declare_name(g, name, values->type);
-    cg_emit_store(g, name, values->type, code.data);
+    if (shown != values->type) {  // amounts: their numbers of units
+        code.data = arena_sprintf(g->arena, "%s(%s)", type_is_map(shown) ? "es_map_units" : "es_list_units", code.data);
+    }
+    cg_declare_name(g, name, shown);
+    cg_emit_store(g, name, shown, code.data);
     if (title) {
         const char *title_name = arena_sprintf(g->arena, "%st", name);
         cg_declare_name(g, title_name, TYPE_TEXT);

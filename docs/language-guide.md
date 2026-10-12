@@ -2583,7 +2583,7 @@ save a pie chart of sales as "share.svg".
 make a line chart of a list of 3, 7, 2 and 9 called "trend.svg".
 ```
 
-A chart is saved as an SVG picture, which any browser shows. Charts take a list of numbers or a map to numbers (like `the total amount of sales per month`), with the map's keys as labels. In steps in a row, `make a bar chart of it called "best months.svg"` draws what the step before gave. Charts are drawn by a module written in EasyScript itself ([`lib/charts.es`](../lib/charts.es)).
+A chart is saved as an SVG picture, which any browser shows. Charts take a list of numbers or amounts, or a map to them (like `the total amount of sales per month`), with the map's keys as labels. A chart of amounts writes its values as money (`$1,296.40`, `€2.50`); one value can't mix currencies (a list or map holds amounts of one currency). In steps in a row, `make a bar chart of it called "best months.svg"` draws what the step before gave. Charts are drawn by a module written in EasyScript itself ([`lib/charts.es`](../lib/charts.es)).
 
 ### What each one means exactly
 

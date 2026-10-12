@@ -2,7 +2,9 @@ note: Charts, written in EasyScript. A program that says "save a bar chart
 note: of X as F" (or a line chart, or a pie chart) has this file joined to it,
 note: and the sentence writes what "numbers chart", "text map chart" or
 note: "number map chart" gives back into F. Each chart is an SVG picture:
-note: text that browsers and drawing programs show as an image.
+note: text that browsers and drawing programs show as an image. A chart of
+note: amounts gets them as plain numbers ($12.50 is 12.5) and the name of
+note: their currency, so its values are written as money.
 
 privately keep colors as a list of "#0072B2", "#E69F00", "#009E73", "#CC79A7", "#56B4E9", "#D55E00", "#F0E442" and "#999999".
 privately keep plot height as 300.
@@ -16,6 +18,14 @@ privately to escaped with words (text), giving back text:
 note: A number written in the picture, with at most one decimal.
 privately to place with number, giving back text:
     give back (number rounded to 1 decimal place) as text.
+
+note: A value written in the picture: with commas, or as an amount when the
+note: chart is of money (its currency is "dollars", "euros" or "pounds").
+privately to shown with value and currency (text), giving back text:
+    if currency is "euros", give back (value as money) with "$" replaced by "€".
+    if currency is "pounds", give back (value as money) with "$" replaced by "£".
+    if currency is "dollars", give back value as money.
+    give back value with commas.
 
 note: The sine and cosine with an angle (in radians), worked out by adding up
 note: the first terms of their series; plenty for drawing.
@@ -64,7 +74,7 @@ privately to label with x and bottom and words (text), giving back text:
         give back "<text x=\"[place with x]\" y=\"[bottom plus 16]\" text-anchor=\"end\" font-size=\"12\" fill=\"#333\" transform=\"rotate(-35 [place with x] [bottom plus 16])\">[escaped with words]</text>\n".
     give back "<text x=\"[place with x]\" y=\"[bottom plus 18]\" text-anchor=\"middle\" font-size=\"12\" fill=\"#333\">[escaped with words]</text>\n".
 
-privately to bar chart with labels (a list of text) and values (a list of numbers) and title (text), giving back text:
+privately to bar chart with labels (a list of text) and values (a list of numbers) and title (text) and currency (text), giving back text:
     let bar count be the number of items in values.
     let width be 80 plus slot times bar count.
     if width is below 400, set width to 400.
@@ -96,12 +106,12 @@ privately to bar chart with labels (a list of text) and values (a list of number
         let middle be x plus bar width divided by 2.
         let above be y minus 6.
         if value is below 0, set above to y plus bar height plus 14.
-        set picture to picture followed by "<text x=\"[place with middle]\" y=\"[place with above]\" text-anchor=\"middle\" font-size=\"12\" fill=\"#222\">[value with commas]</text>\n".
+        set picture to picture followed by "<text x=\"[place with middle]\" y=\"[place with above]\" text-anchor=\"middle\" font-size=\"12\" fill=\"#222\">[shown with value and currency]</text>\n".
         set picture to picture followed by (label with middle and bottom and item position of labels).
     set picture to picture followed by "<line x1=\"[place with left]\" y1=\"[place with zero]\" x2=\"[place with (width minus left)]\" y2=\"[place with zero]\" stroke=\"#333\"/>\n".
     give back picture followed by "</svg>".
 
-privately to line chart with labels (a list of text) and values (a list of numbers) and title (text), giving back text:
+privately to line chart with labels (a list of text) and values (a list of numbers) and title (text) and currency (text), giving back text:
     let point count be the number of items in values.
     let width be 80 plus slot times point count.
     if width is below 400, set width to 400.
@@ -132,12 +142,12 @@ privately to line chart with labels (a list of text) and values (a list of numbe
         set dots to dots followed by "<circle cx=\"[place with x]\" cy=\"[place with y]\" r=\"4\" fill=\"#0072B2\"/>\n".
         let above be y minus 10.
         if value is below 0, set above to y plus 20.
-        set dots to dots followed by "<text x=\"[place with x]\" y=\"[place with above]\" text-anchor=\"middle\" font-size=\"12\" fill=\"#222\">[value with commas]</text>\n".
+        set dots to dots followed by "<text x=\"[place with x]\" y=\"[place with above]\" text-anchor=\"middle\" font-size=\"12\" fill=\"#222\">[shown with value and currency]</text>\n".
         set dots to dots followed by (label with x and bottom and item position of labels).
     set picture to picture followed by "<polyline points=\"[points]\" fill=\"none\" stroke=\"#0072B2\" stroke-width=\"3\"/>\n".
     give back picture followed by dots followed by "</svg>".
 
-privately to pie chart with labels (a list of text) and values (a list of numbers) and title (text), giving back text:
+privately to pie chart with labels (a list of text) and values (a list of numbers) and title (text) and currency (text), giving back text:
     let total be 0.
     for each value in values:
         if value is above 0, add value to total.
@@ -173,28 +183,28 @@ privately to pie chart with labels (a list of text) and values (a list of number
         if total is above 0 and value is above 0, set percent to value divided by total.
         let key x be cx plus radius plus 30.
         set picture to picture followed by "<rect x=\"[place with key x]\" y=\"[place with (key y minus 11)]\" width=\"14\" height=\"14\" fill=\"[color for position]\"/>\n".
-        set picture to picture followed by "<text x=\"[place with (key x plus 22)]\" y=\"[place with key y]\" font-size=\"13\" fill=\"#222\">[escaped with item position of labels]: [value with commas] ([(percent rounded to 3 decimal places) as a percent])</text>\n".
+        set picture to picture followed by "<text x=\"[place with (key x plus 22)]\" y=\"[place with key y]\" font-size=\"13\" fill=\"#222\">[escaped with item position of labels]: [shown with value and currency] ([(percent rounded to 3 decimal places) as a percent])</text>\n".
         add 22 to key y.
     give back picture followed by "</svg>".
 
-privately to chart with kind (text) and labels (a list of text) and values (a list of numbers) and title (text), giving back text:
-    if kind is "line", give back line chart with labels and values and title.
-    if kind is "pie", give back pie chart with labels and values and title.
-    give back bar chart with labels and values and title.
+privately to chart with kind (text) and labels (a list of text) and values (a list of numbers) and title (text) and currency (text), giving back text:
+    if kind is "line", give back line chart with labels and values and title and currency.
+    if kind is "pie", give back pie chart with labels and values and title and currency.
+    give back bar chart with labels and values and title and currency.
 
 note: The three ways in: a list of numbers (labelled 1, 2, 3, ...), or a map
-note: whose keys are text or numbers.
-to numbers chart with values (a list of numbers) and kind (text) and title (text), giving back text:
+note: whose keys are text or numbers. The currency is "" for plain numbers.
+to numbers chart with values (a list of numbers) and kind (text) and title (text) and currency (text), giving back text:
     let labels be an empty list of text.
     count from 1 to the number of items in values as position:
         add position as text to the end of labels.
-    give back chart with kind and labels and values and title.
+    give back chart with kind and labels and values and title and currency.
 
-to text map chart with values (a map from text to numbers) and kind (text) and title (text), giving back text:
-    give back chart with kind and keys of values and values of values and title.
+to text map chart with values (a map from text to numbers) and kind (text) and title (text) and currency (text), giving back text:
+    give back chart with kind and keys of values and values of values and title and currency.
 
-to number map chart with values (a map from numbers to numbers) and kind (text) and title (text), giving back text:
+to number map chart with values (a map from numbers to numbers) and kind (text) and title (text) and currency (text), giving back text:
     let labels be an empty list of text.
     for each key in keys of values:
         add key as text to the end of labels.
-    give back chart with kind and labels and values of values and title.
+    give back chart with kind and labels and values of values and title and currency.

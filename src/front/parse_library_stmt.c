@@ -47,7 +47,7 @@ static bool at_chart(const Parser *p) {
 }
 
 // save a bar chart of X as F [, titled T] / make a bar chart of X called F [, titled T]
-// (a line chart, a pie chart): X is a list of numbers or a map to numbers.
+// (a line chart, a pie chart): X is a list of numbers or amounts, or a map to them.
 // The checker turns it into writing what lib/charts.es draws into F; the
 // hidden name (library.name) holds X.
 static Stmt *parse_chart(Parser *p, const Token *verb, bool saving) {
