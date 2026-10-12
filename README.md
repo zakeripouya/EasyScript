@@ -33,10 +33,8 @@ A loop and a function, also running today:
 
 ```
 note: Count down from 3, then greet someone.
-let count be 3.
-repeat while count is greater than 0:
-    say count.
-    subtract 1 from count.
+count down from 3 to 1:
+    say it.
 say "Liftoff!".
 
 to greet using name:

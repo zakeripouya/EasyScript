@@ -19,3 +19,5 @@ let colors be a list of "red" and "blue".
 add "green" to colors and say colors.
 let display be no.
 say ready and display.
+let move be yes.
+say ready and move.

@@ -441,9 +441,10 @@ static bool starts_value(const Token *token) {
 // "and" between two actions means "and then": "say "hi" and stop the loop".
 // It's an action when "and" is followed by "then", or by a word that starts
 // simple sentences and then by something that starts a value (which can't
-// follow a value); "stop", "skip", "break", "continue" and "move" need only
-// not be followed by an operator. A function's name after "and" is a value
-// ("if done and next word in r is ..."); "and then" calls it as a sentence.
+// follow a value); "stop", "skip", "break" and "continue" need only not be
+// followed by an operator, and "move" needs "on". A function's name after
+// "and" is a value ("if done and next word in r is ..."); "and then" calls
+// it as a sentence.
 bool parser_at_next_action(const Parser *p) {
     if (!parser_at_word(p, 0, "and")) return false;
     if (parser_at_word(p, 1, "then")) return true;
@@ -455,7 +456,8 @@ bool parser_at_next_action(const Parser *p) {
     bool sentence = (parser_is_statement_word(word->text) && !starts_block_or_definition(word->text)) ||
                     parser_at_library_sentence(&ahead);
     if (!sentence) return false;
-    static const char *const controls[] = {"stop", "skip", "break", "continue", "move"};
+    if (strcmp(word->text, "move") == 0) return parser_at_word(p, 2, "on");  // "and move on"; "move" alone is a name
+    static const char *const controls[] = {"stop", "skip", "break", "continue"};
     for (size_t i = 0; i < COUNT(controls); i++) {
         if (strcmp(word->text, controls[i]) == 0) {
             const Token *next = parser_peek(p, 2);
