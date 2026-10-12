@@ -2,12 +2,14 @@ note: The "best months" request from the English pass plan, as a program: steps
 note: in a row with "then", where "it" is what the step before gave. The first run
 note: writes an example sales.csv to read.
 if file "sales.csv" doesn't exist:
-    put "date,region,amount" in file "sales.csv"
-    add "2026-08-14,East,120" to the end of file "sales.csv"
-    add "2026-09-03,West,310.50" to the end of file "sales.csv"
-    add "2026-09-21,East,95" to the end of file "sales.csv"
-    add "2026-10-02,North,180" to the end of file "sales.csv"
-    add "2026-10-09,East,42.25" to the end of file "sales.csv"
+    let rows be the text below:
+        date,region,amount
+        2026-08-14,East,120
+        2026-09-03,West,310.50
+        2026-09-21,East,95
+        2026-10-02,North,180
+        2026-10-09,East,42.25
+    put rows in file "sales.csv".
 
 read the table in "sales.csv", then total the amount per month,
 then sort it biggest first, then save it as "best months.csv",

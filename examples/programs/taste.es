@@ -1,9 +1,9 @@
 note: Count down from 3, then greet someone.
 count down from 3 to 1:
-    say it.
+    say the number.
 say "Liftoff!".
 
-to greet using name:
-    say "Hello,", name, "!".
+to greet some name:
+    say "Hello,", the name, "!".
 
-greet using "Ada".
+greet "Ada".
