@@ -1,0 +1,49 @@
+Line 2: Something is missing after "run".
+    run.
+    ^^^
+Write it like "run "git" with "status" and call the result r".
+
+Line 3: Something is missing after "with".
+    run "git" with.
+              ^^^^
+Write it like "run "git" with "status" and call the result r".
+
+Line 4: I expected "and call it" here, but found "and say".
+    run "git" and say "hi"
+              ^^^^^^^
+Write it like "run "git" with "status" and call the result r".
+
+Line 5: Something is missing after "complain".
+    complain.
+    ^^^^^^^^
+Write what's wrong after it, like "complain "I need a file name."".
+
+Line 6: Something is missing after "word".
+    say word given to the program
+        ^^^^
+Say which word, like "word 1 given to the program".
+
+Line 7: Something is missing after "setting called".
+    say the setting called
+            ^^^^^^^^^^^^^^
+Write the setting's name after it, like "the setting called "HOME"".
+
+Line 8: I expected "saying it failed" here, but found "saying it worked".
+    stop the program, saying it worked
+                      ^^^^^^^^^^^^^^^^
+Write it like "stop the program, saying it failed".
+
+Line 9: Something is missing after "with code".
+    stop the program with code
+                     ^^^^^^^^^
+Write it like "stop the program with code 3".
+
+Line 10: Something is missing after "for a key".
+    wait for a key.
+         ^^^^^^^^^
+Write it like "wait for a key and call it key".
+
+Line 11: Something is missing after "and call it".
+    wait for a key and call it
+                   ^^^^^^^^^^^
+Add a name there, like "total".

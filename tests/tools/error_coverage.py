@@ -17,6 +17,7 @@ EXEMPT = {
     "I couldn't make a temporary folder in %s: %s.": 'needs the temp directory to be unwritable',
     "I couldn't write the C file: %s.": 'needs the temp directory to fail mid-run',
     "I couldn't start %s: %s.": 'needs fork() to fail',
+    'I couldn\'t start "%s": %s.': 'needs pipe() or fork() to fail (a program running another program)',
     "I couldn't wait for %s: %s.": 'needs waitpid() to fail',
     "I couldn't run %s: %s.": 'needs exec to fail (no cc, or a deleted compiler)',
     "The C compiler couldn't build the program. This is a bug in EasyScript; please report it.": 'generated C always compiles (checked by fuzzing with -Werror)',

@@ -1,0 +1,75 @@
+Document 1:
+  null
+Document 2:
+  true
+Document 3:
+  false
+Document 4:
+  [1,2.5,-3,0,0,1000,0.025,100,1.23456789e+19,0.1]
+  (reading it back gives a different value: numbers are written with 10 significant digits)
+Document 5:
+  "Hello, \"world\"\n\ttab \\ slash / café 😀 é"
+Document 6:
+  {"name":"Ada Lovelace","languages":["English","French"],"born":{"year":1815,"month":12},"active":false,"notes":null,"empty":{},"nothing here":[]}
+Document 7:
+  [[[[[]]]],{"a":{"b":{"c":[1,{"d":[]}]}}}]
+Document 8:
+  "Unicode stays: héllo, 日本"
+Document 9:
+  Line 1, column 7: I expected a value here.
+Document 10:
+  Line 3, column 7: I expected ":" after the name.
+Document 11:
+  Line 1, column 12: This text never ends: it needs a " at the end.
+Document 12:
+  Line 1, column 1: A number can't start with 0, unless it's 0 itself.
+Document 13:
+  Line 1, column 2: I expected a digit here.
+Document 14:
+  Line 1, column 3: I expected a digit after the decimal point.
+Document 15:
+  Line 1, column 3: I expected a digit in the exponent.
+Document 16:
+  Line 1, column 1: This number is too big.
+Document 17:
+  Line 1, column 6: "\x" isn't something JSON knows after a backslash.
+Document 18:
+  Line 1, column 6: "\u" needs four hex digits after it, like "\u00e9".
+Document 19:
+  Line 1, column 2: This is the first half of a pair of codes, without the second half.
+Document 20:
+  Line 1, column 2: This is the second half of a pair of codes, without the first half.
+Document 21:
+  Line 1, column 2: EasyScript text can't hold the character with code 0.
+Document 22:
+  Line 1, column 4: I expected "true" here.
+Document 23:
+  Line 1, column 4: I expected "," or "]" here.
+Document 24:
+  Line 1, column 10: There's more after the value.
+Document 25:
+  Line 1, column 1: I expected a value here, but the text ended.
+Document 26:
+  Line 1, column 2: I expected a name in quotes here.
+Document 27:
+  Line 1, column 6: I expected ":" after the name.
+Document 28:
+  Line 1, column 5: This character has to be written with a backslash in JSON text, like "\n".
+Document 29:
+  Line 3, column 23: I expected "false" here.
+Pretty:
+{
+  "name": "Ada",
+  "languages": [
+    "English",
+    "French"
+  ],
+  "born": {
+    "year": 1815,
+    "month": 12
+  },
+  "notes": [],
+  "extra": {}
+}
+{"class":"Room \"7\"","scores":{"Ada":95,"Grace":88.5},"passed":[true,null]}
+Total: 7.5

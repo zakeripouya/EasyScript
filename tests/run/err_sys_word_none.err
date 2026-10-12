@@ -1,0 +1,4 @@
+Line 2: There's no word 1: the program wasn't given any words.
+    say word 1 given to the program
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Check how many there are first, like "if the number of words given to the program is at least 1:".

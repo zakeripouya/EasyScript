@@ -187,6 +187,9 @@ void checker_make_or_store(Checker *c, const Name *name, TypeVar value);
 // check_library.c: the standard library
 TypeVar checker_check_library(Checker *c, const Expr *expr);  // EXPR_LIBRARY
 void checker_check_library_stmt(Checker *c, const Stmt *stmt);  // STMT_LIBRARY
+TypeVar checker_check_system(Checker *c, const Expr *expr);      // check_system.c: LIB_PROGRAM_WORDS and later
+void checker_check_system_stmt(Checker *c, const Stmt *stmt);    // DO_COMPLAIN, DO_RUN, DO_WAIT_KEY
+void checker_check_stop(Checker *c, const Stmt *stmt);           // STMT_STOP
 // pi, today, tomorrow, yesterday where the program hasn't made the name: turns expr into its EXPR_LIBRARY.
 bool checker_library_name(Checker *c, const Expr *expr, TypeVar *result);
 // D's year (a field of a date): turns expr into LIB_DATE_PART. `base` is D, a date.

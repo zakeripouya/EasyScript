@@ -25,6 +25,10 @@ static void emit_pick(Codegen *g, const Expr *expr, StrBuf *out) {
 
 void cg_emit_library(Codegen *g, const Expr *expr, StrBuf *out) {
     LibraryOp op = expr->as.library.op;
+    if (op >= LIB_PROGRAM_WORDS) {
+        cg_emit_system(g, expr, out);
+        return;
+    }
     if (op == LIB_PICK) {
         emit_pick(g, expr, out);
         return;
@@ -71,7 +75,7 @@ void cg_emit_library(Codegen *g, const Expr *expr, StrBuf *out) {
     case LIB_FOLDERS_IN: sb_appendf(out, "es_folder_list(%zu, %s, true)", site, a); break;
     case LIB_FILE_SIZE: sb_appendf(out, "es_file_size(%zu, %s)", site, a); break;
     case LIB_FILE_CHANGED: sb_appendf(out, "es_file_changed(%zu, %s)", site, a); break;
-    case LIB_PICK: break;
+    default: break;
     }
     if (opened) sb_append_char(out, ')');
 }
@@ -80,6 +84,7 @@ void cg_emit_library(Codegen *g, const Expr *expr, StrBuf *out) {
 bool cg_library_effects(const Codegen *g, const Expr *expr) {
     switch (expr->as.library.op) {
     case LIB_PI: return false;
+    case LIB_WORKED: return cg_has_effects(g, expr->as.library.a);
     case LIB_ABSOLUTE:
     case LIB_ROUNDED:
     case LIB_ROUNDED_UP:
@@ -103,6 +108,10 @@ static void action(Codegen *g, const char *format_two, const char *a, const char
 }
 
 void cg_emit_library_stmt(Codegen *g, const Stmt *stmt) {
+    if (stmt->as.library.op >= DO_COMPLAIN) {
+        cg_emit_system_stmt(g, stmt);
+        return;
+    }
     Expr *exprs[] = {stmt->as.library.a, stmt->as.library.b};
     const char *v[2] = {NULL, NULL};
     StrBuf head;
@@ -154,5 +163,6 @@ void cg_emit_library_stmt(Codegen *g, const Stmt *stmt) {
         sb_appendf(&g->body, "es_save_csv(%zu, %s, %s, '%s')%s;\n", site, a, b, kind, close);
         break;
     }
+    default: break;
     }
 }

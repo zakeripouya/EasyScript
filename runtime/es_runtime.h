@@ -425,7 +425,10 @@ static ssize_t es_read_answer(char **buffer, size_t *cap) {
 
 /* Prints the question (consuming it), then reads one line as new text. At
  * the end of input the answer is empty text. */
+static void es_terminal_normal(void); /* es_keys.h: lines are typed with the terminal as it was */
+
 static EsText *es_ask(EsText *question) {
+    es_terminal_normal();
     es_out(question->chars, question->len);
     es_release(question);
     fflush(stdout);
@@ -444,7 +447,7 @@ static EsText *es_ask(EsText *question) {
  * own names (in main() it jumps to the end instead). See es_finish. */
 static _Noreturn void es_stop(void) {
     es_finish(false);
-    exit(0);
+    exit(es_status);
 }
 
 #endif

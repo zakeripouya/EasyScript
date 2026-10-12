@@ -171,6 +171,10 @@ char cg_field_kind(Type type);  // how a field's kind is written in an EsRecordT
 void cg_emit_records(Codegen *g, StrBuf *out);                // every kind's struct, description and maker
 void cg_emit_new(Codegen *g, const Expr *expr, StrBuf *out);    // EXPR_NEW
 void cg_emit_field(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_FIELD
+// codegen_system.c: the words given to the program, settings, keys, running programs
+void cg_emit_system(Codegen *g, const Expr *expr, StrBuf *out);  // LIB_PROGRAM_WORDS and later
+void cg_emit_system_stmt(Codegen *g, const Stmt *stmt);         // DO_COMPLAIN, DO_RUN, DO_WAIT_KEY
+void cg_emit_stop_code(Codegen *g, const Stmt *stmt);           // "with code N" before a stop
 // "set R's F to V" or "add V to R's F" (and the other changes) as one C statement.
 const char *cg_field_stmt(Codegen *g, const Stmt *stmt);
 

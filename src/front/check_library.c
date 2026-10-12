@@ -42,6 +42,7 @@ static TypeVar list_of_text(Checker *c, size_t line) {
 }
 
 TypeVar checker_check_library(Checker *c, const Expr *expr) {
+    if (expr->as.library.op >= LIB_PROGRAM_WORDS) return checker_check_system(c, expr);
     const char *display = op_display[expr->as.library.op];
     if (expr->as.library.op == LIB_DATE_PART) {
         display = arena_sprintf(c->arena, "\"the %s of\"", ast_date_part_name(expr->as.library.part));
@@ -108,6 +109,7 @@ TypeVar checker_check_library(Checker *c, const Expr *expr) {
     case LIB_FILE_CHANGED:
         text(c, a, display);
         return types_new(c, TYPE_DATE, line);
+    default: break;
     }
     return error_var(c);
 }
@@ -221,5 +223,8 @@ void checker_check_library_stmt(Checker *c, const Stmt *stmt) {
         break;
     case DO_READ_CSV: check_read_csv(c, stmt); break;
     case DO_SAVE_CSV: check_save_csv(c, stmt); break;
+    case DO_COMPLAIN:
+    case DO_RUN:
+    case DO_WAIT_KEY: checker_check_system_stmt(c, stmt); break;
     }
 }

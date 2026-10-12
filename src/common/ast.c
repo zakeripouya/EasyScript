@@ -130,6 +130,7 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
         sb_append(scratch, ast_library_op_name(expr->as.library.op));
         if (expr->as.library.op == LIB_DATE_PART) sb_appendf(scratch, " %s", ast_date_part_name(expr->as.library.part));
         if (expr->as.library.op == LIB_IN_PERIOD) sb_appendf(scratch, " %s", ast_period_name(expr->as.library.part));
+        if (expr->as.library.op == LIB_WORKED && expr->as.library.part) sb_append(scratch, " (not)");
         break;
     case EXPR_LENGTH: return "length of";
     case EXPR_FILE_CONTENTS: return "contents of file";
@@ -322,7 +323,7 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
     case STMT_WRITE_FILE: return "write to file";
     case STMT_APPEND_FILE: return "append to file";
     case STMT_READ_FILE: sb_appendf(scratch, "read file, call it %s", stmt->as.read_file.name.text); break;
-    case STMT_STOP: return "stop the program";
+    case STMT_STOP: return stmt->as.stop_code ? "stop the program with code" : "stop the program";
     case STMT_IF: return stmt->as.if_stmt.one_line ? "if (one line)" : "if";
     case STMT_LOOP: return loop_label(stmt, scratch);
     case STMT_BREAK: return "stop the loop";
@@ -339,7 +340,7 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
     case STMT_USE: sb_appendf(scratch, "use %s", stmt->as.module.text); break;
     case STMT_LIBRARY:
         sb_append(scratch, ast_library_action_name(stmt->as.library.op));
-        if (stmt->as.library.op == DO_READ_CSV) sb_appendf(scratch, ", call it %s", stmt->as.library.name.text);
+        if (stmt->as.library.name.text) sb_appendf(scratch, ", call it %s", stmt->as.library.name.text);
         if (stmt->as.library.everything) sb_append(scratch, " and everything in it");
         if (stmt->as.library.op == DO_WAIT && stmt->as.library.scale != 1) {
             sb_appendf(scratch, " (%s)", stmt->as.library.scale > 1 ? "minutes" : "milliseconds");
@@ -460,7 +461,9 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
         dump_children(stmt->as.file_write.text, stmt->as.file_write.path, depth, d);
         break;
     case STMT_READ_FILE: dump_expr(stmt->as.read_file.path, depth + 1, d); break;
-    case STMT_STOP: break;
+    case STMT_STOP:
+        if (stmt->as.stop_code) dump_expr(stmt->as.stop_code, depth + 1, d);
+        break;
     case STMT_IF: dump_if(stmt, depth, d); break;
     case STMT_LOOP: dump_loop(stmt, depth, d); break;
     case STMT_BREAK:
@@ -478,6 +481,7 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
     case STMT_USE: break;
     case STMT_LIBRARY:
         dump_children(stmt->as.library.a, stmt->as.library.b, depth, d);
+        for (size_t i = 0; i < stmt->as.library.parts.len; i++) dump_expr(stmt->as.library.parts.items[i], depth + 1, d);
         break;
     case STMT_CONSTANT: dump_expr(stmt->as.constant.value, depth + 1, d); break;
     case STMT_LIST:

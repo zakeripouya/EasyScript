@@ -121,12 +121,15 @@ check_run() {
         expected_err="${src%.es}.err"
         input="${src%.es}.in"
         [ -f "$input" ] || input=/dev/null
+        words=""  # NAME.args: the words given to the program, separated by spaces
+        [ -f "${src%.es}.args" ] && words=$(cat "${src%.es}.args")
         if [ ! -f "$expected" ]; then
             not_ok "$name" "missing $(basename "$expected")"
             continue
         fi
         fresh_dir
-        (cd "$WORK/cwd" && ES_DEBUG_MEMORY=1 "$ES" run "$src") <"$input" >"$WORK/stdout" 2>"$WORK/stderr"
+        # shellcheck disable=SC2086 # the words are split at spaces on purpose
+        (cd "$WORK/cwd" && ES_DEBUG_MEMORY=1 "$ES" run "$src" $words) <"$input" >"$WORK/stdout" 2>"$WORK/stderr"
         status=$?
         if [ -f "$expected_err" ]; then
             want_status=1
@@ -253,6 +256,15 @@ for dir in "$ROOT"/examples/*/; do
         *) not_ok "examples/$(basename "$dir")" "no test runner covers this directory; add it to tests/run.sh" ;;
     esac
 done
+# Snake (examples/programs/snake/play.es) waits for the keyboard, so it isn't
+# run here (main.es tests its rules); it has to compile, though, and its C is
+# checked with the rest below.
+fresh_dir
+if out=$(cd "$WORK/cwd" && "$ES" emit "$ROOT/examples/programs/snake/play.es" 2>&1 >/dev/null); then
+    ok "examples/snake-play-compiles"
+else
+    not_ok "examples/snake-play-compiles" "$out"
+fi
 for src in "$ROOT"/examples/*.es; do
     [ -e "$src" ] || continue
     not_ok "examples/$(basename "$src")" "examples must live in examples/programs/, examples/lexer/ or examples/parser/"
@@ -378,7 +390,7 @@ fresh_dir
 out=$(cd "$WORK/cwd" && "$ES" emit "$HELLO" 2>&1)
 if [ $? -ne 0 ]; then
     not_ok "cli/emit" "$out"
-elif ! echo "$out" | grep '^int main(void) {$' >/dev/null; then
+elif ! echo "$out" | grep '^int main(int argc, char \*\*argv) {$' >/dev/null; then
     not_ok "cli/emit" "output does not look like C:
 $out"
 elif check_cwd_empty "cli/emit"; then
@@ -437,13 +449,60 @@ expect_failure "cli/no-source" 2 "Tell me which .es file to use." \
 expect_failure "cli/build-without-o" 2 "Tell me what to call the program with -o, like \"easyscript build hello.es -o hello\"." \
     "$ES" build "$HELLO"
 expect_failure "cli/o-without-build" 2 "-o only works with build." \
-    "$ES" run "$HELLO" -o x
+    "$ES" emit "$HELLO" -o x
 expect_failure "cli/o-without-path" 2 "After -o, give the name of the program to make." \
     "$ES" build "$HELLO" -o
 expect_failure "cli/o-twice" 2 "Give -o only once." \
     "$ES" build "$HELLO" -o x -o y
 expect_failure "cli/two-sources" 2 "Give one .es file at a time." \
-    "$ES" run "$HELLO" "$HELLO"
+    "$ES" emit "$HELLO" "$HELLO"
+
+# "run FILE WORDS...": everything after the file is given to the program,
+# even words that look like the compiler's own ("-o").
+fresh_dir
+printf 'say the words given to the program\nsay the number of words given to the program\n' >"$WORK/words.es"
+out=$(cd "$WORK/cwd" && "$ES" run "$WORK/words.es" Paris "two words" -o 2>&1)
+if [ "$out" != "Paris, two words and -o
+3" ]; then
+    not_ok "cli/run-gives-words" "$out"
+else
+    ok "cli/run-gives-words"
+fi
+
+# What a program tells whoever started it: "stop the program with code N",
+# "saying it failed" (1), and "complain" writing to the error output only.
+exit_code_check() {
+    name=$1 want_status=$2 want_out=$3 want_err=$4 program=$5
+    fresh_dir
+    printf '%b' "$program" >"$WORK/code.es"
+    (cd "$WORK/cwd" && "$ES" run "$WORK/code.es") >"$WORK/stdout" 2>"$WORK/stderr"
+    status=$?
+    if [ $status -ne "$want_status" ] || [ "$(cat "$WORK/stdout")" != "$want_out" ] ||
+        [ "$(cat "$WORK/stderr")" != "$want_err" ]; then
+        not_ok "$name" "exit status $status (expected $want_status), stdout: $(cat "$WORK/stdout"), stderr: $(cat "$WORK/stderr")"
+    else
+        ok "$name"
+    fi
+}
+exit_code_check "system/stop-with-code" 3 "before" "" 'say "before"\nstop the program with code 3\nsay "after"\n'
+exit_code_check "system/stop-with-code-0" 0 "" "" 'stop the program with code 0\n'
+exit_code_check "system/stop-in-function-with-code" 42 "in" "" \
+    'to finish:\n    say "in"\n    stop the program with code 42\nfinish\nsay "never"\n'
+exit_code_check "system/saying-it-failed" 1 "" "No input." 'complain "No input."\nstop the program, saying it failed\n'
+exit_code_check "system/complain-keeps-going" 0 "one
+two" "oops" 'say "one"\ncomplain "oops"\nsay "two"\n'
+exit_code_check "system/run-gives-its-code" 0 "5" "" \
+    'run "sh" with "-c" and "exit 5" and call the result r\nsay r'"'"'s code\n'
+
+# The keyboard: on a real terminal (a pseudo-terminal), keys are read one at
+# a time, and the terminal is put back as it was however the program ends.
+if command -v python3 >/dev/null 2>&1; then
+    if out=$(python3 "$ROOT/tests/tools/keys_terminal.py" "$ES" "$WORK" 2>&1); then
+        ok "keys/terminal-restored"
+    else
+        not_ok "keys/terminal-restored" "$out"
+    fi
+fi
 
 # The memory check itself must catch a leak: the same program with one
 # release taken out of the runtime (in es_say) has to fail it.
@@ -495,7 +554,8 @@ if [ "${ES_SANITIZE:-0}" = 1 ]; then
 else
     strict_failed=""
     for src in "$ROOT"/tests/run/*.es "$ROOT"/tests/memory/*.es "$ROOT"/examples/programs/*.es \
-        "$ROOT"/tests/modules/*/main.es "$ROOT"/examples/programs/*/main.es "$ROOT"/benchmarks/*/*.es; do
+        "$ROOT"/tests/modules/*/main.es "$ROOT"/examples/programs/*/main.es "$ROOT"/examples/programs/snake/play.es \
+        "$ROOT"/benchmarks/*/*.es; do
         [ -e "$src" ] || continue
         "$ES" emit "$src" >"$WORK/strict.c" 2>/dev/null || continue
         if ! out=$("$STRICT_CC" -std=c11 -Wall -Wextra -Wpedantic -Werror -O2 -c "$WORK/strict.c" \

@@ -32,7 +32,7 @@ static char *temp_answers_path;
 
 static void print_usage(FILE *out) {
     fprintf(out, "Usage:\n");
-    fprintf(out, "  easyscript run FILE           Compile FILE and run it\n");
+    fprintf(out, "  easyscript run FILE [WORDS]   Compile FILE and run it, giving it the words after FILE\n");
     fprintf(out, "  easyscript build FILE -o OUT  Compile FILE to the executable OUT\n");
     fprintf(out, "  easyscript emit FILE          Print the C code generated for FILE\n");
     fprintf(out, "  easyscript tokens FILE        Print the tokens of FILE, one per line\n");
@@ -259,13 +259,18 @@ static int cmd_build(const char *source_path, const char *output_path) {
     return compile_c(output_path, false);
 }
 
-static int cmd_run(const char *source_path) {
+// Runs the program with `words` (the command line after the file) as the
+// words given to it.
+static int cmd_run(const char *source_path, char **words, int count) {
     make_temp_dir();
     generate_c(source_path);
     if (compile_c(temp_bin_path, env_is_1("ES_HOOKS")) != 0) {
         return 1;
     }
-    char *argv[] = {temp_bin_path, NULL};
+    char **argv = arena_alloc(arena, ((size_t)count + 2) * sizeof(char *));
+    argv[0] = temp_bin_path;
+    for (int i = 0; i < count; i++) argv[i + 1] = words[i];
+    argv[count + 1] = NULL;
     int status = run_process(argv);
     return status < 0 ? 1 : status;
 }
@@ -288,7 +293,12 @@ int main(int argc, char *argv[]) {
 
     const char *source_path = NULL;
     const char *output_path = NULL;
+    int words_at = argc;  // "run FILE WORDS...": the words given to the program
     for (int i = 2; i < argc; i++) {
+        if (source_path && strcmp(command, "run") == 0) {
+            words_at = i;
+            break;
+        }
         if (strcmp(argv[i], "-o") == 0) {
             if (i + 1 >= argc) {
                 return usage_error("After -o, give the name of the program to make.");
@@ -325,7 +335,7 @@ int main(int argc, char *argv[]) {
         return usage_error("-o only works with build.");
     }
     if (strcmp(command, "run") == 0) {
-        return cmd_run(source_path);
+        return cmd_run(source_path, argv + words_at, argc - words_at);
     }
     if (strcmp(command, "tokens") == 0) {
         return cmd_tokens(source_path);

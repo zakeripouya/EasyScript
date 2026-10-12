@@ -68,7 +68,10 @@ for src in "$ROOT"/tests/run/*.es "$ROOT"/examples/programs/*.es "$ROOT"/tests/m
     "$ROOT"/tests/modules/*/main.es "$ROOT"/examples/programs/*/main.es; do
     case $src in */tests/warnings/*) ;; *) [ -f "${src%.es}.err" ] && continue ;; esac  # a warning's .err is its warnings
     ES_SANITIZE=0 "$ES" build "$src" -o "$WORK/program" 2>/dev/null || continue
-    check "program ${src#$ROOT/}" "$(input_for "$src")" "$WORK/program"
+    words=""  # NAME.args: the words given to the program
+    [ -f "${src%.es}.args" ] && words=$(cat "${src%.es}.args")
+    # shellcheck disable=SC2086
+    check "program ${src#$ROOT/}" "$(input_for "$src")" "$WORK/program" $words
 done
 
 # Interactive shell sessions.

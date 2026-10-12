@@ -1,0 +1,4 @@
+Line 1: I couldn't find a program called "easyscript-no-such-program".
+    run "easyscript-no-such-program" with "x".
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Check its name, and that it's installed. A program in this folder is run with its path, like "./tool".

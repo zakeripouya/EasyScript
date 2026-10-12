@@ -1,0 +1,9 @@
+Line 4: This program defines its own kind called "program result", so running a program can't make one.
+    run "true" and call the result outcome
+                                   ^^^^^^^
+Give your kind another name, like "build result".
+
+Line 6: This program defines its own kind called "program result", so running a program can't make one.
+    if mine worked, say "yes"
+            ^^^^^^
+Give your kind another name, like "build result".

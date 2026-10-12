@@ -54,9 +54,11 @@ bless_run() {
         [ -e "$src" ] || continue
         input="${src%.es}.in"
         [ -f "$input" ] || input=/dev/null
+        words=""
+        [ -f "${src%.es}.args" ] && words=$(cat "${src%.es}.args")
         rm -rf "$WORK/cwd"
         mkdir "$WORK/cwd"
-        (cd "$WORK/cwd" && ES_DEBUG_MEMORY=1 ES_MEMORY_LIMIT=$limit "$ES" run "$src") \
+        (cd "$WORK/cwd" && ES_DEBUG_MEMORY=1 ES_MEMORY_LIMIT=$limit "$ES" run "$src" $words) \
             <"$input" >"$WORK/stdout" 2>"$WORK/stderr"
         status=$?
         if [ $status -eq 0 ] && [ ! -s "$WORK/stderr" ]; then

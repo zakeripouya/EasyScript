@@ -1,0 +1,4 @@
+Line 2: "false" didn't work: it finished with code 1.
+    run "false".
+    ^^^^^^^^^^^
+To carry on when it doesn't work, write "... and call the result r", then check "if r worked:".

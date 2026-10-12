@@ -144,6 +144,7 @@ typedef struct {
     Vec(MapKind) maps;
     Vec(FuncKind) funcs;
     Vec(RecordKind) interfaces;
+    size_t program_result;  // 1 + the index of "program result" (what "run ... and call the result r" makes), or 0
 } Records;
 
 // "a number", "text", "a yes/no value", "nothing", "a list of numbers",

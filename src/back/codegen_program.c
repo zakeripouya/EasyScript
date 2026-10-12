@@ -347,7 +347,7 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     sb_append_n(out, helpers.code.data, helpers.code.len);  // "every" and "only", before the functions that use them
     sb_append_n(out, functions.data, functions.len);
     sb_append_n(out, closures.code.data, closures.code.len);
-    sb_append(out, "int main(void) {\n");
+    sb_append(out, "int main(int argc, char **argv) {\n");
     cg_emit_declarations(&g, out);
     for (size_t i = 0; i < g.constants.len; i++) {  // constants nothing uses (costs nothing)
         sb_append(out, "    (void)");
@@ -355,6 +355,7 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
         sb_append(out, ";\n");
     }
     sb_append(out, "    es_init(es_sites, es_source, es_source_line_count, es_source_files);\n");
+    sb_append(out, "    es_args(argc, argv);\n");
     sb_append_n(out, inits.data, inits.len);  // the fixed maps
     sb_append_n(out, g.body.data, g.body.len);
     if (g.stops) sb_append(out, "es_end:\n");
@@ -362,5 +363,5 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     g.body.len = 0;
     cg_emit_drop_all(&g);
     sb_append_n(out, g.body.data, g.body.len);
-    sb_append(out, "    es_finish(true);\n    return 0;\n}\n");
+    sb_append(out, "    es_finish(true);\n    return es_status;\n}\n");
 }

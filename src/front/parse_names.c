@@ -324,6 +324,24 @@ static void find_records(Parser *p) {
     }
 }
 
+bool parser_add_builtin_kind(Parser *p, const char *name, size_t words) {
+    for (size_t r = 0; r < p->records->len; r++) {
+        if (strcmp(p->records->items[r].name, name) == 0) return false;
+    }
+    RecordKind kind = {name, name, plural_of(p->arena, name), NULL};
+    vec_push(p->arena, p->records, kind);
+    add_known(p, name, words, false, false, false);
+    return true;
+}
+
+void parser_add_field_name(Parser *p, const char *name, size_t words) {
+    for (size_t k = 0; k < p->fields.len; k++) {
+        if (strcmp(p->fields.items[k].text, name) == 0) return;
+    }
+    KnownName field = {name, words, false, false, false};
+    vec_push(p->arena, &p->fields, field);
+}
+
 bool parser_is_method(const Parser *p, const char *name) {
     for (size_t i = 0; i < p->names.len; i++) {
         if (strcmp(p->names.items[i].text, name) == 0) return p->names.items[i].method;
@@ -333,6 +351,7 @@ bool parser_is_method(const Parser *p, const char *name) {
 
 void parser_find_names(Parser *p) {
     find_records(p);
+    parser_find_program_result(p);
     for (size_t i = 0; i + 1 < p->count; i++) {
         if (p->tokens[i].kind != TOK_WORD) continue;
         const char *word = p->tokens[i].text;

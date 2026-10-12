@@ -1,0 +1,28 @@
+Line 2: The position of a word has to be a number, but this is text.
+    let first be word "one" given to the program
+                      ^^^^^
+
+Line 3: The name of a setting has to be text, like "HOME", but this is a number.
+    let home be the setting called 5
+                                   ^
+
+Line 4: Only a program result can have worked, but this is a number.
+    if 5 worked, say "yes"
+       ^
+Run a program first, like "run "git" with "status" and call the result r", then check "if r worked:".
+
+Line 5: The program to run has to be text, like "git", but this is a number.
+    run 5 with "x".
+        ^
+
+Line 6: Each word given to a program has to be text, a number or a list of text, but this is a yes/no value.
+    run "echo" with yes.
+                    ^^^
+
+Line 8: Each word given to a program has to be text, a number or a list of text, but this is a list of numbers.
+    run "echo" with numbers.
+                    ^^^^^^^
+
+Line 9: The code has to be a number, but this is text.
+    stop the program with code "three"
+                               ^^^^^^^

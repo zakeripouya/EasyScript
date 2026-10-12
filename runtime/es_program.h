@@ -126,6 +126,13 @@ static void es_init(const EsSite *sites, const char *const *source, int source_l
 
 static bool es_report_cycles(void); /* es_record.h */
 
+/* What the program tells whoever started it when it ends: 0 (it worked)
+ * unless "stop the program, saying it failed" or "with code N" says otherwise. */
+static int es_status;
+
+/* "the text sent to the program", once it's been read (es_system.h). */
+static EsText *es_sent;
+
 /* The end of the program (normally, or "stop the program"), once the
  * generated code has released the variables it can reach. With
  * ES_DEBUG_MEMORY, checks that nothing is left, and explains records that
@@ -135,6 +142,8 @@ static bool es_report_cycles(void); /* es_record.h */
  * of its reach; the operating system reclaims them as the program ends. */
 static void es_finish(bool check) {
     fflush(stdout);
+    if (es_sent) es_release(es_sent);
+    es_sent = NULL;
     if (check && es_memory.check && es_memory.live_objects != 0) {
         if (es_report_cycles()) exit(70);
         fprintf(stderr, "Memory check: %zu value%s still alive at the end of the program (%zu bytes).\n",

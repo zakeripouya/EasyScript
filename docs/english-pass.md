@@ -45,6 +45,19 @@
 - list literals of mixed kinds when an interface they share is declared
 - review the naming of `apply` and `applied to every`
 
+Found by writing the JSON parser (`examples/programs/json/`) and Snake (`examples/programs/snake/`) in step 22:
+
+- **No early exit for errors:** every parsing function has to check `if r's problem is not "", give back ...` after each call; there's no way to stop a chain of calls with a problem except `stop the program`.
+- **No raw text:** JSON written inside a program needs `\"` for every quote (the tests read theirs from `the text sent to the program` instead), and there's no `\r` escape (`the character with code 13`) or `\u` escape.
+- **`as a number` doesn't read exponents** (`1e3`), so the parser works them out with `to the power of`; and `as text` keeps only 10 significant digits, so numbers don't survive writing and reading back exactly.
+- **No small values with parts that compare by value:** a position `(x, y)` is a record (never equal to another record, so `contains` can't find it) or a kind with one variant (which still has to be checked before each field is read). Snake keeps cells as single numbers.
+- **No way to ask whether a number is infinity** (the parser uses `amount minus amount is not 0`), and no whole-number division (`(n divided by 16) rounded down`).
+- **A function's inputs are only joined by `and`,** so `the column of cell in g` has to be written `column of cell and g`.
+- **Arguments followed by `followed by` need parentheses:** `report in r and ("I expected " followed by word)`.
+- **`new` values inside a map literal need parentheses,** as in lists.
+- **A file's helpers are visible to the files that use it** unless each is marked `privately` (18 of them in `json.es`), and a helper named like a variable in the using file is an error there.
+- **`count from 1 to 0` counts down,** so loops over "the first N - 1 items" need a `while` when N can be 1.
+
 ## Then
 
 1. The first non-coder test: 3 to 5 people who have never written code, against the success test (a working quiz in 30 minutes, with no help).
