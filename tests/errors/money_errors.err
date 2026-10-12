@@ -1,0 +1,38 @@
+Line 2: I can't add an amount in dollars and a number.
+    say rent plus 3.
+        ^^^^^^^^^^^
+Write the number as money too, like "$5".
+
+Line 3: I can't add an amount in dollars and an amount in euros: they're different kinds of money.
+    say rent plus €3.
+        ^^^^^^^^^^^^
+Amounts in different currencies can't be mixed.
+
+Line 4: I can't multiply two amounts of money.
+    say rent times $2.
+        ^^^^^^^^^^^^^
+Multiply an amount by a number, like "price times 3".
+
+Line 5: I can't divide a number by an amount in dollars.
+    say 3 divided by rent.
+        ^^^^^^^^^^^^^^^^^
+An amount of money can be divided by a number, or by another amount.
+
+Line 6: I can't find the remainder of an amount of money.
+    say rent mod 2.
+        ^^^^^^^^^^
+Divide it by a number instead, like "price divided by 3".
+
+Line 8: I can't add a number and an amount in dollars.
+    add $5 to total.
+    ^^^^^^^^^^^^^^^
+Write the number as money too, like "$5".
+
+Line 10: This gives a number, so it can't be kept where an amount in dollars is.
+    divide price by $2.
+    ^^^^^^^^^^^^^^^^^^
+Keep it in a new name instead, like "let share be price divided by $2".
+
+Line 11: "percent of" needs a number, but this is text.
+    say 4 percent of "x".
+                     ^^^

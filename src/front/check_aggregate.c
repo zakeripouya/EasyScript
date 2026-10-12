@@ -81,16 +81,14 @@ static void check_key(Checker *c, const Expr *expr, TypeVar list, TypeVar item, 
     case AGG_MEDIAN: {
         static const char *const verbs[] = {"add up", "find the average of", "find the middle of"};
         const char *verb = verbs[expr->as.aggregate.kind - AGG_TOTAL];
-        if (own) {
-            checker_require(c, list, type_list_of(TYPE_NUMBER), at, arena_sprintf(c->arena, "I can only %s a list "
-                            "of numbers", verb), NULL);
-        } else {
-            checker_require(c, key, TYPE_NUMBER, at, arena_sprintf(c->arena, "I can only %s numbers", verb), NULL);
-        }
+        // numbers, or amounts of money (a number unless something says it's money)
+        types_defer_one_of(c, at, own ? item : key, own ? list : key, KIND_NUMBER | KIND_MONEY | KIND_NUMBER_FIRST,
+                           own ? arena_sprintf(c->arena, "I can only %s a list of numbers", verb)
+                               : arena_sprintf(c->arena, "I can only %s numbers", verb));
         return;
     }
     case AGG_TOP:
-        types_defer_one_of(c, at, key, own ? list : key, KIND_NUMBER | KIND_DATE,
+        types_defer_one_of(c, at, key, own ? list : key, KIND_NUMBER | KIND_DATE | KIND_MONEY,
                            own ? "The top items are picked from a list of numbers or dates"
                                : "The top items are picked by a number or a date");
         return;
@@ -99,20 +97,21 @@ static void check_key(Checker *c, const Expr *expr, TypeVar list, TypeVar item, 
                            "I can only count how often numbers or text come up");
         return;
     case AGG_BEST:
-        types_defer_one_of(c, at, key, key, KIND_NUMBER | KIND_DATE | KIND_LIST,
+        types_defer_one_of(c, at, key, key, KIND_NUMBER | KIND_DATE | KIND_MONEY | KIND_LIST,
                            "The one picked has to be the highest by a number, a date, or how many items a list has");
         return;
     default: return;
     }
 }
 
-static TypeVar result_of(Checker *c, const Expr *expr, TypeVar item) {
+static TypeVar result_of(Checker *c, const Expr *expr, TypeVar item, TypeVar key) {
     size_t line = expr->pos.line;
-    switch (expr->as.aggregate.kind) {
-    case AGG_COUNT:
+    AggregateKind kind = expr->as.aggregate.kind;
+    switch (kind) {
     case AGG_TOTAL:
     case AGG_AVERAGE:
-    case AGG_MEDIAN: return types_new(c, TYPE_NUMBER, line);
+    case AGG_MEDIAN: return key;  // the same kind as what's added up: numbers, or amounts (rounded to the cent)
+    case AGG_COUNT: return types_new(c, TYPE_NUMBER, line);
     case AGG_ANY:
     case AGG_ALL:
     case AGG_NONE: return types_new(c, TYPE_YESNO, line);
@@ -208,7 +207,7 @@ TypeVar checker_check_aggregate(Checker *c, const Expr *expr) {
     c->loops.len--;
     c->made.len = outer;
     check_key(c, expr, list, item, key);
-    TypeVar result = result_of(c, expr, item);
+    TypeVar result = result_of(c, expr, item, key);
     if (!group) return result;
     types_defer_one_of(c, group, group_var, group_var, KIND_TEXT | KIND_NUMBER,
                        "Things can only be grouped by text or a number");

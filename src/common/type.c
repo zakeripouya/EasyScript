@@ -111,6 +111,11 @@ static const char *plural_name(Arena *arena, const Records *records, Type type) 
         sb_append(&sb, "dates");
         return sb.data;
     }
+    if (type_is_money(present)) {
+        sb_append(&sb, present == TYPE_DOLLARS ? "amounts in dollars" : present == TYPE_EUROS ? "amounts in euros"
+                                                                                               : "amounts in pounds");
+        return sb.data;
+    }
     if (present == TYPE_NUMBER || present == TYPE_TEXT || present == TYPE_YESNO) {
         sb_appendf(&sb, "%s%s", plural[present], type_is_maybe(base) ? " or nothing" : "");
         return sb.data;
@@ -200,6 +205,9 @@ const char *ast_type_name(Arena *arena, const Records *records, Type type) {
     case TYPE_TEXT: return "text";
     case TYPE_YESNO: return "a yes/no value";
     case TYPE_DATE: return "a date";
+    case TYPE_DOLLARS: return "an amount in dollars";
+    case TYPE_EUROS: return "an amount in euros";
+    case TYPE_POUNDS: return "an amount in pounds";
     case TYPE_NOTHING: return "nothing";
     default: return "an unknown kind of value";
     }

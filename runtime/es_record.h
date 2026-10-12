@@ -34,6 +34,9 @@
 
 ES_FIELD_GET(n, double, ES_SAME)
 ES_FIELD_GET(d, double, ES_SAME)
+ES_FIELD_GET(u, long long, ES_SAME)
+ES_FIELD_GET(e, long long, ES_SAME)
+ES_FIELD_GET(p, long long, ES_SAME)
 ES_FIELD_GET(b, bool, ES_SAME)
 ES_FIELD_GET(t, EsText *, es_retain)
 ES_FIELD_GET(l, EsList *, es_list_retain)
@@ -131,6 +134,9 @@ static void es_field_render(EsBuf *b, const EsRecord *r, int i, int depth) {
         break;
     }
     case 'd': es_buf_add_date(b, ES_FIELD(r, double, at)); break;
+    case 'u': es_buf_add_money(b, (double)ES_FIELD(r, long long, at), ES_ITEMS_DOLLARS); break;
+    case 'e': es_buf_add_money(b, (double)ES_FIELD(r, long long, at), ES_ITEMS_EUROS); break;
+    case 'p': es_buf_add_money(b, (double)ES_FIELD(r, long long, at), ES_ITEMS_POUNDS); break;
     case 'b': es_buf_add_text(b, ES_FIELD(r, bool, at) ? "yes" : "no"); break;
     case 't': {
         const EsText *t = ES_FIELD(r, EsText *, at);

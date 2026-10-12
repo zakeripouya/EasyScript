@@ -121,6 +121,8 @@ bool cg_has_effects(const Codegen *g, const Expr *expr);
 // The kind of C value cg_emit_expr gives: the expression's, or "or nothing" when it's put in a box.
 Type cg_value_type(const Expr *expr);
 const char *cg_ctype(Type type);  // "double", "bool", "EsText *", "EsList *", "EsMap *", "void"
+char cg_kind_letter(Type present);
+const char *cg_changed(Codegen *g, const Stmt *stmt, Type type, const char *slot, const char *amount);  // codegen_c.c  // n number, t text, b yes/no, d date, u dollars, e euros, p pounds
 // For text and lists (type_counted): the runtime functions that retain,
 // release, store into and drop a variable, and what an empty variable holds.
 const char *cg_retain(Type type);   // "es_retain", "es_list_retain"

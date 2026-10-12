@@ -92,6 +92,14 @@ size_t cg_static_text(Codegen *g, const char *s, size_t len) {
 // A double literal: always with a "." or exponent, so C never does integer
 // arithmetic (1000000 * 1000000 would overflow an int).
 static void emit_number(const Expr *expr, StrBuf *out) {
+    if (expr->as.number.money) {  // whole cents
+        sb_appendf(out, "%sLL", expr->as.number.text);
+        return;
+    }
+    if (expr->as.number.zero && type_is_money(expr->type)) {
+        sb_append(out, "0LL");
+        return;
+    }
     double value = strtod(expr->as.number.text, NULL);
     if (isinf(value)) {
         sb_append(out, "HUGE_VAL");
@@ -157,6 +165,7 @@ bool cg_has_effects(const Codegen *g, const Expr *expr) {
                cg_has_effects(g, expr->as.convert.operand);
     case EXPR_BINARY:
         return expr->as.binary.op == BINARY_DIVIDE || expr->as.binary.op == BINARY_MODULO ||
+               type_is_money(expr->type) ||  // can be too big to keep
                type_is_list(expr->as.binary.left->type) || type_is_map(expr->as.binary.left->type) ||
                cg_has_effects(g, expr->as.binary.left) ||
                cg_has_effects(g, expr->as.binary.right);
@@ -236,6 +245,12 @@ static void emit_compare(Codegen *g, const Expr *expr, StrBuf *out) {
     operands(g, expr->as.binary.left, expr->as.binary.right, false, out, &l, &r, &close);
     bool equality = op == BINARY_EQUAL || op == BINARY_NOT_EQUAL;
     const char *negate = op == BINARY_NOT_EQUAL ? "!" : "";
+    if (type_is_money(type)) {  // whole cents: exactly
+        static const char *const ops[] = {"==", "!=", "<", "<=", ">", ">="};
+        sb_appendf(out, "(%s %s %s)%s", l, op == BINARY_EQUAL ? ops[0] : op == BINARY_NOT_EQUAL ? ops[1]
+                                         : order_operator(op), r, close);
+        return;
+    }
     if (equality && type == TYPE_YESNO) {
         sb_appendf(out, "(%s %s %s)", l, op == BINARY_EQUAL ? "==" : "!=", r);
     } else if (equality) {
@@ -249,10 +264,41 @@ static void emit_compare(Codegen *g, const Expr *expr, StrBuf *out) {
     sb_append(out, close);
 }
 
+// "$5 plus $3", "price times 2", "price divided by 3", "$10 divided by $2": checked
+// for amounts too big to keep, and rounded to the cent.
+static void emit_money(Codegen *g, const Expr *expr, StrBuf *out) {
+    BinaryOp op = expr->as.binary.op;
+    const Expr *left = expr->as.binary.left, *right = expr->as.binary.right;
+    const char *l, *r, *close;
+    operands(g, left, right, false, out, &l, &r, &close);
+    size_t site = cg_site(g, expr->pos);
+    bool left_money = type_is_money(left->type);
+    switch (op) {
+    case BINARY_ADD: sb_appendf(out, "es_money_add(%zu, %s, %s)", site, l, r); break;
+    case BINARY_SUBTRACT: sb_appendf(out, "es_money_subtract(%zu, %s, %s)", site, l, r); break;
+    case BINARY_MULTIPLY:
+        cg_plan(g, expr->pos, "money times a number: whole cents, rounded to the cent (half away from zero).");
+        sb_appendf(out, "es_money_times(%zu, %s, %s)", site, left_money ? l : r, left_money ? r : l);
+        break;
+    default:
+        if (!type_is_money(right->type)) {
+            cg_plan(g, expr->pos, "money divided by a number: whole cents, rounded to the cent (half away from zero).");
+        }
+        sb_appendf(out, "%s(%zu, %s, %s)", type_is_money(right->type) ? "es_money_ratio" : "es_money_divide", site, l, r);
+        break;
+    }
+    sb_append(out, close);
+}
+
 static void emit_binary(Codegen *g, const Expr *expr, StrBuf *out) {
     BinaryOp op = expr->as.binary.op;
     const Expr *left = expr->as.binary.left, *right = expr->as.binary.right;
     const char *l, *r, *close;
+    if ((op == BINARY_ADD || op == BINARY_SUBTRACT || op == BINARY_MULTIPLY || op == BINARY_DIVIDE) &&
+        (type_is_money(left->type) || type_is_money(right->type))) {
+        emit_money(g, expr, out);
+        return;
+    }
     switch (op) {
     case BINARY_AND:
     case BINARY_OR:  // && and || work left to right and stop early, as "and"/"or" do
@@ -391,6 +437,10 @@ static void emit_convert(Codegen *g, const Expr *expr, StrBuf *out) {
     } else if (expr->as.convert.target == CONVERT_TO_TABLE) {
         sb_appendf(out, "%s(%s)", type_is_map(operand_expr->type) ? "es_map_table" : "es_list_table",
                    cg_operand(g, operand_expr, false));
+    } else if (type_is_money(operand_expr->type) && expr->as.convert.target != CONVERT_TO_NUMBER) {
+        cg_emit_text(g, operand_expr, out);  // "as money", "with commas": "$1,200.00"
+    } else if (type_is_money(operand_expr->type)) {  // "as a number": 19.99
+        sb_appendf(out, "((double)%s / 100)", cg_operand(g, operand_expr, false));
     } else if (expr->as.convert.target >= CONVERT_TO_EXACT_TEXT) {
         static const char *const functions[] = {"es_number_exact_text", "es_money_text", "es_percent_text",
                                                 "es_commas_text"};
@@ -517,6 +567,11 @@ void cg_emit_text(Codegen *g, const Expr *expr, StrBuf *out) {
     case TYPE_NUMBER: sb_appendf(out, "es_number_text(%s)", cg_operand(g, expr, false)); break;
     case TYPE_YESNO: sb_appendf(out, "es_yesno_text(%s)", cg_operand(g, expr, false)); break;
     case TYPE_DATE: sb_appendf(out, "es_date_text(%s)", cg_operand(g, expr, false)); break;
+    case TYPE_DOLLARS:
+    case TYPE_EUROS:
+    case TYPE_POUNDS:
+        sb_appendf(out, "es_cents_text(%s, %d)", cg_operand(g, expr, false), (int)(expr->type - TYPE_DOLLARS));
+        break;
     default: assert(!"a value without a kind reached codegen"); break;
     }
 }

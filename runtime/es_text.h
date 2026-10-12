@@ -265,10 +265,11 @@ static EsText *es_list_joined(EsList *l, EsText *with) {
         if (i > 0) es_buf_add(&b, with->chars, with->len);
         EsText *item = l->items == ES_ITEMS_NUMBER  ? es_number_text(l->at.n[i])
                        : l->items == ES_ITEMS_DATE  ? es_date_text(l->at.n[i])
+                       : es_items_money(l->items)   ? es_cents_text((long long)l->at.n[i], (int)(l->items - ES_ITEMS_DOLLARS))
                        : l->items == ES_ITEMS_YESNO ? es_yesno_text(l->at.b[i])
                                                     : l->at.t[i];
         es_buf_add(&b, item->chars, item->len);
-        if (l->items == ES_ITEMS_NUMBER || l->items == ES_ITEMS_DATE) es_release(item);
+        if (es_items_numeric(l->items)) es_release(item);
     }
     EsText *t = b.len > 0 ? es_text_copy(b.data, b.len) : &es_empty_text;
     free(b.data);

@@ -11,9 +11,9 @@ if file "spending.csv" doesn't exist:
     add "2026-10-08,Apple,electronics,249" to the end of file "spending.csv"
 
 read the table in "spending.csv" and call it purchases.
-a purchase is big if its amount is over 200.
+a purchase is big if its amount is over $200.
 say "Purchases: [how many purchases there are]".
-say "Total: [the total amount of purchases as money]".
+say "Total: [the total amount of purchases]".
 show the total amount of purchases per category, sorted biggest first, as a table.
 say "Top store:", the store with the highest total amount.
 show the big purchases whose category isn't "rent", sorted by amount biggest first, as a table.

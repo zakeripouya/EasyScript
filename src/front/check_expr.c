@@ -92,10 +92,12 @@ void checker_require(Checker *c, TypeVar var, Type type, const Expr *at, const c
     }
 }
 
-void checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Span span, size_t line) {
+TypeVar checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Span span, size_t line) {
+    TypeVar money = checker_money_arithmetic(c, op, left, right, span, line);  // "$5 plus $3"
+    if (money) return money;
     bool ok_left = types_require(c, left, TYPE_NUMBER, line);
     bool ok_right = types_require(c, right, TYPE_NUMBER, line);
-    if (ok_left && ok_right) return;
+    if (ok_left && ok_right) return types_new(c, TYPE_NUMBER, line);
     const char *l = checker_kind(c, left), *r = checker_kind(c, right);
     switch (op) {
     case BINARY_ADD:
@@ -109,6 +111,7 @@ void checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Sp
     case BINARY_DIVIDE: diag_error(c->diag, span, "I can't divide %s by %s.", l, r); break;
     default: diag_error(c->diag, span, "I can't find the remainder of %s divided by %s.", l, r); break;
     }
+    return types_new(c, TYPE_NUMBER, line);
 }
 
 static void report_compare(Checker *c, const Expr *expr, TypeVar left, TypeVar right) {
@@ -227,12 +230,12 @@ static TypeVar check_binary(Checker *c, const Expr *expr) {
     case BINARY_NOT_HAS: return checker_check_has(c, expr, left, right);
     default: {
         size_t before = diag_count(c->diag);
-        checker_arithmetic(c, op, left, right, expr->pos.span, line);
+        TypeVar result = checker_arithmetic(c, op, left, right, expr->pos.span, line);
         if (diag_count(c->diag) > before) {  // "p plus 1" where p could be nothing
             checker_note_maybe(c, types_of(c, left) == TYPE_NUMBER ? right : left,
                                types_of(c, left) == TYPE_NUMBER ? expr->as.binary.right : expr->as.binary.left);
         }
-        return types_new(c, TYPE_NUMBER, line);
+        return result;
     }
     }
 }
@@ -243,6 +246,7 @@ static TypeVar check_unary(Checker *c, const Expr *expr) {
         checker_require(c, operand, TYPE_YESNO, expr, "\"not\" needs a yes/no value", NULL);
         return types_new(c, TYPE_YESNO, expr->pos.line);
     }
+    if (type_is_money(types_of(c, operand))) return operand;  // -$5
     if (!types_require(c, operand, TYPE_NUMBER, expr->pos.line)) {
         diag_error(c->diag, expr->pos.span, "I can't make %s negative.", checker_kind(c, operand));
     }
@@ -554,7 +558,9 @@ static TypeVar check_bare_name(Checker *c, const Expr *expr) {
 static TypeVar check_expr(Checker *c, const Expr *expr) {
     size_t line = expr->pos.line;
     switch (expr->kind) {
-    case EXPR_NUMBER: return types_new(c, TYPE_NUMBER, line);
+    case EXPR_NUMBER:
+        if (expr->as.number.zero) return types_new(c, TYPE_UNKNOWN, line);  // ", plus N if C": N's kind
+        return types_new(c, expr->as.number.money ? expr->as.number.money : TYPE_NUMBER, line);
     case EXPR_TEXT: return types_new(c, TYPE_TEXT, line);
     case EXPR_BOOLEAN: return types_new(c, TYPE_YESNO, line);
     case EXPR_NOTHING:
@@ -590,6 +596,10 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
             types_defer_one_of(c, expr->as.convert.operand, operand, operand, KIND_LIST | KIND_MAP,
                                "\"as a table\" needs a list or a map");
             return types_new(c, TYPE_TEXT, line);
+        }
+        if ((expr->as.convert.target == CONVERT_TO_MONEY || expr->as.convert.target == CONVERT_WITH_COMMAS) &&
+            type_is_money(types_of(c, operand))) {
+            return types_new(c, TYPE_TEXT, line);  // "$1,200.00" either way
         }
         if (expr->as.convert.target >= CONVERT_TO_EXACT_TEXT) {  // and "as money", "as a percent", "with commas"
             static const char *const names[] = {"as exact text", "as money", "as a percent", "with commas"};

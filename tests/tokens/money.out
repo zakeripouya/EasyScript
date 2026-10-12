@@ -1,0 +1,9 @@
+WORD          1:1     say
+MONEY         1:5     dollars 120050
+COMMA         1:14    ,
+MONEY         1:16    euros 450
+WORD          1:22    and
+MONEY         1:26    pounds 300
+PERIOD        1:28    .
+NEWLINE       1:29
+EOF           2:1

@@ -1,0 +1,3 @@
+Line 4: In prices.csv, line 3, "price" is "lots", which isn't an amount in dollars.
+    read the table in "prices.csv" and call it prices.
+                      ^^^^^^^^^^^^

@@ -110,7 +110,16 @@ static void check_change(Checker *c, const Stmt *stmt) {
         checker_add_to_list(c, (Stmt *)stmt, var, amount);
         return;
     }
-    checker_arithmetic(c, ops[stmt->as.change.op], var, amount, stmt->pos.span, stmt->pos.line);
+    TypedSlot slot = {(Type *)&stmt->as.change.type, var};
+    vec_push(c->arena, &c->slots, slot);
+    size_t before = diag_count(c->diag);
+    TypeVar result = checker_arithmetic(c, ops[stmt->as.change.op], var, amount, stmt->pos.span, stmt->pos.line);
+    if (diag_count(c->diag) == before && !types_unify(c, var, result)) {  // "divide price by $2": a number
+        diag_error(c->diag, stmt->pos.span, "This gives %s, so it can't be kept where %s is.", checker_kind(c, result),
+                   checker_kind(c, var));
+        diag_note(c->diag, "Keep it in a new name instead, like \"let share be price divided by $2\".");
+        diag_info(c->diag, DIAG_WRONG_KIND, NULL, checker_kind(c, var));
+    }
 }
 
 // "ask ... and call the answer X" and "read file ... and call it X" make X as
@@ -518,6 +527,7 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
             if (kind_pass == (int)pass && checker_check_module_stmt(&c, stmt)) check_stmt(&c, stmt);
         }
     }
+    types_default_numbers(&c);  // "the total amount of sales": a number, unless it's money
     for (size_t r = 0; r < c.records->len; r++) {  // a table's columns that nothing decided are text, as in the file
         if (!c.records->items[r].table) continue;
         Stmt *def = c.records->items[r].definition;

@@ -4,6 +4,8 @@
 // word (parse_list.c, parse_map.c, and "only" in parse_expr.c). The
 // operators around them are in parse_expr.c.
 
+#include <math.h>
+#include <stdlib.h>
 #include <string.h>
 #include "front/parse_internal.h"
 
@@ -29,11 +31,60 @@ static Expr *literal(Parser *p, ExprKind kind) {
     return ast_new_expr(p->arena, kind, parser_token_pos(parser_advance(p)));
 }
 
+static Type currency_word(const char *word) {
+    if (strcmp(word, "dollars") == 0 || strcmp(word, "dollar") == 0) return TYPE_DOLLARS;
+    if (strcmp(word, "euros") == 0 || strcmp(word, "euro") == 0) return TYPE_EUROS;
+    if (strcmp(word, "pounds") == 0 || strcmp(word, "pound") == 0) return TYPE_POUNDS;
+    return 0;
+}
+
+// "4.50 dollars": the number in cents, as money (at most two decimals).
+static Expr *money_after_number(Parser *p, Expr *expr, const Token *token) {
+    const Token *word = parser_advance(p);
+    expr->as.number.money = currency_word(word->text);
+    expr->pos = ast_pos_join(expr->pos, parser_token_pos(word));
+    const char *point = strchr(token->text, '.');
+    size_t decimals = point ? strlen(point + 1) : 0;
+    if (decimals > 2) {
+        if (parser_error(p, expr->pos.span, "An amount of money has at most two decimals, for the cents.")) {
+            diag_note(p->diag, "Round it first, like \"%.*s %s\".", (int)(point - token->text + 3), token->text,
+                      word->text);
+            diag_info(p->diag, DIAG_NOT_ALLOWED, NULL, NULL);
+        }
+        return parser_error_expr(p);
+    }
+    double cents = round(strtod(token->text, NULL) * 100);
+    if (cents >= 9007199254740992.0) {
+        if (parser_error(p, expr->pos.span, "This amount of money is too big for me to keep exactly.")) {
+            diag_note(p->diag, "Amounts can go up to 90 trillion.");
+            diag_info(p->diag, DIAG_NOT_ALLOWED, NULL, NULL);
+        }
+        return parser_error_expr(p);
+    }
+    expr->as.number.text = arena_sprintf(p->arena, "%.0f", cents);
+    expr->as.number.is_decimal = false;
+    return expr;
+}
+
 static Expr *parse_number(Parser *p) {
     Expr *expr = literal(p, EXPR_NUMBER);
     const Token *token = &p->tokens[p->pos - 1];
     expr->as.number.text = token->text;
     expr->as.number.is_decimal = strchr(token->text, '.') != NULL;
+    const Token *next = parser_peek(p, 0);
+    if (next->kind == TOK_WORD && currency_word(next->text) && !parser_match_name(p, 0, false)) {
+        return money_after_number(p, expr, token);  // 4.50 dollars
+    }
+    return expr;
+}
+
+// "$1,200": the lexer has the currency and the cents ("dollars 120000").
+static Expr *parse_money(Parser *p) {
+    Expr *expr = literal(p, EXPR_NUMBER);
+    const Token *token = &p->tokens[p->pos - 1];
+    const char *space = strchr(token->text, ' ');
+    expr->as.number.money = currency_word(arena_sprintf(p->arena, "%.*s", (int)(space - token->text), token->text));
+    expr->as.number.text = space + 1;
     return expr;
 }
 
@@ -390,6 +441,7 @@ static Expr *parse_value(Parser *p) {
     }
     switch (parser_peek(p, 0)->kind) {
     case TOK_NUMBER: return parser_at_most_common(p) ? parser_parse_most_common(p) : parse_number(p);
+    case TOK_MONEY: return parse_money(p);
     case TOK_STRING: return parse_text(p);
     case TOK_LPAREN: return parse_group(p);
     case TOK_WORD: return parse_word(p);

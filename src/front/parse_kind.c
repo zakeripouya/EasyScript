@@ -126,6 +126,20 @@ static bool report_kind(Parser *p, const char *kinds, const char *missing) {
     return false;
 }
 
+// "dollars" / "euros" / "pounds", or "an amount in dollars" ("amounts in" for a
+// list's items): how many words, with *type set, or 0.
+static size_t money_kind(const Parser *p, bool plural, Type *type) {
+    static const char *const words[] = {"dollars", "euros", "pounds"};
+    size_t skip = parser_at_word(p, 0, plural ? "amounts" : "amount") && parser_at_word(p, 1, "in") ? 2 : 0;
+    for (size_t i = 0; i < 3; i++) {
+        if (parser_at_word(p, skip, words[i])) {
+            *type = TYPE_DOLLARS + (Type)i;
+            return skip + 1;
+        }
+    }
+    return 0;
+}
+
 // What a list holds, in the plural: "numbers", "text", "yes/no values" (or
 // "yes or no values"), "dates", "lists of" ..., a record kind's plural, or "maps from" ... .
 bool parser_parse_items_kind(Parser *p, Type *type) {
@@ -153,6 +167,7 @@ bool parser_parse_items_kind(Parser *p, Type *type) {
         Type kind = parser_match_kind_name(p, 0, true, &words);
         if (words > 0) *type = kind;
         if (words == 0 && parser_at_word(p, 0, "dates")) *type = TYPE_DATE, words = 1;  // unless a kind is called that
+        if (words == 0) words = money_kind(p, true, type);                                // "dollars", "amounts in euros"
     }
     if (words > 0) {
         parser_consume(p, words);
@@ -178,8 +193,8 @@ static bool parse_or_nothing(Parser *p, Type *type) {
         }
         return false;
     }
-    if (*type == TYPE_DATE) {
-        if (parser_error(p, span, "A date can't be \"or nothing\" yet.")) {
+    if (*type == TYPE_DATE || type_is_money(*type)) {
+        if (parser_error(p, span, "%s can't be \"or nothing\" yet.", *type == TYPE_DATE ? "A date" : "An amount of money")) {
             diag_note(p->diag, "Keep a yes/no value next to it that says whether there is one, like \"paid, which is "
                                "yes or no.\"");
         }
@@ -219,6 +234,7 @@ bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type) {
         Type kind = parser_match_kind_name(p, 0, false, &words);
         if (words > 0) *type = kind;
         if (words == 0 && parser_at_word(p, 0, "date")) *type = TYPE_DATE, words = 1;  // unless a kind is called that
+        if (words == 0) words = money_kind(p, false, type);                              // "dollars", "an amount in euros"
     }
     if (words > 0) {
         parser_consume(p, words);

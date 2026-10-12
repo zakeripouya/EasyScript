@@ -30,7 +30,7 @@ NUMBER        6:13    1
 PERIOD        6:14    .
 NEWLINE       6:15
 WORD          7:1     say
-NUMBER        7:6     5
-PERIOD        7:7     .
-NEWLINE       7:8
+NUMBER        7:7     5
+PERIOD        7:8     .
+NEWLINE       7:9
 EOF           8:1

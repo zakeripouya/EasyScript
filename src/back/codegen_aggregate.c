@@ -55,6 +55,13 @@ static const char *group_code(Codegen *helper, const Question *q) {
                          cg_operand(helper, group, false));
 }
 
+// An amount of money the total, average or median is of, or TYPE_NUMBER.
+static Type money_of(const Question *q) {
+    const Expr *key = q->expr->as.aggregate.key;
+    Type type = key ? key->type : q->item;
+    return type_is_money(type) ? type : TYPE_NUMBER;
+}
+
 static const char *result_ctype(const Question *q) {
     if (q->expr->as.aggregate.group) return "EsMap *";
     return cg_ctype(q->expr->type);
@@ -66,7 +73,8 @@ static void emit_start(Codegen *g, const Question *q, StrBuf *out) {
     bool lowest = q->expr->as.aggregate.lowest;
     if (group) {
         const char *keys = cg_items(group->type);
-        const char *values = q->kind == AGG_MEDIAN ? "ES_ITEMS_LIST" : "ES_ITEMS_NUMBER";
+        const char *values = q->kind == AGG_MEDIAN ? "ES_ITEMS_LIST" : q->kind == AGG_COUNT ? "ES_ITEMS_NUMBER"
+                                                                                           : cg_items(money_of(q));
         sb_appendf(out, "    EsMap *es_result = es_map_new(%s, %s, 0);\n", keys, values);
         if (q->kind == AGG_AVERAGE) sb_appendf(out, "    EsMap *es_counts = es_map_new(%s, ES_ITEMS_NUMBER, 0);\n", keys);
         return;
@@ -152,14 +160,22 @@ static void emit_finish(Codegen *g, const Question *q, StrBuf *out) {
     const char *release = "    es_list_release(es_items);\n";
     if (q->expr->as.aggregate.group) {
         sb_append(out, release);
-        if (q->kind == AGG_AVERAGE) sb_append(out, "    return es_map_divide(es_result, es_counts);\n");
-        else if (q->kind == AGG_MEDIAN) sb_appendf(out, "    return es_map_medians(%zu, es_result);\n", q->site);
+        const char *kept = cg_items(money_of(q));  // amounts: rounded to the cent, kept as money
+        if (q->kind == AGG_AVERAGE) sb_appendf(out, "    return es_map_as(es_map_divide(es_result, es_counts), %s);\n", kept);
+        else if (q->kind == AGG_MEDIAN) sb_appendf(out, "    return es_map_as(es_map_medians(%zu, es_result), %s);\n", q->site, kept);
         else sb_append(out, "    return es_result;\n");
         return;
     }
     switch (q->kind) {
-    case AGG_AVERAGE: sb_appendf(out, "%s    return es_average(%zu, es_total, es_count);\n", release, q->site); break;
-    case AGG_MEDIAN: sb_appendf(out, "%s    return es_median(%zu, es_keys);\n", release, q->site); break;
+    case AGG_AVERAGE:
+    case AGG_MEDIAN: {
+        bool cents = type_is_money(money_of(q));  // an amount: rounded to the cent
+        const char *value = q->kind == AGG_AVERAGE ? arena_sprintf(g->arena, "es_average(%zu, es_total, es_count)", q->site)
+                                                   : arena_sprintf(g->arena, "es_median(%zu, es_keys)", q->site);
+        if (cents) value = arena_sprintf(g->arena, "es_money_round(%zu, %s)", q->site, value);
+        sb_appendf(out, "%s    return %s;\n", release, value);
+        break;
+    }
     case AGG_TOP:
         if (!q->expr->as.aggregate.count) {  // the items kept, in their keys' order (stable, like "sorted by F")
             sb_appendf(out, "    es_list_shrink(es_kept);\n    es_sort_by_keys(es_kept, es_keys, %s);\n%s    return es_kept;\n",

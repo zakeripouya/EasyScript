@@ -1,0 +1,3 @@
+Line 2: money divided by a number: whole cents, rounded to the cent (half away from zero).
+Line 2: money times a number: whole cents, rounded to the cent (half away from zero).
+Line 2: a percent of money: whole cents, rounded to the cent (half away from zero).

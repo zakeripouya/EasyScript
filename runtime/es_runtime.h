@@ -245,6 +245,94 @@ static bool es_text_is_empty(EsText *t) {
     return empty;
 }
 
+/* --- Exact money ------------------------------------------------------------ */
+
+/* An amount of money is whole cents in a long long. Amounts stay below 2^53
+ * cents (90 trillion), so a list, map or record that keeps one as a number
+ * keeps it exactly. The currency is part of the kind: 0 dollars, 1 euros,
+ * 2 pounds. Multiplying or dividing rounds to the cent, half away from zero. */
+#define ES_MONEY_LIMIT 9007199254740992.0
+
+static long long es_money_fits(int site, double cents) {
+    if (!(fabs(cents) < ES_MONEY_LIMIT)) {
+        es_fail(site, "Amounts can go up to 90 trillion.", isnan(cents)
+                    ? "This amount of money isn't a number."
+                    : "This amount of money is too big for me to keep exactly.");
+    }
+    return (long long)cents;
+}
+
+static inline long long es_money_add(int site, long long a, long long b) {
+    return es_money_fits(site, (double)(a + b));
+}
+
+static inline long long es_money_subtract(int site, long long a, long long b) {
+    return es_money_fits(site, (double)(a - b));
+}
+
+static inline long long es_money_times(int site, long long a, double n) {
+    return es_money_fits(site, round((double)a * n));  /* round() goes half away from zero */
+}
+
+static inline long long es_money_divide(int site, long long a, double n) {
+    if (n == 0) es_fail(site, NULL, "You divided by zero.");
+    return es_money_fits(site, round((double)a / n));
+}
+
+/* "10 percent of $19.99": $2.00. */
+static inline long long es_money_percent(int site, double percent, long long a) {
+    return es_money_fits(site, round((double)a * percent / 100.0));
+}
+
+/* An average or a middle value of amounts: rounded to the cent. */
+static inline long long es_money_round(int site, double cents) {
+    return es_money_fits(site, round(cents));
+}
+
+/* An amount divided by another of the same currency: a plain number. */
+static inline double es_money_ratio(int site, long long a, long long b) {
+    if (b == 0) es_fail(site, NULL, "You divided by zero.");
+    return (double)a / (double)b;
+}
+
+/* "$1,200.50", "1200.5", "-€3": an amount typed or read from a file, in its
+ * currency (0 dollars, 1 euros, 2 pounds): its own sign or none, commas
+ * between thousands, at most two decimals. */
+static bool es_parse_money(const char *s, size_t len, int currency, long long *cents) {
+    static const char *const signs[] = {"$", "\xE2\x82\xAC", "\xC2\xA3"};
+    const char *end = s + len;
+    while (s < end && *s == ' ') s++;
+    while (end > s && end[-1] == ' ') end--;
+    bool minus = s < end && *s == '-';
+    if (minus) s++;
+    size_t n = strlen(signs[currency]);
+    if ((size_t)(end - s) >= n && memcmp(s, signs[currency], n) == 0) s += n;
+    double whole = 0, part = 0;
+    int digits = 0, decimals = 0;
+    for (; s < end && ((*s >= '0' && *s <= '9') || *s == ','); s++) {
+        if (*s != ',') whole = whole * 10 + (*s - '0'), digits++;
+    }
+    if (s < end && *s == '.') {
+        for (s++; s < end && *s >= '0' && *s <= '9' && decimals < 2; s++, decimals++) part = part * 10 + (*s - '0');
+    }
+    if (s != end || digits == 0) return false;
+    double value = whole * 100 + (decimals == 1 ? part * 10 : part);
+    if (value >= ES_MONEY_LIMIT) return false;
+    *cents = (long long)(minus ? -value : value);
+    return true;
+}
+
+/* "$1,200.00", "-€4.50", "£3.00". */
+static EsText *es_cents_text(long long cents, int currency) {
+    static const char *const signs[] = {"$", "\xE2\x82\xAC", "\xC2\xA3"};
+    long long whole = cents < 0 ? -cents : cents;
+    int n = snprintf(NULL, 0, "%s%lld.%02lld", cents < 0 ? "-" : "", whole / 100, whole % 100);
+    char *chars;
+    EsText *t = es_text_new((size_t)n, &chars);
+    snprintf(chars, (size_t)n + 1, "%s%lld.%02lld", cents < 0 ? "-" : "", whole / 100, whole % 100);
+    return es_with_commas(signs[currency], t, "");
+}
+
 /* --- Numbers ---------------------------------------------------------------- */
 
 static inline double es_div(int site, double a, double b) {
@@ -588,6 +676,28 @@ static double es_ask_number(int site, EsText *question) {
             es_fail(site, NULL, "There's no answer to read: the input has run out.");
         }
         es_say(es_text_copy("Please type a number, like 42.", 30));
+    }
+}
+
+/* "ask for an amount": asks again until the answer is an amount (with its
+ * currency's sign or none). Consumes question. */
+static long long es_ask_money(int site, EsText *question, int currency) {
+    static const char *const examples[] = {"Please type an amount, like $12.50.", "Please type an amount, like \xE2\x82\xAC" "12.50.",
+                                           "Please type an amount, like \xC2\xA3" "12.50."};
+    for (;;) {
+        EsText *answer = es_ask(es_retain(question));
+        long long cents = 0;
+        bool ok = es_parse_money(answer->chars, answer->len, currency, &cents);
+        es_release(answer);
+        if (ok) {
+            es_release(question);
+            return cents;
+        }
+        if (es_input_ended) {
+            es_release(question);
+            es_fail(site, NULL, "There's no answer to read: the input has run out.");
+        }
+        es_say(es_text_copy(examples[currency], strlen(examples[currency])));
     }
 }
 

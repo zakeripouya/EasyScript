@@ -117,8 +117,21 @@ typedef struct EsRecord {
 /* What a list holds (or a map's keys or values). Text, lists, records and
  * maps inside a list are counted references that the list owns (a record
  * item can be NULL, for nothing). */
-/* Dates are kept like numbers (seconds, in at.n), but print as dates. */
-typedef enum { ES_ITEMS_NUMBER, ES_ITEMS_YESNO, ES_ITEMS_TEXT, ES_ITEMS_LIST, ES_ITEMS_RECORD, ES_ITEMS_MAP, ES_ITEMS_DATE } EsItems;
+/* Dates are kept like numbers (seconds, in at.n), but print as dates.
+ * Amounts of money too (whole cents, exact below 2^53), printing as money. */
+typedef enum {
+    ES_ITEMS_NUMBER, ES_ITEMS_YESNO, ES_ITEMS_TEXT, ES_ITEMS_LIST, ES_ITEMS_RECORD, ES_ITEMS_MAP, ES_ITEMS_DATE,
+    ES_ITEMS_DOLLARS, ES_ITEMS_EUROS, ES_ITEMS_POUNDS
+} EsItems;
+
+static inline bool es_items_money(EsItems items) {
+    return items == ES_ITEMS_DOLLARS || items == ES_ITEMS_EUROS || items == ES_ITEMS_POUNDS;
+}
+
+/* Kept in at.n: numbers, dates and money. */
+static inline bool es_items_numeric(EsItems items) {
+    return items == ES_ITEMS_NUMBER || items == ES_ITEMS_DATE || es_items_money(items);
+}
 
 struct EsMap;
 
@@ -140,13 +153,13 @@ typedef struct EsList {
 } EsList;
 
 static size_t es_item_size(EsItems items) {
-    return items == ES_ITEMS_NUMBER || items == ES_ITEMS_DATE ? sizeof(double)
+    return es_items_numeric(items) ? sizeof(double)
            : items == ES_ITEMS_YESNO                         ? sizeof(bool)
                                                              : sizeof(void *);
 }
 
 static bool es_items_counted(EsItems items) {
-    return items != ES_ITEMS_NUMBER && items != ES_ITEMS_YESNO && items != ES_ITEMS_DATE;
+    return !es_items_numeric(items) && items != ES_ITEMS_YESNO;
 }
 
 /* Lists and maps belong to what holds them: copying a list or a map copies

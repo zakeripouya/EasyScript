@@ -441,7 +441,10 @@ static void es_list_put_value(EsList *l, EsValue v) {
     size_t k = l->len++;
     switch (l->items) {
     case ES_ITEMS_NUMBER:
-    case ES_ITEMS_DATE: l->at.n[k] = v.n; break;
+    case ES_ITEMS_DATE:
+    case ES_ITEMS_DOLLARS:
+    case ES_ITEMS_EUROS:
+    case ES_ITEMS_POUNDS: l->at.n[k] = v.n; break;
     case ES_ITEMS_YESNO: l->at.b[k] = v.b; break;
     case ES_ITEMS_TEXT: l->at.t[k] = es_retain(v.t); break;
     case ES_ITEMS_RECORD: l->at.r[k] = es_record_retain(v.r); break;
@@ -464,6 +467,9 @@ static bool es_value_equal(EsItems kind, EsValue a, EsValue b) {
     switch (kind) {
     case ES_ITEMS_NUMBER:
     case ES_ITEMS_DATE: return es_close(a.n, b.n);
+    case ES_ITEMS_DOLLARS:
+    case ES_ITEMS_EUROS:
+    case ES_ITEMS_POUNDS: return a.n == b.n;
     case ES_ITEMS_YESNO: return a.b == b.b;
     case ES_ITEMS_TEXT: return es_text_equal(a.t, b.t);
     case ES_ITEMS_LIST: return es_list_equal(a.l, b.l);
@@ -507,6 +513,9 @@ static void es_value_render(EsBuf *b, EsItems kind, EsValue v, int depth) {
         break;
     }
     case ES_ITEMS_DATE: es_buf_add_date(b, v.n); break;
+    case ES_ITEMS_DOLLARS:
+    case ES_ITEMS_EUROS:
+    case ES_ITEMS_POUNDS: es_buf_add_money(b, v.n, kind); break;
     case ES_ITEMS_YESNO: es_buf_add_text(b, v.b ? "yes" : "no"); break;
     case ES_ITEMS_TEXT:
         es_buf_add(b, "\"", 1);

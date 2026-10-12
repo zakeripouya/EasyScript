@@ -72,6 +72,7 @@ bool parser_is_value_word(const char *word) {
 bool parser_starts_operand(const Token *token) {
     switch (token->kind) {
     case TOK_NUMBER:
+    case TOK_MONEY:
     case TOK_STRING:
     case TOK_LPAREN:
     case TOK_MINUS: return true;
@@ -223,6 +224,7 @@ const char *parser_describe(const Parser *p, const Token *token) {
         sb_append_quoted(&sb, token->text, token->text_len);
         return sb.data;
     }
+    case TOK_MONEY: return arena_sprintf(p->arena, "\"%.*s\"", (int)token->span.length, p->source + token->span.offset);
     default: return arena_sprintf(p->arena, "\"%s\"", token->text);
     }
 }

@@ -93,6 +93,7 @@ struct Expr {
             const char *text;  // as written, e.g. "19.99"
             bool is_decimal;
             bool zero;         // the 0 of ", plus N if C" when C is no: the same kind as N
+            Type money;        // "$19.99", "4.50 euros": TYPE_DOLLARS, ... (text is the cents: "1999"), or 0
         } number;
         struct {
             const char *value;  // decoded; may contain any byte but NUL
@@ -432,6 +433,7 @@ struct Stmt {
                           // EXPR_MAP_GET); target is then unused
             bool append;  // filled in by the checker: "add E to L" where L is a list
             Expr *start;  // ", starting at S" (a map's value): what a missing key's value starts as, or NULL
+            Type type;    // filled in by the checker: the kind of what changes
         } change;
         Expr *value;  // STMT_SAY
         struct {

@@ -34,6 +34,9 @@ const char *cg_items(Type type) {
     return type_is_list(type) ? "ES_ITEMS_LIST" : type == TYPE_TEXT ? "ES_ITEMS_TEXT"
                                               : type == TYPE_YESNO ? "ES_ITEMS_YESNO"
                                               : type == TYPE_DATE  ? "ES_ITEMS_DATE"
+                                              : type == TYPE_DOLLARS ? "ES_ITEMS_DOLLARS"
+                                              : type == TYPE_EUROS ? "ES_ITEMS_EUROS"
+                                              : type == TYPE_POUNDS ? "ES_ITEMS_POUNDS"
                                                                    : "ES_ITEMS_NUMBER";
 }
 
@@ -55,7 +58,8 @@ static void emit_literal(Codegen *g, const Expr *expr, StrBuf *out) {
     size_t n = expr->as.items.len;
     const char **values = arena_alloc(g->arena, n * sizeof(char *));
     bool opened = cg_ordered(g, expr->as.items.items, n, values, out);
-    sb_appendf(out, "es_list_from(%s, %zu, (%s[]){", items_kind(expr->type), n, cg_ctype(type_item(expr->type)));
+    Type item = type_item(expr->type);  // amounts of money are kept as numbers of cents in a list
+    sb_appendf(out, "es_list_from(%s, %zu, (%s[]){", items_kind(expr->type), n, type_is_money(item) ? "double" : cg_ctype(item));
     for (size_t i = 0; i < n; i++) sb_appendf(out, "%s%s", i ? ", " : "", values[i]);
     sb_append(out, opened ? "}))" : "})");
 }

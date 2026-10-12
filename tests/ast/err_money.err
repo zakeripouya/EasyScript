@@ -1,0 +1,24 @@
+Line 1: An amount of money has at most two decimals, for the cents.
+    say $1.234, 4.555 dollars.
+        ^^^^^^
+Round it first, like "$1.23".
+
+Line 3: This amount of money is too big for me to keep exactly.
+    say $100,000,000,000,000.
+        ^^^^^^^^^^^^^^^^^^^^
+Amounts can go up to 90 trillion.
+
+Line 1: An amount of money has at most two decimals, for the cents.
+    say $1.234, 4.555 dollars.
+                ^^^^^^^^^^^^^
+Round it first, like "4.55 dollars".
+
+Line 2: This amount of money is too big for me to keep exactly.
+    let big be 99999999999999 dollars.
+               ^^^^^^^^^^^^^^^^^^^^^^
+Amounts can go up to 90 trillion.
+
+Line 4: An amount of money can't be "or nothing" yet.
+    to pay with amount (dollars or nothing):
+                                ^^^^^^^^^^
+Keep a yes/no value next to it that says whether there is one, like "paid, which is yes or no."

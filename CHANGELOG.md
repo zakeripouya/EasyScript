@@ -13,11 +13,13 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - The best group: `the store with the highest total amount [of purchases]` (also `average`, `median`, `number of purchases`, and `lowest`), and `the top 3 stores by total amount`: the group with the biggest result, when the item is a field of the rows. Without `of L`, the one list whose items have the field.
 - A field across a list: `the names of the drinks` and `each drink's name`. Counting a list field: `ann has at least 2 orders`, `how many customers have fewer than 2 orders`. `they` means the record in a definition (`a customer is loyal if they have more than 5 orders.`).
 - Files in steps in a row: right after a step that made or wrote to a file, `write X in it`, `put X in it`, `add X to it [, one per line]`, `add X to the end of it`, and `the file` with no name (`what's in the file`). `file F doesn't exist` / `does not exist` (and `folder`).
+- Exact money: `$1,200`, `€4.50`, `£3`, `4.50 dollars` are amounts kept as whole cents; amounts add exactly, times or divided by a number round to the cent (half away from zero, shown by `easyscript plan`), amount divided by amount is a number; mixing currencies or adding a plain number is an error. Amounts print with their currency (`$400.00`) and work in lists, maps, fields, totals, averages, sorting and csv tables. `ask for an amount [in euros]`, and the kinds `(dollars)`, `(euros)`, `(pounds)`. `budget.es`, `tip_calculator.es` and `coffee_shop.es` use money (their output now shows amounts as money).
 - `L sorted by NAME` works for a value defined with `KIND's NAME is ...` or a table, like a field (`the parcels sorted by price`).
 
 ### Breaking
 
 - **(reads like text)** `reduce` and `mark` start sentences, so a one-word definition with either name needs another name.
+- **(reads like text)** `$` followed by a digit is an amount of money (it used to be an error), and a number followed by `dollars`, `euros` or `pounds` (or the singular) is one too. `the total of` an undecided value keeps it undecided until the end of the program, so it can turn out to be money.
 - **(reads like text)** A yes/no field's name after `is` reads the field (`box is fragile`), even if a name `fragile` exists, like a describing word a kind defines.
 - **(reads like text)** A definition's first line with `a KIND` (a kind the program has), `another KIND` or `some NAME` before any input word (`with`, `of`, `to`, ...) has its inputs in the middle: `to adopt a dog:` used to be a definition called "adopt dog" with no inputs, and is now one with the input `dog`.
 

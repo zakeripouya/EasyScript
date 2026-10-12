@@ -233,6 +233,14 @@ static Stmt *parse_ask(Parser *p, const Token *verb, const StmtForm *form) {
     stmt->as.ask.kind = TYPE_TEXT;
     size_t n = parser_match_words(p, "for number");  // ask for a number "How old are you?"
     if (n) stmt->as.ask.kind = TYPE_NUMBER;
+    if (!n && (n = parser_match_words(p, "for amount"))) {  // ask for an amount [in euros]: money
+        stmt->as.ask.kind = TYPE_DOLLARS;
+        static const char *const in[] = {"in dollars", "in euros", "in pounds"};
+        for (size_t i = 0; i < 3; i++) {
+            size_t more = parser_match_words_at(p, n, in[i]);
+            if (more) stmt->as.ask.kind = TYPE_DOLLARS + (Type)i, n += more;
+        }
+    }
     if (!n && (n = parser_match_words(p, "yes or no"))) stmt->as.ask.kind = TYPE_YESNO;
     parser_consume(p, n + (n && parser_at(p, n, TOK_COMMA)));
     stmt->as.ask.prompt = parse_expression(p);

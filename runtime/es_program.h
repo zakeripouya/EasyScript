@@ -264,6 +264,7 @@ static void es_print_count(long n) {
 static EsText *es_number_text(double x);
 static EsText *es_record_short_text(const EsRecord *r); /* es_record.h */
 static EsText *es_date_text(double date);               /* es_time.h */
+static EsText *es_cents_text(long long cents, int currency); /* es_runtime.h */
 
 static void es_print_cut(const EsText *t, size_t most, bool quoted) {
     size_t shown = 0, chars = 0;
@@ -283,6 +284,10 @@ static void es_print_inputs(const EsFrame *frame) {
         open = true;
         if (kind == 'n' || kind == 'd') {
             EsText *t = (kind == 'd' ? es_date_text : es_number_text)(es_frame_input(frame, i).n);
+            fputs(t->chars, stderr);
+            es_release(t);
+        } else if (kind == 'u' || kind == 'e' || kind == 'p') {
+            EsText *t = es_cents_text((long long)es_frame_input(frame, i).n, kind == 'u' ? 0 : kind == 'e' ? 1 : 2);
             fputs(t->chars, stderr);
             es_release(t);
         } else if (kind == 'b') {

@@ -55,6 +55,7 @@ static bool starts_block_or_definition(const char *word) {
 static bool starts_value(const Token *token) {
     switch (token->kind) {
     case TOK_NUMBER:
+    case TOK_MONEY:
     case TOK_STRING:
     case TOK_LPAREN: return true;
     case TOK_WORD: return !parser_is_operator_word(token->text);

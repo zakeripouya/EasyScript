@@ -11,17 +11,17 @@ a customer's email must contain "@".
 an order's discount must be between 0 and 50.
 
 the price of a drink depends on its size:
-    3 when it's "small".
-    4 when it's "medium".
-    5 otherwise.
+    $3 when it's "small".
+    $4 when it's "medium".
+    $5 otherwise.
 
 a drink's cost is its price plus its shot.
 the shot of a drink depends on its extra shot:
-    1 when it's yes.
-    0 otherwise.
+    $1 when it's yes.
+    $0 otherwise.
 
 an order's total is the total cost of its drinks times (100 minus its discount) divided by 100.
-an order is big if its total is over 12.
+an order is big if its total is over $12.
 the biggest order is the one with the highest total.
 
 let latte be a new drink with name "latte", size "medium" and extra shot yes.
@@ -40,7 +40,7 @@ set every big order's discount to 10.
 say "Orders:", how many orders there are.
 say "Big orders:", how many orders are big.
 say "Money made:", the total total of orders.
-say "Biggest order:", the biggest order's customer, "([the biggest order's total] dollars)".
+say "Biggest order:", the biggest order's customer, "([the biggest order's total])".
 let sold drinks be a list of latte, tea, mocha, mocha, latte and tea.
 for each size and count in the number of sold drinks per size, sorted biggest first:
     say "  [size]:", count, "sold".

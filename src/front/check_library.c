@@ -110,11 +110,16 @@ TypeVar checker_check_library(Checker *c, const Expr *expr) {
     case LIB_FILE_CHANGED:
         text(c, a, display);
         return types_new(c, TYPE_DATE, line);
-    case LIB_PERCENT_OF: number(c, b, display); /* fall through */
+    case LIB_PERCENT_OF:
     case LIB_HALF:
-    case LIB_TWICE:
-        number(c, a, display);
+    case LIB_TWICE: {  // "10 percent of $19.99", "half of rent": money stays money
+        const Expr *amount = expr->as.library.op == LIB_PERCENT_OF ? b : a;
+        if (expr->as.library.op == LIB_PERCENT_OF) number(c, a, display);
+        TypeVar var = checker_check_expr(c, amount);
+        if (type_is_money(types_of(c, var))) return var;
+        checker_require(c, var, TYPE_NUMBER, amount, arena_sprintf(c->arena, "%s needs a number", display), NULL);
         return types_new(c, TYPE_NUMBER, line);
+    }
     case LIB_IS_INFINITE:
         number(c, a, display);
         return types_new(c, TYPE_YESNO, line);
@@ -201,7 +206,7 @@ static void check_save_csv(Checker *c, const Stmt *stmt) {
     TypedSlot slot = {(Type *)&stmt->as.library.type, var};
     if (type_is_map(type)) {
         vec_push(c->arena, &c->slots, slot);
-        types_defer_one_of(c, list, types_item(c, var), types_item(c, var), KIND_NUMBER | KIND_TEXT | KIND_YESNO | KIND_DATE,
+        types_defer_one_of(c, list, types_item(c, var), types_item(c, var), KIND_NUMBER | KIND_TEXT | KIND_YESNO | KIND_DATE | KIND_MONEY,
                            "The values saved in a csv file have to be numbers, text, yes/no values or dates");
         action_text(c, stmt->as.library.b, "The name of a file");
         return;
@@ -291,6 +296,10 @@ static void check_chart(Checker *c, const Stmt *stmt) {
                     "The name of a file has to be text", NULL);
     TypeVar title_var = title ? checker_check_expr(c, title) : 0;
     if (title) checker_require(c, title_var, TYPE_TEXT, title, "A chart's title has to be text", NULL);
+    Type shape = types_of(c, var);  // "the total amount per month": numbers, as nothing said they're money
+    if ((type_is_list(shape) || type_is_map(shape)) && types_of(c, types_item(c, var)) == TYPE_UNKNOWN) {
+        types_require(c, types_item(c, var), TYPE_NUMBER, stmt->pos.line);
+    }
     Type type = types_of(c, var);
     if (type == TYPE_ERROR || (title && types_of(c, title_var) != TYPE_TEXT)) return;
     Type key = type_is_map(type) ? ast_map_key(c->records, type) : TYPE_UNKNOWN;

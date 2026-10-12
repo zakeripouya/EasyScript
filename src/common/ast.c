@@ -98,7 +98,15 @@ static void dump_children(const Expr *a, const Expr *b, size_t depth, Dump *d) {
 static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *records) {
     switch (expr->kind) {
     case EXPR_ERROR: return "error";
-    case EXPR_NUMBER: sb_appendf(scratch, "number %s", expr->as.number.text); break;
+    case EXPR_NUMBER:
+        if (expr->as.number.money) {
+            sb_appendf(scratch, "money %s cents in %s", expr->as.number.text,
+                       expr->as.number.money == TYPE_DOLLARS ? "dollars" : expr->as.number.money == TYPE_EUROS ? "euros"
+                                                                                                                : "pounds");
+        } else {
+            sb_appendf(scratch, "number %s", expr->as.number.text);
+        }
+        break;
     case EXPR_TEXT:
         sb_append(scratch, "text ");
         sb_append_quoted(scratch, expr->as.text.value, expr->as.text.len);

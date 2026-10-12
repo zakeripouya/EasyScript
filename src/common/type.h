@@ -34,6 +34,9 @@ enum {
     TYPE_NOTHING,  // what a function gives back when it gives back no value, and the value "nothing"
     TYPE_ERROR,    // stands in after a type error, so one mistake gives one message
     TYPE_DATE,     // a day, and maybe a time of day ("today", "the time now"); a number of seconds while running
+    TYPE_DOLLARS,  // an exact amount of money ("$19.99"): whole cents (a long long while running)
+    TYPE_EUROS,    // the same in euros ("€4.50")
+    TYPE_POUNDS,   // and in pounds ("£3")
     TYPE_RECORD = 16,       // TYPE_RECORD + n: the program's record kind n
     TYPE_IFACE = 1u << 10,  // TYPE_IFACE + n: the program's interface n (Records.interfaces)
     TYPE_SUM = 1u << 11,    // TYPE_SUM + n: the program's kind with variants n (Records.sums)
@@ -79,6 +82,9 @@ static inline bool type_can_be_nothing(Type type) {
                                     type_is_record(type) || type_is_sum(type) || type_is_iface(type));
 }
 // Kept in a box while the program runs when it's "or nothing": a number, text or yes/no.
+static inline bool type_is_money(Type type) {
+    return type == TYPE_DOLLARS || type == TYPE_EUROS || type == TYPE_POUNDS;
+}
 static inline bool type_boxed(Type present) {
     return present == TYPE_NUMBER || present == TYPE_TEXT || present == TYPE_YESNO;
 }

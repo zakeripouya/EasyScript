@@ -196,6 +196,7 @@ static unsigned kind_bit(Type type) {
     if ((type_is_record(type) || type_is_sum(type)) && !type_is_maybe(type)) return KIND_RECORD;
     if (type_is_object(type) || type == TYPE_MAYBE) return KIND_OTHER;
     if (type == TYPE_DATE) return KIND_DATE;
+    if (type_is_money(type)) return KIND_MONEY;
     return type == TYPE_NUMBER ? KIND_NUMBER : type == TYPE_TEXT ? KIND_TEXT : type == TYPE_YESNO ? KIND_YESNO : 0;
 }
 
@@ -264,6 +265,20 @@ void types_defer_one_of(Checker *c, const Expr *expr, TypeVar var, TypeVar shown
                         const char *message) {
     Deferred d = {DEFER_ONE_OF, expr, var, shown, var, false, allowed, message, NULL};
     defer(c, d);
+}
+
+static void settle_all(Checker *c);
+
+void types_default_numbers(Checker *c) {
+    settle_all(c);
+    for (size_t i = 0; i < c->deferred.len; i++) {
+        Deferred *d = &c->deferred.items[i];
+        if (!d->done && d->kind == DEFER_ONE_OF && (d->allowed & KIND_NUMBER_FIRST) &&
+            types_of(c, d->left) == TYPE_UNKNOWN) {
+            types_require(c, d->left, TYPE_NUMBER, d->expr->pos.line);  // "the total of x": x is a number
+        }
+    }
+    settle_all(c);
 }
 
 // Settling one operator can decide kinds another one waits for, so go round
@@ -367,7 +382,7 @@ static void report_undecided(Checker *c, const Function *f) {
 }
 
 void types_finish(Checker *c, size_t first_error) {
-    settle_all(c);
+    types_default_numbers(c);
     // A kind left undecided is usually a side effect of another mistake, so
     // it's only reported once everything else is right.
     for (size_t i = 0; diag_count(c->diag) == first_error && i < c->deferred.len; i++) {

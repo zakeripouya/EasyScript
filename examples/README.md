@@ -15,7 +15,7 @@ Programs written the way you'd say them: questions, steps in a row, tables and p
 | [hello.es](programs/hello.es) | `say` |
 | [first_program.es](programs/first_program.es) | The program on the README's front page |
 | [ask_name.es](programs/ask_name.es) | `ask … and call the answer …` (input from `ask_name.in`) |
-| [tip_calculator.es](programs/tip_calculator.es) | `ask for a number`, `ask yes or no` (asking again until the answer fits), `as money`, `as a percent`, and `try to read file ... if that fails` (input from `tip_calculator.in`) |
+| [tip_calculator.es](programs/tip_calculator.es) | `ask for an amount` (exact money), `ask yes or no` (asking again until the answer fits), `as a percent`, and `try to read file ... if that fails` (input from `tip_calculator.in`) |
 | [groceries.es](programs/groceries.es) | A request in one sentence: `I want to make a new file called "groceries.txt", then write "milk" in it, then add "eggs" and "bread" to it, one per line, and then show me what's in it.` |
 | [discounts.es](programs/discounts.es) | Definitions with their inputs in the middle: `to give a customer a discount of some percent:`, called as `give every loyal customer a discount of 10 percent.` and `introduce ann to bo.` |
 | [budget.es](programs/budget.es) | A budget from a csv file: `read the table in "spending.csv" and call it purchases`, `a purchase is big if ...`, `how many purchases there are`, totals `as money`, totals per category `as a table`, `sorted by amount biggest first` |

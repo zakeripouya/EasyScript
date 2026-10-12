@@ -848,6 +848,7 @@ All **Available** (English pass part 4). A question or request means exactly wha
 | Pattern | Meaning | Example |
 |---|---|---|
 | `ask for a number Q and call it NAME` (or `and call the answer NAME`) | Asks Q until the answer is a number (otherwise "Please type a number, like 42." and Q again), and keeps it as a number. With no more input it's a runtime error | `ask for a number "How old are you? " and call it age.` |
+| `ask for an amount Q and call it NAME` / `ask for an amount in euros\|pounds Q ...` | Asks Q until the answer is an amount of money (`$12.50`, `12.50` or `1,200`; otherwise "Please type an amount, like $12.50."), and keeps it as exact money in dollars (or euros, pounds) | `ask for an amount "How much was the bill? " and call it bill.` |
 | `ask yes or no Q and call it NAME` | Asks Q until the answer is yes or no (`yes`, `y`, `no`, `n`, any case; otherwise "Please answer yes or no."), and keeps it as yes/no | `ask yes or no "More? " and call it more.` |
 
 ### Writing numbers for people
@@ -859,6 +860,21 @@ All **Available** (English pass part 4). A question or request means exactly wha
 | `X with commas` | Text: the number with commas between thousands | `1234567 with commas` is `"1,234,567"` |
 
 They bind like `as text` (to the value just before them): `(price times 3) as money`. A constant can't use them.
+
+### Exact money
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `$N`, `€N`, `£N` (commas between thousands allowed, at most two decimals) / `N dollars`, `N euros`, `N pounds` (also `dollar`, `euro`, `pound`) | An exact amount of money, kept as whole cents (up to 90 trillion). The currency is part of its kind | `let rent be $1,200.`, `let coffee be 4.50 euros.` |
+| `A plus B` / `A minus B` | Two amounts of the same currency: an amount, exactly. An amount and a plain number, or two currencies, is an error saying how to write it | `rent plus $50` |
+| `A times N` / `A divided by N` / `N percent of A` / `half of A` / `twice A` | An amount and a number: an amount, rounded to the cent (half away from zero: $0.05 times 0.5 is $0.03). `easyscript plan` shows each rounding | `rent divided by 3`, `10 percent of $19.99` |
+| `A divided by B` | Two amounts of the same currency: a plain number | `rent divided by $400` is 3 |
+| `A is B`, `A is above B`, ... | Compared exactly, cent by cent | `if total is over $100:` |
+| `say A` / `A as text` / `A as money` / `A with commas` | Its currency's sign, commas between thousands and two decimals | `$1,200.00`, `€4.50`, `-$5.00` |
+| `A as a number` | The amount as a plain number | `$19.99 as a number` is 19.99 |
+| `(dollars)`, `(euros)`, `(pounds)`; `a list of dollars` / `amounts in euros` | The kinds, written after an input or a field. A definition's input used in arithmetic is a number unless its kind says money | `to add tax to price (dollars):` |
+
+Amounts work in lists, maps and fields, in `the total`, `the average` and `the median` (rounded to the cent), `sorted`, `the biggest of`, `the top N`, and in tables read from csv files: a column the program uses as money (`whose amount is over $200`) reads cells like `$84.20`, `84.20` or `"$1,200"`, and is saved as `$1200.00`. `X as money` on a plain number stays dollars, as before.
 
 ### Values that are always up to date
 

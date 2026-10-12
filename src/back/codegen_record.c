@@ -20,7 +20,7 @@ char cg_field_kind(Type type) {
     if (type_is_list(type)) return 'l';
     if (type_is_map(type)) return 'm';
     if (type_is_object(type)) return 'r';
-    return type == TYPE_TEXT ? 't' : type == TYPE_YESNO ? 'b' : type == TYPE_DATE ? 'd' : 'n';
+    return cg_kind_letter(type);
 }
 
 // The static list a list field starts as: es_k_0d<kind>__<field>.
@@ -190,12 +190,7 @@ const char *cg_field_stmt(Codegen *g, const Stmt *stmt) {
     } else if (stmt->as.change.append) {
         sb_appendf(&out, "es_add_%s(es_list_retain(%s), %s); ", cg_item_suffix(type), slot, code);
     } else {
-        static const char *const ops[] = {"+", "-", "*"};
-        if (stmt->as.change.op == CHANGE_DIVIDE) {
-            sb_appendf(&out, "%s = es_div(%zu, %s, %s); ", slot, cg_site(g, stmt->pos), slot, code);
-        } else {
-            sb_appendf(&out, "%s = %s %s %s; ", slot, slot, ops[stmt->as.change.op], code);
-        }
+        sb_appendf(&out, "%s = %s; ", slot, cg_changed(g, stmt, type, slot, code));
     }
     if (!set && def->rules.len > 0) sb_appendf(&out, "(void)%s; ", cg_follow_rules(g, def, slot, stmt->pos));
     sb_append(&out, "es_record_release(es_r); }");
