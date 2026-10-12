@@ -206,6 +206,8 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
         break;
     case EXPR_MAP_GET: return expr->as.lookup.fallback ? "value for, or" : "value for";
     case EXPR_MAP_WITHOUT: return "map without";
+    case EXPR_DEFAULT: return "or if there isn't one";
+    case EXPR_TABLE: return "depends on";
     }
     return scratch->data;
 }
@@ -246,6 +248,15 @@ static void dump_expr(const Expr *expr, size_t depth, Dump *d) {
         dump_children(expr->as.lookup.fallback, NULL, depth, d);
         break;
     case EXPR_MAP_WITHOUT: dump_children(expr->as.lookup.map, expr->as.lookup.key, depth, d); break;
+    case EXPR_DEFAULT: dump_children(expr->as.lookup.map, expr->as.lookup.fallback, depth, d); break;
+    case EXPR_TABLE:  // the subject, then each value and when
+        dump_children(expr->as.table.subject, NULL, depth, d);
+        for (size_t i = 0; i < expr->as.table.values.len; i++) {
+            const Expr *condition = expr->as.table.conditions.items[i];
+            dump_label(depth + 1, d, condition ? "when" : "otherwise");
+            dump_children(expr->as.table.values.items[i], condition, depth + 1, d);
+        }
+        break;
     case EXPR_ITEM: dump_children(expr->as.item.position, expr->as.item.list, depth, d); break;
     case EXPR_LIST_OP: dump_children(expr->as.list_op.operand, NULL, depth, d); break;
     case EXPR_EVERY: dump_children(expr->as.every.list, expr->as.every.body, depth, d); break;
@@ -378,6 +389,14 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
     case STMT_SUM: sb_appendf(scratch, "kind %s", stmt->as.sum.name.text); break;
     case STMT_MATCH: return "check which kind";
     case STMT_INTERFACE: sb_appendf(scratch, "interface %s", stmt->as.iface.name.text); break;
+    case STMT_RULE:
+        sb_append(scratch, "rule: ");
+        if (stmt->as.rule.kind != TYPE_UNKNOWN) {
+            const char *kind = ast_type_name(scratch->arena, records, stmt->as.rule.kind);
+            sb_appendf(scratch, "%s's ", kind + (strncmp(kind, "an ", 3) == 0 ? 3 : 2));  // without "a" or "an"
+        }
+        sb_appendf(scratch, "%s must", stmt->as.rule.field.text);
+        break;
     }
     return scratch->data;
 }
@@ -486,6 +505,7 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
             dump_section(target_label(field), field, depth + 1, d);
             dump_expr(stmt->as.change.amount, depth + 1, d);
         }
+        if (stmt->as.change.start) dump_section("starting at", stmt->as.change.start, depth + 1, d);
         break;
     }
     case STMT_SAY: dump_expr(stmt->as.value, depth + 1, d); break;
@@ -513,6 +533,7 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
         break;
     case STMT_CALL: dump_expr(stmt->as.call, depth + 1, d); break;
     case STMT_USE: break;
+    case STMT_RULE: dump_expr(stmt->as.rule.condition, depth + 1, d); break;
     case STMT_LIBRARY:
         dump_children(stmt->as.library.a, stmt->as.library.b, depth, d);
         for (size_t i = 0; i < stmt->as.library.parts.len; i++) dump_expr(stmt->as.library.parts.items[i], depth + 1, d);

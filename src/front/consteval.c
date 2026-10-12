@@ -567,6 +567,10 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
     case EXPR_ONLY:
     case EXPR_APPLY:
     case EXPR_AGGREGATE: return reject_list(ev, span);
+    case EXPR_TABLE: return reject_list(ev, span);
+    case EXPR_DEFAULT:
+        return fail(ev, span, "Leave out \", or ...\": a constant is never nothing.", "A constant can't be nothing, so "
+                    "\", or\" would never be used.");
     case EXPR_MAP: return map(ev, expr, out);
     case EXPR_EMPTY_MAP: return empty_map(ev, expr, out);
     case EXPR_MAP_GET:

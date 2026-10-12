@@ -215,11 +215,8 @@ static Expr *parse_singular(Parser *p, size_t words, bool in) {
         test->as.aggregate.list = parse_list_part(p);
         if (p->sentence_failed) return parser_error_expr(p);
     } else {
-        Expr *list = ast_new_expr(p->arena, EXPR_NAME, item->pos);
-        list->as.name = parser_plural_of(p->arena, item->text);
-        list->display = parser_plural_of(p->arena, item->display);
-        test->as.aggregate.list = list;
-        test->as.aggregate.implied = true;
+        test->as.aggregate.list = parser_implied_list(p, item);
+        test->as.aggregate.implied = test->as.aggregate.list->kind == EXPR_NAME;
     }
     Expr *it = ast_new_expr(p->arena, EXPR_IT, item->pos);
     test->as.aggregate.condition = parser_parse_comparison_after(p, it);
@@ -412,13 +409,64 @@ static size_t best_item_words(const Parser *p) {
     return known && known->words >= n ? 0 : n;  // "customer with ..." calls a function called "customer"
 }
 
+// The list named like the item's plural ("scores" for "any score"); for an
+// item whose first word is an adjective ("every loyal customer"), the items
+// of the rest's plural that it describes.
+Expr *parser_implied_list(Parser *p, const Name *item) {
+    Expr *list = ast_new_expr(p->arena, EXPR_NAME, item->pos);
+    const char *space = strchr(item->text, ' ');
+    if (space && parser_is_adjective(p, arena_sprintf(p->arena, "%.*s", (int)(space - item->text), item->text))) {
+        const char *shown = strchr(item->display, ' ');
+        list->as.name = parser_plural_of(p->arena, space + 1);
+        list->display = parser_plural_of(p->arena, shown ? shown + 1 : space + 1);
+        Expr *it = ast_new_expr(p->arena, EXPR_IT, item->pos);
+        Expr *only = ast_new_expr(p->arena, EXPR_ONLY, item->pos);
+        only->as.only.list = list;
+        only->as.only.condition = parser_adjective_call(p, it, arena_sprintf(p->arena, "%.*s", (int)(space - item->text),
+                                                                              item->text), item->pos);
+        return only;
+    }
+    list->as.name = parser_plural_of(p->arena, item->text);
+    list->display = parser_plural_of(p->arena, item->display);
+    return list;
+}
+
+// "with the highest|lowest|most ... FIELD", after the item and its list.
+Expr *parser_finish_best(Parser *p, Expr *best) {
+    if (!parser_at_word(p, 0, "with") || superlative_at(p, 1) < 0) {
+        const Token *token = parser_peek(p, 0);
+        if (parser_error(p, token->span, "I expected \"with the highest\" here, but found %s.",
+                         parser_describe(p, token))) {
+            diag_note(p->diag, "Write it like \"the customer in buyers with the highest total\".");
+            diag_info(p->diag, DIAG_MISSING, "\"with the highest\"", NULL);
+        }
+        return parser_error_expr(p);
+    }
+    parser_advance(p);
+    best->as.aggregate.lowest = superlatives[superlative_at(p, 0)].lowest;
+    best->as.aggregate.op_span = ast_pos_join((SourcePos){p->prev_span, 0, 0, 0},
+                                              parser_token_pos(parser_peek(p, 0))).span;
+    best->as.aggregate.key = parse_field_after(p, parser_peek(p, 0)->text, "the dog with the highest age");
+    if (!best->as.aggregate.key) return parser_error_expr(p);
+    return finish(best, best->as.aggregate.key);
+}
+
+Expr *parser_new_best(Parser *p, const Name *item, SourcePos start) {
+    Expr *best = new_aggregate(p, AGG_BEST, start, item->pos.span);
+    best->as.aggregate.item = *item;
+    best->as.aggregate.list = parser_implied_list(p, item);
+    best->as.aggregate.implied = best->as.aggregate.list->kind == EXPR_NAME;
+    return best;
+}
+
 // the ITEM [in L] with the highest|lowest|most|fewest ... FIELD
 static Expr *parse_best(Parser *p, size_t words) {
     SourcePos start = parser_token_pos(parser_peek(p, 0));
-    Expr *best = new_aggregate(p, AGG_BEST, start, parser_peek(p, 0)->span);
-    Name *item = &best->as.aggregate.item;
-    parser_take_name(p, words, item);
+    Name item;
+    parser_take_name(p, words, &item);
+    Expr *best = parser_new_best(p, &item, start);
     if (parser_at_word(p, 0, "in")) {
+        best->as.aggregate.implied = false;
         parser_advance(p);
         const KnownName *known = parser_match_name(p, 0, false);
         size_t words = known ? known->words : 1;
@@ -438,29 +486,8 @@ static Expr *parse_best(Parser *p, size_t words) {
             p->no_best = no_best;
         }
         if (p->sentence_failed) return parser_error_expr(p);
-    } else {
-        Expr *list = ast_new_expr(p->arena, EXPR_NAME, item->pos);
-        list->as.name = parser_plural_of(p->arena, item->text);
-        list->display = parser_plural_of(p->arena, item->display);
-        best->as.aggregate.list = list;
-        best->as.aggregate.implied = true;
     }
-    if (!parser_at_word(p, 0, "with") || superlative_at(p, 1) < 0) {
-        const Token *token = parser_peek(p, 0);
-        if (parser_error(p, token->span, "I expected \"with the highest\" here, but found %s.",
-                         parser_describe(p, token))) {
-            diag_note(p->diag, "Write it like \"the customer in buyers with the highest total\".");
-            diag_info(p->diag, DIAG_MISSING, "\"with the highest\"", NULL);
-        }
-        return parser_error_expr(p);
-    }
-    parser_advance(p);
-    best->as.aggregate.lowest = superlatives[superlative_at(p, 0)].lowest;
-    best->as.aggregate.op_span = ast_pos_join((SourcePos){p->prev_span, 0, 0, 0},
-                                              parser_token_pos(parser_peek(p, 0))).span;
-    best->as.aggregate.key = parse_field_after(p, parser_peek(p, 0)->text, "the dog with the highest age");
-    if (!best->as.aggregate.key) return parser_error_expr(p);
-    return finish(best, best->as.aggregate.key);
+    return parser_finish_best(p, best);
 }
 
 // --- Where each starts -----------------------------------------------------------

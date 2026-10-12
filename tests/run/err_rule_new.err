@@ -1,0 +1,3 @@
+Line 3: A person's email must contain "@", but this one is "bob.example.com".
+    let bob be a new person with name "Bob" and email "bob.example.com".
+                                                      ^^^^^^^^^^^^^^^^^

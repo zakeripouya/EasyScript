@@ -55,6 +55,8 @@ typedef enum {
     EXPR_APPLY,          // F applied to every X in L, the Xs in L that pass F, L combined using F, L sorted by F
     EXPR_LIBRARY,        // the standard library's values: the square root of X, a random number from A to B, today, ...
     EXPR_AGGREGATE,      // how many L are ..., any score is ..., the total of L, the top 3 L, ... per FIELD
+    EXPR_DEFAULT,        // X, or D [if there isn't one]: X when it isn't nothing, otherwise D (as.lookup: map is X)
+    EXPR_TABLE,          // a "depends on" table: the first value whose condition (about "it", the subject) is yes
 } ExprKind;
 
 typedef struct Expr Expr;
@@ -205,6 +207,11 @@ struct Expr {
             bool descending;  // APPLY_SORT: "biggest first"
         } apply;
         struct {
+            Expr *subject;           // what it depends on ("the total"); "it" in the conditions
+            Vec(Expr *) values;      // one per line, in order
+            Vec(Expr *) conditions;  // one per line; NULL for the last line's "otherwise"
+        } table;
+        struct {
             AggregateKind kind;
             Span op_span;      // the words that say what's worked out ("how many", "any", "the total")
             Expr *list;
@@ -218,6 +225,9 @@ struct Expr {
         } aggregate;
     } as;
 };
+
+// What a definition written as a sentence defines (Stmt.as.function.defines).
+enum { DEFINES_NOTHING, DEFINES_ADJECTIVE, DEFINES_VALUE };
 
 // --- Statements ------------------------------------------------------------
 
@@ -246,6 +256,7 @@ typedef enum {
     STMT_INTERFACE,    // something that can speak is anything with: (ways indented below; top level only)
     STMT_USE,          // use helpers (another file's definitions; loaded before parsing)
     STMT_LIBRARY,      // the standard library's sentences: wait 2 seconds, shuffle L, delete the file F, ...
+    STMT_RULE,         // an age must be between 0 and 150 / a customer's email must contain "@" (top level only)
 } StmtKind;
 
 // What a sentence of the standard library does (STMT_LIBRARY), with its parts in a and b.
@@ -298,6 +309,7 @@ typedef struct {
     Expr *initial;  // "starting at E", or NULL
     SourcePos pos;
     ConstValue folded;  // filled in by the checker: the starting value, worked out (unless it's "nothing")
+    Vec(struct Stmt *) rules;  // filled in by the checker: the STMT_RULEs its values must follow
 } Field;
 
 typedef enum {
@@ -403,6 +415,7 @@ struct Stmt {
             Expr *field;  // a field ("add 1 to rex's age"): an EXPR_FIELD (or a map's value: an
                           // EXPR_MAP_GET); target is then unused
             bool append;  // filled in by the checker: "add E to L" where L is a list
+            Expr *start;  // ", starting at S" (a map's value): what a missing key's value starts as, or NULL
         } change;
         Expr *value;  // STMT_SAY
         struct {
@@ -427,6 +440,9 @@ struct Stmt {
             const char *intro;     // the word before the inputs: "with", "of", "using" or "to" (NULL: none)
             bool method;           // "to bark, for a dog:": the first input is the dog
             bool can;              // written "a dog can bark:" (a method)
+            int defines;           // DEFINES_ADJECTIVE ("a customer is loyal if ...", named "is loyal") or
+                                   // DEFINES_VALUE ("a customer's profit is ...", named "the profit"): a
+                                   // method whose body is one "give back", with "it" its first input
             size_t overload;       // a method sharing its name with another kind's: 1 + its kind's index (checker)
             Vec(Name) params;
             Vec(Type) declared;    // per input: the kind written in "(a number)", or TYPE_UNKNOWN
@@ -439,6 +455,13 @@ struct Stmt {
             Vec(Capture) captures; // a lambda: the names it uses from around it (checker)
             NameList cells;           // the names it makes (or its inputs) that functions made inside use (checker)
         } function;
+        struct {
+            Type kind;          // "a customer's email": the kind; TYPE_UNKNOWN: every kind with the field
+            Name field;
+            Expr *condition;    // yes or no for "it", the field's value
+            const char *message;  // "An age must be between 0 and 150", as written
+            size_t id;          // filled in by the checker: its C function (es_rule1, ...)
+        } rule;
         Expr *returned;  // STMT_RETURN; NULL for a bare "return"
         Expr *call;      // STMT_CALL: an EXPR_CALL
         struct {

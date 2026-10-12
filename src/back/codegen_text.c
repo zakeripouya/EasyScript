@@ -194,6 +194,13 @@ static bool reads(const Expr *expr, const char *name) {
     case EXPR_LIST_OP: return reads(expr->as.list_op.operand, name);
     case EXPR_EVERY: return reads(expr->as.every.list, name) || reads(expr->as.every.body, name);
     case EXPR_ONLY: return reads(expr->as.only.list, name) || reads(expr->as.only.condition, name);
+    case EXPR_DEFAULT: return reads(expr->as.lookup.map, name) || reads(expr->as.lookup.fallback, name);
+    case EXPR_TABLE:
+        if (reads(expr->as.table.subject, name)) return true;
+        for (size_t i = 0; i < expr->as.table.values.len; i++) {
+            if (reads(expr->as.table.values.items[i], name) || reads(expr->as.table.conditions.items[i], name)) return true;
+        }
+        return false;
     case EXPR_AGGREGATE:
         return reads(expr->as.aggregate.count, name) || reads(expr->as.aggregate.list, name) ||
                reads(expr->as.aggregate.condition, name) || reads(expr->as.aggregate.key, name) ||

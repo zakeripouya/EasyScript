@@ -254,6 +254,10 @@ void cg_emit_function(Codegen *g, const Stmt *fn, StrBuf *out) {
     }
     sb_init(&f.body, g->arena);
     cg_push_scope(&f);
+    if (fn->as.function.defines) {  // "a customer is loyal if its orders ...": "it" is the first input
+        LoopCode subject = {NULL, 0, 0, fn->as.function.params.items[0].text, fn->as.function.param_types.items[0]};
+        vec_push(g->arena, &f.loops, subject);
+    }
     for (size_t i = 0; i < fn->as.function.body.len; i++) {
         cg_emit_stmt(&f, fn->as.function.body.items[i]);
     }
@@ -323,6 +327,7 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     sb_init(&texts.code, arena);
     HelperPool helpers = {0};
     sb_init(&helpers.code, arena);
+    sb_init(&helpers.heads, arena);
     SitePool sites = {0};
     sb_init(&sites.code, arena);
     StrBuf inits;
@@ -380,6 +385,7 @@ void codegen_c(Arena *arena, const Program *whole, const char *source_table, Str
     sb_append(out, "static const EsSite es_sites[] = {\n    {0, 0, 0, 0},\n");  // where runtime calls come from
     sb_append_n(out, sites.code.data, sites.code.len);
     sb_append(out, "};\n\n");
+    sb_append_n(out, helpers.heads.data, helpers.heads.len);  // the rules' prototypes
     sb_append_n(out, helpers.code.data, helpers.code.len);  // "every" and "only", before the functions that use them
     sb_append_n(out, functions.data, functions.len);
     sb_append_n(out, closures.code.data, closures.code.len);

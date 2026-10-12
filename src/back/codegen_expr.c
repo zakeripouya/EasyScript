@@ -137,6 +137,8 @@ bool cg_has_effects(const Codegen *g, const Expr *expr) {
     case EXPR_ONLY:
     case EXPR_MAP_GET:
     case EXPR_MAP_WITHOUT: return true;  // reads the map (and can fail)
+    case EXPR_DEFAULT: return cg_has_effects(g, expr->as.lookup.map) || cg_has_effects(g, expr->as.lookup.fallback);
+    case EXPR_TABLE: return true;  // sets its hidden name
     case EXPR_ITEM:
     case EXPR_SLICE: return true;  // can fail (a position past the end), for text too
     case EXPR_TEXT_OP: return cg_text_op_effects(g, expr);
@@ -443,6 +445,8 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
     case EXPR_LAMBDA: cg_emit_lambda(g, expr, out); break;
     case EXPR_APPLY: cg_emit_apply(g, expr, out); break;
     case EXPR_AGGREGATE: cg_emit_aggregate(g, expr, out); break;
+    case EXPR_DEFAULT: cg_emit_default(g, expr, out); break;
+    case EXPR_TABLE: cg_emit_table(g, expr, out); break;
     case EXPR_LIBRARY: cg_emit_library(g, expr, out); break;
     case EXPR_LENGTH:
         if (type_is_list(expr->as.operand->type)) {

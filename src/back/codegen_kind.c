@@ -164,3 +164,101 @@ void cg_emit_match(Codegen *g, const Stmt *stmt) {
     cg_indent(g);
     sb_append(&g->body, "}\n");
 }
+
+// "X, or D": X out of its box (or the record itself) when it isn't nothing;
+// otherwise D, worked out only then.
+void cg_emit_default(Codegen *g, const Expr *expr, StrBuf *out) {
+    const Expr *value = expr->as.lookup.map;
+    const char *v = cg_operand(g, value, false);
+    const char *d = cg_operand(g, expr->as.lookup.fallback, false);
+    size_t t = cg_new_temp(g, value->type);
+    if (type_boxed(expr->type)) {
+        char letter = expr->type == TYPE_TEXT ? 't' : expr->type == TYPE_YESNO ? 'b' : 'n';
+        sb_appendf(out, "((es_t%zu = %s) != NULL ? es_unbox_%c(0, es_t%zu) : %s)", t, v, letter, t, d);
+    } else {
+        sb_appendf(out, "((es_t%zu = %s) != NULL ? es_t%zu : %s)", t, v, t, d);
+    }
+}
+
+// A "depends on" table: the subject in a hidden name ("it" in the
+// conditions), then the first value whose condition is yes:
+// (es_vn_0table1 = SUBJECT, C1 ? V1 : C2 ? V2 : OTHERWISE).
+void cg_emit_table(Codegen *g, const Expr *expr, StrBuf *out) {
+    const Expr *subject = expr->as.table.subject;
+    Type type = subject->type;
+    const char *name = arena_sprintf(g->arena, "0table%zu", ++g->loop_ids);
+    cg_declare_name(g, name, type);
+    const char *value = cg_operand(g, subject, false);
+    sb_append(out, "(");
+    if (type_counted(type)) {
+        sb_appendf(out, "%s(&", cg_set(type));
+        cg_append_var(g, out, name, type);
+        sb_appendf(out, ", %s), ", value);
+    } else {
+        cg_append_var(g, out, name, type);
+        sb_appendf(out, " = %s, ", value);
+    }
+    LoopCode loop = {NULL, 0, 0, name, type};
+    vec_push(g->arena, &g->loops, loop);
+    for (size_t i = 0; i < expr->as.table.values.len; i++) {
+        const Expr *condition = expr->as.table.conditions.items[i];
+        const char *v = cg_operand(g, expr->as.table.values.items[i], false);
+        if (condition) {
+            sb_appendf(out, "%s ? %s : ", cg_operand(g, condition, false), v);
+        } else {
+            sb_append(out, v);
+        }
+    }
+    g->loops.len--;
+    sb_append(out, ")");
+}
+
+// "an age must be between 0 and 150": a C function that gives back the value
+// it's given, after checking it ("it" in the condition; only looked at):
+// static double es_rule1(int es_site, double es_vn_0rule) {...}
+void cg_emit_rule(Codegen *g, const Stmt *stmt) {
+    const char *item = "0rule";
+    Type type = TYPE_UNKNOWN;  // the kind of the fields it's about (the checker made them the same)
+    for (size_t r = 0; r < g->records->len && type == TYPE_UNKNOWN; r++) {
+        const Stmt *def = g->records->items[r].definition;
+        for (size_t f = 0; def && f < def->as.record.fields.len; f++) {
+            const Field *field = &def->as.record.fields.items[f];
+            for (size_t k = 0; k < field->rules.len; k++) {
+                if (field->rules.items[k] == stmt) type = field->type;
+            }
+        }
+    }
+    Codegen helper;
+    cg_helper_init(g, &helper);
+    LoopCode loop = {NULL, 0, 0, item, type};
+    vec_push(g->arena, &helper.loops, loop);
+    const char *test = cg_operand(&helper, stmt->as.rule.condition, false);
+    StrBuf head;
+    sb_init(&head, g->arena);
+    sb_appendf(&head, "static %s%ses_rule%zu(int es_site, %s%s", cg_ctype(type), type_counted(type) ? "" : " ",
+               stmt->as.rule.id, cg_ctype(type), type_counted(type) ? "" : " ");
+    cg_append_raw_var(&head, item, type);
+    sb_append(&head, ")");
+    sb_appendf(&g->helpers->heads, "%s;\n", head.data);
+    StrBuf *out = &g->helpers->code;
+    sb_appendf(out, "%s {\n", head.data);
+    cg_emit_declarations(&helper, out);
+    sb_appendf(out, "    if (!(%s)) ", test);
+    const char *suffix = type == TYPE_NUMBER ? "n" : type == TYPE_TEXT ? "t" : "x";
+    sb_appendf(out, "es_rule_broken_%s(es_site, ", suffix);
+    cg_append_c_string(out, stmt->as.rule.message, strlen(stmt->as.rule.message));
+    if (suffix[0] != 'x') {
+        sb_append(out, ", ");
+        cg_append_raw_var(out, item, type);
+    }
+    sb_append(out, ");\n    return ");
+    cg_append_raw_var(out, item, type);
+    sb_append(out, ";\n}\n\n");
+}
+
+const char *cg_follow_rules(Codegen *g, const Field *field, const char *value, SourcePos pos) {
+    for (size_t i = 0; i < field->rules.len; i++) {
+        value = arena_sprintf(g->arena, "es_rule%zu(%zu, %s)", field->rules.items[i]->as.rule.id, cg_site(g, pos), value);
+    }
+    return value;
+}

@@ -259,7 +259,29 @@ static Expr *parse_every(Parser *p) {
 // A comma followed by "rounded", "sorted" or "as" puts that postfix after the
 // whole value: "7 divided by 2, rounded down", "the total per region, sorted
 // biggest first".
+// "if there isn't one" after a default (", or D"), which only says what ", or" means.
+void parser_skip_if_none(Parser *p) {
+    size_t n = parser_match_words(p, "if there isn't one");
+    if (!n) n = parser_match_words(p, "if there is not one");
+    if (n) parser_consume(p, n);
+}
+
+// X, or D [if there isn't one]: D when X is nothing. D is a single value.
+static Expr *parse_default(Parser *p, Expr *expr) {
+    parser_consume(p, 2);  // , or
+    Expr *fallback = parse_unary(p);
+    Expr *result = ast_new_expr(p->arena, EXPR_DEFAULT, ast_pos_join(expr->pos, fallback->pos));
+    result->as.lookup.map = expr;
+    result->as.lookup.fallback = fallback;
+    parser_skip_if_none(p);
+    return result;
+}
+
 static Expr *parse_comma_postfixes(Parser *p, Expr *expr) {
+    if (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) && parser_at_word(p, 1, "or") &&
+        parser_starts_operand(parser_peek(p, 2))) {
+        expr = parse_default(p, expr);
+    }
     while (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) &&
            (parser_at_word(p, 1, "rounded") || parser_at_word(p, 1, "sorted") || parser_at_word(p, 1, "as"))) {
         size_t comma = p->pos;
@@ -391,6 +413,7 @@ static Expr *parse_comparison(Parser *p) {
     if (!empty) empty = parser_parse_char_test(p, left);
     if (!empty) empty = parser_parse_kind_test(p, left);
     if (!empty) empty = parser_parse_library_test(p, left);
+    if (!empty) empty = parser_parse_adjective_test(p, left, false);  // "rex is loyal"
     if (empty && parser_match_phrase(p, comparison_ops, COUNT(comparison_ops), &len)) {
         Span op = parser_consume(p, len);
         if (parser_error(p, op, "Comparisons can't be chained like this.")) {
@@ -522,7 +545,8 @@ Expr *parse_unary(Parser *p) {
 Expr *parser_parse_item_test(Parser *p, const char *example) {
     Expr *it = ast_new_expr(p->arena, EXPR_IT, parser_token_pos(parser_peek(p, 0)));
     bool singular = parser_at_word(p, 0, "is") || parser_at_word(p, 0, "isn't");
-    Expr *condition = parse_empty_test(p, it, singular ? 0 : 3, 3);
+    Expr *condition = parser_parse_adjective_test(p, it, !singular);  // "how many customers are loyal"
+    if (!condition) condition = parse_empty_test(p, it, singular ? 0 : 3, 3);
     if (!condition) {
         size_t len = 0;
         const Phrase *op = singular ? parser_match_phrase(p, comparison_ops, COUNT(comparison_ops), &len)
@@ -555,6 +579,29 @@ bool parser_at_item_test(const Parser *p, size_t ahead) {
         if (parser_match_words_at(p, ahead, item_verbs[i].words)) return true;
     }
     return false;
+}
+
+// What follows an "is" that's already been read ("when it's over 100", "when
+// it's "small"", "when it's not empty"): a comparison of `left` (an "it").
+// `is` is where the "is" was, for an equality's operator.
+Expr *parser_parse_is_rest(Parser *p, Expr *left, Span is) {
+    if (parser_match_words(p, "empty") || parser_match_words(p, "not empty")) {
+        bool not = parser_at_word(p, 0, "not");
+        return new_list_op(p, not ? LIST_NOT_EMPTY : LIST_IS_EMPTY, parser_consume(p, not ? 2 : 1), left);
+    }
+    size_t best = 0;
+    const Phrase *op = NULL;
+    for (size_t i = 0; i < COUNT(comparison_ops); i++) {
+        const char *words = comparison_ops[i].words;
+        if (strncmp(words, "is ", 3) != 0) continue;
+        size_t n = parser_match_words(p, words + 3);
+        if (n > best) best = n, op = &comparison_ops[i];
+    }
+    if (!op) return new_binary(p, BINARY_EQUAL, is, left, parse_join(p));
+    Span op_span = parser_consume(p, best);
+    BinaryOp kind = (BinaryOp)op->value;
+    if (reject_or_equal_to(p, kind, op_span)) return parser_error_expr(p);
+    return new_binary(p, kind, op_span, left, parse_join(p));
 }
 
 // A test of the value `first` up to a comparison: "every order's profit is

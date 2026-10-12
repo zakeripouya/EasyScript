@@ -139,7 +139,7 @@ static Stmt *parse_amount_first(Parser *p, const Token *verb, const StmtForm *fo
         return parser_finish_add_end(p, stmt, stmt->as.change.amount);
     }
     if (!parser_parse_target(p, &stmt->as.change.target, &stmt->as.change.field, NULL)) return NULL;
-    return stmt;
+    return parser_parse_starting_at(p, stmt) ? stmt : NULL;
 }
 
 // increase/decrease/multiply/divide X by E
@@ -152,7 +152,7 @@ static Stmt *parse_target_first(Parser *p, const Token *verb, const StmtForm *fo
         return NULL;
     }
     stmt->as.change.amount = parse_expression(p);
-    return stmt;
+    return !p->sentence_failed && parser_parse_starting_at(p, stmt) ? stmt : NULL;
 }
 
 static Stmt *parse_say(Parser *p, const Token *verb, const StmtForm *form) {
@@ -454,6 +454,8 @@ Stmt *parse_statement(Parser *p) {
     if (parser_at_can_method(p)) return parser_parse_can(p);
     if (parser_at_sum_definition(p)) return parse_sum(p);
     if (parser_at_made_of(p)) return parser_parse_made_of(p);
+    if (parser_at_definition(p)) return parser_parse_definition(p);  // a customer is loyal if ...
+    if (parser_at_table(p)) return parser_parse_table(p);            // the shipping cost depends on the total:
     if (parser_interface_words(p, p->pos) > 0) return parse_interface(p);
     if (parser_at_library_sentence(p)) {  // "delete the file F", "clear the screen", "run "git"", ...
         Stmt *stmt = parser_parse_library_sentence(p);
@@ -481,6 +483,7 @@ Stmt *parse_statement(Parser *p) {
     parser_advance(p);
     p->ends_with_name = form->ends_with_name;  // a one-line if's inner statement overrides this
     Stmt *stmt = form->parse(p, verb, form);
+    if (p->group_list) stmt = parser_finish_group(p, stmt);  // "set every monster's color to blue"
     if (stmt) {
         SourcePos end = {p->prev_span, 0, 0, 0};
         stmt->pos = ast_pos_join(stmt->pos, end);

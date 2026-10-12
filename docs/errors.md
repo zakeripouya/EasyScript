@@ -402,6 +402,38 @@ Line 14: "the total" could mean two things here.
 
 Also: "I expected "there are" or a test like "are above 70" here, ...", "I expected a test like "are above 50" after "all scores", ...", "I expected a field after "per" here, ...", "I expected "with the highest" here, ...", "I expected "divided by" here, ..." (after `the remainder of`), ""per month" needs a date to group by, but a dog has no date in it.", "The top items are picked from a list of numbers or dates, ...", "I can only count how often numbers or text come up, ...".
 
+**Choices without if**: [`definition_errors.es`](../tests/errors/definition_errors.es), [`err_definitions.es`](../tests/ast/err_definitions.es)
+
+```
+Line 7: I don't know what "loyal" means for a customer.
+    if ann is loyal, say "yes".
+              ^^^^^
+Say what it means, like "a customer is loyal if ...".
+```
+
+```
+Line 8: I know what "best" means for a customer, but not for a product.
+    if pen is best, say "yes".
+       ^^^
+Say what it means, like "a product is best if ...".
+```
+
+```
+Line 12: "the fee" doesn't say what it is when the total is 10 or less.
+    the fee depends on the total:
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+Add a last line like "10 otherwise." for that case.
+```
+
+```
+Line 10: This is a number, so it's never nothing.
+    say ann's total, or 0.
+        ^^^^^^^^^^^
+", or" gives another value when there isn't one. Leave it out here.
+```
+
+Also: "I know how to work out a customer's discount, but not a product's.", ""starting at" only works with a value in a map.", ""the ones with the highest ..." doesn't say how many.", ""the one whose ..." could be more than one.", ""big customers" is worked out from itself.", "A table needs its lines below it, indented, after a ":".", "The "otherwise" line has to be the last one.", "A rule can only be at the top level, ...", "The fields called "weight" aren't all the same kind, so one rule can't cover them.".
+
 **A list inside a list without parentheses**: [`err_list_forms.es`](../tests/ast/err_list_forms.es)
 
 ```
@@ -934,6 +966,7 @@ Positions start at 1: the first item is item 1.
 | The average or median of an empty list | "There's nothing to average: the list is empty." / "There's no middle number: the list is empty." |
 | The one with the highest (or lowest) of an empty list | "There's nothing to choose from: the list is empty." with the hint "Check that the list isn't empty first, like "if dogs is not empty:"." |
 | The top N with N not whole or below 0 | "How many to take has to be a whole number, 0 or more, but it's 1.5." |
+| A field given a value its rule doesn't allow | "An age must be between 0 and 150, but this one is 230." / "A person's email must contain "@", but this one is "bob.example.com"." / for other kinds, "..., but this one doesn't follow it." |
 
 Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).
 

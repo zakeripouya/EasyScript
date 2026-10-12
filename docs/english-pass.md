@@ -102,11 +102,11 @@ Each pattern has its own trigger words, so the parser recognizes it without gues
 
 | # | Pattern | Trigger | Example | Effort |
 | --- | --- | --- | --- | --- |
-| 1 | Defaults | `, or X`, `starting at X`, `if there isn't one` | `the nickname, or "friend" if there isn't one` | Small (partly exists) |
-| 2 | Adjectives (definitions) | `a NAME is WORD if ...` at the top level | `a customer is loyal if they ordered more than 5 times.` | Small to medium |
-| 3 | Acting on a group | A verb + `every` / `the ... that` / `the ... whose` | `remove the tasks that are done.`, `give every loyal customer a 10 percent discount.` | Medium |
-| 4 | Depends-on tables | `... depends on X:` + indented `VALUE when it's CONDITION.` lines and `VALUE otherwise.` (no colon on the line); every case must be covered | `the shipping cost depends on the total:` / `0 when it's over 100.` / `5 when it's over 50.` / `10 otherwise.` | Medium |
-| 5 | Rules | `must`, `must not`, `must be between` | `an age must be between 0 and 150.` | Medium |
+| 1 | Defaults | `, or X`, `starting at X`, `if there isn't one` | `the nickname, or "friend" if there isn't one` | Done (part 3) |
+| 2 | Adjectives (definitions) | `a NAME is WORD if ...` at the top level | `a customer is loyal if they ordered more than 5 times.` | Done (part 3) |
+| 3 | Acting on a group | A verb + `every` / `the ... that` / `the ... whose` | `remove the tasks that are done.`, `give every loyal customer a 10 percent discount.` | Done (part 3), except `give every ... a discount` (see the update log) |
+| 4 | Depends-on tables | `... depends on X:` + indented `VALUE when it's CONDITION.` lines and `VALUE otherwise.` (no colon on the line); every case must be covered | `the shipping cost depends on the total:` / `0 when it's over 100.` / `5 when it's over 50.` / `10 otherwise.` | Done (part 3) |
+| 5 | Rules | `must`, `must not`, `must be between` | `an age must be between 0 and 150.` | Done (part 3) |
 | 6 | Events | `when` / `whenever` starting a sentence, `every N seconds`, `every Monday at 9am` (part 3) | `whenever the score passes 100, level up.` | Medium to large (needs an event loop) |
 
 **Also:** `unless` as the negative of `if`, and definitions of values, not just yes/no: `a customer's profit is their revenue minus their costs.`, `the best customers are the ones with the highest profit.`
@@ -686,6 +686,8 @@ The strongest single source is Pane's study of how non-programmers describe prog
 
 ### Still open
 
+- [ ] **Actions with inputs in the middle** (`give every loyal customer a 10 percent discount`): methods today take their inputs after their name (`give discount to rex with 10`). A way to define `give KIND a N percent discount:` would make this sentence work; it needs a rule for where inputs can go. (Part 3)
+
 - [ ] **Who are the first 3 to 5 non-coder testers?** Aim for variety and no programmers: someone who has never coded, a teacher, a spreadsheet-heavy office or finance worker, a teenager, a non-native English speaker.
 
 ## Update log
@@ -711,6 +713,7 @@ The strongest single source is Pane's study of how non-programmers describe prog
 | 2026-10-11 | Merged the repo's step 22 notes (escapes, positions, helper name clashes, workarounds); heading renamed to "Rough spots to fix" so links from CHANGELOG and the roadmap still work |
 | 2026-10-11 | Part 1 decisions: file sentences say `file`; text `and` and input joiners recorded as planned changes; no "missing"; `every` triggers; the `it` rule; `per` only; `, then` chains; `the X of Y` rule; `exit code`; the comma rule; depends-on lines; already-built list; error counts and step 21 list updated |
 | 2026-10-12 | Part 1 built: `exit code`; `as a number` reads `1e5`, `as exact text`; counting up only (a warning for written counts that never run); `unless`, `give back X if/unless C`, `stop here`; line continuation; pieces in `say` and brackets in text (`[[`/`]]` for brackets), text `and` removed; `and`/`and then` between sentences (a function's name after `and` is a value, so it needs `and then`); `has` records with kinds from use (`some` dropped before a field); `can` methods; `the X of Y`; filters `that`/`whose`/`where` as postfixes and `each`; `for each score:`; `made of` kinds; docs/voice.md with the glossary ("name" for variables, "definition"/"how to X" for `to` functions) and `audit/plain-words`; errors as data (`diag_info`, `easyscript errors`). |
+| 2026-10-12 | Part 3 (choices without if), items 1 to 6 built: `, or X if there isn't one` for anything that can be nothing; `, starting at S` on map value changes; adjectives (`KIND is ADJ if ...`, `ADJ KIND is one whose ...`) as methods named "is ADJ", used as `X is ADJ`, `the ADJ Ls`, `are ADJ`, `every ADJ ITEM`; values (`KIND's FIELD is ...`) as methods named "the FIELD", used like fields; named values (`the NAME is the one with ...`, `the NAME are the ones whose ...`) read where they're used; tables (`NAME depends on X:` like `let`, `the FIELD of a KIND depends on X:` like a value), with every case covered by an `otherwise` line; rules (`FIELD must ...`, `KIND's FIELD must ...`) checked in `new`, `set` and changes; `remove the Ls that ...` and `set every ITEM's FIELD to X`. Decided while building: `a ... is one` describes and `the ... is the one` names (by the dropped `the`); a table that makes a name is worked out where it's written; `give every loyal customer a 10 percent discount` waits (it needs a way to name actions with inputs in the middle); `the one whose ...` and `the ones with the highest ...` are errors, since neither says exactly one thing. |
 | 2026-10-12 | Part 2 (questions and totals) built: `how many`, `any`/`every`/`no`/`all`/`none`, `the total`/`average`/`median of`, `the top N`/`lowest N`, `the N most common`, `the X with the highest Y`, `per FIELD` and `per month`/`year`/`day`/`weekday` (keys: "October 2026" text, years as numbers, so no date keys were needed), maps sorted by value, math words, the comma before `rounded`/`sorted`/`as`, plural verbs after `that`, and `easyscript plan`. Decided while building: built-in phrases win over fields (`the total of rex` is an error noting `rex's total`); a definition with the word keeps it, and `the` + that word is an error; `the one with the most Y` waits for part 3's definitions (it needs a list to refer to); action forms (`total the amount per month`) wait for part 4's `, then` chains, where `it` exists. |
 
 ## Sources

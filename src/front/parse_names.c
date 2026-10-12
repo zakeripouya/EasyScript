@@ -418,6 +418,8 @@ bool parser_is_method(const Parser *p, const char *name) {
 
 void parser_find_names(Parser *p) {
     find_records(p);
+    parser_find_definitions(p);
+    parser_find_tables(p);
     parser_find_program_result(p);
     for (size_t i = 0; i + 1 < p->count; i++) {
         if (p->tokens[i].kind != TOK_WORD) continue;

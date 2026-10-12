@@ -48,9 +48,11 @@ typedef struct {
     size_t count;
 } SitePool;
 
-// The C functions that "every" and "only" become (es_every1, es_only2, ...).
+// The C functions that "every" and "only" become (es_every1, es_only2, ...),
+// and the rules' (es_rule1, ...), whose prototypes come first.
 typedef struct {
     StrBuf code;
+    StrBuf heads;
     size_t count;
 } HelperPool;
 
@@ -198,6 +200,11 @@ void cg_emit_variants(Codegen *g, StrBuf *out);  // every variant's struct, desc
 void cg_emit_new_variant(Codegen *g, const Expr *expr, StrBuf *out);    // EXPR_NEW of a variant
 void cg_emit_variant_field(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_FIELD of one
 void cg_emit_kind_test(Codegen *g, const Expr *expr, StrBuf *out);      // EXPR_KIND_TEST
+void cg_emit_default(Codegen *g, const Expr *expr, StrBuf *out);        // EXPR_DEFAULT: X, or D
+void cg_emit_table(Codegen *g, const Expr *expr, StrBuf *out);          // EXPR_TABLE: "depends on"
+void cg_emit_rule(Codegen *g, const Stmt *stmt);                        // STMT_RULE: its C function
+// A field's value checked by the field's rules: "es_rule1(SITE, VALUE)" (VALUE when it has none).
+const char *cg_follow_rules(Codegen *g, const Field *field, const char *value, SourcePos pos);
 void cg_emit_match(Codegen *g, const Stmt *stmt);                       // STMT_MATCH
 
 // codegen_list.c

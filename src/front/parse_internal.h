@@ -21,6 +21,17 @@ typedef struct {
     bool method;       // a function "for" a kind of record ("to bark, for a dog:")
 } KnownName;
 
+// "the best customer is the one with the highest profit": a name for a value,
+// worked out wherever the name is used, from the value's words (pre-scan).
+typedef struct {
+    const char *text;   // the name: "best customer", "big orders"
+    size_t words;
+    size_t value;       // the index of the value's first token ("one" or "ones")
+    const char *noun;   // its last word, naming the items: "customer", "orders"
+    int state;          // 0: not read yet; 1: read; 2: has a mistake (reported once)
+    bool expanding;     // being read now (a name used in its own definition)
+} Definition;
+
 typedef struct {
     Arena *arena;
     Diag *diag;
@@ -46,6 +57,11 @@ typedef struct {
     size_t block_end;       // 1 + the token after a block that ended a value ("a function taking x:"), or 0
     size_t hidden_lists;    // lists sentences like "apply F to every X in L" hold in hidden names so far
     NameList modules;       // the files "use" sentences name ("helpers"), so "helpers's double" names one
+    Vec(KnownName) adjectives;   // "a customer is loyal if ...": every adjective a kind defines (pre-scan)
+    Vec(Definition) definitions; // "the best customer is the one with ...": every named value (pre-scan)
+    Expr *group_list;       // "set every monster's color to blue": the monsters (the sentence is done for each)
+    Name group_item;        // ... and "monster"
+    Span group_every;       // ... and its "every"
 } Parser;
 
 // A word or symbol sequence with a meaning, e.g. "is greater than".
@@ -180,7 +196,14 @@ Expr *parser_parse_item_test(Parser *p, const char *example);
 bool parser_at_item_test(const Parser *p, size_t ahead);
 Expr *parser_parse_condition_after(Parser *p, Expr *first);
 Expr *parser_parse_comparison_after(Parser *p, Expr *first);
+Expr *parser_parse_is_rest(Parser *p, Expr *left, Span is);  // "over 100" after "when it's"
+// parse_table.c: "the shipping cost depends on the total:" and its lines
+bool parser_at_table(const Parser *p);
+Stmt *parser_parse_table(Parser *p);
+void parser_find_tables(Parser *p);  // pre-scan: a kind's values ("the price of a drink depends on ...")
 Expr *parser_continue_postfix(Parser *p, Expr *expr);
+void parser_skip_if_none(Parser *p);  // "if there isn't one" after ", or D"
+
 
 // parse_aggregate.c: questions about a list ("how many", "any", "the total of", "the top 3", "per")
 // A question starting with a word here, or NULL if none starts here.
@@ -188,6 +211,33 @@ Expr *parser_parse_aggregate_word(Parser *p);
 // "the 10 most common words": a number (or a name) followed by "most common".
 bool parser_at_most_common(const Parser *p);
 Expr *parser_parse_most_common(Parser *p);
+Expr *parser_implied_list(Parser *p, const Name *item);  // "scores" for "any score"
+// "the customer with the highest ...": a question whose list is the item's plural; then, from "with" on.
+Expr *parser_new_best(Parser *p, const Name *item, SourcePos start);
+Expr *parser_finish_best(Parser *p, Expr *best);
+
+// parse_define.c: definitions written as sentences
+// "a customer is loyal if ...", "a big order is one whose ...", "a customer's profit is ...", "the
+// best customer is the one with ...": one starts here (at the start of a line).
+bool parser_at_definition(const Parser *p);
+Stmt *parser_parse_definition(Parser *p);  // NULL for a named value (nothing runs where it's written)
+void parser_find_definitions(Parser *p);   // pre-scan: adjectives, values, named values
+bool parser_is_adjective(const Parser *p, const char *word);
+// A method for the kind at the current token (its words consumed), the kind its input: what a sentence defines.
+Stmt *parser_new_method(Parser *p, size_t kind_words, int defines);
+
+// parse_group.c: acting on a whole group
+bool parser_at_remove_filter(const Parser *p);              // after "remove": "the tasks that are done"
+Stmt *parser_parse_remove_filter(Parser *p, Stmt *stmt);    // ... as "keep only" with the test turned around
+bool parser_at_every_target(const Parser *p);               // "every monster's" (what a sentence changes)
+Expr *parser_parse_every_target(Parser *p);                 // its field of "it"; sets p->group_list
+Stmt *parser_finish_group(Parser *p, Stmt *stmt);           // the sentence, done for each item
+// "X is loyal": the call of the adjective's definition (named "is loyal") on X.
+Expr *parser_adjective_call(Parser *p, Expr *subject, const char *adjective, SourcePos pos);
+// After a value: "is loyal", "is not loyal", "isn't loyal" (or, if plural, "are ..."); NULL if none.
+Expr *parser_parse_adjective_test(Parser *p, Expr *left, bool plural);
+// "the loyal customers" (a filter), or a named value ("the best customer"); NULL if neither starts here.
+Expr *parser_parse_defined_word(Parser *p);
 const char *parser_plural_of(Arena *arena, const char *name);
 size_t parser_made_of_words(const Parser *p, size_t i);
 bool parser_at_made_of(const Parser *p);
@@ -342,6 +392,8 @@ Expr *parser_parse_map_word(Parser *p);
 // "value for" starts "the value for K in M" here.
 bool parser_at_lookup(const Parser *p);
 Expr *parser_parse_lookup(Parser *p);
+// ", starting at S" after "add E to the value for K in M" (and the other changes); true if none or parsed.
+bool parser_parse_starting_at(Parser *p, Stmt *stmt);
 
 // parse_text.c
 // "the characters of T", "the words of T", "the lines of T", "the code of T",

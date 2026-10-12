@@ -37,6 +37,26 @@ static _Noreturn void es_no_choice(int site) {
             "There's nothing to choose from: the list is empty.");
 }
 
+/* --- Rules ("an age must be between 0 and 150") ------------------------------------- */
+
+/* A value set where a rule says it can't be: the rule as written, and the value. */
+static _Noreturn void es_rule_broken_n(int site, const char *rule, double value) {
+    es_fail(site, NULL, "%s, but this one is %s.", rule, es_shown(value));
+}
+
+static _Noreturn void es_rule_broken_t(int site, const char *rule, const EsText *value) {
+    size_t shown = 0;
+    for (size_t chars = 0; shown < value->len && chars < 60; chars++) {
+        shown++;
+        while (shown < value->len && es_continuation_byte(value->chars[shown])) shown++;
+    }
+    es_fail(site, NULL, "%s, but this one is \"%.*s%s\".", rule, (int)shown, value->chars, shown < value->len ? "..." : "");
+}
+
+static _Noreturn void es_rule_broken_x(int site, const char *rule) {
+    es_fail(site, NULL, "%s, but this one doesn't follow it.", rule);
+}
+
 /* --- Grouping ("per") ------------------------------------------------------------- */
 
 /* Where the key's value is, adding the key with the value 0 (or nothing) if

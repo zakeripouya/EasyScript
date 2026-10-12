@@ -230,7 +230,13 @@ static const char *change_code(Codegen *g, const Stmt *stmt) {
                cg_operand(g, target->as.lookup.key, false));
     sb_appendf(&out, "EsMap *es_m = %s; ", cg_list_operand(g, target->as.lookup.map));
     if (!amount_first) sb_append(&out, amount_code);
-    sb_appendf(&out, "EsValue *es_p = es_map_at(%zu, es_m, es_k); ", cg_site(g, target->pos));
+    const Expr *start = stmt->as.change.start;
+    if (start) {  // ", starting at S": a missing key is added, with S worked out only then
+        sb_appendf(&out, "bool es_added; EsValue *es_p = es_map_slot(es_m, es_k, &es_added); if (es_added) es_p->%s = %s; ",
+                   cg_value_suffix(type), cg_operand(g, start, false));
+    } else {
+        sb_appendf(&out, "EsValue *es_p = es_map_at(%zu, es_m, es_k); ", cg_site(g, target->pos));
+    }
     if (stmt->as.change.append) {
         sb_appendf(&out, "es_add_%s(es_list_retain(es_p->l), es_value); ", cg_item_suffix(type));
     } else if (stmt->as.change.op == CHANGE_DIVIDE) {

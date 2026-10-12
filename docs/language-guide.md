@@ -31,6 +31,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [19. Programs and the system](#19-programs-and-the-system) | Available |
 | [20. The keyboard](#20-the-keyboard) | Available |
 | [21. Questions and totals](#21-questions-and-totals) | Available |
+| [22. Choices without if](#22-choices-without-if) | Available (events and schedules: coming soon) |
 
 ---
 
@@ -2050,4 +2051,95 @@ Line 7: "the top": 1 pass keeping the best ones in a heap, no sort of the whole 
 - `the total of`, `the average of`, `the median of` and `the number of` mean the program's own definition when it has one with that name: `total of scores` calls `to total of numbers:`. Written with `the`, it's an error asking which was meant.
 - `the total of rex`, when `rex` is a record with a field called `total`, is an error: the phrase adds up a list. Write `rex's total` for the field.
 - These phrases are values, so `say how many scores are above 70.` works anywhere a value does.
+
+## 22. Choices without if
+
+**Available** (events and schedules are coming soon). Most programs are full of `if`s that say what something *is*: an order is big when its amount is over 1000, shipping costs 5 when the total is over 50. EasyScript lets you say those things once, as sentences, and then use them anywhere.
+
+### Defaults
+
+```
+add 1 to the value for word in counts, starting at 0.
+say the nickname, or "friend" if there isn't one.
+```
+
+`starting at` gives a key that isn't in the map yet a value to start from, and `, or` gives another value when something is nothing. In both, the other value is only worked out when it's needed.
+
+### Describing words
+
+```
+an order is big if its amount is over 1000.
+a cheap order is one whose amount is under 100.
+
+if o is big, say "Big order!".
+say how many orders are big.
+say the cheap orders.
+if every order is big, say "All big.".
+```
+
+`its` (or `their`, or `it`) is the order being described. Once a word is defined, `X is big` means the word, and `the big orders` means the orders it describes.
+
+### Values worked out from a record, and named values
+
+```
+an order's profit is its amount minus its cost.
+a customer's profit is the total profit of their orders.
+the best customer is the one with the highest profit.
+the big orders are the ones whose amount is over 1000.
+
+say o's profit, the profit of o.
+say the best customer's name.
+```
+
+A value like `profit` is worked out each time it's used, from the record it belongs to, so it's always up to date with the record's fields. A named value (`the best customer`) means its words, worked out where it's used: `the customer with the highest profit`, going through `customers`.
+
+### Tables
+
+```
+the shipping cost depends on the total:
+    0 when it's over 100.
+    5 when it's over 50.
+    10 otherwise.
+
+the price of a drink depends on its size:
+    3 when it's "small".
+    4 when it's "medium".
+    5 otherwise.
+```
+
+The first table makes `shipping cost` right there, from the total as it is then (like `let`). The second says what every drink's price is, worked out whenever it's used: `latte's price`. Each line is a value and when it applies (`when it's ...`, `when it starts with ...`, any comparison), and the last line says `otherwise`, so there's always a value. Without it, EasyScript says which case is missing: ""the shipping cost" doesn't say what it is when the total is 50 or less."
+
+### Rules
+
+```
+an age must be between 0 and 150.
+a customer's email must contain "@".
+a team's players must not be empty.
+```
+
+A rule is checked every time a field gets a value: in `a new ...`, `set ...`, and `add ... to ...` (and the other changes). If it's broken, the program stops: "Line 12: An age must be between 0 and 150, but this one is 200."
+
+### Acting on a whole group
+
+```
+remove the tasks that are done.
+remove the scores that are below 10.
+set every monster's color to "blue".
+add 10 to every player's score.
+```
+
+### What each one means exactly
+
+- `a customer is loyal if C.` is `to is loyal, for a customer: give back C`, with `it` the customer; `rex is loyal` calls it.
+- `an order's profit is V.` is a method giving back V; `o's profit` calls it.
+- `the best customer is the one with the highest profit.` puts `the customer with the highest profit` wherever `the best customer` is written.
+- A table is the first line's value whose condition is yes, tried in order: `if X is over 100 ... otherwise if X is over 50 ... otherwise ...`.
+- A rule is a check after the field gets its value, stopping the program when it's no.
+- `remove the tasks that are done.` is `keep only the tasks in tasks where not (it is done)`; `set every monster's color to "blue".` is `for each monster in monsters: set it's color to "blue"`.
+
+### Things to watch
+
+- Definitions (describing words, values, tables of a kind, rules) only see the value they're about and constants, like `to` definitions: "This only sees the value it's about ("it") and constants."
+- `a big order is one whose ...` (with "a ... one") describes, and `the big orders are the ones whose ...` (with "the ... the ones") names: the words `a` and `the` tell them apart.
+- A table that makes a name (`the shipping cost depends on the total:`) works it out once, where it's written; use `the price of a drink depends on ...` (or a value of a record) for one that's worked out each time.
 

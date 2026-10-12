@@ -657,7 +657,8 @@ All map words are **Available**. A map finds a value by its key: keys are text o
 | Pattern | Meaning | Example |
 |---|---|---|
 | `the value for K in M` | The value kept for key K. A key that isn't there stops the program with an error naming it | `the value for "tea" in prices` |
-| `the value for K in M, or D` | The same, but D (a single value, only worked out when it's needed) when K isn't there | `the value for "Bob" in ages, or 0` |
+| `the value for K in M, or D` | The same, but D (a single value, only worked out when it's needed) when K isn't there; `if there isn't one` (or `if there is not one`) can follow, and changes nothing | `the value for "Bob" in ages, or 0 if there isn't one` |
+| `add X to the value for K in M, starting at S` | Change a key's value, adding the key with S first if it isn't there (S is only worked out then); works with every change sentence and with lists (`add word to the value for letter in groups, starting at an empty list of text`) | `add 1 to the value for word in counts, starting at 0` |
 | `set the value for K in M to X` / `change ...` | Keep X for key K: changes its value, or adds it at the end | `set the value for "Paris" in ages to 19` |
 
 Number keys are the same key when they're the same to 12 significant digits, so numbers that differ only by rounding errors are one key (`0.1 plus 0.2` finds `0.3`). A name straight before `in` is the key: `the value for item in prices`. `value`, `keys`, `values`, `entries` and `map` are only special in these forms, so they can still be names.
@@ -697,6 +698,67 @@ A map needs both names; `for each name in ages:` is an error that suggests `for 
 ### Sharing
 
 A map is **shared** like a list: `let same be ages` gives the same map another name, and a function given a map can change it. Lists and maps in a map belong to it (`a copy of` copies them); text and records in it are shared. A map kept with `keep` is fixed (see [Constants](#constants)).
+
+## Choices without if
+
+All **Available** (English pass part 3). Each is a sentence at the start of a line, at the top level, and compiles to the same code as the `to` definition, loop or `if` it stands for.
+
+### Defaults
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `X, or D` / `X, or D if there isn't one` | X when it isn't nothing; otherwise D (a single value, only worked out then). X must be something that can be nothing | `the nickname, or "friend" if there isn't one` |
+| `..., starting at S` | See [Looking up and setting](#looking-up-and-setting) | `add 1 to the value for word in counts, starting at 0` |
+
+### Describing words (adjectives)
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `KIND is ADJECTIVE if CONDITION.` | Says when a record (or a value of a kind) is ADJECTIVE; in CONDITION, `it`, `its FIELD` and `their FIELD` are that value. Same as `to is ADJECTIVE, for a KIND: give back CONDITION` | `a customer is loyal if the number of items in their orders is at least 2.` |
+| `ADJECTIVE KIND is one whose FIELD ... .` / `... is one that ... .` / `... is one where ... .` | The same, said as a filter | `a big order is one whose amount is over 1000.` |
+| `X is ADJECTIVE` / `X is not ADJECTIVE` / `X isn't ADJECTIVE` | Yes or no | `if rex is loyal:` |
+| `the ADJECTIVE Ls` | The items of L it describes (a filter) | `the loyal customers` |
+| `how many L are ADJECTIVE`, `every ADJECTIVE ITEM ...`, `L that are ADJECTIVE` | In questions and filters too | `if every loyal customer's total is above 100` |
+
+An adjective is one word; where it's defined, `X is WORD` means the adjective, not a comparison with a name. Several kinds can define the same word. Using one that no kind defines is "I don't know what "loyal" means for a customer."; using it on another kind is "I know what "best" means for a customer, but not for a product.".
+
+### Values worked out from a record
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `KIND's FIELD is VALUE.` | A value every KIND has, worked out from it whenever it's used (`it`, `its`, `their` are the record): `rex's FIELD`, `the FIELD of rex`, `its FIELD`, `whose FIELD`, `the total FIELD of L` all work. Same as `to the FIELD, for a KIND: give back VALUE` | `an order's profit is its amount minus its cost.` |
+| `the NAME is the one with the highest FIELD.` | A named value: wherever `the NAME` is used, it means `the ITEM with the highest FIELD`, ITEM the last word of NAME (and its list the plural, like `for each score:`). Also `lowest`, `most`, `fewest`, ... | `the best customer is the one with the highest profit.` |
+| `the NAME are the ones whose ... .` / `... that ... .` / `... where ... .` | A named list: the items of the list named by NAME's last word that the filter keeps | `the big orders are the ones whose amount is over 1000.` |
+
+A named value is worked out where it's used, from what it says there, like the words written in its place. `the one whose ...` (which could be several) and `the ones with the highest ...` (how many?) are errors that say what to write instead.
+
+### Tables
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `NAME depends on X:` + lines | Makes NAME (like `let`) from the first line whose condition is yes for X | `the shipping cost depends on the total:` |
+| `the FIELD of a KIND depends on X:` + lines | A value every KIND has (like `KIND's FIELD is ...`), from the first line that applies | `the price of a drink depends on its size:` |
+| `VALUE when it's ...` / `VALUE when it is ...` / `VALUE when it starts with ...` (any comparison) | One line: in the comparison, `it` is X | `5 when it's over 50.` |
+| `VALUE otherwise.` | The last line: the value when no other line applies | `10 otherwise.` |
+
+Every table must end with an `otherwise` line, so every case has a value; one without it is an error naming the case that's missing when the lines make it clear ("when the total is 50 or less"). All the values must be the same kind.
+
+### Rules
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `FIELD must be between A and B.` | Every value a field called FIELD (in any kind) gets must be from A to B; checked in `new`, `set`, and the change sentences, and the program stops with "An age must be between 0 and 150, but this one is 200." if not | `an age must be between 0 and 150.` |
+| `KIND's FIELD must ... .` | The same, for one kind's field | `a customer's email must contain "@".` |
+| `must be ...` (any comparison after `is`), `must contain X`, `must start with X`, `must end with X`, and each with `not` (`must not be empty`) | What the rule checks, with the value as `it` | `a team's players must not be empty.` |
+
+A rule sees only constants and the value it checks.
+
+### Acting on a whole group
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `remove the Ls that ... / whose ... / where ...` / `remove the ADJECTIVE Ls` | Takes the items the filter keeps out of the list itself (the same as `keep only the items in L where not ...`) | `remove the tasks that are done.` |
+| `set every ITEM's FIELD to X` (and `add X to every ITEM's FIELD`, `increase every ITEM's FIELD by X`, ...) | Does the sentence for each item of the list named like ITEM's plural (a `for each` loop); ITEM can start with an adjective | `set every monster's color to "blue".` |
 
 ## Kinds with variants
 

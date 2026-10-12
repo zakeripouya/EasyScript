@@ -38,3 +38,31 @@ A running record of the unattended English-pass run (parts 2 to 5, then charts),
 ### Commits
 
 - `5bc8505` Add questions and totals about lists, math words and easyscript plan (test 647, gcc 647, debug 646 + 0 leaks). Blessed nothing; new golden files written by hand-checked runs: `tests/run/questions*`, `math_words`, `err_average_empty`, `err_median_empty`, `err_best_empty`, `err_top_count`, `tests/errors/question_errors`, `tests/ast/questions`, `err_questions`, `tests/plan/*`, `tests/memory/questions_loop`, the two examples. Changed: `tests/errors/call_variable.es/.err` (uses `price`, see decisions).
+
+## Part 3: choices without if
+
+### Done
+
+- **Defaults:** `X, or D [if there isn't one]` for anything that can be nothing (not just map lookups), and `add 1 to the value for word in counts, starting at 0` (every change sentence, and lists: `starting at an empty list of text`). The start is only worked out when the key is missing.
+- **Describing words:** `a customer is loyal if ...` and `a big order is one whose ...`, used as `if rex is loyal`, `the loyal customers`, `how many orders are big`, `every loyal customer's ...`. They compile to methods named "is loyal" (a name a program can't write), so several kinds can share a word.
+- **Values and named values:** `an order's profit is its amount minus its cost.` (used like a field everywhere, including `the total profit of orders`), `the best customer is the one with the highest profit.`, `the big orders are the ones whose ...`.
+- **Tables:** `the shipping cost depends on the total:` with `VALUE when it's ...` / `VALUE when it starts with ...` lines and a required `VALUE otherwise.`; `the price of a drink depends on its size:` for a kind's value. A missing `otherwise` names the missing range when the lines are all `over`/`at least` (or `under`/`at most`).
+- **Rules:** `an age must be between 0 and 150.`, `a customer's email must contain "@".`, `a team's players must not be empty.`, checked in `new`, `set` and the change sentences; the runtime error quotes the rule.
+- **Groups:** `remove the tasks that are done.`, `remove the finished tasks.`, `set every monster's color to "blue".`, `add 10 to every player's score.`
+- Example: `examples/programs/shipping.es`.
+
+### Decisions made
+
+- **Describing vs naming:** `a big order is one whose ...` defines a word; `the best customer is the one with ...` names a value. The dropped `the` before `one` decides, as in English (recorded as a known exception).
+- **A defined word wins in `X is WORD`**, even over a name `WORD` (recorded as a known exception).
+- **Named values are read where they're used**, so they see the names there and are always current.
+- **A table that makes a name works it out where it's written** (like `let`): the doc didn't say when it's worked out; this changes least, and "always up to date" values are part 4.
+- **`the one whose ...` and `the ones with the highest ...` are errors** (one might match several; the other doesn't say how many).
+- **Rules about a field of any kind** (`an age must ...`) cover every kind with that field, which must all be the same kind.
+
+### Skipped or moved
+
+- **`give every loyal customer a 10 percent discount`**: a method whose inputs sit in the middle of its words ("give ... a ... discount") doesn't exist yet; `set every loyal customer's discount to 10` works. Open question added.
+- **`a customer is loyal if they ordered more than 5 times`** (a verb about the record): "they" + a verb isn't parsed; `if the number of items in their orders is above 5` works.
+
+### Commits

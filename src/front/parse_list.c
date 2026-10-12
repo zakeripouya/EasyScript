@@ -447,6 +447,7 @@ Stmt *parser_parse_remove(Parser *p, const Token *verb) {
     static const char *const from[] = {"from", NULL};
     static const char *const example = "remove item 2 from scores";
     Stmt *stmt = parser_new_stmt(p, STMT_LIST, verb);
+    if (parser_at_remove_filter(p)) return parser_parse_remove_filter(p, stmt);  // remove the tasks that are done
     stmt->as.list.op = LIST_REMOVE;
     bool first_last = (parser_at_word(p, 0, "first") || parser_at_word(p, 0, "last")) && parser_at_word(p, 1, "item");
     bool item = parser_at_word(p, 0, "item") && (parser_at_word(p, 1, "from") || parser_at_item(p, from));

@@ -146,11 +146,32 @@ static bool same_record_kind(Checker *c, TypeVar left, TypeVar right) {
     return (type_is_record(l) || type_is_sum(l)) && type_present(l) == type_present(r);
 }
 
+// "if rex is loyal" where nothing says what "loyal" means (or makes a name "loyal").
+static bool report_unknown_adjective(Checker *c, const Expr *expr, TypeVar left) {
+    const Expr *right = expr->as.binary.right;
+    Type kind = types_of(c, left);
+    if (right->kind != EXPR_NAME || right->module || strchr(right->as.name, ' ')) return false;
+    if (!(type_is_record(kind) || type_is_sum(kind))) return false;
+    const char *name = right->as.name;
+    if (checker_find_made(c, name) || checker_find_later(c, name) || checker_find_constant(c, name) ||
+        checker_find_function(c, name)) {
+        return false;
+    }
+    const char *what = checker_type_name(c, type_present(kind));
+    diag_error(c->diag, right->pos.span, "I don't know what \"%s\" means for %s.", right->display, what);
+    diag_note(c->diag, "Say what it means, like \"%s is %s if ...\".", what, right->display);
+    diag_info(c->diag, DIAG_UNKNOWN, arena_sprintf(c->arena, "what \"%s\" means", right->display), NULL);
+    return true;
+}
+
 static TypeVar check_binary(Checker *c, const Expr *expr) {
     BinaryOp op = expr->as.binary.op;
     TypeVar result;
     if (checker_check_nothing_test(c, expr, &result)) return result;
     TypeVar left = checker_check_expr(c, expr->as.binary.left);
+    if ((op == BINARY_EQUAL || op == BINARY_NOT_EQUAL) && report_unknown_adjective(c, expr, left)) {
+        return types_new(c, TYPE_ERROR, expr->pos.line);
+    }
     size_t outer = c->present.len;  // "x is not nothing and x's age is 3": the right side knows x isn't nothing
     if (op == BINARY_AND || op == BINARY_OR) checker_narrow_condition(c, expr->as.binary.left, op == BINARY_AND);
     TypeVar right = checker_check_expr(c, expr->as.binary.right);
@@ -273,7 +294,27 @@ static void report_argument_count(Checker *c, const Function *f, size_t given, S
 }
 
 // An argument of the wrong kind: says why the input has its kind.
+// "if product is best" where only customers say what "best" means.
+static bool report_other_kind(Checker *c, const Function *f, const Expr *arg, TypeVar given) {
+    int defines = f->definition->as.function.defines;
+    Type wanted = types_of(c, f->params.items[0]), kind = types_of(c, given);
+    if (!defines || !(type_is_record(kind) || type_is_sum(kind))) return false;
+    const char *mine = checker_type_name(c, wanted), *other = checker_type_name(c, type_present(kind));
+    if (defines == DEFINES_ADJECTIVE) {
+        const char *word = f->name + 3;  // "is best"
+        diag_error(c->diag, arg->pos.span, "I know what \"%s\" means for %s, but not for %s.", word, mine, other);
+        diag_note(c->diag, "Say what it means, like \"%s is %s if ...\".", other, word);
+    } else {
+        const char *field = f->display;
+        diag_error(c->diag, arg->pos.span, "I know how to work out %s's %s, but not %s's.", mine, field, other);
+        diag_note(c->diag, "Say how, like \"%s's %s is ...\".", other, field);
+    }
+    diag_info(c->diag, DIAG_UNKNOWN, "what it means for this kind", NULL);
+    return true;
+}
+
 static void report_argument_kind(Checker *c, const Function *f, size_t i, const Expr *arg, TypeVar given) {
+    if (i == 0 && report_other_kind(c, f, arg, given)) return;
     const Stmt *def = f->definition;
     const char *param = def->as.function.params.items[i].display;
     Type wanted = types_of(c, f->params.items[i]);
@@ -525,6 +566,8 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_LAMBDA: return checker_check_lambda(c, expr);
     case EXPR_APPLY: return checker_check_apply(c, expr);
     case EXPR_AGGREGATE: return checker_check_aggregate(c, expr);
+    case EXPR_DEFAULT: return checker_check_default(c, expr);
+    case EXPR_TABLE: return checker_check_table(c, expr);
     case EXPR_LIBRARY: return checker_check_library(c, expr);
     case EXPR_ERROR: return error_var(c);
     }

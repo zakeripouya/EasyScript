@@ -275,7 +275,8 @@ static Expr *parse_word(Parser *p) {
     }
     if (strcmp(word, "nothing") == 0) return literal(p, EXPR_NOTHING);
     if (strcmp(word, "it") == 0) return literal(p, EXPR_IT);
-    if (strcmp(word, "its") == 0 && parser_known_field_words(p, 1) > 0) {  // "its radius": "it's radius"
+    if ((strcmp(word, "its") == 0 || strcmp(word, "their") == 0) &&
+        parser_known_field_words(p, 1) > 0) {  // "its radius", "their orders": "it's radius"
         Expr *it = literal(p, EXPR_IT);
         Expr *expr = ast_new_expr(p->arena, EXPR_FIELD, it->pos);
         expr->as.field.record = it;
@@ -305,6 +306,8 @@ static Expr *parse_word(Parser *p) {
         }
         return parser_error_expr(p);
     }
+    Expr *defined = parser_parse_defined_word(p);  // "the best customer", "the loyal customers"
+    if (defined) return defined;
     if (parser_at_selection(p)) return parser_parse_selection(p);  // "the numbers in scores where ..."
     const KnownName *known = parser_match_name(p, 0, false);
     if (known && known->words > 1) return parse_name_or_call(p);  // "late fee", before any other meaning

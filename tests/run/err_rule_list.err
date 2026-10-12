@@ -1,0 +1,3 @@
+Line 4: A team's players must not be empty, but this one doesn't follow it.
+    set team's players to an empty list of text.
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

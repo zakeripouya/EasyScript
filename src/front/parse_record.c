@@ -273,6 +273,10 @@ Expr *parser_parse_field(Parser *p, Expr *record) {
 
 bool parser_parse_target(Parser *p, Name *name, Expr **field, const char *const *next) {
     *field = NULL;
+    if (parser_at_every_target(p)) {  // "set every monster's color to blue"
+        *field = parser_parse_every_target(p);
+        return !p->sentence_failed;
+    }
     if (parser_at_lookup(p)) {  // "set the value for "tea" in prices to 3"
         *field = parser_parse_lookup(p);
         if ((*field)->kind == EXPR_MAP_GET && !(*field)->as.lookup.fallback) return !p->sentence_failed;

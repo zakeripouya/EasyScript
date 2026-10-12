@@ -95,6 +95,12 @@ static void check_change(Checker *c, const Stmt *stmt) {
     if (field) {
         var = field->kind == EXPR_MAP_GET ? checker_check_map_change(c, field) : check_field_target(c, field);
         if (types_of(c, var) == TYPE_ERROR) return;
+        const Expr *start = stmt->as.change.start;
+        TypeVar start_var = start ? checker_check_expr(c, start) : 0;
+        if (start && !types_unify(c, var, start_var)) {
+            diag_error(c->diag, start->pos.span, "The map's values are %s, so a value can't start at %s.",
+                       checker_kind(c, var), checker_kind(c, start_var));
+        }
     } else {
         const Symbol *symbol = check_target(c, &stmt->as.change.target);
         if (!symbol) return;
@@ -264,6 +270,10 @@ static void check_function(Checker *c, const Stmt *stmt) {
     c->loops.len = 0;
     c->function = f;
     check_params(c, f);
+    if (stmt->as.function.defines) {  // "a customer is loyal if its orders ...": "it" is the customer
+        Loop subject = {true, f->params.items[0], false, NO_VARIANT, false};
+        vec_push(c->arena, &c->loops, subject);
+    }
     checker_check_statements(c, &stmt->as.function.body);
     checker_end_scope(c, c->floor, stmt->pos.line, NULL);
     c->function = NULL;
@@ -328,6 +338,7 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
     case STMT_SAY: checker_check_expr(c, stmt->as.value); break;
     case STMT_USE: checker_check_use(c, stmt); break;
     case STMT_LIBRARY: checker_check_library_stmt(c, stmt); break;
+    case STMT_RULE: checker_check_rule(c, (Stmt *)stmt); break;
     case STMT_ASK:
         checker_check_expr(c, stmt->as.ask.prompt);
         make_text(c, &stmt->as.ask.answer);
