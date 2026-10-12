@@ -1,13 +1,13 @@
 note: A gradebook: questions about a class, with no loops that count by hand.
 
-a student has a name (text), a class (text) and a score (a number).
+a student has a name, a class and a score.
 
-let students be a list of (a new student with name "Ana", class "Math", score 72),
-    (a new student with name "Ben", class "Math", score 95),
-    (a new student with name "Cleo", class "Art", score 64),
-    (a new student with name "Dev", class "Art", score 88),
-    (a new student with name "Eli", class "Math", score 51) and
-    (a new student with name "Fay", class "Art", score 91).
+let students be a list of a new student with name "Ana", class "Math", score 72,
+    a new student with name "Ben", class "Math", score 95,
+    a new student with name "Cleo", class "Art", score 64,
+    a new student with name "Dev", class "Art", score 88,
+    a new student with name "Eli", class "Math", score 51 and
+    a new student with name "Fay", class "Art", score 91.
 
 say "Students:", how many students there are.
 say "Passed:", how many students whose score is at least 60.

@@ -256,8 +256,9 @@ static void emit_binary(Codegen *g, const Expr *expr, StrBuf *out) {
     switch (op) {
     case BINARY_AND:
     case BINARY_OR:  // && and || work left to right and stop early, as "and"/"or" do
-        sb_appendf(out, "(%s %s %s)", cg_operand(g, left, false), op == BINARY_AND ? "&&" : "||",
-                   cg_operand(g, right, false));
+        l = cg_operand(g, left, false);  // left first: plan notes keep the written order
+        r = cg_operand(g, right, false);
+        sb_appendf(out, "(%s %s %s)", l, op == BINARY_AND ? "&&" : "||", r);
         return;
     case BINARY_PIECES:
         operands(g, left, right, true, out, &l, &r, &close);
@@ -397,7 +398,8 @@ static void emit_convert(Codegen *g, const Expr *expr, StrBuf *out) {
         cg_emit_expr(g, operand_expr, out);
         sb_append(out, ")");
     } else if (operand_expr->type == TYPE_TEXT) {
-        sb_appendf(out, "es_text_number(%zu, %s)", cg_site(g, expr->pos), cg_operand(g, operand_expr, false));
+        size_t site = cg_site(g, expr->pos);
+        sb_appendf(out, "es_text_number(%zu, %s)", site, cg_operand(g, operand_expr, false));
     } else {
         cg_emit_expr(g, operand_expr, out);
     }
@@ -462,8 +464,11 @@ static void emit_expr(Codegen *g, const Expr *expr, StrBuf *out) {
         }
         break;
     case EXPR_FILE_CONTENTS:
-        sb_appendf(out, "es_read_file(%zu, %s)", cg_site(g, expr->as.operand->pos), cg_operand(g, expr->as.operand, false));
+    {
+        size_t site = cg_site(g, expr->as.operand->pos);
+        sb_appendf(out, "es_read_file(%zu, %s)", site, cg_operand(g, expr->as.operand, false));
         break;
+    }
     case EXPR_UNARY:
         sb_appendf(out, "(%s%s)", expr->as.unary.op == UNARY_NEGATE ? "-" : "!",
                    cg_operand(g, expr->as.unary.operand, false));

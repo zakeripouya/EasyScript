@@ -1,7 +1,6 @@
 note: The program a budget session in the notebook would save (from the
 note: English pass plan). The first run writes an example spending.csv.
-note: (The plan's chart line comes with the charts module.)
-if not (file "spending.csv" exists):
+unless file "spending.csv" exists:
     put "date,store,category,amount" in file "spending.csv"
     add "2026-09-01,Landlord,rent,1200" to the end of file "spending.csv"
     add "2026-09-05,Whole Foods,groceries,84.20" to the end of file "spending.csv"

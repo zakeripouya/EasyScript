@@ -28,6 +28,15 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 - **`the position of X in T` (and `in L`) is `a number or nothing`,** and gives **nothing** instead of 0 when X isn't there, following the design rule that "not found" results use `or nothing`. Using it as a number now needs a check first: `if at is not nothing:`, `if at is nothing, ...`, or `check which kind at is:`. Programs that compared it with 0 (`if the position of "@" in address is 0`) write `is nothing` instead. The exception for it is gone from the design principles.
 
+### Fixed
+
+- The compiler no longer depends on the order C works out a call's arguments in. Built with GCC on Linux, `easyscript plan` listed the parts of `any ... and not every ...` backwards, and some generated programs numbered their sites differently. Each part is now worked out first, in written order.
+
+### Changed (examples)
+
+- The "Start here" examples use the most natural forms the language has: `read the table in` in `order_report.es`, `unless file X exists:`, no parentheses around `new` values in lists, brackets in text instead of `followed by`, field kinds worked out from use, and `the number of parcels per country`. Same output.
+- New: [docs/proposals/](docs/proposals/README.md), where new phrases start.
+
 ### Added (charts)
 
 - `save a bar chart of X as F` (also `line chart`, `pie chart`), `make a bar chart of X called F`, and `..., titled T`: SVG pictures of a list of numbers or a map to numbers, drawn by `lib/charts.es`, a module written in EasyScript that the compiler joins to programs with a chart sentence. The "best months" example now ends with its chart.

@@ -346,6 +346,7 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 - **New syntax must follow `docs/design-principles.md`** (statements vs values, how inputs are introduced, `of`/`in`, optional and "not found" results, errors, equality, copying). A phrase that can't follow them is added to its "Known exceptions" with the reason, in the same commit; a doubt goes under "Open questions" instead of into the parser.
 - **New phrases also follow "Rules for new phrases"** in `docs/design-principles.md`: one meaning per word, everyday English (idioms only with a plain form too), beginner messages at a grade 6-8 level without programmer words (variable, function, type, ...), an exact meaning in core-language terms for every high-level phrase, high-level operations kept as their own AST nodes (never rewritten into loops by the parser), and patterns that start with their own trigger words.
 - **English pass:** before adding any phrase, read `docs/english-pass.md`; follow its Decided section and design rules; record any change of plan in its update log in the same commit.
+- **New phrases go through `docs/proposals/`** (its README and `TEMPLATE.md`): one file per phrase, checked against the design rules and the Cognitive Dimensions, accepted before it's built.
 - The parser must be **deterministic**. Never guess what the user meant, and never use heuristics, "best match", or silent fallbacks.
 - If a sentence is ambiguous or doesn't match any grammar rule, **report an error**. Include the line and column, what was expected, and concrete suggestions (for example, the closest valid sentence forms). Don't pick one reading.
 - Because a period ends a statement, it can't also be part of an identifier. The current lexer accepts `.` in identifiers so that `myfile.txt` works. That conflicts with the new syntax, so filenames have to become string literals.
@@ -356,6 +357,7 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 - **No fixed-size buffers.** No `char buf[256]`, `VarMap var_map[100]`, `char line[1024]`, and so on. Grow storage dynamically from the arena. The same goes for generated C: don't emit `char x[256]` for strings.
 - Write portable C11 (`-std=c11 -Wall -Wextra`). Invoke the C compiler as `cc`, not `gcc`.
 - Report compile errors with source positions rather than calling `exit(1)` deep inside the lexer or parser.
+- **Never rely on the order C works out a call's arguments in.** C leaves it open, and GCC on Linux x86-64 goes right to left. When two or more arguments generate code, add sites or static text, write plan notes, add kinds or report errors (`cg_operand`, `cg_site`, `cg_emit_*`, `checker_check_*`, ...), work each one out into a local first, in written order, then make the call. Plain formatting helpers (`checker_kind`, `parser_text`) are fine as arguments.
 
 ## Code organization (target)
 

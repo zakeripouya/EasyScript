@@ -165,9 +165,10 @@ static void emit_file_write(Codegen *g, const Stmt *stmt) {
         sb_appendf(&g->body, "es_t%zu = %s;\n", t, text);
         text = arena_sprintf(g->arena, "es_t%zu", t);
     }
+    size_t site = cg_site(g, stmt->as.file_write.path->pos);
+    const char *path = expr_code(g, stmt->as.file_write.path);
     cg_indent(g);
-    sb_appendf(&g->body, "es_write_file(%zu, %s, %s, %d);\n", cg_site(g, stmt->as.file_write.path->pos), text,
-               expr_code(g, stmt->as.file_write.path), stmt->kind == STMT_APPEND_FILE);
+    sb_appendf(&g->body, "es_write_file(%zu, %s, %s, %d);\n", site, text, path, stmt->kind == STMT_APPEND_FILE);
 }
 
 
@@ -232,13 +233,15 @@ static void emit_loop_head(Codegen *g, const Stmt *stmt, size_t id) {
                          arena_sprintf(g->arena, "es_count_value(&es_c%zu, es_i%zu)", id, id), true);
         break;
     }
-    case LOOP_TIMES:
+    case LOOP_TIMES: {
+        size_t site = cg_site(g, stmt->as.loop.times->pos);
+        const char *times = expr_code(g, stmt->as.loop.times);
         cg_indent(g);
-        sb_appendf(&g->body, "long long es_n%zu = es_times(%zu, %s);\n", id, cg_site(g, stmt->as.loop.times->pos),
-                   expr_code(g, stmt->as.loop.times));
+        sb_appendf(&g->body, "long long es_n%zu = es_times(%zu, %s);\n", id, site, times);
         cg_indent(g);
         sb_appendf(&g->body, "for (long long es_i%zu = 1; es_i%zu <= es_n%zu; es_i%zu++) {\n", id, id, id, id);
         break;
+    }
     case LOOP_WHILE:
     case LOOP_UNTIL:
         cg_indent(g);
@@ -406,13 +409,15 @@ void cg_emit_stmt(Codegen *g, const Stmt *stmt) {
     }
     case STMT_WRITE_FILE:
     case STMT_APPEND_FILE: emit_file_write(g, stmt); break;
-    case STMT_READ_FILE:
+    case STMT_READ_FILE: {
         cg_declare_name(g, stmt->as.read_file.name.text, TYPE_TEXT);
         cg_emit_new_cell(g, stmt->as.read_file.name.text, TYPE_TEXT);
+        size_t site = cg_site(g, stmt->as.read_file.path->pos);
+        const char *path = expr_code(g, stmt->as.read_file.path);
         cg_emit_store(g, stmt->as.read_file.name.text, TYPE_TEXT,
-                   arena_sprintf(g->arena, "es_read_file(%zu, %s)", cg_site(g, stmt->as.read_file.path->pos),
-                                 expr_code(g, stmt->as.read_file.path)));
+                      arena_sprintf(g->arena, "es_read_file(%zu, %s)", site, path));
         break;
+    }
     case STMT_STOP: emit_stop(g, stmt); break;
     case STMT_IF: emit_if(g, stmt); break;
     case STMT_LOOP: emit_loop(g, stmt); break;

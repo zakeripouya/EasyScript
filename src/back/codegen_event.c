@@ -74,13 +74,15 @@ void cg_emit_events(Codegen *g) {
     for (size_t i = 0; i < events->len; i++) {
         const Stmt *stmt = events->items[i];
         switch (stmt->as.event.kind) {
-        case EVENT_EVERY:
-            line(g, 1, "double es_ev_every%zu = es_event_interval(%zu, %s * %.17g);", i, cg_site(g, stmt->as.event.every
-                                                                                                   ? stmt->as.event.every->pos
-                                                                                                   : stmt->pos),
-                 stmt->as.event.every ? cg_operand(g, stmt->as.event.every, false) : "1.0", stmt->as.event.scale);
+        case EVENT_EVERY: {
+            const Expr *every = stmt->as.event.every;
+            size_t site = cg_site(g, every ? every->pos : stmt->pos);
+            const char *amount = every ? cg_operand(g, every, false) : "1.0";
+            line(g, 1, "double es_ev_every%zu = es_event_interval(%zu, %s * %.17g);", i, site, amount,
+                 stmt->as.event.scale);
             line(g, 1, "double es_ev_next%zu = es_event_clock() + es_ev_every%zu;", i, i);
             break;
+        }
         case EVENT_AT:
             line(g, 1, "double es_ev_next%zu = es_next_at(es_now(), %d, %.17g);", i, stmt->as.event.weekday,
                  stmt->as.event.time);

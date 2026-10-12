@@ -99,8 +99,10 @@ void cg_emit_new_variant(Codegen *g, const Expr *expr, StrBuf *out) {
 void cg_emit_variant_field(Codegen *g, const Expr *expr, StrBuf *out) {
     size_t id = expr->as.field.variant;
     Type kept = expr->narrowed ? expr->type + TYPE_MAYBE : expr->type;  // as the field keeps it
-    sb_appendf(out, "es_vfield_%c(%zu, %s, &es_wt%zu, offsetof(es_W%zu, f%zu))", cg_field_kind(kept),
-               cg_site(g, expr->pos), cg_operand(g, expr->as.field.record, false), id, id, expr->as.field.index);
+    size_t site = cg_site(g, expr->pos);
+    const char *record = cg_operand(g, expr->as.field.record, false);
+    sb_appendf(out, "es_vfield_%c(%zu, %s, &es_wt%zu, offsetof(es_W%zu, f%zu))", cg_field_kind(kept), site, record,
+               id, id, expr->as.field.index);
 }
 
 void cg_emit_kind_test(Codegen *g, const Expr *expr, StrBuf *out) {
@@ -152,7 +154,8 @@ void cg_emit_match(Codegen *g, const Stmt *stmt) {
         LoopCode when = {stmt, id, g->scopes.len, hidden, type};
         vec_push(g->arena, &g->loops, when);
         if (!branch->otherwise && branch->guard) {  // "whose radius is over 10": tested once it's a circle
-            sb_appendf(&g->body, "if ((%s) && %s) ", condition(g, branch, var.data), cg_operand(g, branch->guard, false));
+            const char *test = condition(g, branch, var.data);
+            sb_appendf(&g->body, "if ((%s) && %s) ", test, cg_operand(g, branch->guard, false));
         } else if (!branch->otherwise) {
             sb_appendf(&g->body, "if (%s) ", condition(g, branch, var.data));
         }

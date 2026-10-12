@@ -147,8 +147,9 @@ void cg_emit_fixed_map(Codegen *g, const char *name, const ConstValue *v, StrBuf
     }
     sb_appendf(init, " = es_map_fix(es_map_from(%s, %zu, (EsValue[]){", kinds, v->len);
     for (size_t i = 0; i < v->len; i++) {
-        sb_appendf(init, "%s{.%c = %s}, {.%s = %s}", i ? ", " : "", v->key_type == TYPE_TEXT ? 't' : 'n',
-                   fixed_value(g, &v->keys[i]), cg_value_suffix(v->value_type), fixed_value(g, &v->items[i]));
+        const char *key = fixed_value(g, &v->keys[i]);
+        sb_appendf(init, "%s{.%c = %s}, {.%s = %s}", i ? ", " : "", v->key_type == TYPE_TEXT ? 't' : 'n', key,
+                   cg_value_suffix(v->value_type), fixed_value(g, &v->items[i]));
     }
     sb_append(init, "}));\n");
 }

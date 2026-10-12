@@ -256,11 +256,12 @@ void cg_emit_try(Codegen *g, const Stmt *stmt) {
             check = arena_sprintf(g->arena, "es_try_find(%s, %s)", cg_operand(g, a, false),
                                   attempt->as.library.op == DO_DELETE_FOLDER ? "true" : "false");
             break;
-        default:  // rename, copy, move
-            check = arena_sprintf(g->arena, "es_try_two(%s, %s, %s, %s)", cg_operand(g, a, false),
-                                  cg_operand(g, b, false), folder ? "true" : "false",
-                                  attempt->as.library.op == DO_MOVE ? "true" : "false");
+        default: {  // rename, copy, move
+            const char *from = cg_operand(g, a, false);
+            check = arena_sprintf(g->arena, "es_try_two(%s, %s, %s, %s)", from, cg_operand(g, b, false),
+                                  folder ? "true" : "false", attempt->as.library.op == DO_MOVE ? "true" : "false");
             break;
+        }
         }
     }
     cg_declare_name(g, "0reason", TYPE_TEXT);
@@ -319,7 +320,9 @@ void cg_emit_example(Codegen *g, const Stmt *stmt) {
     Expr *test = ast_new_expr(g->arena, EXPR_BINARY, condition->pos);
     *test = *condition;
     test->as.binary.left = name;
+    const char *right = cg_operand(g, test, false);  // in order: test, then the name shown
+    const char *shown = cg_operand(g, name, true);
     cg_indent(g);
-    sb_appendf(&g->body, "es_example(%zu, %s, %s, %s);\n", site, cg_operand(g, test, false), cg_operand(g, name, true),
+    sb_appendf(&g->body, "es_example(%zu, %s, %s, %s);\n", site, right, shown,
                left->type == TYPE_TEXT ? "true" : "false");
 }

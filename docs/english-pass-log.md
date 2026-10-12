@@ -4,9 +4,9 @@ A running record of the unattended English-pass run (parts 2 to 5, then charts),
 
 ## Summary (for review)
 
-**Finished:** parts 2, 3, 4 and 5 of the English pass, then the charts module. Part 1 was done before this run. Everything is on the `english-pass` branch: not merged, not pushed.
+**Finished:** parts 2, 3, 4 and 5 of the English pass, then the charts module. Part 1 was done before this run. After review, the branch was merged into master (see [After review](#after-review-argument-order-cleanup-examples): argument-order fixes for GCC on Linux, the "Start here" examples rewritten, [Still not English](#still-not-english), and [proposals/](proposals/README.md)).
 
-**Tags:** `english-pass-part-2` (e3c55e2), `english-pass-part-3` (ffbaafb), `english-pass-part-4` (8d896aa), `english-pass-part-5` (9359cbc). Charts are the commit after part 5 (untagged; the request didn't ask for a tag). There's no `english-pass-part-1` tag: part 1 was finished before the branch.
+**Tags:** `english-pass-part-2` (e3c55e2), `english-pass-part-3` (ffbaafb), `english-pass-part-4` (8d896aa), `english-pass-part-5` (9359cbc). `english-pass-charts` (c10d371), tagged after review. There's no `english-pass-part-1` tag: part 1 was finished before the branch.
 
 **Tests at the end:** `make test` 712 passed, `make test-gcc` 712 passed, `make test-debug` 711 passed (it skips the strict-C check by design) with 0 leaking processes. Up from 629 on master. `make bench` passes, including the 20% rule for every high-level form.
 
@@ -210,3 +210,52 @@ A running record of the unattended English-pass run (parts 2 to 5, then charts),
 - **A title is optional** (`, titled T`); labels come from a map's keys in their order, or 1, 2, 3 for a list.
 - **SVG only**, as asked; PNG waits for Phase 4.
 
+
+## After review: argument order, cleanup, examples
+
+### Done
+
+- **The order arguments are worked out in.** C doesn't fix it, and GCC on Linux x86-64 goes right to left, so `plan/questions` and `cli/build-plan` failed there: in `if any score in scores is 45 and not every score is 45`, the plan note for `every` was written before the one for `any`. `emit_binary` (`and`/`or`) and `cg_emit_example` now work each operand out into a local first, left then right. A search of `src/back/` and `src/front/` for calls whose arguments generate code, add sites or static text, write plan notes or add kinds found the same thing in `es_write_file`, `es_times`, `es_read_file` (sentence and value), `es_text_number`, `es_event_interval`, `es_vfield_*`, a `when` guard, `es_try_two`, fixed maps' keys and values, `es_program_word`, `es_set_status`, and the checker's `filled_in` (map kinds added to `Records` in an order the compiler chose). All fixed the same way. The rest only format messages from values already worked out. Rule added to CLAUDE.md.
+- **Cleanup:** the stray `names.txt` at the top of the repo (committed by mistake in part 1) is gone; the roadmap's browser playground is now "After Phase 3 (playground lite comes before v0.2.0 for testing)".
+- **"Start here" examples in the most natural form** (same output for every one):
+  - `order_report.es` reads its csv file with `read the table in "orders.csv" and call it orders` and works out profit with `an order's profit is its amount minus its cost.`, instead of turning csv rows into records by hand (19 lines down to 14).
+  - `unless file "X" exists:` instead of `if not (file "X" exists):` in `budget.es`, `best_months.es` and `order_report.es`. **`if file X doesn't exist` isn't in the grammar**, and the request said not to change the grammar, so `unless` (which is) is used; `doesn't exist` is under "Still not English" below.
+  - No parentheses around `new` values in lists (`gradebook.es`, `shipping.es`, `coffee_shop.es`), around `the extra of it`/`the care of it`/`the shot of it` (now `its extra plus its care`, `its shot`), around `(the total cost of its drinks)`, or in `(parcel's country)`. `(bill plus tip) as money` became `bill plus tip, as money` (a comma before `as` applies it to the whole value). The ones left are needed: `(100 minus its discount)`, and the inner lists in `drinks (a list of latte and tea)`.
+  - Brackets and commas in text instead of `followed by`: `"Nice to meet you, [name]."`, `"Last time you tipped [last tip]."`, `"([the biggest order's total] dollars)"`, `"  [size]:"`, `"Evening report at [the time now]: ..."`, `"[region]:"`. A bracket can't hold quoted text, so shipping's `(parcel's note, or "no note")` became `let remark be parcel's note, or "no note".` and then `"([remark])"`.
+  - Field kinds left out where they're worked out from use: `a student has a name, a class and a score.`, `a drink has a name, a size and an extra shot.`, `a customer has a name and an email.`. shipping keeps its kinds: `a note (text or nothing)` can't be worked out from `note nothing`.
+  - Small wording: `if last tip isn't empty` (was `is not ""`), `let tip be bill times tip rate, rounded to 2 decimal places.` (the comma rounds the whole value; was parentheses), `show what's in file "best months.csv".` (was `say the contents of file`), `say the number of parcels per country.` (was an empty map and a loop adding 1 with `starting at 0`), `the number of sold drinks per size` (was `the number of sold per size`). The notes at the top of `budget.es` and `order_report.es` were brought up to date.
+  - Not changed: `hello.es`, `first_program.es` and `taste.es` (the README's copies must match them), `groceries.es`.
+- **Checked:** `make test` 712, `make test-gcc` 712, `make test-debug` 711 with 0 of 802 processes leaking (macOS); and `make CC=gcc test` on Linux x86-64 with GCC 16.2 in Docker: 712 passed. There, the commit before the fix fails `plan/questions`, and the fix passes it.
+
+## Still not English
+
+Every line of the "Start here" examples, read aloud as someone who has never written a program would hear it. Each line below is one they'd stumble on. Nothing here is built; each needs a proposal ([proposals/](proposals/README.md)).
+
+| Example | Line | Why it trips | Suggested wording |
+|---|---|---|---|
+| groceries | `write "milk" in file it` | "file it" isn't English; "it" already is the file | `write "milk" in it` |
+| groceries | `add "eggs" and "bread" to the end of file it, one per line` | Same "file it"; "the end of" is how the computer does it, not what the person wants | `add "eggs" and "bread" to it, one per line` |
+| budget | `the first item of the keys of totals per store` | Three layers of "of"; "keys" is a programmer word; the person wants the top store | `the store with the highest total amount` (open question 5) |
+| budget, best_months, order_report | `unless file "spending.csv" exists:` | "unless" reads well, but people say "if it doesn't exist"; the request asked for exactly that | `if file "spending.csv" doesn't exist:` |
+| budget, best_months, order_report | `put "date,store,category,amount" in file ...` then one `add "2026-09-01,Landlord,rent,1200" to the end of file ...` per row | Comma-separated rows typed as text, one sentence per row | `write the text below in file "spending.csv":` with the rows indented under it (text blocks exist, but only as values after `the text below:`, not after `write ... in file`) |
+| shipping | `(the extra of it) plus (the care of it)` (now `its base price plus its extra plus its care`) | The old form needed parentheses and "of it"; the new one reads well, but "extra" and "care" are made-up names for "the charge for going abroad" | `a parcel's price is its base price, plus 12 if it's abroad, plus 4 if it's fragile.` |
+| shipping | `a fragile (yes or no)` and `depends on its fragile: 4 when it's yes.` | "a fragile" and "its fragile" aren't English; "when it's yes" is how a computer says it | `a parcel can be fragile.` and `4 if it's fragile.` |
+| shipping | `"([remark])"` | Brackets inside parentheses inside quotes; and a quote can't go inside the brackets, so a name had to be made up | `say ..., "(" then parcel's note or "no note", ")"`-style pieces, or quotes allowed inside brackets |
+| gradebook, shipping, coffee_shop | `let students be a list of a new student with name "Ana", class "Math", score 72, a new student ...` | "a list of a new student" isn't English; one comma both separates fields and separates students | `the students are:` with one `"Ana" in "Math" scored 72`-style line each, or a table in the text below |
+| gradebook | `the student with the highest score's name` | The `'s` belongs to the student, but it reads as "the highest score's name"; `the name of the student with the highest score` is an error today | `the name of the student with the highest score` |
+| gradebook | `how many students whose score is at least 60` | "how many students whose" is missing a verb | `how many students have a score of at least 60` |
+| gradebook | `say "  ", student's name, student's score.` | The `"  "` is there only to indent the line | `say student's name, student's score, indented.` or a list shown as a table |
+| gradebook, coffee_shop, order_report | `for each class and average in ...` / `for each size and count in ...` / `for each region and total in ...` | Naming two things at once is a programmer habit | `for each class, with its average, in ...` or `show ... as a table` |
+| coffee_shop | `the total total of orders` | The field is called "total", so the question doubles it | Rename the field (`an order's bill`), or accept `the sum of the totals` |
+| coffee_shop | `the total cost of its drinks times (100 minus its discount) divided by 100` | Percent off written as arithmetic | `the total cost of its drinks, minus its discount percent` (`N percent of X` exists; `less N percent` doesn't) |
+| coffee_shop | `the 1 most common names` | "the 1 most common names" isn't English; there's no singular | `the most common name` |
+| coffee_shop | `say "A large drink costs", the price of mocha.` | Fine aloud, but `mocha` is a name made with `let`, so "the price of mocha" quietly means that one drink | (no change needed; noted) |
+| tip_calculator | `say "Total:", bill plus tip, as money.` (was `(bill plus tip) as money`) | Reads well aloud, but whether `as money` covers the whole sum depends on one comma; without it, it means `tip as money` and is an error | Keep, and teach the comma in the guide |
+| tip_calculator | `if good service, set tip rate to 0.2.` | "if good service" is missing its verb | `if the service was good, ...` (the answer named by the question) |
+| tip_calculator | `ask for a number "How much was the bill? " and call it bill.` | The space before the closing quote matters, and only a programmer would know | Add the space after a question mark automatically |
+| ask_name | `ask "What's your name? " and call the answer name` | Same trailing space | Same |
+| order_report | `let best be the first item of the keys of profits.` | Same as budget's top store | `the customer with the highest total profit` |
+| order_report | `"([the value for best in profits] profit)"` | "the value for best in profits" is how a map is read, not how a person asks | `best's total profit` or `the total profit of best's orders` |
+| first_program | `let name be "Ada".` | "let ... be" is how maths talks | `the name is "Ada".` (it clashes with comparisons; needs a proposal) |
+| taste | `to greet using name:` | "greet using name" isn't English | `to greet someone called name:` or `to greet a person:` |
+| taste | `count down from 3 to 1: say it.` | "it" for the number counted only works once you know it | `say the number.` |

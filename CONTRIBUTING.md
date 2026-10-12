@@ -94,6 +94,8 @@ Never bless just to make the suite go green. A blessed regression becomes the ne
 ## Language rules
 
 - **New syntax follows [docs/design-principles.md](docs/design-principles.md),** or is added to its "Known exceptions" with the reason, in the same change. Unsure? Add it to "Open questions" there instead.
+- **New phrases start as a proposal** in [docs/proposals/](docs/proposals/README.md) (copy its `TEMPLATE.md`), and are built only once accepted.
+- **Don't rely on the order C works out a call's arguments in** (GCC on Linux goes right to left): when two arguments generate code, write plan notes or report errors, work each out into a local first, in written order.
 - **English pass:** before adding a phrase, read [docs/english-pass.md](docs/english-pass.md) and follow its "Decided" section and design rules; a change of plan goes in its update log in the same change.
 - **Deterministic parsing:** never guess what a sentence means. If it's ambiguous or doesn't match a pattern, report an error with the line, what was expected, and concrete suggestions.
 - Keywords are case-insensitive, and `the`/`a`/`an` are ignored. No word is reserved; the parser decides meaning from context.
