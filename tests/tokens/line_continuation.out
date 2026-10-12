@@ -1,0 +1,11 @@
+WORD          1:1     say
+NUMBER        1:5     1
+COMMA         1:6     ,
+NUMBER        2:3     2
+WORD          2:5     and
+NUMBER        3:5     3
+WORD          3:7     then
+WORD          4:1     say
+NUMBER        4:5     4
+NEWLINE       4:6
+EOF           5:1

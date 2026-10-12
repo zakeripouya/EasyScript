@@ -1,0 +1,8 @@
+let colors be a list of "red",
+"green" and
+"blue".
+say colors.
+let ready be yes.
+if ready then
+say "ready".
+exit
