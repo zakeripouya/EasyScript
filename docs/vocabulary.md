@@ -223,8 +223,10 @@ The words that start statements are only special at the start of a sentence, so 
 | `append X to file F` | Add `X` and a new line to the end of a file | `append "more" to file "notes.txt"` | Available |
 | `read file F and call it NAME` / `read file F and call the answer NAME` | Read a whole file into a variable (without its final new line) | `read file "notes.txt" and call it notes` | Available |
 | `file X exists` / `folder X exists` | A condition: is there a file (a folder)? | `if file "notes.txt" exists:` | Available |
+| `file X doesn't exist` / `file X does not exist` (also `folder`) | The opposite: `not (file X exists)` | `if file "sales.csv" doesn't exist:` | Available |
 | `put X in file F` / `write X in file F` | Like `write X to file F` | `put "hello" in file "notes.txt"` | Available |
 | `add X to the end of file F` | Like `append X to file F` | `add "more" to the end of file "notes.txt"` | Available |
+| `write X in it` / `write X to it` / `put X in it` / `add X to it` / `add X to the end of it` (also `the file` for `it`) | In steps in a row, right after a step that made or wrote to a file: the same sentences about that file. `the file` with no name anywhere else is an error | `make a new file called "groceries.txt", then write "milk" in it, then add "eggs" to it` | Available |
 | `add A and B to the end of file F, one per line` | Each value on a line of its own (`A followed by` a new line `followed by B`, then a new line at the end); one list is its items joined with new lines | `add "eggs" and "bread" to the end of file "groceries.txt", one per line` | Available |
 
 More file and folder sentences are in [the standard library](#the-standard-library).

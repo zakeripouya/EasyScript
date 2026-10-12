@@ -1,7 +1,7 @@
 note: The sales report from docs/english-pass.md, written with questions about lists
 note: (part 2 of the English pass) and a table read from a csv file. The first run
 note: writes an example orders.csv to read.
-unless file "orders.csv" exists:
+if file "orders.csv" doesn't exist:
     put "customer,region,amount,cost" in file "orders.csv"
     add "Ann,East,1200,700" to the end of file "orders.csv"
     add "Bo,West,300,250" to the end of file "orders.csv"

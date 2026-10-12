@@ -565,4 +565,12 @@ bool parser_at_field_across(const Parser *p);  // the names of the drinks; each 
 Expr *parser_parse_field_across(Parser *p);
 Expr *parser_parse_count_test(Parser *p, Expr *left);  // has more than 5 orders, or NULL
 
+// --- The file a step names (parse_chain_file.c) ----------------------------------------------
+
+bool parser_at_chain_it_file(const Parser *p, size_t ahead);  // "it", right after a step with a file
+bool parser_at_bare_file(const Parser *p, size_t ahead);      // "file" with no name after it ("the file")
+Expr *parser_chain_file(Parser *p);                           // reads it: that file (or an error)
+Expr *parser_parse_chain_place(Parser *p);                    // either of them, or NULL
+Stmt *parser_finish_add_file(Parser *p, Stmt *stmt, Expr *value, Expr *path);  // add X to it [, one per line]
+
 #endif

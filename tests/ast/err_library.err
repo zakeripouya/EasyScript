@@ -16,7 +16,7 @@ Write it like "a random number from 1 to 6".
 Line 4: I expected "exists" here, but found "is".
     say file "a.txt" is there
                      ^^
-Write it like "if file "notes.txt" exists:".
+Write it like "if file "notes.txt" exists:" or "if file "notes.txt" doesn't exist:".
 
 Line 5: I expected "decimal places" here, but found "places".
     say 2.5 rounded to 2 places

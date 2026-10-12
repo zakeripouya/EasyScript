@@ -135,6 +135,9 @@ static Stmt *parse_amount_first(Parser *p, const Token *verb, const StmtForm *fo
     if (reject_missing_value(p, form->connector)) return NULL;
     stmt->as.change.amount = parse_expression(p);
     if (p->sentence_failed || !parser_expect_word(p, connector, form->example)) return NULL;
+    if (form->op == CHANGE_ADD && parser_at_chain_it_file(p, 0)) {  // add "eggs" to it (a file, in steps in a row)
+        return parser_finish_add_file(p, stmt, stmt->as.change.amount, parser_chain_file(p));
+    }
     if (form->op == CHANGE_ADD && parser_match_words(p, "end of")) {
         return parser_finish_add_end(p, stmt, stmt->as.change.amount);
     }
@@ -191,11 +194,16 @@ static Stmt *parse_write(Parser *p, const Token *verb, const StmtForm *form) {
     if (reject_missing_value(p, "to file")) return NULL;
     Expr *value = parse_expression(p);
     if (p->sentence_failed) return NULL;
-    if (parser_match_words(p, "to file") || parser_match_words(p, "in file")) {  // "in file": like "put X in file F"
-        parser_consume(p, 2);
+    bool chained = (parser_at_word(p, 0, "in") || parser_at_word(p, 0, "to")) && parser_at_chain_it_file(p, 1);
+    if (chained || parser_match_words(p, "to file") || parser_match_words(p, "in file")) {  // "in file": like "put X in file F"
+        parser_advance(p);  // in, to
         Stmt *stmt = parser_new_stmt(p, STMT_WRITE_FILE, verb);
         stmt->as.file_write.text = value;
-        stmt->as.file_write.path = parse_expression(p);
+        stmt->as.file_write.path = parser_parse_chain_place(p);  // "in it", "in the file"
+        if (!stmt->as.file_write.path) {
+            parser_advance(p);  // file
+            stmt->as.file_write.path = parse_expression(p);
+        }
         return stmt;
     }
     if (parser_at_word(p, 0, "to")) {

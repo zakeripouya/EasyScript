@@ -314,6 +314,14 @@ static Expr *parse_word(Parser *p) {
     }
     if (parser_at_word(p, 0, "what") && (parser_at(p, 1, TOK_POSSESSIVE) || parser_at_word(p, 1, "is")) &&
         parser_at_word(p, 2, "in")) {  // what's in file F; what's in it (after a step that used a file)
+        if (parser_at_bare_file(p, 3)) {  // what's in the file (the step before's)
+            SourcePos start = parser_token_pos(parser_peek(p, 0));
+            parser_consume(p, 3);
+            Expr *path = parser_chain_file(p);
+            Expr *contents = ast_new_expr(p->arena, EXPR_FILE_CONTENTS, ast_pos_join(start, path->pos));
+            contents->as.operand = path;
+            return contents;
+        }
         if (parser_at_word(p, 3, "file")) return parse_prefixed(p, EXPR_FILE_CONTENTS, 4);
         if (parser_at_word(p, 3, "it") && p->chain_file) return parse_prefixed(p, EXPR_FILE_CONTENTS, 3);
         Span span = parser_consume(p, 3);

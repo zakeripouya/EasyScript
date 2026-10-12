@@ -24,3 +24,4 @@ A doubt that comes up while building goes back into the proposal, not into the p
 - [0003: adding with a condition, and values read like fields](0003-values-read-like-fields.md) (Built)
 - [0004: the best group](0004-best-group.md) (Built)
 - [0005: a field across a list, and counting a list field](0005-field-across-a-list.md) (Built)
+- [0006: files in steps in a row, and "doesn't exist"](0006-files-in-steps.md) (Built)

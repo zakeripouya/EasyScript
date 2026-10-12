@@ -1,7 +1,7 @@
 note: The "best months" request from the English pass plan, as a program: steps
 note: in a row with "then", where "it" is what the step before gave. The first run
 note: writes an example sales.csv to read.
-unless file "sales.csv" exists:
+if file "sales.csv" doesn't exist:
     put "date,region,amount" in file "sales.csv"
     add "2026-08-14,East,120" to the end of file "sales.csv"
     add "2026-09-03,West,310.50" to the end of file "sales.csv"

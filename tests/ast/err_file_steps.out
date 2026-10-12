@@ -1,0 +1,4 @@
+let n [3:1]
+  number 3 [3:10]
+say [4:1]
+  name n [4:5]

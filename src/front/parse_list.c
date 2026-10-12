@@ -429,19 +429,25 @@ static Expr *one_per_line(Parser *p, Expr *value, Span words) {
     return joined;
 }
 
+Stmt *parser_finish_add_file(Parser *p, Stmt *stmt, Expr *value, Expr *path) {
+    stmt->kind = STMT_APPEND_FILE;
+    memset(&stmt->as, 0, sizeof stmt->as);
+    stmt->as.file_write.text = value;
+    stmt->as.file_write.path = path;
+    if (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) && parser_match_words_at(p, 1, "one per line")) {
+        Span words = parser_consume(p, 4);
+        stmt->as.file_write.text = one_per_line(p, value, words);
+    }
+    return stmt;
+}
+
 Stmt *parser_finish_add_end(Parser *p, Stmt *stmt, Expr *value) {
     parser_consume(p, 2);  // end of
+    Expr *chained = parser_parse_chain_place(p);  // the end of it, the end of the file
+    if (chained) return parser_finish_add_file(p, stmt, value, chained);
     if (parser_at_word(p, 0, "file") && parser_starts_operand(parser_peek(p, 1))) {  // add X to the end of file F
         parser_advance(p);
-        stmt->kind = STMT_APPEND_FILE;
-        memset(&stmt->as, 0, sizeof stmt->as);
-        stmt->as.file_write.text = value;
-        stmt->as.file_write.path = parse_expression(p);
-        if (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) && parser_match_words_at(p, 1, "one per line")) {
-            Span words = parser_consume(p, 4);
-            stmt->as.file_write.text = one_per_line(p, value, words);
-        }
-        return stmt;
+        return parser_finish_add_file(p, stmt, value, parse_expression(p));
     }
     stmt->kind = STMT_LIST;
     memset(&stmt->as, 0, sizeof stmt->as);

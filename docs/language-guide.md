@@ -191,12 +191,12 @@ for example, double with 3 is 6.
 You can give several steps in one sentence. In each step, `it` means what the step before made.
 
 ```
-make a new file called "shopping.txt", then write "milk" in file it,
-then add "eggs" and "bread" to the end of file it, one per line,
+make a new file called "shopping.txt", then write "milk" in it,
+then add "eggs" and "bread" to it, one per line,
 and then show me what's in it.
 ```
 
-A line that ends with a comma, `then` or `and` goes on to the next line.
+A line that ends with a comma, `then` or `and` goes on to the next line. To check for a file first, write `if file "shopping.txt" doesn't exist:`.
 
 ### When something goes wrong
 
@@ -2511,12 +2511,12 @@ date        store        category     amount
 ### Several lines in a file, and what's in it
 
 ```
-I want to make a new file called "groceries.txt", then write "milk" in file it,
-then add "eggs" and "bread" to the end of file it, one per line,
-and then show me what's in it.
+I want to make a new file called "groceries.txt", then write "milk" in it,
+then add "eggs" and "bread" to it, one per line,
+and then show me what's in the file.
 ```
 
-`, one per line` puts each value on a line of its own. `what's in file F` is the contents of the file; right after a step that made or wrote to a file, `what's in it` reads that file.
+`, one per line` puts each value on a line of its own. `what's in file F` is the contents of the file. Right after a step that made or wrote to a file, `it` and `the file` (with no name) mean that file: `write X in it`, `put X in the file`, `add X to it`, `add X to the end of the file`, `what's in it`. Anywhere else a file sentence names its file (`in file "notes.txt"`), and `the file` alone is an error. `file F doesn't exist` (or `does not exist`) is the opposite of `file F exists`.
 
 ### Examples as tests
 

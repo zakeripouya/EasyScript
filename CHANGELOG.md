@@ -12,6 +12,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - One-line choices: `4 if it's fragile, otherwise 0` as a value, and `X, plus N if C` / `X, minus N if C`.
 - The best group: `the store with the highest total amount [of purchases]` (also `average`, `median`, `number of purchases`, and `lowest`), and `the top 3 stores by total amount`: the group with the biggest result, when the item is a field of the rows. Without `of L`, the one list whose items have the field.
 - A field across a list: `the names of the drinks` and `each drink's name`. Counting a list field: `ann has at least 2 orders`, `how many customers have fewer than 2 orders`. `they` means the record in a definition (`a customer is loyal if they have more than 5 orders.`).
+- Files in steps in a row: right after a step that made or wrote to a file, `write X in it`, `put X in it`, `add X to it [, one per line]`, `add X to the end of it`, and `the file` with no name (`what's in the file`). `file F doesn't exist` / `does not exist` (and `folder`).
 - `L sorted by NAME` works for a value defined with `KIND's NAME is ...` or a table, like a field (`the parcels sorted by price`).
 
 ### Breaking
