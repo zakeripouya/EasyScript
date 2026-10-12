@@ -710,6 +710,7 @@ The strongest single source is Pane's study of how non-programmers describe prog
 | 2026-10-11 | Added: findings from step 22's JSON parser (count direction, value kinds, exact numbers, raw text, early exit, math words) |
 | 2026-10-11 | Merged the repo's step 22 notes (escapes, positions, helper name clashes, workarounds); heading renamed to "Rough spots to fix" so links from CHANGELOG and the roadmap still work |
 | 2026-10-11 | Part 1 decisions: file sentences say `file`; text `and` and input joiners recorded as planned changes; no "missing"; `every` triggers; the `it` rule; `per` only; `, then` chains; `the X of Y` rule; `exit code`; the comma rule; depends-on lines; already-built list; error counts and step 21 list updated |
+| 2026-10-12 | Part 1 built: `exit code`; `as a number` reads `1e5`, `as exact text`; counting up only (a warning for written counts that never run); `unless`, `give back X if/unless C`, `stop here`; line continuation; pieces in `say` and brackets in text (`[[`/`]]` for brackets), text `and` removed; `and`/`and then` between sentences (a function's name after `and` is a value, so it needs `and then`); `has` records with kinds from use (`some` dropped before a field); `can` methods; `the X of Y`; filters `that`/`whose`/`where` as postfixes and `each`; `for each score:`; `made of` kinds; docs/voice.md with the glossary ("name" for variables, "definition"/"how to X" for `to` functions) and `audit/plain-words`; errors as data (`diag_info`, `easyscript errors`). |
 
 ## Sources
 
