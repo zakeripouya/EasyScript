@@ -1,0 +1,89 @@
+Line 3: "starting at" only works with a value in a map.
+    add 1 to total, starting at 0.
+                  ^^^^^^^^^^^^^
+Write it like "add 1 to the value for word in counts, starting at 0": a key that isn't there yet starts at 0.
+
+Line 5: Something is missing after "starting at".
+    add 1 to the value for "a" in counts, starting at.
+                                        ^^^^^^^^^^^^^
+Say what a missing value starts at, like "starting at 0".
+
+Line 6: Something is missing after "if".
+    a customer is rich if.
+                       ^^
+Say when it's rich, like "a dog is old if its age is over 10".
+
+Line 7: Something is missing after "is".
+    a customer's score is.
+                       ^^
+Say how it's worked out, like "a customer's profit is its sales minus its costs".
+
+Line 8: "the ones with the highest ..." doesn't say how many.
+    the winners are the ones with the highest total.
+                        ^^^^
+For one, write "the best customer is the one with the highest profit". For several, write "the top 3 customers by profit" where you use them.
+
+Line 9: "the one whose ..." could be more than one.
+    the first customer is the one whose name is "Ann".
+                              ^^^
+Say which one, like "the one with the highest profit", or use "the ones whose ..." for all of them.
+
+Line 10: "big customers" is worked out from itself.
+    the big customers are the ones where big customers contains it.
+                                         ^^^^^^^^^^^^^
+A named value can't use its own name in what it means.
+
+Line 11: A table needs its lines below it, indented, after a ":".
+    the shipping cost depends on the total.
+                                     ^^^^^
+Write it like "the shipping cost depends on the total:" with lines like "5 when it's over 50." below it, and "10 otherwise." last.
+
+Line 12: "the fee" doesn't say what it is when the total is 10 or less.
+    the fee depends on the total:
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+Add a last line like "10 otherwise." for that case.
+
+Line 15: "the tax" doesn't say what it is in every case.
+    the tax depends on the total:
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+Add a last line like "10 otherwise." for the other cases.
+
+Line 20: The "otherwise" line has to be the last one.
+        5 when it's over 50.
+        ^
+It says what the value is when no line above it applies, so move it to the end.
+
+Line 22: I expected "when it's" or "otherwise" here, but found "if".
+        5 if it's over 50.
+          ^^
+Write each line like "5 when it's over 50." or "10 otherwise.".
+
+Line 25: I expected the end of the line here, but found the text "B".
+        "A" when it's over 90. "B" otherwise.
+                               ^^^
+Each line of the table is one value and when it applies, like "5 when it's over 50.".
+
+Line 26: Something is missing after "be".
+    a customer's name must be.
+                           ^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 27: I expected "be", "contain", "start with" or "end with" here, but found "have".
+    a customer's name must have "x".
+                           ^^^^
+Write a rule like "an age must be between 0 and 150" or "an email must contain "@"".
+
+Line 28: I expected "and" here, but found "or".
+    a customer's total must be between 1 or 5.
+                                         ^^
+Write it like "an age must be between 0 and 150".
+
+Line 30: I expected a comparison after "when it", but found ".".
+        5 when it.
+                 ^
+Write it like "5 when it's over 50." or "5 when it starts with "a".".
+
+Line 33: I expected the items to remove here, like "the tasks that are done".
+    remove scores sorted where it is 3.
+           ^^^^^^
+To remove one item, write "remove item 2 from tasks".

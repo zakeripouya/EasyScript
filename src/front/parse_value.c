@@ -102,12 +102,14 @@ static Expr *parse_text(Parser *p) {
 
 static Expr *parse_group(Parser *p) {
     const Token *open = parser_advance(p);
-    bool as_ends_value = p->as_ends_value, no_call = p->no_call;  // inside parentheses, "as" converts again
-    p->as_ends_value = false;
-    p->no_call = false;
+    bool as_ends_value = p->as_ends_value, no_call = p->no_call, no_best = p->no_best;  // inside parentheses, "as" converts again
+    bool in_items = p->in_items;
+    p->as_ends_value = p->no_call = p->no_best = p->in_items = false;
     Expr *inner = parse_expression(p);
+    p->in_items = in_items;
     p->as_ends_value = as_ends_value;
     p->no_call = no_call;
+    p->no_best = no_best;
     if (!parser_at(p, 0, TOK_RPAREN)) {
         if (parser_error(p, open->span, "This \"(\" is never closed.")) {
             diag_note(p->diag, "Add a \")\" where the group ends, on the same line.");
@@ -158,17 +160,36 @@ static Expr *reject_ambiguous_call(Parser *p, Expr *call) {
     return ast_new_expr(p->arena, EXPR_ERROR, whole);
 }
 
-static bool at_argument_separator(const Parser *p, bool commas) {
+// The word the call's definition puts before input `index` ("in" in "to
+// column of cell in grid:"), or NULL.
+static const char *joiner_before(const Parser *p, const Expr *call, size_t index) {
+    if (!call->as.call.name) return NULL;
+    for (size_t i = 0; i < p->names.len; i++) {
+        const KnownName *known = &p->names.items[i];
+        if (strcmp(known->text, call->as.call.name) != 0) continue;
+        return known->joiners && index < known->joiner_count ? known->joiners[index] : NULL;
+    }
+    return NULL;
+}
+
+static bool at_argument_separator(const Parser *p, const Expr *call, bool commas) {
     if (parser_at_and(p)) return true;
+    const char *joiner = joiner_before(p, call, call->as.call.args.len);
+    if (joiner && parser_at_word(p, 0, joiner)) return true;  // column of cell in grid
     return commas && parser_at(p, 0, TOK_COMMA);
 }
 
+// In a call sentence ("report with "bad" and "I expected " followed by
+// word"), the call's result isn't used, so arithmetic or "followed by" after
+// an input can only be part of it: each input is a whole value up to "and".
 void parser_parse_call_args(Parser *p, Expr *call, bool commas) {
+    bool sentence = p->call_sentence;
+    p->call_sentence = false;
     do {
-        Expr *arg = parse_unary(p);
+        Expr *arg = sentence ? parse_join(p) : parse_unary(p);
         vec_push(p->arena, &call->as.call.args, arg);
         call->pos = ast_pos_join(call->pos, arg->pos);
-    } while (at_argument_separator(p, commas) && parser_advance(p));
+    } while (at_argument_separator(p, call, commas) && parser_advance(p));
 }
 
 Expr *parser_finish_call(Parser *p, Expr *call) {
@@ -199,8 +220,8 @@ static Expr *parse_name_or_call(Parser *p) {
         expr->display = name.display;
         return expr;
     }
-    // "word with "a" replaced by "b"" replaces text, unless "word" is a function.
-    bool replace = parser_at_replace(p) && !parser_is_function(p, name.text);
+    // "word with "a" replaced by "b"" replaces text, and "total with commas" writes a number, unless the name is a function.
+    bool replace = (parser_at_replace(p) || parser_match_words(p, "with commas")) && !parser_is_function(p, name.text);
     if (parser_is_method(p, name.text) && (parser_at_word(p, 0, "for") || parser_at_call_intro(p, name.text) ||
                                            parser_starts_operand(parser_peek(p, 0)))) {
         Expr *call = ast_new_expr(p->arena, EXPR_CALL, name.pos);  // bark rex / have a birthday for rex
@@ -263,6 +284,10 @@ static Expr *reject_inner_every(Parser *p) {
 static Expr *parse_word(Parser *p) {
     const Token *token = parser_peek(p, 0);
     const char *word = token->text;
+    if (strcmp(word, "no") == 0) {  // "no score is below 0" (a test), not the value no
+        Expr *none = parser_parse_aggregate_word(p);
+        if (none) return none;
+    }
     if (strcmp(word, "yes") == 0 || strcmp(word, "true") == 0 || strcmp(word, "no") == 0 ||
         strcmp(word, "false") == 0) {
         Expr *expr = literal(p, EXPR_BOOLEAN);
@@ -270,14 +295,35 @@ static Expr *parse_word(Parser *p) {
         return expr;
     }
     if (strcmp(word, "nothing") == 0) return literal(p, EXPR_NOTHING);
-    if (strcmp(word, "it") == 0) return literal(p, EXPR_IT);
-    if (strcmp(word, "its") == 0 && parser_known_field_words(p, 1) > 0) {  // "its radius": "it's radius"
-        Expr *it = literal(p, EXPR_IT);
+    if (strcmp(word, "reason") == 0 && p->in_failure) {  // "if that fails, say the reason"
+        Expr *reason = literal(p, EXPR_LIBRARY);
+        reason->as.library.op = LIB_REASON;
+        reason->as.library.op_span = reason->pos.span;
+        return reason;
+    }
+    if (strcmp(word, "it") == 0) return parser_chain_it(p, literal(p, EXPR_IT));
+    if ((strcmp(word, "its") == 0 || strcmp(word, "their") == 0) &&
+        parser_field_words(p, 1) > 0) {  // "its radius", "their orders": "it's radius"
+        Expr *it = parser_chain_it(p, literal(p, EXPR_IT));
         Expr *expr = ast_new_expr(p->arena, EXPR_FIELD, it->pos);
         expr->as.field.record = it;
-        parser_take_name(p, parser_known_field_words(p, 0), &expr->as.field.name);
+        parser_take_name(p, parser_field_words(p, 0), &expr->as.field.name);
         expr->pos = ast_pos_join(it->pos, expr->as.field.name.pos);
         return expr;
+    }
+    if (parser_at_word(p, 0, "what") && (parser_at(p, 1, TOK_POSSESSIVE) || parser_at_word(p, 1, "is")) &&
+        parser_at_word(p, 2, "in")) {  // what's in file F; what's in it (after a step that used a file)
+        if (parser_at_word(p, 3, "file")) return parse_prefixed(p, EXPR_FILE_CONTENTS, 4);
+        if (parser_at_word(p, 3, "it") && p->chain_file) return parse_prefixed(p, EXPR_FILE_CONTENTS, 3);
+        Span span = parser_consume(p, 3);
+        if (parser_error(p, span, "\"%s\" only reads files, so it needs \"file\" before the file's name.",
+                         parser_text(p, span))) {
+            diag_note(p->diag, "Write it like \"show me what's in file \"notes.txt\"\". To show a list, write \"show me "
+                               "scores\".");
+            diag_info(p->diag, DIAG_MISSING, "\"file\"", NULL);
+            diag_choice(p->diag, "what's in file");
+        }
+        return parser_error_expr(p);
     }
     if (parser_match_words(p, "length of")) return parse_prefixed(p, EXPR_LENGTH, 2);
     if (parser_match_words(p, "contents of file")) return parse_prefixed(p, EXPR_FILE_CONTENTS, 3);
@@ -301,6 +347,8 @@ static Expr *parse_word(Parser *p) {
         }
         return parser_error_expr(p);
     }
+    Expr *defined = parser_parse_defined_word(p);  // "the best customer", "the loyal customers"
+    if (defined) return defined;
     if (parser_at_selection(p)) return parser_parse_selection(p);  // "the numbers in scores where ..."
     const KnownName *known = parser_match_name(p, 0, false);
     if (known && known->words > 1) return parse_name_or_call(p);  // "late fee", before any other meaning
@@ -314,9 +362,11 @@ static Expr *parse_word(Parser *p) {
     if (list) return list;
     Expr *text = parser_parse_text_word(p);
     if (text) return text;
+    Expr *question = parser_parse_aggregate_word(p);  // "how many", "any", "the total of", "the top 3", ...
+    if (question) return question;
     if (parser_at_only(p)) return parser_parse_only(p);
     if (parser_at_every(p)) return reject_inner_every(p);
-    size_t field = parser_known_field_words(p, 0);
+    size_t field = parser_field_words(p, 0);
     if (field > 0 && parser_at_word(p, field, "of")) return parse_field_of(p, field);  // the name of rex
 
     return parse_name_or_call(p);
@@ -329,7 +379,7 @@ static Expr *parse_value(Parser *p) {
         return item;
     }
     switch (parser_peek(p, 0)->kind) {
-    case TOK_NUMBER: return parse_number(p);
+    case TOK_NUMBER: return parser_at_most_common(p) ? parser_parse_most_common(p) : parse_number(p);
     case TOK_STRING: return parse_text(p);
     case TOK_LPAREN: return parse_group(p);
     case TOK_WORD: return parse_word(p);

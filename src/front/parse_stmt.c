@@ -139,7 +139,7 @@ static Stmt *parse_amount_first(Parser *p, const Token *verb, const StmtForm *fo
         return parser_finish_add_end(p, stmt, stmt->as.change.amount);
     }
     if (!parser_parse_target(p, &stmt->as.change.target, &stmt->as.change.field, NULL)) return NULL;
-    return stmt;
+    return parser_parse_starting_at(p, stmt) ? stmt : NULL;
 }
 
 // increase/decrease/multiply/divide X by E
@@ -152,12 +152,13 @@ static Stmt *parse_target_first(Parser *p, const Token *verb, const StmtForm *fo
         return NULL;
     }
     stmt->as.change.amount = parse_expression(p);
-    return stmt;
+    return !p->sentence_failed && parser_parse_starting_at(p, stmt) ? stmt : NULL;
 }
 
 static Stmt *parse_say(Parser *p, const Token *verb, const StmtForm *form) {
     (void)form;
     Stmt *stmt = parser_new_stmt(p, STMT_SAY, verb);
+    if (parser_at_word(p, 0, "me")) parser_advance(p);  // "show me the total", "tell me ..."
     stmt->as.value = parser_parse_pieces(p);
     return stmt;
 }
@@ -198,6 +199,11 @@ static bool expect_call_phrase(Parser *p, const char *phrase, const char *writte
 
 static Stmt *parse_ask(Parser *p, const Token *verb, const StmtForm *form) {
     Stmt *stmt = parser_new_stmt(p, STMT_ASK, verb);
+    stmt->as.ask.kind = TYPE_TEXT;
+    size_t n = parser_match_words(p, "for number");  // ask for a number "How old are you?"
+    if (n) stmt->as.ask.kind = TYPE_NUMBER;
+    if (!n && (n = parser_match_words(p, "yes or no"))) stmt->as.ask.kind = TYPE_YESNO;
+    parser_consume(p, n + (n && parser_at(p, n, TOK_COMMA)));
     stmt->as.ask.prompt = parse_expression(p);
     if (p->sentence_failed || !expect_call_phrase(p, "and call answer", "and call the answer", form->example)) return NULL;
     if (!parser_parse_name(p, &stmt->as.ask.answer, NULL)) return NULL;
@@ -215,6 +221,7 @@ static Stmt *parse_append(Parser *p, const Token *verb, const StmtForm *form) {
 
 static Stmt *parse_read(Parser *p, const Token *verb, const StmtForm *form) {
     static const char *const file[] = {"file", NULL};
+    if (parser_match_words(p, "table in")) return parser_parse_read_table(p, verb);  // read the table in "x.csv"
     Stmt *stmt = parser_new_stmt(p, STMT_READ_FILE, verb);
     if (!parser_expect_word(p, file, form->example)) return NULL;
     stmt->as.read_file.path = parse_expression(p);
@@ -329,6 +336,8 @@ static const StmtForm forms[] = {
     {"print", parse_say, false, 0, NULL, "print \"hello\""},
     {"show", parse_say, false, 0, NULL, "show \"hello\""},
     {"display", parse_say, false, 0, NULL, "display \"hello\""},
+    {"tell", parse_say, false, 0, NULL, "tell me the total"},
+    {"list", parse_say, false, 0, NULL, "list the big orders"},
     {"write", parse_write, false, 0, NULL, "write \"hello\" to file \"notes.txt\""},
     {"ask", parse_ask, true, 0, NULL, "ask \"What's your name?\" and call the answer name"},
     {"append", parse_append, false, 0, NULL, "append \"hello\" to file \"notes.txt\""},
@@ -390,49 +399,16 @@ bool parser_looks_like_assignment(const Token *next) {
             (strcmp(next->text, "is") == 0 || strcmp(next->text, "equals") == 0 || strcmp(next->text, "be") == 0));
 }
 
-static void report_unknown_start(Parser *p) {
-    static const char *const generic = "Sentences start with a word like \"let\", \"set\", \"say\" or \"ask\".";
-    const Token *token = parser_peek(p, 0);
-    if (token->kind != TOK_WORD) {
-        if (parser_error(p, token->span, "A sentence can't start with %s.", parser_describe(p, token))) {
-            diag_note(p->diag, "%s", generic);
-        }
-        return;
-    }
-    // A name of several words ("late fee is 5") is shown whole.
-    const KnownName *known = parser_match_name(p, 0, false);
-    size_t words = known ? known->words : 1;
-    Span span = {token->span.offset, parser_peek(p, words - 1)->span.offset + parser_peek(p, words - 1)->span.length -
-                                         token->span.offset};
-    const char *written = parser_text(p, span);
-    if (!parser_error(p, span, "I don't know a sentence that starts with \"%s\".", written)) return;
-    // Statement words and the program's function names, as suggestions.
-    size_t n = COUNT(forms) + 1 + p->functions.len;
-    const char **candidates = arena_alloc(p->arena, n * sizeof(char *));
-    for (size_t i = 0; i < COUNT(forms); i++) candidates[i] = forms[i].word;
-    candidates[COUNT(forms)] = "please";
-    for (size_t i = 0; i < p->functions.len; i++) candidates[COUNT(forms) + 1 + i] = p->functions.items[i];
-    const char *closest = words == 1 ? parser_closest_words(p, token->text, candidates, n) : NULL;
-    const char *longer = NULL;  // a function whose name starts with this word: "to greet someone:"
-    for (size_t i = 0; words == 1 && !longer && i < p->functions.len; i++) {
-        const char *f = p->functions.items[i];
-        if (strncmp(f, token->text, token->text_len) == 0 && f[token->text_len] == ' ') longer = f;
-    }
-    if (longer) {
-        diag_note(p->diag, "The definition is called \"%s\": its name is every word before \"with\", "
-                           "\"of\", \"using\" or \"to\". To give \"%s\" an input, write \"to %s with %s:\".",
-                  longer, written, written, longer + token->text_len + 1);
-    } else if (parser_at_word(p, words, "can")) {  // "a cat can purr:" before any cat is defined
-        diag_note(p->diag, "\"%s\" isn't a kind of record I know. Define it first, like \"a %s has a name.\", "
-                           "and then what it can do.", written, written);
-    } else if (closest) {
-        diag_note(p->diag, "Did you mean %s?", closest);
-    } else if (parser_looks_like_assignment(parser_peek(p, words))) {
-        diag_note(p->diag, "To keep a value in a name, write \"let %s be ...\". To change it, write \"set %s to ...\".",
-                  written, written);
-    } else {
-        diag_note(p->diag, "%s", generic);
-    }
+size_t parser_form_count(void) {
+    return COUNT(forms);
+}
+
+const char *parser_form_word(size_t i) {
+    return forms[i].word;
+}
+
+const char *parser_form_example(size_t i) {
+    return forms[i].example;
 }
 
 Stmt *parse_statement(Parser *p) {
@@ -448,12 +424,24 @@ Stmt *parse_statement(Parser *p) {
             return NULL;
         }
     }
+    parser_skip_polite(p);  // "can you show me the total?", "let's say hello"
+    parser_skip_step_words(p);  // "first, ...", "after that, ..."
     const Token *verb = parser_peek(p, 0);
     if (parser_at_record_definition(p)) return parse_record(p);
     if (parser_at_has_definition(p)) return parser_parse_has(p);
     if (parser_at_can_method(p)) return parser_parse_can(p);
     if (parser_at_sum_definition(p)) return parse_sum(p);
     if (parser_at_made_of(p)) return parser_parse_made_of(p);
+    if (parser_at_definition(p)) return parser_parse_definition(p);  // a customer is loyal if ...
+    if (parser_at_table(p)) return parser_parse_table(p);            // the shipping cost depends on the total:
+    if (parser_at_event(p)) return parser_parse_event(p);            // every 2 seconds: / whenever C:
+    if (parser_at_action(p)) return parser_parse_action(p);          // total the amount per month
+    if (parser_at_word(p, 0, "try") && parser_at_word(p, 1, "to") && !parser_is_function(p, "try")) {
+        return parser_parse_try(p);  // try to read file "x". if that fails, ...
+    }
+    if (parser_at_word(p, 0, "for") && parser_at_word(p, 1, "example") && parser_at(p, 2, TOK_COMMA)) {
+        return parser_parse_example(p);  // for example, total is 12.
+    }
     if (parser_interface_words(p, p->pos) > 0) return parse_interface(p);
     if (parser_at_library_sentence(p)) {  // "delete the file F", "clear the screen", "run "git"", ...
         Stmt *stmt = parser_parse_library_sentence(p);
@@ -468,6 +456,11 @@ Stmt *parse_statement(Parser *p) {
     const StmtForm *form = find_form(verb);
     // A function's name starts a call: one of several words even if its first
     // word starts sentences ("add tax to 100"), a one-word one otherwise.
+    if (!form && parser_question_ahead(p)) {  // "what is total?", "total?", "is rex big?"
+        Stmt *question = parser_parse_question(p);
+        if (question) question->pos = ast_pos_join(question->pos, (SourcePos){p->prev_span, 0, 0, 0});
+        return question;
+    }
     const KnownName *function = parser_match_name(p, 0, true);
     if (function && (function->words > 1 || !form)) {
         Stmt *call = parse_call_statement(p, verb, function);
@@ -475,12 +468,13 @@ Stmt *parse_statement(Parser *p) {
         return call;
     }
     if (!form) {
-        report_unknown_start(p);
+        parser_report_unknown_start(p);
         return NULL;
     }
     parser_advance(p);
     p->ends_with_name = form->ends_with_name;  // a one-line if's inner statement overrides this
     Stmt *stmt = form->parse(p, verb, form);
+    if (p->group_list) stmt = parser_finish_group(p, stmt);  // "set every monster's color to blue"
     if (stmt) {
         SourcePos end = {p->prev_span, 0, 0, 0};
         stmt->pos = ast_pos_join(stmt->pos, end);

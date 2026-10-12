@@ -2,6 +2,7 @@
 // (es_math.h, es_time.h, es_files.h, es_csv.h), its parts worked out left to right.
 
 #include <assert.h>
+#include <string.h>
 #include "back/codegen_internal.h"
 
 // The parts a and b (either can be NULL), in order; returns whether a "(" was opened.
@@ -75,6 +76,18 @@ void cg_emit_library(Codegen *g, const Expr *expr, StrBuf *out) {
     case LIB_FOLDERS_IN: sb_appendf(out, "es_folder_list(%zu, %s, true)", site, a); break;
     case LIB_FILE_SIZE: sb_appendf(out, "es_file_size(%zu, %s)", site, a); break;
     case LIB_FILE_CHANGED: sb_appendf(out, "es_file_changed(%zu, %s)", site, a); break;
+    case LIB_HALF: sb_appendf(out, "(%s * 0.5)", a); break;
+    case LIB_TWICE: sb_appendf(out, "(%s * 2.0)", a); break;
+    case LIB_PERCENT_OF: sb_appendf(out, "(%s * %s / 100.0)", a, b); break;
+    case LIB_REASON: cg_emit_var(g, out, "0reason", TYPE_TEXT); break;
+    case LIB_PERIOD_KEY:
+        if (expr->as.library.part == DATE_YEAR) {
+            sb_appendf(out, "es_date_part(%s, %d)", a, DATE_YEAR);
+        } else {
+            sb_appendf(out, "es_period_text(%s, %d)", a, expr->as.library.part);
+        }
+        break;
+    case LIB_IS_INFINITE: sb_appendf(out, "%sisinf(%s)", expr->as.library.part ? "!" : "", a); break;
     default: break;
     }
     if (opened) sb_append_char(out, ')');
@@ -86,6 +99,10 @@ bool cg_library_effects(const Codegen *g, const Expr *expr) {
     case LIB_PI: return false;
     case LIB_WORKED: return cg_has_effects(g, expr->as.library.a);
     case LIB_ABSOLUTE:
+    case LIB_HALF:
+    case LIB_TWICE:
+    case LIB_PERCENT_OF:
+    case LIB_IS_INFINITE:
     case LIB_ROUNDED:
     case LIB_ROUNDED_UP:
     case LIB_ROUNDED_DOWN:
@@ -107,9 +124,36 @@ static void action(Codegen *g, const char *format_two, const char *a, const char
     sb_appendf(&g->body, "%s;\n", close);
 }
 
+// "save a bar chart of X as F": X (and the title) kept in the hidden names
+// the checker's call reads, then that call's picture written into F.
+static void emit_chart(Codegen *g, const Stmt *stmt) {
+    const char *name = stmt->as.library.name.text;
+    const Expr *values = stmt->as.library.a, *title = stmt->as.library.parts.items[0];
+    StrBuf code;
+    sb_init(&code, g->arena);
+    cg_emit_expr(g, values, &code);
+    cg_declare_name(g, name, values->type);
+    cg_emit_store(g, name, values->type, code.data);
+    if (title) {
+        const char *title_name = arena_sprintf(g->arena, "%st", name);
+        cg_declare_name(g, title_name, TYPE_TEXT);
+        cg_emit_store(g, title_name, TYPE_TEXT, cg_operand(g, title, false));
+    }
+    Stmt write = *stmt;
+    write.kind = STMT_WRITE_FILE;
+    memset(&write.as, 0, sizeof write.as);
+    write.as.file_write.text = stmt->as.library.parts.items[1];
+    write.as.file_write.path = stmt->as.library.b;
+    cg_emit_stmt(g, &write);
+}
+
 void cg_emit_library_stmt(Codegen *g, const Stmt *stmt) {
     if (stmt->as.library.op >= DO_COMPLAIN) {
         cg_emit_system_stmt(g, stmt);
+        return;
+    }
+    if (stmt->as.library.op == DO_SAVE_CHART) {
+        emit_chart(g, stmt);
         return;
     }
     Expr *exprs[] = {stmt->as.library.a, stmt->as.library.b};
@@ -156,13 +200,129 @@ void cg_emit_library_stmt(Codegen *g, const Stmt *stmt) {
         cg_emit_store(g, name, type, arena_sprintf(g->arena, "es_read_csv(%zu, %s)", site, a));
         break;
     }
+    case DO_READ_TABLE: {  // the rows, as records of the kind made for this sentence
+        const char *name = stmt->as.library.name.text;
+        Type type = stmt->as.library.type;
+        cg_declare_name(g, name, type);
+        cg_emit_new_cell(g, name, type);
+        cg_emit_store(g, name, type, arena_sprintf(g->arena, "es_read_table(%zu, %s, &es_rt%zu)", site, a,
+                                                   type_record_index(type_item(type))));
+        break;
+    }
     case DO_SAVE_CSV: {
-        Type row = type_item(stmt->as.library.type);
-        const char *kind = cg_value_suffix(ast_map_value(g->records, row));
+        Type saved = stmt->as.library.type;
         cg_indent(g);
-        sb_appendf(&g->body, "es_save_csv(%zu, %s, %s, '%s')%s;\n", site, a, b, kind, close);
+        if (type_is_map(saved)) {  // a "key" and a "value" column
+            Type key = ast_map_key(g->records, saved), value = ast_map_value(g->records, saved);
+            sb_appendf(&g->body, "es_save_map(%zu, %s, %s, '%c', '%c')%s;\n", site, a, b, cg_field_kind(key),
+                       cg_field_kind(value), close);
+        } else if (type_is_record(type_item(saved))) {  // a column per field
+            sb_appendf(&g->body, "es_save_records(%zu, %s, %s, &es_rt%zu)%s;\n", site, a, b,
+                       type_record_index(type_item(saved)), close);
+        } else {  // a list of maps from column names to values
+            const char *kind = cg_value_suffix(ast_map_value(g->records, type_item(saved)));
+            sb_appendf(&g->body, "es_save_csv(%zu, %s, %s, '%s')%s;\n", site, a, b, kind, close);
+        }
         break;
     }
     default: break;
     }
+}
+
+// "try to S. if that fails, ...": the check for S's file or folder first
+// (NULL if it can go ahead, otherwise the reason), then S, or the fallback
+// with "the reason" (kept in a hidden name).
+void cg_emit_try(Codegen *g, const Stmt *stmt) {
+    const Stmt *attempt = stmt->as.attempt.attempt;
+    const char *check = NULL;
+    if (attempt->kind == STMT_READ_FILE) {
+        check = arena_sprintf(g->arena, "es_try_read(%s)", cg_operand(g, attempt->as.read_file.path, false));
+    } else if (attempt->kind == STMT_WRITE_FILE || attempt->kind == STMT_APPEND_FILE) {
+        check = arena_sprintf(g->arena, "es_try_write(%s)", cg_operand(g, attempt->as.file_write.path, false));
+    } else {
+        const Expr *a = attempt->as.library.a, *b = attempt->as.library.b;
+        bool folder = attempt->as.library.folder;
+        switch (attempt->as.library.op) {
+        case DO_READ_TABLE:
+        case DO_READ_CSV: check = arena_sprintf(g->arena, "es_try_read(%s)", cg_operand(g, a, false)); break;
+        case DO_SAVE_CSV: check = arena_sprintf(g->arena, "es_try_write(%s)", cg_operand(g, b, false)); break;
+        case DO_MAKE_FILE:
+        case DO_MAKE_FOLDER:
+            check = arena_sprintf(g->arena, "es_try_make(%s, %s)", cg_operand(g, a, false),
+                                  attempt->as.library.op == DO_MAKE_FOLDER ? "true" : "false");
+            break;
+        case DO_DELETE_FILE:
+        case DO_DELETE_FOLDER:
+            check = arena_sprintf(g->arena, "es_try_find(%s, %s)", cg_operand(g, a, false),
+                                  attempt->as.library.op == DO_DELETE_FOLDER ? "true" : "false");
+            break;
+        default: {  // rename, copy, move
+            const char *from = cg_operand(g, a, false);
+            check = arena_sprintf(g->arena, "es_try_two(%s, %s, %s, %s)", from, cg_operand(g, b, false),
+                                  folder ? "true" : "false", attempt->as.library.op == DO_MOVE ? "true" : "false");
+            break;
+        }
+        }
+    }
+    cg_declare_name(g, "0reason", TYPE_TEXT);
+    StrBuf reason;
+    sb_init(&reason, g->arena);
+    cg_append_var(g, &reason, "0reason", TYPE_TEXT);
+    size_t id = ++g->loop_ids;
+    cg_indent(g);
+    sb_appendf(&g->body, "{\n");
+    g->depth++;
+    cg_indent(g);
+    sb_appendf(&g->body, "EsText *es_why%zu = %s;\n", id, check);
+    cg_indent(g);
+    sb_appendf(&g->body, "if (!es_why%zu) {\n", id);
+    g->depth++;
+    cg_emit_stmt(g, attempt);  // in the scope around it: the names it makes are used after it
+    g->depth--;
+    cg_indent(g);
+    sb_appendf(&g->body, "} else {\n");
+    g->depth++;
+    cg_indent(g);
+    sb_appendf(&g->body, "es_set(&%s, es_why%zu);\n", reason.data, id);
+    g->depth--;
+    cg_emit_block(g, &stmt->as.attempt.fallback);
+    cg_indent(g);
+    sb_append(&g->body, "}\n");
+    g->depth--;
+    cg_indent(g);
+    sb_append(&g->body, "}\n");
+}
+
+// "for example, X is Y.": es_example(site, right, what X is) where it's
+// written. For "X is Y" (and "is not"), X is worked out once, into a hidden
+// name, so it can be shown when the example is wrong.
+void cg_emit_example(Codegen *g, const Stmt *stmt) {
+    const Expr *condition = stmt->as.value;
+    size_t site = cg_site(g, condition->pos);
+    bool equal = condition->kind == EXPR_BINARY &&
+                 (condition->as.binary.op == BINARY_EQUAL || condition->as.binary.op == BINARY_NOT_EQUAL) &&
+                 !type_is_func(condition->as.binary.left->type);
+    if (!equal) {
+        cg_indent(g);
+        sb_appendf(&g->body, "es_example(%zu, %s, NULL, false);\n", site, cg_operand(g, condition, false));
+        return;
+    }
+    const Expr *left = condition->as.binary.left;
+    const char *hidden = arena_sprintf(g->arena, "0example%zu", ++g->loop_ids);
+    cg_declare_name(g, hidden, left->type);
+    StrBuf value;
+    sb_init(&value, g->arena);
+    cg_emit_expr(g, left, &value);
+    cg_emit_store(g, hidden, left->type, value.data);
+    Expr *name = ast_new_expr(g->arena, EXPR_NAME, left->pos);
+    name->as.name = hidden;
+    name->type = left->type;
+    Expr *test = ast_new_expr(g->arena, EXPR_BINARY, condition->pos);
+    *test = *condition;
+    test->as.binary.left = name;
+    const char *right = cg_operand(g, test, false);  // in order: test, then the name shown
+    const char *shown = cg_operand(g, name, true);
+    cg_indent(g);
+    sb_appendf(&g->body, "es_example(%zu, %s, %s, %s);\n", site, right, shown,
+               left->type == TYPE_TEXT ? "true" : "false");
 }

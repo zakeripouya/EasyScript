@@ -140,8 +140,11 @@ static EsText *es_sent;
  * inside a function skips the check: the variables of main() and of the
  * functions that called it, and values they were still working out, are out
  * of its reach; the operating system reclaims them as the program ends. */
+static void es_examples_report(void);
+
 static void es_finish(bool check) {
     fflush(stdout);
+    es_examples_report();
     if (es_sent) es_release(es_sent);
     es_sent = NULL;
     if (check && es_memory.check && es_memory.live_objects != 0) {
@@ -201,6 +204,48 @@ static void es_show_source(const EsSite *site) {
     if (carets == 0) carets = 1;
     while (carets--) fputc('^', stderr);
     fputc('\n', stderr);
+}
+
+/* --- Examples ("for example, X is Y.") ---------------------------------------------
+ *
+ * A wrong example is shown as a warning, and the program goes on. Built for
+ * "easyscript test" (ES_TESTING), the program ends by saying how many were
+ * right, and fails if any weren't. */
+
+static long es_examples_checked, es_examples_wrong;
+
+/* `got` (owned, or NULL): what the left side of "X is Y" really is (text: `quoted`). */
+static void es_example(int site, bool right, EsText *got, bool quoted) {
+    es_examples_checked++;
+    if (right) {
+        if (got) es_release(got);
+        return;
+    }
+    es_examples_wrong++;
+    fflush(stdout);
+    es_print_line("Line", &es_site_table[site]);
+    fprintf(stderr, " (a warning): This example isn't right.\n");
+    es_show_source(&es_site_table[site]);
+    if (got) {
+        const char *quote = quoted ? "\"" : "";
+        fprintf(stderr, "It's %s%.*s%s here.\n", quote, (int)got->len, got->chars, quote);
+        es_release(got);
+    }
+}
+
+static void es_examples_report(void) {
+#ifdef ES_TESTING
+    if (es_examples_checked == 0) {
+        fprintf(stderr, "This program has no examples to check. Write one like \"for example, total is 12.\"\n");
+    } else if (es_examples_wrong == 0) {
+        fprintf(stderr, "%s %ld example%s right.\n", es_examples_checked == 1 ? "The" : "All", es_examples_checked,
+                es_examples_checked == 1 ? " is" : "s are");
+    } else {
+        fprintf(stderr, "%ld of %ld example%s right.\n", es_examples_checked - es_examples_wrong, es_examples_checked,
+                es_examples_checked - es_examples_wrong == 1 ? " is" : "s are");
+        if (es_status == 0) es_status = 1;
+    }
+#endif
 }
 
 /* 4998 as "4,998". */

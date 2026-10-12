@@ -9,3 +9,5 @@ blah blah
 (say 1)
 please
 please dance
+loop over scores
+duplicate the file "a.txt"

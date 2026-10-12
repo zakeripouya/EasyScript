@@ -119,10 +119,13 @@ void cg_emit_new(Codegen *g, const Expr *expr, StrBuf *out) {
     sb_appendf(out, "es_new%zu(", kind);
     for (size_t f = 0; f < n; f++) {
         const char *value = NULL;
+        SourcePos at = expr->pos;  // where a rule that's broken points: the value, if it's given
         for (size_t i = 0; i < given; i++) {
-            if (expr->as.new_record.values.items[i].index == f) value = values[i];
+            if (expr->as.new_record.values.items[i].index == f) value = values[i], at = exprs[i]->pos;
         }
-        sb_appendf(out, "%s%s", f ? ", " : "", value ? value : starting_value(g, kind, f, &def->as.record.fields.items[f]));
+        const Field *field = &def->as.record.fields.items[f];
+        value = value ? value : starting_value(g, kind, f, field);
+        sb_appendf(out, "%s%s", f ? ", " : "", cg_follow_rules(g, field, value, at));
     }
     sb_append(out, opened ? "))" : ")");
 }
@@ -170,6 +173,7 @@ const char *cg_field_stmt(Codegen *g, const Stmt *stmt) {
     StrBuf out;
     sb_init(&out, g->arena);
     const char *code = cg_operand(g, value, false);
+    const Field *def = &g->records->items[kind].definition->as.record.fields.items[field->as.field.index];
     bool value_first = !set && value->pos.span.offset < field->pos.span.offset;
     if (value_first) {  // "add V to R's F": V is written first, so it's worked out first
         Type value_type = cg_value_type(value);
@@ -180,9 +184,9 @@ const char *cg_field_stmt(Codegen *g, const Stmt *stmt) {
     }
     sb_appendf(&out, "EsRecord *es_r = %s; ", cg_operand(g, field->as.field.record, false));
     if (set && type_counted(type)) {
-        sb_appendf(&out, "%s(&%s, %s); ", cg_set(type), slot, code);
+        sb_appendf(&out, "%s(&%s, %s); ", cg_set(type), slot, cg_follow_rules(g, def, code, stmt->pos));
     } else if (set) {
-        sb_appendf(&out, "%s = %s; ", slot, code);
+        sb_appendf(&out, "%s = %s; ", slot, cg_follow_rules(g, def, code, stmt->pos));
     } else if (stmt->as.change.append) {
         sb_appendf(&out, "es_add_%s(es_list_retain(%s), %s); ", cg_item_suffix(type), slot, code);
     } else {
@@ -193,6 +197,7 @@ const char *cg_field_stmt(Codegen *g, const Stmt *stmt) {
             sb_appendf(&out, "%s = %s %s %s; ", slot, slot, ops[stmt->as.change.op], code);
         }
     }
+    if (!set && def->rules.len > 0) sb_appendf(&out, "(void)%s; ", cg_follow_rules(g, def, slot, stmt->pos));
     sb_append(&out, "es_record_release(es_r); }");
     return out.data;
 }

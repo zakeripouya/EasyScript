@@ -1,0 +1,3 @@
+Line 1: There's no answer to read: the input has run out.
+    ask for a number "How many? " and call it cups wanted.
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

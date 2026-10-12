@@ -228,3 +228,62 @@ bool checker_settle_present(Checker *c, const Deferred *d) {
     return true;
 }
 
+
+// "X, or D [if there isn't one]": X as written must be able to be nothing;
+// the result is what it holds, and D has to be that kind too.
+TypeVar checker_check_default(Checker *c, const Expr *expr) {
+    const Expr *value = expr->as.lookup.map, *fallback = expr->as.lookup.fallback;
+    size_t line = expr->pos.line;
+    const Expr *saved = c->unnarrowed;
+    c->unnarrowed = value;  // even where it was checked, ", or" asks about it as it is
+    TypeVar var = checker_check_value(c, value);
+    c->unnarrowed = saved;
+    Type type = types_of(c, var);
+    if (type != TYPE_ERROR && type != TYPE_UNKNOWN && type != TYPE_MAYBE && !type_is_maybe(type)) {
+        diag_error(c->diag, value->pos.span, "This is %s, so it's never nothing.", checker_kind(c, var));
+        diag_note(c->diag, "\", or\" gives another value when there isn't one. Leave it out here.");
+        diag_info(c->diag, DIAG_NOT_ALLOWED, "something that can be nothing", NULL);
+        checker_check_expr(c, fallback);
+        return types_new(c, TYPE_ERROR, line);
+    }
+    if (type == TYPE_ERROR) {
+        checker_check_expr(c, fallback);
+        return var;
+    }
+    if (type == TYPE_UNKNOWN) types_require(c, var, TYPE_MAYBE, line);
+    TypeVar present = types_new(c, TYPE_UNKNOWN, line);
+    types_defer(c, DEFER_PRESENT, expr, var, present, present);
+    TypeVar other = checker_check_value(c, fallback);
+    if (!types_unify(c, present, other)) {
+        diag_error(c->diag, fallback->pos.span, "This gives %s when there isn't one, but the value is %s.",
+                   checker_kind(c, other), checker_kind(c, present));
+        diag_note(c->diag, "The value after \", or\" has to be the same kind as the one it stands in for.");
+    }
+    return present;
+}
+
+// A "depends on" table: the subject is "it" in each condition (yes or no),
+// and every line's value is the same kind, which the table is.
+TypeVar checker_check_table(Checker *c, const Expr *expr) {
+    TypeVar subject = checker_check_expr(c, expr->as.table.subject);
+    Loop loop = {true, subject, true, NO_VARIANT, false};
+    vec_push(c->arena, &c->loops, loop);
+    TypeVar result = 0;
+    for (size_t i = 0; i < expr->as.table.values.len; i++) {
+        const Expr *condition = expr->as.table.conditions.items[i];
+        if (condition) {
+            checker_require(c, checker_check_expr(c, condition), TYPE_YESNO, condition,
+                            "A line's condition has to be yes or no", NULL);
+        }
+        const Expr *value = expr->as.table.values.items[i];
+        TypeVar var = checker_check_value(c, value);
+        if (i == 0) {
+            result = var;
+        } else if (!types_unify(c, result, var)) {
+            diag_error(c->diag, value->pos.span, "All the values of a table have to be the same kind: the first is %s, "
+                                                 "but this is %s.", checker_kind(c, result), checker_kind(c, var));
+        }
+    }
+    c->loops.len--;
+    return result;
+}

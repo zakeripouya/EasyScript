@@ -499,6 +499,13 @@ static bool convert(Eval *ev, const Expr *expr, ConstValue *out) {
         *out = to_text(ev, a);
         return true;
     }
+    if (expr->as.convert.target == CONVERT_TO_TABLE) {
+        return fail(ev, expr->pos.span, "Make it with \"let\".", "A constant can't be laid out as a table.");
+    }
+    if (expr->as.convert.target > CONVERT_TO_EXACT_TEXT) {
+        return fail(ev, expr->pos.span, "Make it with \"let\", or format the number where it's used.",
+                    "A constant can't be a number written as money, a percent or with commas.");
+    }
     if (expr->as.convert.target == CONVERT_TO_EXACT_TEXT) {
         if (a.kind != CONST_NUMBER) {
             return fail(ev, expr->as.convert.operand->pos.span, NULL, "\"as exact text\" needs a number, but this is %s.",
@@ -565,7 +572,12 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
     case EXPR_LIST_OP: return map_op(ev, expr, out);
     case EXPR_EVERY:
     case EXPR_ONLY:
-    case EXPR_APPLY: return reject_list(ev, span);
+    case EXPR_APPLY:
+    case EXPR_AGGREGATE: return reject_list(ev, span);
+    case EXPR_TABLE: return reject_list(ev, span);
+    case EXPR_DEFAULT:
+        return fail(ev, span, "Leave out \", or ...\": a constant is never nothing.", "A constant can't be nothing, so "
+                    "\", or\" would never be used.");
     case EXPR_MAP: return map(ev, expr, out);
     case EXPR_EMPTY_MAP: return empty_map(ev, expr, out);
     case EXPR_MAP_GET:

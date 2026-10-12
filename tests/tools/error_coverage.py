@@ -49,6 +49,9 @@ def tested_text():
     # CLI checks: the expected first line of stderr is a quoted argument of expect_failure
     for m in re.finditer(r'expect_failure "[^"]*" \d+ (?:\\\n\s*)?"((?:[^"\\]|\\.)*)"', run_sh):
         text += m.group(1).replace('\\"', '"') + '\n'
+    # exit_code_check NAME STATUS STDOUT STDERR PROGRAM [COMMAND]: the expected stderr
+    for m in re.finditer(r'exit_code_check "[^"]*" \d+ (?:\\\n\s*)?"(?:[^"\\]|\\.)*" (?:\\\n\s*)?"((?:[^"\\]|\\.)*)"', run_sh):
+        text += m.group(1).replace('\\"', '"') + '\n'
     return text
 
 def main():

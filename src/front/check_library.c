@@ -16,7 +16,8 @@ static const char *const op_display[] = {
     "\"the time now\"", "today", "tomorrow", "yesterday", "\"days ago\"", "\"days from now\"", "a date's part",
     "\"is in\"", "\"the number of days between\"", "\"is before\"", "\"is after\"", "\"file ... exists\"",
     "\"folder ... exists\"", "\"the lines of file\"", "\"the files in\"", "\"the folders in\"",
-    "\"the size of file\"", "\"the last change of file\"",
+    "\"the size of file\"", "\"the last change of file\"", "\"half of\"", "\"twice\"", "\"percent of\"",
+    "\"is infinite\"", "\"the reason\"", "\"per\"",
 };
 
 static TypeVar require(Checker *c, const Expr *operand, Type type, const char *display, const char *needs) {
@@ -109,6 +110,18 @@ TypeVar checker_check_library(Checker *c, const Expr *expr) {
     case LIB_FILE_CHANGED:
         text(c, a, display);
         return types_new(c, TYPE_DATE, line);
+    case LIB_PERCENT_OF: number(c, b, display); /* fall through */
+    case LIB_HALF:
+    case LIB_TWICE:
+        number(c, a, display);
+        return types_new(c, TYPE_NUMBER, line);
+    case LIB_IS_INFINITE:
+        number(c, a, display);
+        return types_new(c, TYPE_YESNO, line);
+    case LIB_REASON: return types_new(c, TYPE_TEXT, line);
+    case LIB_PERIOD_KEY:  // "per year" groups by a number, the others by text ("October 2026")
+        date(c, a, arena_sprintf(c->arena, "\"per %s\"", ast_date_part_name(expr->as.library.part)));
+        return types_new(c, expr->as.library.part == DATE_YEAR ? TYPE_NUMBER : TYPE_TEXT, line);
     default: break;
     }
     return error_var(c);
@@ -178,11 +191,27 @@ static void check_read_csv(Checker *c, const Stmt *stmt) {
     vec_push(c->arena, &c->slots, slot);
 }
 
-// save L as csv file F: L is a list of maps from text to numbers, text or yes/no.
+// save L as csv file F: L is a list of maps from text to numbers, text or
+// yes/no; or a list of records (a column per field); or a map (a "key" and a
+// "value" column).
 static void check_save_csv(Checker *c, const Stmt *stmt) {
     const Expr *list = stmt->as.library.a;
     TypeVar var = checker_check_expr(c, list);
-    TypeVar row = checker_require_list(c, var, list, "I can only save a list of maps as csv");
+    Type type = types_of(c, var);
+    TypedSlot slot = {(Type *)&stmt->as.library.type, var};
+    if (type_is_map(type)) {
+        vec_push(c->arena, &c->slots, slot);
+        types_defer_one_of(c, list, types_item(c, var), types_item(c, var), KIND_NUMBER | KIND_TEXT | KIND_YESNO | KIND_DATE,
+                           "The values saved in a csv file have to be numbers, text, yes/no values or dates");
+        action_text(c, stmt->as.library.b, "The name of a file");
+        return;
+    }
+    if (type_is_list(type) && type_is_record(type_item(type)) && !type_is_maybe(type_item(type))) {
+        vec_push(c->arena, &c->slots, slot);
+        action_text(c, stmt->as.library.b, "The name of a file");
+        return;
+    }
+    TypeVar row = checker_require_list(c, var, list, "I can only save a list of maps or records, or a map, as csv");
     TypeVar key, value;
     if (checker_require_map(c, row, list, "Each row saved as csv has to be a map from column names to values", NULL,
                             &key, &value)) {
@@ -190,10 +219,11 @@ static void check_save_csv(Checker *c, const Stmt *stmt) {
         types_defer_one_of(c, list, value, value, KIND_NUMBER | KIND_TEXT | KIND_YESNO,
                            "The values saved in a csv file have to be numbers, text or yes/no values");
     }
-    TypedSlot slot = {(Type *)&stmt->as.library.type, var};
     vec_push(c->arena, &c->slots, slot);
     action_text(c, stmt->as.library.b, "The name of a file");
 }
+
+static void check_chart(Checker *c, const Stmt *stmt);
 
 void checker_check_library_stmt(Checker *c, const Stmt *stmt) {
     const Expr *a = stmt->as.library.a, *b = stmt->as.library.b;
@@ -223,8 +253,126 @@ void checker_check_library_stmt(Checker *c, const Stmt *stmt) {
         break;
     case DO_READ_CSV: check_read_csv(c, stmt); break;
     case DO_SAVE_CSV: check_save_csv(c, stmt); break;
+    case DO_SAVE_CHART: check_chart(c, stmt); break;
+    case DO_READ_TABLE: {  // rows of the kind made for it; its fields come from use
+        action_text(c, stmt->as.library.a, "The name of a file");
+        checker_make_or_store(c, &stmt->as.library.name, types_new(c, stmt->as.library.type, stmt->pos.line));
+        break;
+    }
     case DO_COMPLAIN:
     case DO_RUN:
     case DO_WAIT_KEY: checker_check_system_stmt(c, stmt); break;
     }
+}
+
+// --- Charts ------------------------------------------------------------------------------
+
+// A hidden name holding a value already checked (so it's checked once).
+static Expr *hidden_name(Checker *c, const char *name, SourcePos pos, TypeVar var) {
+    Symbol symbol = {name, "the chart's values", pos.line, NULL, false, var, false,
+                     c->function ? c->function->definition : NULL, 0};
+    vec_push(c->arena, &c->made, symbol);
+    Expr *expr = ast_new_expr(c->arena, EXPR_NAME, pos);
+    expr->as.name = name;
+    expr->display = "the chart's values";
+    return expr;
+}
+
+// "save a bar chart of X as F [, titled T]": X is a list of numbers (labelled
+// 1, 2, 3, ...) or a map from text or numbers to numbers. Checks the call of
+// lib/charts.es that draws it ("numbers chart", "text map chart" or "number
+// map chart"), with X and T in hidden names; codegen writes what it gives
+// back into F.
+static void check_chart(Checker *c, const Stmt *stmt) {
+    Stmt *s = (Stmt *)stmt;
+    const Expr *values = stmt->as.library.a, *title = stmt->as.library.parts.items[0];
+    TypeVar var = checker_check_expr(c, values);
+    checker_require(c, checker_check_expr(c, stmt->as.library.b), TYPE_TEXT, stmt->as.library.b,
+                    "The name of a file has to be text", NULL);
+    TypeVar title_var = title ? checker_check_expr(c, title) : 0;
+    if (title) checker_require(c, title_var, TYPE_TEXT, title, "A chart's title has to be text", NULL);
+    Type type = types_of(c, var);
+    if (type == TYPE_ERROR || (title && types_of(c, title_var) != TYPE_TEXT)) return;
+    Type key = type_is_map(type) ? ast_map_key(c->records, type) : TYPE_UNKNOWN;
+    const char *function = type == type_list_of(TYPE_NUMBER) ? "numbers chart"
+                           : !type_is_map(type) || ast_map_value(c->records, type) != TYPE_NUMBER ? NULL
+                           : key == TYPE_TEXT ? "text map chart"
+                           : key == TYPE_NUMBER ? "number map chart" : NULL;
+    if (!function) {
+        diag_error(c->diag, values->pos.span, "A chart needs a list of numbers or a map to numbers, but this is %s.", checker_kind(c, var));
+        diag_note(c->diag, "Write it like \"save a bar chart of the total amount of sales per month as \"sales.svg\"\".");
+        diag_info(c->diag, DIAG_WRONG_KIND, NULL, "a list of numbers or a map to numbers");
+        return;
+    }
+    const char *name = stmt->as.library.name.text;
+    Expr *call = ast_new_expr(c->arena, EXPR_CALL, stmt->pos);
+    call->as.call.name = function;
+    call->display = function;
+    call->module = "0charts";
+    vec_push(c->arena, &call->as.call.args, hidden_name(c, name, values->pos, var));
+    static const char *const kinds[] = {"bar", "line", "pie"};
+    Expr *kind = ast_new_expr(c->arena, EXPR_TEXT, stmt->pos);
+    kind->as.text.value = kinds[(int)stmt->as.library.scale];
+    kind->as.text.len = strlen(kind->as.text.value);
+    vec_push(c->arena, &call->as.call.args, kind);
+    Expr *shown = ast_new_expr(c->arena, EXPR_TEXT, stmt->pos);  // no title: ""
+    shown->as.text.value = "";
+    if (title) shown = hidden_name(c, arena_sprintf(c->arena, "%st", name), title->pos, title_var);
+    vec_push(c->arena, &call->as.call.args, shown);
+    checker_check_expr(c, call);
+    vec_push(c->arena, &s->as.library.parts, call);
+}
+
+// --- try to ... -------------------------------------------------------------------------
+
+// The files and folders the sentence uses (a and b), or false if it's a
+// sentence "try to" doesn't cover.
+static bool tried_paths(const Stmt *stmt, const Expr **a, const Expr **b) {
+    *a = *b = NULL;
+    switch (stmt->kind) {
+    case STMT_READ_FILE: *a = stmt->as.read_file.path; return true;
+    case STMT_WRITE_FILE:
+    case STMT_APPEND_FILE: *a = stmt->as.file_write.path; return true;
+    case STMT_LIBRARY:
+        switch (stmt->as.library.op) {
+        case DO_READ_TABLE:
+        case DO_READ_CSV:
+        case DO_MAKE_FILE:
+        case DO_MAKE_FOLDER:
+        case DO_DELETE_FILE:
+        case DO_DELETE_FOLDER: *a = stmt->as.library.a; return true;
+        case DO_SAVE_CSV: *a = stmt->as.library.b; return true;
+        case DO_RENAME:
+        case DO_COPY:
+        case DO_MOVE:
+            *a = stmt->as.library.a;
+            *b = stmt->as.library.b;
+            return true;
+        default: return false;
+        }
+    default: return false;
+    }
+}
+
+// "try to S. if that fails, ...": S uses a file or a folder (written as text
+// or a name, since it's looked at twice: once to check, once to use).
+void checker_check_try(Checker *c, const Stmt *stmt) {
+    const Stmt *attempt = stmt->as.attempt.attempt;
+    const Expr *a, *b;
+    if (!tried_paths(attempt, &a, &b)) {
+        diag_error(c->diag, attempt->pos.span, "\"try to\" only works with a file or a folder.");
+        diag_note(c->diag, "Use it to read, write, make or delete one, like \"try to read file \"notes.txt\" and call it "
+                           "notes.\"");
+        diag_info(c->diag, DIAG_NOT_ALLOWED, "a sentence that uses a file or a folder", NULL);
+    } else {
+        const Expr *paths[] = {a, b};
+        for (size_t i = 0; i < 2; i++) {
+            if (!paths[i] || paths[i]->kind == EXPR_TEXT || paths[i]->kind == EXPR_NAME) continue;
+            diag_error(c->diag, paths[i]->pos.span, "In \"try to\", the file's name has to be text or a name.");
+            diag_note(c->diag, "Keep it in a name first, like \"let path be ...\", and use the name here.");
+            diag_info(c->diag, DIAG_NOT_ALLOWED, "a name worked out here", "text");
+        }
+    }
+    checker_check_statements(c, &(Block){(Stmt **)&stmt->as.attempt.attempt, 1, 1});
+    checker_check_block(c, &stmt->as.attempt.fallback, stmt->pos.line, "\"if that fails\"");
 }

@@ -114,6 +114,35 @@ for dir in "$ROOT"/benchmarks/*/; do
     done
 done
 
+# The speed rule of the English pass: each question about a list
+# (benchmarks/forms/NAME.es) may take at most 20% longer than the same work
+# written by hand (NAME_loop.es), and must print the same result.
+echo
+printf "%-12s %9s %9s %7s   %s\n" "form" "time (s)" "by hand" "ratio" "result"
+printf "%-12s %9s %9s %7s   %s\n" "----" "--------" "-------" "-----" "------"
+for src in "$ROOT"/benchmarks/forms/*.es; do
+    case $src in *_loop.es) continue ;; esac
+    name=$(basename "$src" .es)
+    if ! "$ES" build "$src" -o "$OUT/form_$name" || ! "$ES" build "${src%.es}_loop.es" -o "$OUT/form_${name}_loop"; then
+        failed=1
+        continue
+    fi
+    measure "$OUT/form_$name"
+    form_time=$SECONDS_TAKEN
+    form_result=$RESULT
+    measure "$OUT/form_${name}_loop"
+    ratio=$(awk -v a="$form_time" -v b="$SECONDS_TAKEN" 'BEGIN{printf "%.2f", (b > 0 ? a / b : 1)}')
+    note=$form_result
+    if [ "$form_result" != "$RESULT" ]; then
+        note="$form_result  (MISMATCH: by hand $RESULT)"
+        failed=1
+    elif awk -v r="$ratio" 'BEGIN{exit !(r > 1.2)}'; then
+        note="$form_result  (TOO SLOW: more than 20% over the loop)"
+        failed=1
+    fi
+    printf "%-12s %9s %9s %7s   %s\n" "$name" "$form_time" "$SECONDS_TAKEN" "$ratio" "$note"
+done
+
 echo
 echo "Machine: $(uname -sm); $(cc --version 2>/dev/null | head -n 1)"
 exit $failed

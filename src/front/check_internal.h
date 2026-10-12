@@ -157,6 +157,8 @@ typedef struct {
     const Function *function;         // the function being checked, if any
     size_t floor;                     // made[floor..] is visible (a function sees only its own names)
     size_t blocks;                    // how many if/loop blocks we're inside
+    size_t rules;                     // "must" rules so far (each gets a C function, es_rule1, ...)
+    bool in_rule;                     // checking a rule's condition (it sees only constants and "it")
     Vec(Symbol) made;    // names that exist here: made so far, in blocks still open
     Vec(Symbol) later;   // every name the program makes anywhere, for "you make it later"
     Vec(Symbol) ended;   // names whose block has ended; line = the if or loop that held them
@@ -306,6 +308,9 @@ void checker_write_lambdas(Checker *c);  // the kinds of their inputs, results a
 
 // check_apply.c: built-ins that take a function
 TypeVar checker_check_apply(Checker *c, const Expr *expr);  // EXPR_APPLY
+TypeVar checker_check_aggregate(Checker *c, const Expr *expr);  // check_aggregate.c: EXPR_AGGREGATE
+TypeVar checker_check_default(Checker *c, const Expr *expr);    // check_narrow.c: X, or D
+TypeVar checker_check_table(Checker *c, const Expr *expr);      // check_narrow.c: a "depends on" table
 void checker_check_replace(Checker *c, const Stmt *stmt);   // apply F to every X in L, keep only ..., sort L by F
 
 // check_iface.c: interfaces
@@ -318,7 +323,7 @@ bool checker_satisfies(Checker *c, Type kind, Type iface, const Way **missing, c
 // and that was reported at expr ("A fish can't be used as something that can speak: ...").
 bool checker_iface_fits(Checker *c, TypeVar target, TypeVar value, const Expr *expr);
 // An interface two kinds of record both fit, for suggestions (TYPE_UNKNOWN if none).
-Type checker_shared_interface(Checker *c, Type a, Type b);
+size_t checker_common_interfaces(Checker *c, const Type *kinds, size_t n, Type *first);  // check_iface.c
 // A call of a way on a value of an interface ("speak pet"): true (with *result) if it is one.
 bool checker_dispatch(Checker *c, const Expr *expr, const TypeVar *args, bool as_value, TypeVar *result);
 
@@ -349,9 +354,13 @@ void checker_collect_records(Checker *c, const Block *program);  // reports kind
 void checker_check_record(Checker *c, Stmt *stmt);               // STMT_RECORD: its fields and starting values
 void checker_end_scope(Checker *c, size_t outer, size_t line, const char *where);
 void checker_check_loop(Checker *c, const Stmt *stmt);
+void checker_check_event(Checker *c, const Stmt *stmt);  // check_loop.c: STMT_EVENT
+void checker_check_try(Checker *c, const Stmt *stmt);    // check_library.c: STMT_TRY
 TypeVar checker_field_kind(Checker *c, Field *field, size_t line);
 void checker_report_undecided_fields(Checker *c);
 TypeVar checker_check_field(Checker *c, const Expr *expr);       // EXPR_FIELD
+void checker_check_rule(Checker *c, Stmt *stmt);
+Field *checker_add_column(Checker *c, Stmt *def, Field column);  // a table's row: a column the program uses                 // STMT_RULE: "an age must be between 0 and 150"
 TypeVar checker_check_new(Checker *c, const Expr *expr);         // EXPR_NEW
 const char *checker_capitalized(Checker *c, Type type);           // "A dog", for the start of a sentence
 

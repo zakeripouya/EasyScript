@@ -1,0 +1,17 @@
+Line 1: A chart needs a list of numbers or a map to numbers, but this is text.
+    save a bar chart of "x" as "a.svg".
+                        ^^^
+Write it like "save a bar chart of the total amount of sales per month as "sales.svg"".
+
+Line 3: A chart needs a list of numbers or a map to numbers, but this is a list of text.
+    save a pie chart of names as "b.svg".
+                        ^^^^^
+Write it like "save a bar chart of the total amount of sales per month as "sales.svg"".
+
+Line 4: A chart's title has to be text, but this is a number.
+    save a line chart of a list of 1 and 2 as "c.svg", titled 5.
+                                                              ^
+
+Line 5: The name of a file has to be text, but this is a number.
+    save a bar chart of a list of 1 and 2 as 7.
+                                             ^

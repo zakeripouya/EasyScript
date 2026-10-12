@@ -23,20 +23,20 @@ The C versions keep their totals `volatile` so the compiler can't remove the loo
 
 ## Latest results
 
-Machine: Apple M4, 24 GB, macOS 15.3.1. Apple clang 17.0.0, Go 1.27.1, Python 3.14.7. EasyScript 0.1.0 plus reference counting, static types, lists, runtime stack traces, leaner lists, text tools, records, maps, kinds with variants, functions as values, modules and the standard library, 2026-10-11.
+Machine: Apple M4, 24 GB, macOS 15.3.1. Apple clang 17.0.0, Go 1.27.1, Python 3.14.7. EasyScript 0.1.0 plus Phase 2 through step 22 and the English pass (parts 1 to 5), 2026-10-12.
 
 | Program | EasyScript | C | Go | Python |
 |---|---|---|---|---|
-| fib | 0.25 s, 1.2 MB | 0.07 s, 1.2 MB | 0.08 s, 3.8 MB | 2.90 s, 11.5 MB |
-| count | 0.05 s, 1.3 MB | 0.03 s, 1.2 MB | 0.02 s, 3.9 MB | 4.02 s, 11.8 MB |
-| nested | 0.11 s, 1.2 MB | 0.03 s, 1.2 MB | 0.03 s, 3.8 MB | 5.06 s, 11.3 MB |
-| text | 0.00 s, 1.3 MB | (none) | 0.01 s, 13.3 MB | 0.01 s, 11.7 MB |
-| sort | 0.06 s, 9.0 MB (9.4 bytes/item) | 0.08 s, 8.8 MB (9.3 bytes/item) | 0.08 s, 28.6 MB (30.0 bytes/item) | 0.31 s, 61.1 MB (64.1 bytes/item) |
-| build | 0.00 s, 6.2 MB | 0.00 s, 6.0 MB | 0.00 s, 22.8 MB | 0.05 s, 16.3 MB |
-| words | 0.10 s, 3.4 MB | (none) | 0.05 s, 7.9 MB | 0.37 s, 13.4 MB |
-| pipeline | 0.13 s, 64.2 MB | 0.05 s, 19.1 MB | 0.05 s, 58.1 MB | 1.28 s, 164.6 MB |
-| pipeline_loop | 0.10 s, 16.5 MB | (none) | (none) | (none) |
-| sales | 0.04 s, 57.8 MB | (none) | (none) | 0.09 s, 11.8 MB |
+| fib | 0.25 s, 1.4 MB | 0.07 s, 1.2 MB | 0.08 s, 3.8 MB | 2.90 s, 11.5 MB |
+| count | 0.05 s, 1.2 MB | 0.03 s, 1.2 MB | 0.02 s, 3.9 MB | 4.04 s, 11.6 MB |
+| nested | 0.11 s, 1.3 MB | 0.03 s, 1.2 MB | 0.03 s, 3.9 MB | 4.99 s, 11.8 MB |
+| text | 0.00 s, 1.3 MB | (none) | 0.01 s, 11.5 MB | 0.01 s, 11.5 MB |
+| sort | 0.06 s, 9.0 MB (9.4 bytes/item) | 0.08 s, 8.8 MB (9.3 bytes/item) | 0.08 s, 33.8 MB (35.5 bytes/item) | 0.31 s, 64.5 MB (67.6 bytes/item) |
+| build | 0.00 s, 6.0 MB | 0.00 s, 6.0 MB | 0.00 s, 21.5 MB | 0.04 s, 16.1 MB |
+| words | 0.10 s, 3.6 MB | (none) | 0.05 s, 8.0 MB | 0.37 s, 13.5 MB |
+| pipeline | 0.13 s, 60.7 MB | 0.05 s, 19.0 MB | 0.04 s, 58.8 MB | 1.22 s, 179.7 MB |
+| pipeline_loop | 0.09 s, 24.2 MB | (none) | (none) | (none) |
+| sales | 0.04 s, 59.5 MB | (none) | (none) | 0.09 s, 11.8 MB |
 
 ## Reading the results
 
@@ -52,6 +52,27 @@ Machine: Apple M4, 24 GB, macOS 15.3.1. Apple clang 17.0.0, Go 1.27.1, Python 3.
 - **Built-ins that take a function cost about 1.4 times a loop you write yourself, and run 9 times faster than Python's `map`, `filter` and `reduce`.** `pipeline` (0.13 s) does the same work as `pipeline_loop` (0.09 s) with four built-ins in each round. Each use becomes a C function that goes through the list; a function defined with `to` is called directly (the C compiler can inline it), and a function value through its closure's code pointer. What's left is the call itself (each pushes a frame for the call stack), and the new list each value form makes: the loop never makes one. A closure that uses names from around it could change the list while it's being gone through, so then the built-in goes through the list as it was; one that uses no names (`a function taking n that gives back n plus 1`) can't, and doesn't pay for that copy (keeping it took the peak from 85 MB to 59 MB). Peak memory on macOS varies a lot from run to run here (36 to 100 MB for the same program), because freed blocks of a few megabytes aren't always given back at once; C and the loop keep fewer lists alive at once.
 - **Reading a csv file is twice as fast as Python's `csv` module, in five times its memory.** `read csv file` parses the whole file in C and gives back every row at once, a map per row holding each field as its own text (about 580 bytes a row here); Python's `DictReader` hands over one row at a time, so only one is alive at once. Splitting fields, quotes and line endings are a single pass over the file's bytes.
 - **Memory stays flat.** Text is freed as soon as nothing uses it ([how](memory.md)), so building a 50,000-character text by adding to it 10,000 times takes 1.3 MB at its peak, less than Go or Python (it was 280 MB before reference counting).
+
+## Questions about lists against hand-written loops
+
+The English pass's speed rule: every high-level form must take at most 20% longer than the same work written as a loop, and print the same result. `make bench` checks each pair in [`benchmarks/forms/`](../benchmarks/forms/) (`NAME.es` against `NAME_loop.es`) and fails on a mismatch or a form more than 20% slower. Each program builds a million pseudo-random numbers (or 200,000 records), then asks its question many times; the times include building the list.
+
+| Form | Work | Form | By hand | Ratio |
+|---|---|---|---|---|
+| `how many numbers are above 500` | 300 times over a million numbers | 0.35 s | 0.47 s | 0.74 |
+| `any number is above 5000` (no item passes, so every item is looked at) | 300 times | 0.15 s | 0.28 s | 0.54 |
+| `the total of numbers` | 300 times | 0.15 s | 0.27 s | 0.56 |
+| `the average of numbers` | 300 times | 0.20 s | 0.33 s | 0.61 |
+| `the top 10 numbers` (by hand: sorted, then the first 10) | 30 times | 0.03 s | 0.87 s | 0.03 |
+| `the 10 most common numbers` (by hand: a map, then sorted) | 30 times | 0.23 s | 0.38 s | 0.61 |
+| `the entry with the highest value` | 300 times over 200,000 records | 0.10 s | 0.20 s | 0.50 |
+| `the total value of entries per group` (by hand: a map with `, or 0`) | 100 times | 0.29 s | 0.47 s | 0.62 |
+| `how many entries whose value is over 500` (the filter in the same pass) | 300 times | 0.10 s | 0.22 s | 0.45 |
+| `how many entries are big`, with `an entry is big if its value is over 500.` | 300 times | 0.20 s | 0.20 s | 1.00 |
+| `the total fee of entries`, with a `depends on` table (by hand: an `if` chain) | 100 times | 0.09 s | 0.13 s | 0.69 |
+| `entries sorted by value biggest first` (part 5; by hand: `sorted by` a definition giving back the value) | 20 times over 200,000 records | 0.30 s | 0.30 s | 1.00 |
+
+Apple M4, macOS 15.3.1, Apple clang 17.0.0, best of 3, 2026-10-12 (the table above was measured at part 3; rerun at the end of part 5, every ratio was within 0.05 of it). `sorted by value` first used part 2's top-N heap with every item kept, and was 2.1 times slower than sorting by a definition; it now gathers the items it keeps and their keys in the same pass (a filter can be part of it), then sorts them with the same stable sort `sorted by F` uses. Until part 5, `benchmarks/run.sh` worked the ratio out with an `awk` expression whose `>` was read as output redirection, so the 20% check never failed; the ratios above were worked out by hand, and the check works now. Every other form is faster than its loop: a `for each` loop goes through a copy of the list it can't prove nothing changes (`es_list_snapshot`), while a question that calls no definition can't change the list and reads it directly; the top 10 keep a heap of 10 instead of sorting a million numbers; and `per` finds each group's place in the map once instead of looking it up twice. A describing word (`is big`) and a table of a kind's value are written in place where they're used (as a call they were 70% slower than the loop).
 
 ## History
 
@@ -70,3 +91,4 @@ One row per milestone, with EasyScript's numbers on that milestone's machine. **
 | 2026-10-10 | 0.1.0 + records and maps (Phase 2, steps 17 and 18) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.2 MB | 0.05 s, 1.3 MB | 0.11 s, 1.2 MB | 0.00 s, 1.3 MB | 0.06 s, 8.9 MB (9.4 bytes/item) | 0.00 s, 6.0 MB | 0.10 s, 3.6 MB | (none) | (none) | (none) |
 | 2026-10-11 | 0.1.0 + kinds with variants and functions as values (Phase 2, steps 19 and 20) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.24 s, 1.3 MB | 0.05 s, 1.3 MB | 0.11 s, 1.3 MB | 0.00 s, 1.3 MB | 0.06 s, 9.0 MB (9.4 bytes/item) | 0.00 s, 6.0 MB | 0.09 s, 3.4 MB | 0.13 s, 59.4 MB | 0.09 s, 16.5 MB | (none) |
 | 2026-10-11 | 0.1.0 + modules and the standard library (Phase 2, step 21) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.25 s, 1.2 MB | 0.05 s, 1.3 MB | 0.11 s, 1.2 MB | 0.00 s, 1.3 MB | 0.06 s, 9.0 MB (9.4 bytes/item) | 0.00 s, 6.2 MB | 0.10 s, 3.4 MB | 0.13 s, 64.2 MB | 0.10 s, 16.5 MB | 0.04 s, 57.8 MB |
+| 2026-10-12 | 0.1.0 + system tools and the English pass (step 22, English pass parts 1 to 5) | Apple M4, macOS 15.3.1, Apple clang 17.0.0 | 0.25 s, 1.4 MB | 0.05 s, 1.2 MB | 0.11 s, 1.3 MB | 0.00 s, 1.3 MB | 0.06 s, 9.0 MB (9.4 bytes/item) | 0.00 s, 6.0 MB | 0.10 s, 3.6 MB | 0.13 s, 60.7 MB | 0.09 s, 24.2 MB | 0.04 s, 59.5 MB |

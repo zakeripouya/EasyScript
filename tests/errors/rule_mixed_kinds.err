@@ -1,0 +1,4 @@
+Line 3: The fields called "weight" aren't all the same kind, so one rule can't cover them.
+    a weight must not be empty.
+      ^^^^^^
+Say whose field it is, like "a dog's weight must ...".

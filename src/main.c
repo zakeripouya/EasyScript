@@ -33,11 +33,14 @@ static char *temp_answers_path;
 static void print_usage(FILE *out) {
     fprintf(out, "Usage:\n");
     fprintf(out, "  easyscript run FILE [WORDS]   Compile FILE and run it, giving it the words after FILE\n");
+    fprintf(out, "  easyscript test FILE [WORDS]  Run FILE and say whether its examples (\"for example, ...\") are right\n");
     fprintf(out, "  easyscript build FILE -o OUT  Compile FILE to the executable OUT\n");
     fprintf(out, "  easyscript emit FILE          Print the C code generated for FILE\n");
     fprintf(out, "  easyscript tokens FILE        Print the tokens of FILE, one per line\n");
     fprintf(out, "  easyscript ast FILE           Print the syntax tree of FILE as an outline\n");
     fprintf(out, "  easyscript errors FILE        Check FILE and print its errors as data, one per line\n");
+    fprintf(out, "  easyscript plan FILE          Print what each list question and filter in FILE becomes\n");
+    fprintf(out, "                                (also: easyscript build --plan FILE)\n");
     fprintf(out, "  easyscript                    Start the interactive shell\n");
 }
 
@@ -128,7 +131,9 @@ static Program *front_end(const char *source_path, Sources **sources) {
     return program;
 }
 
-static void generate_c(const char *source_path) {
+// The program's C code (and its plan, when `plan` isn't NULL). On errors,
+// prints them all and exits with status 1.
+static StrBuf generate(const char *source_path, StrBuf *plan) {
     Sources *sources;
     Program *program = front_end(source_path, &sources);
     Diag *diag = sources->diag;
@@ -143,10 +148,15 @@ static void generate_c(const char *source_path) {
 
     StrBuf lines;  // the source lines, for runtime errors to show
     sb_init(&lines, arena);
-    source_table_c(arena, sources->source, sources->len, sources->names, sources->starts, sources->count, &lines);
+    source_table_c(arena, sources->source, sources->len, sources->shown, sources->starts, sources->count, &lines);
     StrBuf code;
     sb_init(&code, arena);
-    codegen_c(arena, program, lines.data, &code);
+    codegen_c(arena, program, lines.data, &code, plan);
+    return code;
+}
+
+static void generate_c(const char *source_path) {
+    StrBuf code = generate(source_path, NULL);
     FILE *output_file = fopen(temp_c_path, "w");
     if (!output_file) {
         fprintf(stderr, "I couldn't write the C file: %s.\n", strerror(errno));
@@ -202,11 +212,14 @@ static bool env_is_1(const char *name) {
 // by the tests and the shell) compiles in the runtime's environment hooks
 // (ES_SKIP_OUTPUT, ES_ANSWERS, ES_DEBUG_MEMORY, ES_MEMORY_LIMIT); "build"
 // never does, so programs given to others don't read them.
-static int compile_c(const char *output_path, bool hooks) {
-    char *hook = hooks ? "-DES_HOOKS" : NULL;  // last, so without hooks the list ends there
-    char *plain[] = {"cc", "-O2", temp_c_path, "-o", (char *)output_path, "-lm", hook, NULL};
+static int compile_c(const char *output_path, bool hooks, bool testing) {
+    char *flags[3] = {NULL, NULL, NULL};  // last, so the list ends after the ones given
+    size_t n = 0;
+    if (hooks) flags[n++] = "-DES_HOOKS";
+    if (testing) flags[n++] = "-DES_TESTING";  // "easyscript test": say how many examples were right
+    char *plain[] = {"cc", "-O2", temp_c_path, "-o", (char *)output_path, "-lm", flags[0], flags[1], NULL};
     char *checked[] = {"cc", "-O1", "-fno-omit-frame-pointer", "-fsanitize=address,undefined",
-                       "-fno-sanitize-recover=all", temp_c_path, "-o", (char *)output_path, "-lm", hook, NULL};
+                       "-fno-sanitize-recover=all", temp_c_path, "-o", (char *)output_path, "-lm", flags[0], flags[1], NULL};
     if (run_process(env_is_1("ES_SANITIZE") ? checked : plain) != 0) {
         fprintf(stderr, "I couldn't build the program from the C I made. This is a bug in EasyScript; please report it.\n");
         return 1;
@@ -274,18 +287,27 @@ static int cmd_errors(const char *source_path) {
     return diag_count(sources->diag) > 0 ? 1 : 0;
 }
 
+// Prints the plan: what each high-level form in the program became.
+static int cmd_plan(const char *source_path) {
+    StrBuf plan;
+    sb_init(&plan, arena);
+    generate(source_path, &plan);
+    fwrite(plan.data, 1, plan.len, stdout);
+    return 0;
+}
+
 static int cmd_build(const char *source_path, const char *output_path) {
     make_temp_dir();
     generate_c(source_path);
-    return compile_c(output_path, false);
+    return compile_c(output_path, false, false);
 }
 
 // Runs the program with `words` (the command line after the file) as the
 // words given to it.
-static int cmd_run(const char *source_path, char **words, int count) {
+static int cmd_run(const char *source_path, char **words, int count, bool testing) {
     make_temp_dir();
     generate_c(source_path);
-    if (compile_c(temp_bin_path, env_is_1("ES_HOOKS")) != 0) {
+    if (compile_c(temp_bin_path, env_is_1("ES_HOOKS"), testing) != 0) {
         return 1;
     }
     char **argv = arena_alloc(arena, ((size_t)count + 2) * sizeof(char *));
@@ -314,13 +336,16 @@ int main(int argc, char *argv[]) {
 
     const char *source_path = NULL;
     const char *output_path = NULL;
+    bool plan = false;  // "build --plan FILE" is "plan FILE"
     int words_at = argc;  // "run FILE WORDS...": the words given to the program
     for (int i = 2; i < argc; i++) {
-        if (source_path && strcmp(command, "run") == 0) {
+        if (source_path && (strcmp(command, "run") == 0 || strcmp(command, "test") == 0)) {
             words_at = i;
             break;
         }
-        if (strcmp(argv[i], "-o") == 0) {
+        if (strcmp(argv[i], "--plan") == 0 && strcmp(command, "build") == 0 && !plan) {
+            plan = true;
+        } else if (strcmp(argv[i], "-o") == 0) {
             if (i + 1 >= argc) {
                 return usage_error("After -o, give the name of the program to make.");
             }
@@ -335,8 +360,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (strcmp(command, "run") == 0 || strcmp(command, "emit") == 0 || strcmp(command, "build") == 0 ||
-        strcmp(command, "tokens") == 0 || strcmp(command, "ast") == 0 || strcmp(command, "errors") == 0) {
+    if (strcmp(command, "run") == 0 || strcmp(command, "test") == 0 || strcmp(command, "emit") == 0 || strcmp(command, "build") == 0 ||
+        strcmp(command, "tokens") == 0 || strcmp(command, "ast") == 0 || strcmp(command, "errors") == 0 ||
+        strcmp(command, "plan") == 0) {
         if (!source_path) {
             return usage_error("Tell me which .es file to use.");
         }
@@ -346,6 +372,10 @@ int main(int argc, char *argv[]) {
         return 2;
     }
 
+    if (plan) {
+        if (output_path) return usage_error("--plan only prints the plan, so it doesn't take -o.");
+        return cmd_plan(source_path);
+    }
     if (strcmp(command, "build") == 0) {
         if (!output_path) {
             return usage_error("Tell me what to call the program with -o, like \"easyscript build hello.es -o hello\".");
@@ -355,8 +385,8 @@ int main(int argc, char *argv[]) {
     if (output_path) {
         return usage_error("-o only works with build.");
     }
-    if (strcmp(command, "run") == 0) {
-        return cmd_run(source_path, argv + words_at, argc - words_at);
+    if (strcmp(command, "run") == 0 || strcmp(command, "test") == 0) {  // "test": run it and check its examples
+        return cmd_run(source_path, argv + words_at, argc - words_at, strcmp(command, "test") == 0);
     }
     if (strcmp(command, "tokens") == 0) {
         return cmd_tokens(source_path);
@@ -366,6 +396,9 @@ int main(int argc, char *argv[]) {
     }
     if (strcmp(command, "errors") == 0) {
         return cmd_errors(source_path);
+    }
+    if (strcmp(command, "plan") == 0) {
+        return cmd_plan(source_path);
     }
     return cmd_emit(source_path);
 }

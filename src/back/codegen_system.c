@@ -30,8 +30,11 @@ void cg_emit_system(Codegen *g, const Expr *expr, StrBuf *out) {
     case LIB_PROGRAM_WORDS: sb_append(out, "es_program_words()"); break;
     case LIB_PROGRAM_COUNT: sb_append(out, "((double)es_word_count())"); break;
     case LIB_PROGRAM_WORD:
-        sb_appendf(out, "es_program_word(%zu, %s)", cg_site(g, expr->pos), code_of(g, a, false));
+    {
+        size_t site = cg_site(g, expr->pos);
+        sb_appendf(out, "es_program_word(%zu, %s)", site, code_of(g, a, false));
         break;
+    }
     case LIB_SENT_TEXT: sb_append(out, "es_sent_text()"); break;
     case LIB_SENT_LINES: sb_append(out, "es_text_lines(es_sent_text())"); break;
     case LIB_SETTING: sb_appendf(out, "es_setting(%s)", code_of(g, a, false)); break;
@@ -101,7 +104,8 @@ void cg_emit_system_stmt(Codegen *g, const Stmt *stmt) {
 // "stop the program with code N": the code, then the usual stop.
 void cg_emit_stop_code(Codegen *g, const Stmt *stmt) {
     if (!stmt->as.stop_code) return;
+    size_t site = cg_site(g, stmt->as.stop_code->pos);
+    const char *code = code_of(g, stmt->as.stop_code, false);
     cg_indent(g);
-    sb_appendf(&g->body, "es_set_status(%zu, %s);\n", cg_site(g, stmt->as.stop_code->pos),
-               code_of(g, stmt->as.stop_code, false));
+    sb_appendf(&g->body, "es_set_status(%zu, %s);\n", site, code);
 }

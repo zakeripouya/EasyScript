@@ -1,0 +1,8 @@
+Line 2: An example says something that's yes or no, like "total is 12", but this is a number.
+    for example, total plus 1.
+                 ^^^^^^^^^^^^
+
+Line 3: I can't compare a number with text.
+    for example, total is "twelve".
+                 ^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".

@@ -71,6 +71,52 @@ static EsText *es_number_exact_text(double x) {
     return es_text_copy(digits, strlen(digits));
 }
 
+/* `prefix`, then t's characters with a comma every three digits before the
+ * point ("-1234567.5" is "-1,234,567.5"), then `suffix`. Consumes t. */
+static EsText *es_with_commas(const char *prefix, EsText *t, const char *suffix) {
+    size_t start = t->len && t->chars[0] == '-' ? 1 : 0, digits = start;
+    while (digits < t->len && t->chars[digits] >= '0' && t->chars[digits] <= '9') digits++;
+    size_t whole = digits - start, commas = whole > 0 ? (whole - 1) / 3 : 0;
+    size_t p = strlen(prefix), q = strlen(suffix), n = p + t->len + commas + q;
+    char *chars;
+    EsText *out = es_text_new(n, &chars);
+    size_t k = 0;
+    if (start) chars[k++] = '-';
+    memcpy(chars + k, prefix, p);
+    k += p;
+    for (size_t i = start; i < t->len; i++) {
+        chars[k++] = t->chars[i];
+        size_t left = digits - 1 - i; /* digits still to come before the point */
+        if (i < digits - 1 && left % 3 == 0) chars[k++] = ',';
+    }
+    memcpy(chars + k, suffix, q);
+    es_release(t);
+    return out;
+}
+
+/* "with commas": "1,234,567.5". */
+static EsText *es_commas_text(double x) {
+    if (!isfinite(x) || fabs(x) >= 1e15) return es_number_text(x);
+    return es_with_commas("", es_number_text(x), "");
+}
+
+/* "as money": a dollar sign, commas and two places: "$1,234.50", "-$5.00". */
+static EsText *es_money_text(double x) {
+    if (!isfinite(x) || fabs(x) >= 1e15) return es_number_text(x);
+    double cents = round(fabs(x) * 100);
+    int n = snprintf(NULL, 0, "%s%.2f", x < 0 && cents > 0 ? "-" : "", cents / 100);
+    char *chars;
+    EsText *t = es_text_new((size_t)n, &chars);
+    snprintf(chars, (size_t)n + 1, "%s%.2f", x < 0 && cents > 0 ? "-" : "", cents / 100);
+    return es_with_commas("$", t, "");
+}
+
+/* "as a percent": 0.25 is "25%" (rounded like any number). */
+static EsText *es_percent_text(double x) {
+    if (!isfinite(x)) return es_number_text(x);
+    return es_with_commas("", es_number_text(x * 100), "%");
+}
+
 /* A number as text for an error message. The program stops right after,
  * so the text is never released; every one made is kept in a static list,
  * so it stays reachable and leak checkers (LeakSanitizer on Linux checks
@@ -496,6 +542,8 @@ static ssize_t es_read_answer(char **buffer, size_t *cap) {
  * the end of input the answer is empty text. */
 static void es_terminal_normal(void); /* es_keys.h: lines are typed with the terminal as it was */
 
+static bool es_input_ended; /* the last answer read was the end of the input */
+
 static EsText *es_ask(EsText *question) {
     es_terminal_normal();
     es_out(question->chars, question->len);
@@ -504,12 +552,66 @@ static EsText *es_ask(EsText *question) {
     char *buffer = NULL;
     size_t cap = 0;
     ssize_t n = es_read_answer(&buffer, &cap);
+    es_input_ended = n < 0;
     size_t len = n > 0 ? (size_t)n : 0;
     if (len > 0 && buffer[len - 1] == '\n') len--;
     if (len > 0 && buffer[len - 1] == '\r') len--;
     EsText *answer = len > 0 ? es_text_copy(buffer, len) : &es_empty_text;
     free(buffer);
     return answer;
+}
+
+/* Whether an answer is the word, capitals or not. Only looks. */
+static bool es_answer_is(const EsText *answer, const char *word) {
+    size_t n = strlen(word);
+    if (answer->len != n) return false;
+    for (size_t i = 0; i < n; i++) {
+        char c = answer->chars[i];
+        if ((c >= 'A' && c <= 'Z' ? c + 32 : c) != word[i]) return false;
+    }
+    return true;
+}
+
+/* "ask for a number": asks again until the answer is a number. Consumes question. */
+static double es_ask_number(int site, EsText *question) {
+    for (;;) {
+        EsText *answer = es_ask(es_retain(question));
+        double x;
+        bool ok = es_parse_number(answer->chars, answer->len, &x);
+        es_release(answer);
+        if (ok) {
+            es_release(question);
+            return x;
+        }
+        if (es_input_ended) {
+            es_release(question);
+            es_fail(site, NULL, "There's no answer to read: the input has run out.");
+        }
+        es_say(es_text_copy("Please type a number, like 42.", 30));
+    }
+}
+
+/* "ask yes or no": asks again until the answer is yes or no (or y, n, true, false). Consumes question. */
+static bool es_ask_yesno(int site, EsText *question) {
+    for (;;) {
+        EsText *answer = es_ask(es_retain(question));
+        static const char *const yes_words[] = {"yes", "y", "true"}, *const no_words[] = {"no", "n", "false"};
+        bool yes = false, ok = false;
+        for (size_t i = 0; i < 3; i++) {
+            if (es_answer_is(answer, yes_words[i])) yes = ok = true;
+            if (es_answer_is(answer, no_words[i])) ok = true;
+        }
+        es_release(answer);
+        if (ok) {
+            es_release(question);
+            return yes;
+        }
+        if (es_input_ended) {
+            es_release(question);
+            es_fail(site, NULL, "There's no answer to read: the input has run out.");
+        }
+        es_say(es_text_copy("Please answer yes or no.", 24));
+    }
 }
 
 /* "stop the program" inside a function, once the function has released its

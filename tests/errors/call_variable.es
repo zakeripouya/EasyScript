@@ -1,2 +1,2 @@
-let total be 5
-say total of 3
+let price be 5
+say price of 3

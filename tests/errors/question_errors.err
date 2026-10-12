@@ -1,0 +1,83 @@
+Line 3: I don't know anything called "results".
+    say how many results are above 2.
+                 ^^^^^^^
+Make it first, like "let results be 0".
+
+Line 4: There's no list called "results" for "any result" to look through.
+    if any result is above 2, say "yes".
+           ^^^^^^
+"any result" looks through the list called "results". Make that list first, or say which list, like "any result in scores ...".
+
+Line 5: I can only add up a list of numbers, but this is a list of text.
+    say the total of names.
+                     ^^^^^
+
+Line 6: I can only find the average of a list, but this is a number.
+    say the average of 5.
+                       ^
+
+Line 7: I can't compare a number with text.
+    say how many scores are "x".
+                        ^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 8: The top items are picked from a list of numbers or dates, but this is a list of text.
+    say the top 2 names.
+                  ^^^^^
+
+Line 9: I can only count how often numbers or text come up, but this is a list of yes/no values.
+    say the 2 most common (a list of yes and no).
+                          ^^^^^^^^^^^^^^^^^^^^^^
+
+Line 12: I can only add up the items of a list, but this is a dog.
+    say the total of rex.
+                     ^^^
+For a field called "total", write "rex's total".
+
+Line 14: I can only add up numbers, but this is text.
+    say the total name of dogs.
+                  ^^^^
+
+Line 15: The one picked has to be the highest by a number, a date, or how many items a list has, but this is text.
+    say the dog with the highest name.
+                                 ^^^^
+
+Line 18: I don't know anything called "buyers".
+    say the dog in buyers with the highest total.
+                   ^^^^^^
+Make it first, like "let buyers be 0".
+
+Line 20: How many to take has to be a number, but this is text.
+    say the top two scores.
+                ^^^
+
+Line 21: "per month" needs a date to group by, but a dog has no date in it.
+    say the number of dogs per month.
+                           ^^^^^^^^^
+Give the items a date, like "an order has a day (a date)".
+
+Line 24: "per month" could mean more than one date here.
+    say the number of trips per month.
+                            ^^^^^^^^^
+Say which, like "per month of start".
+
+Line 25: I can't compare a number with text.
+    say any score is "x".
+            ^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 26: "half of" needs a number, but this is text.
+    say half of "x", twice names, 5 percent of "y".
+                ^^^
+
+Line 26: "twice" needs a number, but this is a list of text.
+    say half of "x", twice names, 5 percent of "y".
+                           ^^^^^
+
+Line 26: "percent of" needs a number, but this is text.
+    say half of "x", twice names, 5 percent of "y".
+                                               ^^^
+
+Line 27: "is infinite" needs a number, but this is a list of text.
+    say names is infinite.
+        ^^^^^

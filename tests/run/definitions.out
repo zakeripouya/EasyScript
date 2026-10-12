@@ -1,0 +1,15 @@
+1 2 1
+(an order with customer "Ann", amount 1200 and cost 700)
+2 1
+o1 is big
+o2 is neither
+500 800 1334
+Bo
+(a customer with name "Ann" and orders ((an order with customer "Ann", amount 1200 and cost 700) and (an order with customer "Ann", amount 50 and cost 20)))
+Someone is loyal.
+Loyal customers made money.
+Ann
+(a customer with name "Ann" and orders ((an order with customer "Ann", amount 1200 and cost 700) and (an order with customer "Ann", amount 50 and cost 20)))
+Ann 530 yes
+Bo 800 no
+(an order with customer "Bo", amount 900 and cost 100)

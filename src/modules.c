@@ -40,6 +40,7 @@ typedef struct {
 
 typedef struct {
     Arena *arena;
+    bool charts;          // a file says "save a bar chart of ..." (or a line or pie chart): lib/charts.es is joined
     Vec(LoadFile) files;
     Vec(size_t) order;    // files in the order they're joined
     Vec(size_t) stack;    // the files being loaded, outermost first
@@ -95,13 +96,22 @@ static bool word_is(const Token *token, const char *word) {
     return token->kind == TOK_WORD && strcmp(token->text, word) == 0;
 }
 
+// "bar chart of", "line chart of" or "pie chart of" at i.
+static bool at_chart(const TokenList *tokens, size_t i) {
+    const Token *t = &tokens->items[i];
+    return i + 2 < tokens->len && (word_is(t, "bar") || word_is(t, "line") || word_is(t, "pie")) &&
+           word_is(&tokens->items[i + 1], "chart") && word_is(&tokens->items[i + 2], "of");
+}
+
 // Every "use NAME." (or "use the NAME file.") at the start of a sentence.
-// Other shapes are left to the parser, which explains them.
+// Other shapes are left to the parser, which explains them. Also notes a
+// chart, which needs the charts file.
 static void find_uses(Loader *ld, LoadFile *file) {
     Diag *quiet = diag_new(ld->arena, file->text, file->len);  // the real lexing reports its mistakes
     TokenList tokens = lex(ld->arena, quiet, file->text, file->len);
     for (size_t i = 0; i + 1 < tokens.len; i++) {
         const Token *t = &tokens.items[i];
+        ld->charts |= at_chart(&tokens, i);
         TokenKind before = i ? tokens.items[i - 1].kind : TOK_NEWLINE;
         bool start = before == TOK_NEWLINE || before == TOK_INDENT || before == TOK_DEDENT || before == TOK_PERIOD;
         if (!start || !word_is(t, "use") || tokens.items[i + 1].kind != TOK_WORD) continue;
@@ -203,18 +213,35 @@ static void load(Loader *ld, size_t index) {
     vec_push(ld->arena, &ld->order, index);
 }
 
+// lib/charts.es (built into the compiler), first, and used by every other file.
+extern const unsigned char es_charts_source[];
+extern const size_t es_charts_source_len;
+
+static void add_charts(Loader *ld) {
+    LoadFile charts = {"charts.es", "(charts built into EasyScript)", ".", "charts.es", "0charts",
+                       (const char *)es_charts_source, es_charts_source_len, {0}, {0}, 2};
+    size_t index = ld->files.len;
+    for (size_t i = 0; i < index; i++) vec_push(ld->arena, &ld->files.items[i].used, index);
+    vec_push(ld->arena, &ld->files, charts);
+    vec_push(ld->arena, &ld->order, index);
+    for (size_t k = ld->order.len - 1; k > 0; k--) ld->order.items[k] = ld->order.items[k - 1];
+    ld->order.items[0] = index;
+}
+
 // Joins the files (each ending with a newline) in load order.
 static void join(Loader *ld, Sources *out) {
     size_t n = ld->order.len;
     StrBuf sb;
     sb_init(&sb, ld->arena);
     out->names = arena_alloc(ld->arena, n * sizeof(char *));
+    out->shown = arena_alloc(ld->arena, n * sizeof(char *));
     out->starts = arena_alloc(ld->arena, n * sizeof(size_t));
     size_t *place = arena_alloc(ld->arena, ld->files.len * sizeof(size_t));  // file index -> joined order
     for (size_t k = 0; k < n; k++) {
         const LoadFile *file = &ld->files.items[ld->order.items[k]];
         place[ld->order.items[k]] = k;
         out->names[k] = file->display;
+        out->shown[k] = ld->charts && n == 2 && file->text != (const char *)es_charts_source ? NULL : file->display;
         out->starts[k] = sb.len;
         sb_append_n(&sb, file->text, file->len);
         if (n > 1 && (file->len == 0 || file->text[file->len - 1] != '\n')) sb_append_char(&sb, '\n');
@@ -254,11 +281,12 @@ Sources *sources_load(Arena *arena, const char *path, const char *dir) {
     LoadFile first = {path, kept, dir ? dir : dir_name(arena, path), display, module, text, len, {0}, {0}, 0};
     vec_push(arena, &ld.files, first);
     load(&ld, 0);
+    if (ld.charts) add_charts(&ld);
 
     Sources *out = arena_alloc(arena, sizeof(Sources));
     join(&ld, out);
     out->diag = diag_new(arena, out->source, out->len);
-    if (out->count > 1) diag_set_files(out->diag, out->names, out->starts, out->count);
+    if (out->count > 1) diag_set_files(out->diag, out->shown, out->starts, out->count);
     for (size_t i = 0; i < ld.errors.len; i++) {
         const LoadError *error = &ld.errors.items[i];
         Span span = {error->span.offset + out->starts[error->file], error->span.length};

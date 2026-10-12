@@ -1,0 +1,4 @@
+Line 1: Say what to do if it fails.
+    try to read file "x.txt" and call it notes.
+    ^^^
+Write it like "try to read file "notes.txt" and call it notes. if that fails, say "No notes yet."".

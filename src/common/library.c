@@ -10,6 +10,7 @@ const char *ast_library_op_name(LibraryOp op) {
         "pick one of", "shuffled", "roll a die", "time now", "today", "tomorrow", "yesterday", "days ago",
         "days from now", "date part", "is in", "days between", "is before", "is after", "file exists",
         "folder exists", "lines of file", "files in", "folders in", "size of file", "last change of file",
+        "half of", "twice", "percent of", "is infinite", "the reason", "per",
         "words given to the program", "number of words given to the program", "word given to the program",
         "text sent to the program", "lines sent to the program", "setting called", "key being pressed", "worked",
     };
@@ -31,7 +32,7 @@ const char *ast_library_action_name(LibraryAction op) {
     static const char *const names[] = {
         "wait", "use the same random numbers", "shuffle", "clear the screen", "make a file", "make a folder",
         "rename", "copy", "move", "delete the file", "delete the folder", "read csv file", "save as csv file",
-        "complain", "run", "wait for a key",
+        "read the table", "save a chart", "complain", "run", "wait for a key",
     };
     return names[op];
 }

@@ -106,6 +106,10 @@ void cg_emit_map_op(Codegen *g, const Expr *expr, StrBuf *out) {
     case LIST_VALUES: sb_appendf(out, "es_map_list(%s, false)", map); break;
     case LIST_IS_EMPTY: sb_appendf(out, "es_map_is_empty(%s)", map); break;
     case LIST_NOT_EMPTY: sb_appendf(out, "!es_map_is_empty(%s)", map); break;
+    case LIST_SORTED:  // in the order of the values: ES_SORT_UP or ES_SORT_DOWN
+    case LIST_SORTED_DOWN:
+        cg_plan(g, expr->pos, "\"sorted\": a copy of the map, its entries sorted by their values.");
+        sb_appendf(out, "es_map_sorted(%s, %d)", map, (int)(expr->as.list_op.op - LIST_SORTED)); break;
     default: sb_appendf(out, "es_map_copy(%s)", map); break;  // LIST_COPY
     }
 }
@@ -143,8 +147,9 @@ void cg_emit_fixed_map(Codegen *g, const char *name, const ConstValue *v, StrBuf
     }
     sb_appendf(init, " = es_map_fix(es_map_from(%s, %zu, (EsValue[]){", kinds, v->len);
     for (size_t i = 0; i < v->len; i++) {
-        sb_appendf(init, "%s{.%c = %s}, {.%s = %s}", i ? ", " : "", v->key_type == TYPE_TEXT ? 't' : 'n',
-                   fixed_value(g, &v->keys[i]), cg_value_suffix(v->value_type), fixed_value(g, &v->items[i]));
+        const char *key = fixed_value(g, &v->keys[i]);
+        sb_appendf(init, "%s{.%c = %s}, {.%s = %s}", i ? ", " : "", v->key_type == TYPE_TEXT ? 't' : 'n', key,
+                   cg_value_suffix(v->value_type), fixed_value(g, &v->items[i]));
     }
     sb_append(init, "}));\n");
 }
@@ -226,7 +231,13 @@ static const char *change_code(Codegen *g, const Stmt *stmt) {
                cg_operand(g, target->as.lookup.key, false));
     sb_appendf(&out, "EsMap *es_m = %s; ", cg_list_operand(g, target->as.lookup.map));
     if (!amount_first) sb_append(&out, amount_code);
-    sb_appendf(&out, "EsValue *es_p = es_map_at(%zu, es_m, es_k); ", cg_site(g, target->pos));
+    const Expr *start = stmt->as.change.start;
+    if (start) {  // ", starting at S": a missing key is added, with S worked out only then
+        sb_appendf(&out, "bool es_added; EsValue *es_p = es_map_slot(es_m, es_k, &es_added); if (es_added) es_p->%s = %s; ",
+                   cg_value_suffix(type), cg_operand(g, start, false));
+    } else {
+        sb_appendf(&out, "EsValue *es_p = es_map_at(%zu, es_m, es_k); ", cg_site(g, target->pos));
+    }
     if (stmt->as.change.append) {
         sb_appendf(&out, "es_add_%s(es_list_retain(es_p->l), es_value); ", cg_item_suffix(type));
     } else if (stmt->as.change.op == CHANGE_DIVIDE) {

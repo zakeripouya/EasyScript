@@ -1,0 +1,14 @@
+Line 1: I expected "as" here, but found the text "a.svg".
+    save a bar chart of scores "a.svg".
+                               ^^^^^^^
+Write it like "save a bar chart of sales as "sales.svg"".
+
+Line 2: I expected "called" here, but found "as".
+    make a pie chart of scores as "p.svg".
+                               ^^
+Write it like "make a bar chart of sales called "sales.svg"".
+
+Line 3: Something is missing after ", titled".
+    save a line chart of scores as "t.svg", titled
+                                          ^^^^^^^^
+Write it like "save a bar chart of sales as "sales.svg", titled "Sales"".

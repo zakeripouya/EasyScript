@@ -6,12 +6,33 @@ Small programs, one per feature. **Every example is checked by `make test`** aga
 
 `NAME.out` holds the expected output of `easyscript run NAME.es`. `NAME.in`, if present, is typed in as the program's input. `err_*` examples stop with a runtime error, and `NAME.err` holds the exact message.
 
+### Start here
+
+Programs written the way you'd say them: questions, steps in a row, tables and plain sentences. Read these first.
+
 | Example | Shows |
 |---|---|
 | [hello.es](programs/hello.es) | `say` |
 | [first_program.es](programs/first_program.es) | The program on the README's front page |
+| [ask_name.es](programs/ask_name.es) | `ask … and call the answer …` (input from `ask_name.in`) |
+| [tip_calculator.es](programs/tip_calculator.es) | `ask for a number`, `ask yes or no` (asking again until the answer fits), `as money`, `as a percent`, and `try to read file ... if that fails` (input from `tip_calculator.in`) |
+| [groceries.es](programs/groceries.es) | A request in one sentence: `I want to make a new file called "groceries.txt", then write "milk" in file it, then add "eggs" and "bread" to the end of file it, one per line, and then show me what's in it.` |
+| [budget.es](programs/budget.es) | A budget from a csv file: `read the table in "spending.csv" and call it purchases`, `a purchase is big if ...`, `how many purchases there are`, totals `as money`, totals per category `as a table`, `sorted by amount biggest first` |
+| [gradebook.es](programs/gradebook.es) | Questions and totals: `how many students whose score is at least 60`, `the average score of students`, `the median`, `the student with the highest score`, `any`/`every`/`no`, `the top 3 students by score`, `the average score of students per class, sorted biggest first` (see [Questions and totals](../docs/language-guide.md#21-questions-and-totals)) |
+| [best_months.es](programs/best_months.es) | Steps in a row (English pass part 4): `read the table in "sales.csv", then total the amount per month, then sort it biggest first, then save it as "best months.csv", and then make a bar chart of it called "best months.svg"` (see [Talking to it](../docs/language-guide.md#23-talking-to-it)) |
+| [shipping.es](programs/shipping.es) | Choices without if: a shipping calculator with tables (`the base price of a parcel depends on its weight:`), describing words (`a parcel is heavy if ...`), values (`a parcel's price is ...`), rules (`a weight must be between 0 and 70.`), a named value and defaults (see [Choices without if](../docs/language-guide.md#22-choices-without-if)) |
+| [coffee_shop.es](programs/coffee_shop.es) | The coffee shop from the English pass plan (without its web parts): drink prices by a table, describing words, values, rules, `set every big order's discount to 10`, questions, `per size, sorted biggest first`, and an evening report with `every day at 9pm:` |
+| [order_report.es](programs/order_report.es) | The sales report from the English pass plan, with questions: `read the table in "orders.csv" and call it orders`, `an order's profit is its amount minus its cost`, big orders counted, profit per customer, the best customer, totals per region, and `if every order's profit is above 0` |
+| [taste.es](programs/taste.es) | The README's bigger example: a loop and a function |
+
+### Every feature
+
+One program per part of the language, roughly in the order of the [language guide](../docs/language-guide.md).
+
+| Example | Shows |
+|---|---|
 | [variables.es](programs/variables.es) | `let`, `add … to`, `increase`, `multiply`, `set` |
-| [text.es](programs/text.es) | Joining text with `and` and `followed by`, `length of`, `as a number` |
+| [text.es](programs/text.es) | Pieces in `say` (`say "Hello,", name, "!"`), values in brackets (`"[name] is [age]."`), `followed by`, `length of`, `as a number` |
 | [logic.es](programs/logic.es) | Comparisons, `and`, `or`, `not` |
 | [decisions.es](programs/decisions.es) | `if`, `otherwise if`, `otherwise`, and the one-line forms |
 | [loops.es](programs/loops.es) | Counting up and down, `repeat ... times`, `while`, `skip this one`, `stop the loop`, `it` |
@@ -19,7 +40,6 @@ Small programs, one per feature. **Every example is checked by `make test`** aga
 | [tax.es](programs/tax.es) | A constant (`keep tax_rate as 0.2`) used by a function |
 | [factorial.es](programs/factorial.es) | A function that calls itself |
 | [fibonacci.es](programs/fibonacci.es) | Recursion with two calls, and joining results into one line |
-| [taste.es](programs/taste.es) | The README's bigger example: a loop and a function |
 | [fizzbuzz.es](programs/fizzbuzz.es) | A function with several `give back`s, used in a loop |
 | [guessing_game.es](programs/guessing_game.es) | `ask` in a loop, `if`/`otherwise if`, constants (input from `guessing_game.in`) |
 | [notes.es](programs/notes.es) | Writing, appending, and reading back a file, and its length |
@@ -44,9 +64,12 @@ Small programs, one per feature. **Every example is checked by `make test`** aga
 | [json/](programs/json/main.es) | A JSON parser and printer written in EasyScript (`json.es`: kinds with variants for values, maps, lists and text tools; errors with their line and column), tested by `main.es` on the documents sent to it in `main.in` (`the text sent to the program`) |
 | [sales_report.es](programs/sales_report.es) | CSV files: writes a sales.csv (if there isn't one), reads it (`read csv file ... and call it`), totals each region with a map, and saves a report (`save ... as csv file`) |
 | [orders.es](programs/orders.es) | Dates in records: orders with a day each, this month's orders (`is in this month`), totals per month in a map, the earliest and latest (`the smallest of`, `the biggest of`), and sorting by date (`sort ... by`) |
+| [counter.es](programs/counter.es) | Functions as values that share a name they use (closures): counters made by a function, each keeping its own count (see [Functions as values](../docs/language-guide.md#15-functions-as-values)) |
+| [event_handlers.es](programs/event_handlers.es) | A map from event names to functions, called with `call ... with` |
+| [pipeline.es](programs/pipeline.es) | Built-ins that take a function: a sales report with `apply`, `keep only`, `combined using` and `sort ... by` |
+| [zoo.es](programs/zoo.es) | An interface (`something that can speak is anything with:`) with dogs, cats and birds in one list (see [Interfaces](../docs/language-guide.md#16-interfaces)) |
 | [pets.es](programs/pets.es) | Records: a dog and a cat with methods of the same name (`speak`, `describe`); each call picks the one for its record's kind |
 | [million_lines.es](programs/million_lines.es) | A million lines of text made one at a time, in flat memory (see [memory](../docs/memory.md)) |
-| [ask_name.es](programs/ask_name.es) | `ask … and call the answer …` (input from `ask_name.in`) |
 | [files.es](programs/files.es) | `write`, `append`, and `read file` |
 | [err_divide_by_zero.es](programs/err_divide_by_zero.es) | A runtime error: "Line 3: You divided by zero." |
 

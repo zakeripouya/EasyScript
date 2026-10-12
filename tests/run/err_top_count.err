@@ -1,0 +1,3 @@
+Line 3: How many to take has to be a whole number, 0 or more, but it's 1.5.
+    say the top n scores.
+            ^^^^^^^^^^^^

@@ -51,7 +51,8 @@ static const char *header(Checker *c, const Function *f, size_t marked, Type mar
             sb_appendf(&sb, "%s %s ", first && !def->as.function.can ? "," : "",
                        def->as.function.intro ? def->as.function.intro : "with");
         }
-        if (i > first) sb_append(&sb, " and ");
+        const char *joiner = i < def->as.function.joiners.len ? def->as.function.joiners.items[i] : NULL;
+        if (i > first) sb_appendf(&sb, " %s ", joiner ? joiner : "and");
         sb_append(&sb, def->as.function.params.items[i].display);
         Type kind = i == marked ? mark : def->as.function.declared.items[i];
         if (kind != TYPE_UNKNOWN) sb_appendf(&sb, " (%s)", kind_words(c, kind));
@@ -146,11 +147,32 @@ static bool same_record_kind(Checker *c, TypeVar left, TypeVar right) {
     return (type_is_record(l) || type_is_sum(l)) && type_present(l) == type_present(r);
 }
 
+// "if rex is loyal" where nothing says what "loyal" means (or makes a name "loyal").
+static bool report_unknown_adjective(Checker *c, const Expr *expr, TypeVar left) {
+    const Expr *right = expr->as.binary.right;
+    Type kind = types_of(c, left);
+    if (right->kind != EXPR_NAME || right->module || strchr(right->as.name, ' ')) return false;
+    if (!(type_is_record(kind) || type_is_sum(kind))) return false;
+    const char *name = right->as.name;
+    if (checker_find_made(c, name) || checker_find_later(c, name) || checker_find_constant(c, name) ||
+        checker_find_function(c, name)) {
+        return false;
+    }
+    const char *what = checker_type_name(c, type_present(kind));
+    diag_error(c->diag, right->pos.span, "I don't know what \"%s\" means for %s.", right->display, what);
+    diag_note(c->diag, "Say what it means, like \"%s is %s if ...\".", what, right->display);
+    diag_info(c->diag, DIAG_UNKNOWN, arena_sprintf(c->arena, "what \"%s\" means", right->display), NULL);
+    return true;
+}
+
 static TypeVar check_binary(Checker *c, const Expr *expr) {
     BinaryOp op = expr->as.binary.op;
     TypeVar result;
     if (checker_check_nothing_test(c, expr, &result)) return result;
     TypeVar left = checker_check_expr(c, expr->as.binary.left);
+    if ((op == BINARY_EQUAL || op == BINARY_NOT_EQUAL) && report_unknown_adjective(c, expr, left)) {
+        return types_new(c, TYPE_ERROR, expr->pos.line);
+    }
     size_t outer = c->present.len;  // "x is not nothing and x's age is 3": the right side knows x isn't nothing
     if (op == BINARY_AND || op == BINARY_OR) checker_narrow_condition(c, expr->as.binary.left, op == BINARY_AND);
     TypeVar right = checker_check_expr(c, expr->as.binary.right);
@@ -218,7 +240,41 @@ static TypeVar check_unary(Checker *c, const Expr *expr) {
 
 // "it" is the number of the innermost loop that has one (count and times
 // loops), or the item of a for-each loop (or of "every" and "only").
+static TypeVar check_name(Checker *c, const Expr *expr);
+
+// "it" in a step after ", then" (its display is the step before's hidden
+// name): that name, unless a loop's or question's item could be meant too.
+static bool check_step_it(Checker *c, const Expr *expr, TypeVar *result) {
+    if (!expr->display) return false;
+    bool item = false;
+    for (size_t i = 0; i < c->loops.len; i++) item |= c->loops.items[i].has_it;
+    if (!*expr->display) {
+        diag_error(c->diag, expr->pos.span, "The sentence before this one doesn't give anything that \"it\" could mean.");
+        diag_note(c->diag, "Use a name instead, or say it in the sentence before, like \"total the amount per month "
+                           "and call it totals\".");
+        diag_info(c->diag, DIAG_UNKNOWN, "what \"it\" means", NULL);
+    } else if (item) {
+        diag_error(c->diag, expr->pos.span, "\"it\" could mean what the sentence before gave, or the item here.");
+        diag_note(c->diag, "Use a name instead: end the sentence before with \"and call it ...\", or say the item's "
+                           "name.");
+        diag_info(c->diag, DIAG_TWO_MEANINGS, "which \"it\" is meant", NULL);
+        diag_choice(c->diag, "what the sentence before gave");
+        diag_choice(c->diag, "the item here");
+    } else {
+        Expr *e = (Expr *)expr;
+        e->kind = EXPR_NAME;
+        e->as.name = expr->display;
+        e->display = "it";
+        *result = check_name(c, e);
+        return true;
+    }
+    *result = error_var(c);
+    return true;
+}
+
 static TypeVar check_it(Checker *c, const Expr *expr) {
+    TypeVar step;
+    if (check_step_it(c, expr, &step)) return step;
     for (size_t i = c->loops.len; i > 0; i--) {
         if (c->loops.items[i - 1].has_it) return c->loops.items[i - 1].it;
     }
@@ -273,7 +329,27 @@ static void report_argument_count(Checker *c, const Function *f, size_t given, S
 }
 
 // An argument of the wrong kind: says why the input has its kind.
+// "if product is best" where only customers say what "best" means.
+static bool report_other_kind(Checker *c, const Function *f, const Expr *arg, TypeVar given) {
+    int defines = f->definition->as.function.defines;
+    Type wanted = types_of(c, f->params.items[0]), kind = types_of(c, given);
+    if (!defines || !(type_is_record(kind) || type_is_sum(kind))) return false;
+    const char *mine = checker_type_name(c, wanted), *other = checker_type_name(c, type_present(kind));
+    if (defines == DEFINES_ADJECTIVE) {
+        const char *word = f->name + 3;  // "is best"
+        diag_error(c->diag, arg->pos.span, "I know what \"%s\" means for %s, but not for %s.", word, mine, other);
+        diag_note(c->diag, "Say what it means, like \"%s is %s if ...\".", other, word);
+    } else {
+        const char *field = f->display;
+        diag_error(c->diag, arg->pos.span, "I know how to work out %s's %s, but not %s's.", mine, field, other);
+        diag_note(c->diag, "Say how, like \"%s's %s is ...\".", other, field);
+    }
+    diag_info(c->diag, DIAG_UNKNOWN, "what it means for this kind", NULL);
+    return true;
+}
+
 static void report_argument_kind(Checker *c, const Function *f, size_t i, const Expr *arg, TypeVar given) {
+    if (i == 0 && report_other_kind(c, f, arg, given)) return;
     const Stmt *def = f->definition;
     const char *param = def->as.function.params.items[i].display;
     Type wanted = types_of(c, f->params.items[i]);
@@ -496,9 +572,17 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_CONVERT: {
         TypeVar operand = checker_check_expr(c, expr->as.convert.operand);
         if (expr->as.convert.target == CONVERT_TO_TEXT) return types_new(c, TYPE_TEXT, line);
-        if (expr->as.convert.target == CONVERT_TO_EXACT_TEXT) {
+        if (expr->as.convert.target == CONVERT_TO_TABLE) {
+            types_defer_one_of(c, expr->as.convert.operand, operand, operand, KIND_LIST | KIND_MAP,
+                               "\"as a table\" needs a list or a map");
+            return types_new(c, TYPE_TEXT, line);
+        }
+        if (expr->as.convert.target >= CONVERT_TO_EXACT_TEXT) {  // and "as money", "as a percent", "with commas"
+            static const char *const names[] = {"as exact text", "as money", "as a percent", "with commas"};
             size_t before = diag_count(c->diag);
-            checker_require(c, operand, TYPE_NUMBER, expr->as.convert.operand, "\"as exact text\" needs a number",
+            checker_require(c, operand, TYPE_NUMBER, expr->as.convert.operand,
+                            arena_sprintf(c->arena, "\"%s\" needs a number",
+                                          names[expr->as.convert.target - CONVERT_TO_EXACT_TEXT]),
                             NULL);
             if (diag_count(c->diag) > before) diag_info(c->diag, DIAG_WRONG_KIND, NULL, "a number");
             return types_new(c, TYPE_TEXT, line);
@@ -524,6 +608,9 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_FUNCTION_REF: return checker_check_function_ref(c, expr);
     case EXPR_LAMBDA: return checker_check_lambda(c, expr);
     case EXPR_APPLY: return checker_check_apply(c, expr);
+    case EXPR_AGGREGATE: return checker_check_aggregate(c, expr);
+    case EXPR_DEFAULT: return checker_check_default(c, expr);
+    case EXPR_TABLE: return checker_check_table(c, expr);
     case EXPR_LIBRARY: return checker_check_library(c, expr);
     case EXPR_ERROR: return error_var(c);
     }

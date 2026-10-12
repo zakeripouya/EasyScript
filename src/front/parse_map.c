@@ -72,7 +72,11 @@ static Expr *parse_entry_part(Parser *p) {
         }
         return parser_error_expr(p);
     }
-    return parse_join(p);
+    bool outer = p->in_items;
+    p->in_items = true;
+    Expr *part = parse_join(p);
+    p->in_items = outer;
+    return part;
 }
 
 // map of K to V, K to V and K to V: commas separate entries until the first
@@ -91,7 +95,7 @@ static Expr *parse_map_literal(Parser *p) {
         map->pos = ast_pos_join(map->pos, value->pos);
         if (parser_at_and(p)) {
             after_and = true;
-        } else if (after_and || !parser_at(p, 0, TOK_COMMA)) {
+        } else if (after_and || !parser_at(p, 0, TOK_COMMA) || parser_at_step_link(p)) {
             return map;
         }
         parser_advance(p);
@@ -186,7 +190,9 @@ Expr *parser_parse_lookup(Parser *p) {
     parser_consume(p, 2);  // , or
     lookup->as.lookup.fallback = parse_unary(p);
     lookup->pos = ast_pos_join(lookup->pos, lookup->as.lookup.fallback->pos);
-    return p->sentence_failed ? lookup : reject_ambiguous_fallback(p, lookup);
+    if (p->sentence_failed) return lookup;
+    parser_skip_if_none(p);
+    return reject_ambiguous_fallback(p, lookup);
 }
 
 // --- Questions --------------------------------------------------------------------
@@ -211,4 +217,33 @@ Expr *parser_parse_map_word(Parser *p) {
     if (parser_match_words(p, "values of")) return parse_map_prefix(p, 2, LIST_VALUES);
     if (parser_match_words(p, "number of entries in")) return parse_map_prefix(p, 4, LIST_ENTRIES);
     return NULL;
+}
+
+// --- Sentences --------------------------------------------------------------------
+
+// ", starting at S" after a change of a map's value ("add 1 to the value
+// for word in counts, starting at 0"): a missing key starts as S. True if
+// there's none, or it was parsed.
+bool parser_parse_starting_at(Parser *p, Stmt *stmt) {
+    size_t comma = parser_at(p, 0, TOK_COMMA) ? 1 : 0;
+    if (!parser_match_words_at(p, comma, "starting at")) return true;
+    Span at = parser_consume(p, comma + 2);
+    const Expr *field = stmt->as.change.field;
+    if (!field || field->kind != EXPR_MAP_GET) {
+        if (parser_error(p, at, "\"starting at\" only works with a value in a map.")) {
+            diag_note(p->diag, "Write it like \"add 1 to the value for word in counts, starting at 0\": a key that isn't "
+                               "there yet starts at 0.");
+            diag_info(p->diag, DIAG_NOT_ALLOWED, "a value in a map", NULL);
+        }
+        return false;
+    }
+    if (parser_at_sentence_end(p)) {
+        if (parser_error(p, at, "Something is missing after \"starting at\".")) {
+            diag_note(p->diag, "Say what a missing value starts at, like \"starting at 0\".");
+            diag_info(p->diag, DIAG_MISSING, "a starting value", NULL);
+        }
+        return false;
+    }
+    stmt->as.change.start = parse_unary(p);
+    return !p->sentence_failed;
 }

@@ -15,7 +15,7 @@ Alongside the phases:
 | Feature | When | Status |
 |---|---|---|
 | [EasyScript Notebook](#easyscript-notebook) | After Phase 1; grows with Phase 4 | Planned |
-| [Browser playground](#browser-playground) | Right after v0.2.0 | Planned |
+| [Browser playground](#browser-playground) | After Phase 3 (playground lite comes before v0.2.0 for testing) | Planned |
 | [Going public](#going-public) | Before the first public release | Planned |
 
 ## Phase 1: Core language
@@ -140,7 +140,7 @@ It builds on the interactive shell, which reruns the whole session for each entr
 
 ## Browser playground
 
-**Status: Planned,** right after v0.2.0. The C compiler is compiled to WebAssembly, so EasyScript runs in a browser tab with nothing to install.
+**Status: Planned,** after Phase 3 (playground lite comes before v0.2.0 for testing). The C compiler is compiled to WebAssembly, so EasyScript runs in a browser tab with nothing to install.
 
 - **Templates** to start from
 - **"Explain this program"** and **"why is X N?"**, answered from the program itself
