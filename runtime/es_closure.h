@@ -94,7 +94,7 @@ static void es_list_replace(EsList *l, EsList *items) {
      * over instead made macOS keep both: the peak went from 36 to 100 MB). */
     l->len = 0;
     es_list_reserve(l, items->len);
-    memcpy(l->at.any, items->at.any, items->len * es_item_size(l->items));
+    if (items->len > 0) memcpy(l->at.any, items->at.any, items->len * es_item_size(l->items)); /* (an empty list may have no items block) */
     l->len = items->len;
     if (es_items_counted(l->items)) { /* items keeps its own references until it's released */
         for (size_t i = 0; i < l->len; i++) {
