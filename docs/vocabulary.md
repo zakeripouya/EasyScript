@@ -718,6 +718,7 @@ Number keys are the same key when they're the same to 12 significant digits, so 
 | Pattern | Meaning | Example |
 |---|---|---|
 | `for each K and V in M:` + indented lines | Run the lines once for each entry, in order, with K (and `it`) the key and V its value. Goes through the entries the map had when it started | `for each name and age in ages:` |
+| `for each K and its V in M:` | The same, read as English: the value's name is V. In a program that also writes `its V` elsewhere, the name stays `its V`, as before | `for each class and its average in the average score of students per class:` |
 
 A map needs both names; `for each name in ages:` is an error that suggests `for each name in the keys of ages:`.
 

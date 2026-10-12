@@ -42,7 +42,7 @@ say "Big orders:", how many orders are big.
 say "Money made:", the total bill of orders.
 say "Biggest order:", the biggest order's customer, "(", the biggest order's bill, ")".
 let sold drinks be a list of latte, tea, mocha, mocha, latte and tea.
-for each size and count in the number of sold drinks per size, sorted biggest first:
+for each size and its count in the number of sold drinks per size, sorted biggest first:
     say "  [size]:", count, "sold".
 
 let names be a list of "latte", "tea", "mocha", "mocha", "latte" and "mocha".

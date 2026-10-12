@@ -1503,7 +1503,7 @@ for each name and age in ages:
     say name followed by " is " followed by age.
 ```
 
-The loop names each key and its value, in the map's order. Inside it, `it` is the key. Like a list's loop, it goes through the entries the map had when it started, so changing the map inside the loop doesn't change what it visits. A map always needs both names; to go through only the keys, write `for each name in the keys of ages:`.
+The loop names each key and its value, in the map's order (`for each name and its age in ages:` reads the same way, with the value called `age`). Inside it, `it` is the key. Like a list's loop, it goes through the entries the map had when it started, so changing the map inside the loop doesn't change what it visits. A map always needs both names; to go through only the keys, write `for each name in the keys of ages:`.
 
 ### Sharing and copying
 

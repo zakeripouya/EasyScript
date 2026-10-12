@@ -24,5 +24,5 @@ for each student in the top 3 students by score:
     say student's name, student's score, indented.
 
 say "Average per class:".
-for each class and average in the average score of students per class, sorted biggest first:
+for each class and its average in the average score of students per class, sorted biggest first:
     say class, average rounded to 1 decimal place, indented.

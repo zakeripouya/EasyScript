@@ -31,3 +31,4 @@ A doubt that comes up while building goes back into the proposal, not into the p
 - [0010: text in quotes inside brackets](0010-quotes-in-brackets.md) (Built)
 - [0011: put the text below in a file](0011-text-below-in-files.md) (Built)
 - [0012: say X, indented](0012-indented.md) (Built)
+- [0013: for each K and its V](0013-each-and-its.md) (Built)

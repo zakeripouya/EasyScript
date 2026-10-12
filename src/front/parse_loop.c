@@ -39,6 +39,20 @@ static Expr *count_value(Parser *p) {
 }
 
 // A to B [by S | in steps of S], after "from".
+// "for each class and its average in ...": "its" reads as English and the
+// name is "average", unless the program also writes "its average" somewhere
+// else (then "its average" is the name, as it always was).
+static bool its_is_dropped(const Parser *p) {
+    if (!parser_at_word(p, 0, "its") || !parser_is_name_word(parser_peek(p, 1))) return false;
+    const char *next = parser_peek(p, 1)->text;
+    size_t uses = 0;
+    for (size_t i = 0; i + 1 < p->count; i++) {
+        const Token *a = &p->tokens[i], *b = &p->tokens[i + 1];
+        uses += a->kind == TOK_WORD && b->kind == TOK_WORD && strcmp(a->text, "its") == 0 && strcmp(b->text, next) == 0;
+    }
+    return uses == 1;
+}
+
 static bool parse_range(Parser *p, Stmt *stmt, const char *example) {
     static const char *const to[] = {"to", NULL};
     stmt->as.loop.from = count_value(p);
@@ -111,6 +125,7 @@ static bool parse_for_each(Parser *p, Stmt *stmt) {
     if (!parser_expect_word(p, from_in, example)) return false;
     if (strcmp(p->tokens[p->pos - 1].text, "and") == 0) {  // for each name and age in ages
         stmt->as.loop.pair = true;
+        if (its_is_dropped(p)) parser_advance(p);  // for each class and its average in ...
         if (!parser_parse_name(p, &stmt->as.loop.value_name, in) ||
             !parser_expect_word(p, in, "for each name and age in ages:")) {
             return false;

@@ -18,7 +18,7 @@ say "Big orders:", how many orders have an amount of more than 1000.
 let best be the customer with the highest total profit.
 say "Best customer: [best] ([the total profit of the orders whose customer is best] profit)".
 
-for each region and total in the total amount of orders per region:
+for each region and its total in the total amount of orders per region:
     say "[region]:", total.
 
 if every order's profit is above 0, say "Every order made money.".
