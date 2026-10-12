@@ -21,3 +21,4 @@ A doubt that comes up while building goes back into the proposal, not into the p
 
 - [0001: inputs in the middle of a definition's first line](0001-inputs-in-the-middle.md) (Built)
 - [0002: yes/no fields as describing words, and one-line choices](0002-yes-no-fields-and-choices.md) (Built)
+- [0003: adding with a condition, and values read like fields](0003-values-read-like-fields.md) (Built)

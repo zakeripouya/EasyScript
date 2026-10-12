@@ -748,7 +748,7 @@ A field written as yes or no (`can be WORD`, `a fragile (yes or no)`) reads the 
 
 | Pattern | Meaning | Example |
 |---|---|---|
-| `KIND's FIELD is VALUE.` | A value every KIND has, worked out from it whenever it's used (`it`, `its`, `their` are the record): `rex's FIELD`, `the FIELD of rex`, `its FIELD`, `whose FIELD`, `the total FIELD of L` all work. Same as `to the FIELD, for a KIND: give back VALUE` | `an order's profit is its amount minus its cost.` |
+| `KIND's FIELD is VALUE.` | A value every KIND has, worked out from it whenever it's used (`it`, `its`, `their` are the record): `rex's FIELD`, `the FIELD of rex`, `its FIELD`, `whose FIELD`, `the total FIELD of L`, `L sorted by FIELD` and `the ITEM with the highest FIELD` all work, as they do for a field (and for a table's `the FIELD of a KIND depends on X:`). Same as `to the FIELD, for a KIND: give back VALUE` | `an order's profit is its amount minus its cost.` |
 | `the NAME is the one with the highest FIELD.` | A named value: wherever `the NAME` is used, it means `the ITEM with the highest FIELD`, ITEM the last word of NAME (and its list the plural, like `for each score:`). Also `lowest`, `most`, `fewest`, ... | `the best customer is the one with the highest profit.` |
 | `the NAME are the ones whose ... .` / `... that ... .` / `... where ... .` | A named list: the items of the list named by NAME's last word that the filter keeps | `the big orders are the ones whose amount is over 1000.` |
 

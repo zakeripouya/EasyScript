@@ -61,6 +61,7 @@ static bool sorts_by_field(Checker *c, const Expr *expr) {
         return false;
     }
     if (checker_field_owner(c, f->as.name)) return true;  // some kind has a field with that name
+    if (checker_find_function(c, arena_sprintf(c->arena, "the %s", f->as.name))) return true;  // or a value like one
     for (size_t i = 0; i < c->records->len; i++) {  // or the program reads a table, whose columns could be
         const Stmt *definition = c->records->items[i].definition;
         if (definition && definition->as.record.fields.len > 0 &&

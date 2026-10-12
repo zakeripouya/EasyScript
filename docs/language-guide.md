@@ -2327,7 +2327,7 @@ say o's profit, the profit of o.
 say the best customer's name.
 ```
 
-A value like `profit` is worked out each time it's used, from the record it belongs to, so it's always up to date with the record's fields. A named value (`the best customer`) means its words, worked out where it's used: `the customer with the highest profit`, going through `customers`.
+A value like `profit` is worked out each time it's used, from the record it belongs to, so it's always up to date with the record's fields. It reads like a field everywhere: `its profit`, `the profit of o`, `the orders sorted by profit`, `the order with the highest profit`, and so does a value defined by a table (`the extra of a parcel depends on its country:`), so a definition can say `its base price plus its extra` with no parentheses. A named value (`the best customer`) means its words, worked out where it's used: `the customer with the highest profit`, going through `customers`.
 
 ### Tables
 
