@@ -2,7 +2,7 @@
 
 Every phrase here works without `use`: they're sentence forms with their own words, not names a program could clash with. The few that are names (`pi`, `today`, `tomorrow`, `yesterday`) mean the library's value only where the program hasn't made that name itself. All of it is **Available**. The exact meaning of each phrase is given in core-language terms where it has one.
 
-The library is written in C inside the runtime (`runtime/es_math.h`, `es_time.h`, `es_files.h`, `es_csv.h`): random numbers, the clock, files and folders need the system, and the math and csv parts are a few lines of C each that would be much slower written in EasyScript (the csv benchmark reads 100,000 rows; see [performance](performance.md)).
+The library is written in C inside the runtime (`runtime/es_math.h`, `es_time.h`, `es_files.h`, `es_csv.h`, `es_keys.h`, `es_system.h`): random numbers, the clock, files and folders need the system, and the math and csv parts are a few lines of C each that would be much slower written in EasyScript (the csv benchmark reads 100,000 rows; see [performance](performance.md)).
 
 ## Math
 
@@ -90,3 +90,59 @@ Mistakes name the file and its line: "In sales.csv, line 14 has 3 values, but th
 | Phrase | Example | Meaning |
 |---|---|---|
 | `clear the screen.` | `clear the screen.` | Clears the terminal and puts the cursor at the top. When the output goes to a file or another program instead, it does nothing |
+
+## System tools
+
+How a program talks to whoever (or whatever) started it: the words it was started with, text sent to it, settings, other programs, the error output and its exit code.
+
+### What the program is given
+
+| Phrase | Gives | Example | Meaning |
+|---|---|---|---|
+| `the words given to the program` | a new list of text | `./greet Paris 19` gives `Paris` and `19` | The words after the program's name when it was started (`easyscript run greet.es Paris 19` or `./greet Paris 19`), each exactly as the terminal passed it on (quotes keep spaces in one word: `"New York"`) |
+| `the number of words given to the program` | a number | `if the number of words given to the program is 0:` | `the number of items in the words given to the program` |
+| `word N given to the program` | text | `word 1 given to the program` | `item N of the words given to the program`, with its own error: "There's no word 2: the program was given 1 word." |
+| `the text sent to the program` | text | `./count < notes.txt`, `ls \| ./count` | Everything sent to the program (a file given with `<`, or another program's output with `\|`) that `ask` hasn't read yet, without its last new line. It's read the first time it's used; later uses give the same text, and `ask` gets empty text. Typed at a terminal, it waits until Ctrl+D |
+| `the lines sent to the program` | a list of text | `for each line in the lines sent to the program:` | `the lines of (the text sent to the program)` |
+| `the setting called X` | text or nothing | `the setting called "HOME"` | The environment setting X (like `HOME`, `PATH` or `LANG`), or nothing if it isn't set. Check it before using it: `if home is not nothing:` |
+
+### Running other programs
+
+| Phrase | Example | Meaning |
+|---|---|---|
+| `run P.` / `run P with A, B and C.` | `run "git" with "status".` | Starts the program P with the words A, B and C, and waits for it to finish. Its output and error output are shown as it prints them. If it doesn't work (its code isn't 0), this program stops: ""git" didn't work: it finished with code 128." |
+| `run P with ... and call the result R.` (or `and call it R`) | `run "git" with "status" and call the result r.` | The same, but nothing is shown: R is a program result, holding what it printed and its code, and the program carries on either way |
+| `R's output` / `R's error output` | `say r's output` | Text: everything it printed (to its output, or to its error output), without the last new line |
+| `R's code` | `say r's code` | A number from 0 to 255: what it said when it finished (0 means it worked). A program stopped by a signal (like Ctrl+C) has 128 plus the signal's number |
+| `R worked` / `R didn't work` (or `R did not work`) | `if r worked:` | `R's code is 0` / `R's code is not 0` |
+
+P is text: a program's name, found the way a terminal finds it (in the folders listed in the `PATH` setting), or a path with a `/` in it (`"./tool"`, `"/bin/ls"`). Each word after `with` is text, a number (turned into text, like `as text`) or a list of text (each item is one word); they're separated by `and` or commas, and given to P exactly as they are. **No shell is involved**: spaces, quotes, `;`, `|`, `$`, `*` and `~` in a word are just characters of that word, so text from a user can't run anything else. To use a shell's features on purpose, run it: `run "sh" with "-c" and "ls | wc -l"`.
+
+A program result is a kind of record the language defines: `a program result with output "hi", error output "" and code 0` when printed, `(a program result)` in a definition. A program can't define its own kind called `program result` and also use `run ... and call the result`.
+
+Errors: "I couldn't find a program called "gti"." (with a hint to check the name, and that a program in this folder is run as `"./tool"`), "I couldn't run "./notes.txt": it isn't a program I'm allowed to run.", "The name of the program to run is empty."
+
+### The error output and finishing
+
+| Phrase | Example | Meaning |
+|---|---|---|
+| `complain X.` | `complain "I need a file name."` | Like `say X`, but to the error output: a terminal shows it, but `./app > out.txt` doesn't put it in the file, and another program reading the output doesn't get it. What's been said before it is shown first |
+| `stop the program, saying it failed.` (the comma is optional) | `stop the program, saying it failed.` | `stop the program`, telling whoever started it that it didn't work: its code is 1 |
+| `stop the program with code N.` | `stop the program with code 2.` | `stop the program` with the code N: a whole number from 0 (it worked) to 255 ("The code has to be a whole number from 0 to 255, but it's 256.") |
+
+A program that ends normally (or with plain `stop the program`) has the code 0, and one stopped by a mistake while it runs has the code 1. Shells show the code as `$?`; `&&` runs the next command only when it's 0.
+
+## The keyboard
+
+| Phrase | Gives | Example | Meaning |
+|---|---|---|---|
+| `wait for a key and call it K.` (or `call the answer K`) | (a sentence): text | `wait for a key and call it key.` | Shows what's been printed, then waits for one key, without Enter, and makes K (or changes it) to the key's name |
+| `the key being pressed` | text or nothing | `let key be the key being pressed` | A key that has been pressed and not read yet, without waiting; nothing if there isn't one. Keys are read in the order they were pressed |
+
+Keys have plain names: `"up"`, `"down"`, `"left"`, `"right"`, `"enter"`, `"escape"`, `"space"`, `"tab"`, `"backspace"`, `"delete"`, `"home"`, `"end"`, `"page up"`, `"page down"`, `"insert"`. Any other key is the character it types, so `"a"` and `"A"` (with Shift) are different keys, and so are `"7"` and `"?"`. Keys with no name (like F5) are skipped, and so is Ctrl with a letter, except Ctrl+C, which stops the program as always.
+
+On a terminal, the keyboard needs the terminal's key-at-a-time mode: the first key read turns it on, so keys aren't shown as they're typed and don't wait for Enter. It stays on until the program ends, asks for a line with `ask` (which needs the normal mode, so it turns it off), or runs another program. However the program ends, normally, with a mistake while it runs, or with Ctrl+C, the terminal is put back the way it was.
+
+When the keys come from a file or another program instead of a terminal (`./game < keys.txt`), they're read from it the same way, one at a time: a new line is `"enter"`. `the key being pressed` is then simply the next key, and nothing once they've all been read; `wait for a key` with none left is an error ("There's no key to wait for: the keys sent to the program have run out.").
+
+The keyboard works on macOS and Linux. Windows will get it with the Windows port (see the [roadmap](roadmap.md#going-public)); until then, use WSL.

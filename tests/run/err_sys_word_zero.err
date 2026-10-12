@@ -1,0 +1,4 @@
+Line 2: There's no word 0: the program was given 2 words.
+    say word position given to the program
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Positions start at 1: the first word is word 1.

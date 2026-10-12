@@ -203,6 +203,9 @@ Reading a file inside an expression also works: `contents of file X` ([Built-in 
 | Pattern | Meaning | Example | Status |
 |---|---|---|---|
 | `stop the program` | End the program right away | `stop the program` | Available |
+| `stop the program, saying it failed` (the comma is optional) | End it, telling whoever started it that it didn't work (code 1) | `stop the program, saying it failed.` | Available |
+| `stop the program with code N` | End it with the code N, a whole number from 0 (it worked) to 255 | `stop the program with code 3.` | Available |
+| `complain X` | Write X and a new line to the error output instead of the normal output | `complain "I need a file name."` | Available |
 
 ## Decisions
 
@@ -726,6 +729,31 @@ All of these are **Available**, without `use`. Each is described with its exact 
 
 `wait`, `shuffle`, `save` and `put` start sentences, so they can't be the one-word name of a function. `make`, `rename`, `copy`, `move`, `delete`, `clear` and `read` only mean these sentences with the words after them (`delete the file`, `clear the screen`), so `to rename, for a dog:` still works. `pi`, `today`, `tomorrow` and `yesterday` are the library's only where the program hasn't made those names.
 
+## System tools
+
+All of these are **Available**, without `use`. Exact meanings are in [stdlib.md](stdlib.md#system-tools).
+
+| Pattern | Gives | Example |
+|---|---|---|
+| `the words given to the program` | a list of text | `easyscript run greet.es Paris 19` gives `Paris` and `19` |
+| `the number of words given to the program` | a number | `if the number of words given to the program is 0:` |
+| `word N given to the program` | text | `word 1 given to the program` |
+| `the text sent to the program` | text | `echo hi \| ./app`: everything sent (piped) to it, after any `ask` |
+| `the lines sent to the program` | a list of text | `for each line in the lines sent to the program:` |
+| `the setting called X` | text or nothing | `the setting called "HOME"` (an environment setting) |
+| `run P.` / `run P with A and B.` | (a sentence) | `run "git" with "status".`: runs the program P with those words, showing its output; the program stops if it doesn't work |
+| `run P with A and B and call the result NAME.` / `... and call it NAME.` | (a sentence): a program result | `run "git" with "status" and call the result r.` |
+| `R's output`, `R's error output`, `R's code` | text, text, a number | `say r's output` |
+| `R worked`, `R didn't work`, `R did not work` | yes/no | `if r worked:` |
+| `complain X.` | (a sentence) | `complain "That file is missing."` |
+| `stop the program, saying it failed.`, `stop the program with code N.` | (a sentence) | `stop the program with code 2.` |
+| `wait for a key and call it NAME.` (or `call the answer NAME`) | (a sentence): text | `wait for a key and call it key.` |
+| `the key being pressed` | text or nothing | `let key be the key being pressed` |
+
+Keys are named in plain words: `"up"`, `"down"`, `"left"`, `"right"`, `"enter"`, `"escape"`, `"space"`, `"tab"`, `"backspace"`, `"delete"`, `"home"`, `"end"`, `"page up"`, `"page down"`, `"insert"`; any other key is the character it types (`"a"`, `"A"`, `"7"`, `"?"`).
+
+`word given to the program` without a position is an error that asks which word. The words after `with` are each text, a number (turned into text) or a list of text, separated by `and` or commas. `run` and `complain` only start these sentences where the program hasn't defined a function with that name. `program result` is a kind of record the language defines, only in programs that use it: `(a program result)` works in definitions.
+
 ## Kinds of values
 
 Every value has a kind, worked out by the compiler before the program runs (**Available**). Kind mistakes are compile errors with the line and a caret. See the [language guide](language-guide.md#9-types).
@@ -744,6 +772,7 @@ Every value has a kind, worked out by the compiler before the program runs (**Av
 | map | `(a map from text to numbers)`, `(a map from numbers to lists of text)`, `giving back a map from text to numbers`; in a list or map: `maps from text to numbers` | `a map of ...`, `an empty map from ...`, `a copy of` |
 | interface | `(something that can speak)`, `(a speaker or nothing)`; in a list or map: `things that can speak`, `speakers` | any record or value of a kind with variants that fits it, where one is kept |
 | date | `(a date)`, `giving back a date`; in a list or map: `dates` (`(a list of dates)`, `(a map from text to dates)`) | `today`, `the time now`, `3 days ago`, `the last change of file F`, a field `which is a date` |
+| program result | `(a program result)`; in a list or map: `program results` | `run P ... and call the result NAME` |
 | function | `(a function taking a number and giving back text)`, `(a function taking text)`, `(a function giving back a number)`, `(a function)`; in a list or map: `functions taking text` | `the function double`, `a function taking x ...`, a field or input holding one |
 
 ## Later phases

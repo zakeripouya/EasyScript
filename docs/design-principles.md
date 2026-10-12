@@ -112,6 +112,12 @@ Each exception exists because following the rule would cost more than it gives. 
 - **`pi`, `today`, `tomorrow` and `yesterday` are names, not reserved words:** they mean the library's value only where the program hasn't made the name itself, so programs written before the library still work. Every other library phrase starts with its own words (`the square root of`, `a random number from`, `file F exists`).
 - **File and folder sentences say `file` or `folder`:** `delete the file F`, `the lines of file F`, `add X to the end of file F`. Without the word, `the lines of F` and `add X to the end of F` would mean the text tool or the list sentence, depending on what F is.
 
+- **`run` and `complain` start sentences only where the program hasn't defined a function with that name,** like the file sentences, so programs that already use them as names keep working. `run` is also the compiler's own command (`easyscript run`), but inside a program it only ever means running another program.
+- **"Given" and "sent" are different words on purpose:** `the words given to the program` are what it was started with (`./app Paris 19`), and `the text sent to the program` is what's piped into it (`./app < notes.txt`). Each phrase starts with its own words (`words given`, `text sent`, `lines sent`, `word N given`), and `word` is only special before a position and `given to the program`, so `word` stays an ordinary name.
+- **`R worked` and `R didn't work` are tests without `is`,** because that's how people say it ("if it worked"). They're fixed phrases after a value, like `is a letter`, and only apply to a program result.
+- **`program result` is a kind the language defines,** added only to programs that use `run`, `worked` or the kind's name, so other programs keep the name free. Its fields are read like any record's (`r's output`); a program that defines its own `program result` can't also get one from `run` (an error says so).
+- **`the key being pressed` is a value that changes by itself:** it's whatever key has been pressed and not read yet, so two uses in a row can differ. Like `the time now`, it describes the world when it's worked out.
+
 ## Open questions
 
 None at the moment. Phrasings that may not follow these rules go here until they're decided.

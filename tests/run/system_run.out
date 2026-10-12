@@ -1,0 +1,17 @@
+hello
+0
+it worked
+a; echo b $HOME * 3
+start one two three end
+output: out
+error output: err
+code: 3
+it didn't work
+still didn't
+a program result with output "out", error output "err" and code 3
+two and lines
+shown directly
+0
+3
+fine
+broken

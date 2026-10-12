@@ -41,6 +41,7 @@ static bool expect(Parser *p, const char *words, const char *display, const char
 }
 
 bool parser_at_library_sentence(const Parser *p) {
+    if (parser_at_system_sentence(p)) return true;  // run, complain
     static const char *const starts[] = {
         "make new file", "make new folder", "make folder", "rename file", "rename folder", "copy file",
         "move file", "move folder", "delete file", "delete folder", "clear screen", "read csv file",
@@ -116,6 +117,7 @@ static Stmt *parse_read_csv(Parser *p, const Token *verb) {
 }
 
 Stmt *parser_parse_library_sentence(Parser *p) {
+    if (parser_at_system_sentence(p)) return parser_parse_system_sentence(p);
     const Token *verb = parser_advance(p);
     p->ends_with_name = false;
     const char *word = verb->text;
@@ -142,6 +144,7 @@ Stmt *parser_parse_wait(Parser *p, const Token *verb) {
     } units[] = {{"seconds", 1}, {"second", 1}, {"milliseconds", 0.001}, {"millisecond", 0.001},
                  {"minutes", 60}, {"minute", 60}};
     static const char *const example = "wait 2 seconds";
+    if (parser_match_words(p, "for key")) return parser_parse_wait_key(p, verb);
     Stmt *stmt = new_action(p, DO_WAIT, verb);
     for (size_t i = 0; i < sizeof units / sizeof units[0]; i++) {  // "wait a second": one
         if (!parser_at_word(p, 0, units[i].word)) continue;

@@ -185,7 +185,7 @@ Stmt *parse_loop_control(Parser *p, const Token *verb) {
     if (strcmp(word, "stop") == 0) {
         if (parser_match_words(p, "program")) {
             parser_advance(p);
-            return parser_new_stmt(p, STMT_STOP, verb);
+            return parser_finish_stop(p, parser_new_stmt(p, STMT_STOP, verb));
         }
         if (parser_at_word(p, 0, "loop")) parser_advance(p);
         return parser_new_stmt(p, STMT_BREAK, verb);

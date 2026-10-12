@@ -1,0 +1,6 @@
+Line 2: The code has to be a whole number from 0 to 255, but it's 256.
+        stop the program with code code
+                                   ^^^^
+0 means it worked; any other code means it didn't, and the program that started it decides what each one means.
+while working out "finish" (code was 256)
+called from line 3: finish with 256

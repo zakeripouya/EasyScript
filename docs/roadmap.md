@@ -5,7 +5,7 @@ EasyScript grows in five phases. Each phase ends with working, tested, documente
 | Phase | Focus | Status |
 |---|---|---|
 | [1](#phase-1-core-language) | Core language | **Complete** (v0.1.0, 2026-10-10) |
-| [2](#phase-2-data-and-structure) | Memory, static types, records, lists, maps, kinds with variants, functions as values, interfaces, a standard library start, the English pass | **In progress** (memory, static types, lists, text tools, records, maps, kinds with variants, functions as values, interfaces, modules and the standard library start done) |
+| [2](#phase-2-data-and-structure) | Memory, static types, records, lists, maps, kinds with variants, functions as values, interfaces, a standard library start, the English pass | **In progress** (memory, static types, lists, text tools, records, maps, kinds with variants, functions as values, interfaces, modules, the standard library start, system tools and the keyboard done) |
 | [3](#phase-3-self-hosting) | Self-hosting | Coming soon |
 | [4](#phase-4-real-world-programs) | Standard library, C interop, concurrency, servers | Coming soon |
 | [5](#phase-5-systems-mode) | Systems mode and an operating system | Coming soon |
@@ -89,7 +89,7 @@ Planned. Each will be added with its expected output in the same commit as its f
 - [x] **Interfaces:** `something that can speak is anything with:` and its ways; any kind with matching methods fits, without saying so; interfaces as kinds of inputs, lists, maps and fields; ways called on them pick the method by the value's kind. Zoo example. See [Interfaces](language-guide.md#16-interfaces).
 - [x] **Modules (step 21):** `use helpers.` splits a program across files; used files only define things, `privately` keeps a definition to its file, `helpers's double` says which file's, circles of use are errors, and errors name the file. Multi-file example. See [Programs in several files](language-guide.md#17-programs-in-several-files).
 - [x] **The standard library (step 21):** math, random numbers, dates and waiting, files and folders, csv files (`read csv file F and call it NAME`, quoted fields, each row a map from column name to value) and clearing the screen, all without `use`. Dice, countdown, tidy folder and sales report examples; a csv benchmark against Python. See [stdlib.md](stdlib.md).
-- **Planned, step 22:** raw keyboard input (a key at a time, without Enter), with a terminal Snake example.
+- [x] **System tools and the keyboard (step 22):** `the words given to the program`, `word N given to the program`, `the text sent to the program` and its lines (piped input, with `ask` still working), `the setting called X` (text or nothing), `run P with A and B [and call the result r]` with `r's output`, `r's error output`, `r's code` and `r worked` (a list of words, never a shell), `complain X` (the error output), `stop the program, saying it failed` and `with code N`; `wait for a key and call it K` and `the key being pressed`, with plain key names and the terminal always put back (Ctrl+C and errors too), on macOS and Linux. See [Programs and the system](language-guide.md#19-programs-and-the-system) and [The keyboard](language-guide.md#20-the-keyboard).
 - **Planned, the English pass** (after step 22): questions and totals, choices without `if`, plain words, and the rough spots. See [english-pass.md](english-pass.md).
 - **Planned:** the first non-coder test (3 to 5 people), then **v0.2.0**, which freezes the core grammar: after it, only additions.
 
@@ -154,5 +154,5 @@ It builds on the interactive shell, which reruns the whole session for each entr
 
 - **Installing:** an install script, `easyscript --version`, and a Homebrew tap
 - **A license** (still to be chosen)
-- **Windows:** documented through WSL now; then a native port of `src/main.c` and `src/shell.c` (processes and temp directories), checked by CI on `windows-latest`
+- **Windows:** documented through WSL now; then a native port of `src/main.c` and `src/shell.c` (processes and temp directories) and of the runtime's keyboard and `run` (`runtime/es_keys.h`, `es_system.h`: the console's key-at-a-time mode, and starting programs without `fork`), checked by CI on `windows-latest`
 

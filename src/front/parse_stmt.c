@@ -447,7 +447,7 @@ Stmt *parse_statement(Parser *p) {
     if (parser_at_record_definition(p)) return parse_record(p);
     if (parser_at_sum_definition(p)) return parse_sum(p);
     if (parser_interface_words(p, p->pos) > 0) return parse_interface(p);
-    if (parser_at_library_sentence(p)) {  // "delete the file F", "clear the screen", ...
+    if (parser_at_library_sentence(p)) {  // "delete the file F", "clear the screen", "run "git"", ...
         Stmt *stmt = parser_parse_library_sentence(p);
         if (stmt) stmt->pos = ast_pos_join(stmt->pos, (SourcePos){p->prev_span, 0, 0, 0});
         return stmt;

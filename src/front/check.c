@@ -391,7 +391,7 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
                         "The name of a file has to be text", NULL);
         make_text(c, &stmt->as.read_file.name);
         break;
-    case STMT_STOP: break;
+    case STMT_STOP: checker_check_stop(c, stmt); break;
     case STMT_IF: check_if(c, stmt); break;
     case STMT_LOOP: check_loop(c, stmt); break;
     case STMT_BREAK:
@@ -429,7 +429,7 @@ static void collect_names(Checker *c, const Block *program) {
         const Name *name = stmt->kind == STMT_LET    ? &stmt->as.assign.name
                            : stmt->kind == STMT_ASK  ? &stmt->as.ask.answer
                            : stmt->kind == STMT_READ_FILE ? &stmt->as.read_file.name
-                           : stmt->kind == STMT_LIBRARY && stmt->as.library.op == DO_READ_CSV ? &stmt->as.library.name
+                           : stmt->kind == STMT_LIBRARY && stmt->as.library.name.text ? &stmt->as.library.name
                                                           : NULL;
         if (name && !checker_find_later(c, name->text)) {
             Symbol symbol = {name->text, name->display, name->pos.line, NULL, false, 0, false, NULL, 0};

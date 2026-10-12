@@ -358,6 +358,24 @@ Stmt *parser_parse_shuffle(Parser *p, const Token *verb);  // shuffle L
 Stmt *parser_parse_save(Parser *p, const Token *verb);     // save L as csv file F
 Stmt *parser_parse_put(Parser *p, const Token *verb);      // put X in file F
 
+// parse_system.c: system tools
+// "the words given to the program", "the setting called X", "the key being pressed", ...; NULL if none.
+Expr *parser_parse_system_word(Parser *p);
+// After a value: "worked", "didn't work"; NULL if none is next.
+Expr *parser_parse_system_test(Parser *p, Expr *left);
+// "run" or "complain" (not a function the program defines) starts a sentence here.
+bool parser_at_system_sentence(const Parser *p);
+Stmt *parser_parse_system_sentence(Parser *p);
+Stmt *parser_parse_wait_key(Parser *p, const Token *verb);  // at "for key", after "wait"
+Stmt *parser_finish_stop(Parser *p, Stmt *stmt);            // after "stop the program"
+// The kind "program result" (what "run ... and call the result r" makes), if
+// the program runs anything and doesn't define a kind with that name itself.
+void parser_find_program_result(Parser *p);
+// parse_names.c: adds a kind of record the language makes (no definition in
+// the program); false if the program defines one with that name.
+bool parser_add_builtin_kind(Parser *p, const char *name, size_t words);
+void parser_add_field_name(Parser *p, const char *name, size_t words);
+
 // parse_loop.c: a loop starting with `verb` (count, go, for, do, repeat,
 // while, as, keep, forever), and stop/break/skip/continue/move on.
 Stmt *parse_loop(Parser *p, const Token *verb);

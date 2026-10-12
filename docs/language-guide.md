@@ -28,6 +28,8 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [16. Interfaces](#16-interfaces) | Available |
 | [17. Programs in several files](#17-programs-in-several-files) | Available |
 | [18. The standard library](#18-the-standard-library) | Available |
+| [19. Programs and the system](#19-programs-and-the-system) | Available |
+| [20. The keyboard](#20-the-keyboard) | Available |
 
 ---
 
@@ -1812,3 +1814,115 @@ save totals as csv file "totals.csv".
 ```
 
 Each row is a map from the column's name (from the header line) to its text. Mistakes in the file say where: "In sales.csv, line 14 has 3 values, but the header has 4." Try `./easyscript run examples/programs/sales_report.es`.
+
+## 19. Programs and the system
+
+**Available.** A program can use the words it was started with, read what's sent to it, look at settings, run other programs, and tell whoever started it whether it worked. The exact meanings are in [stdlib.md](stdlib.md#system-tools).
+
+### Words given to the program
+
+Words written after the program's name when it's started reach it as a list of text:
+
+```
+note: greet.es
+if the number of words given to the program is 0:
+    complain "Tell me who to greet, like: easyscript run greet.es Ada".
+    stop the program, saying it failed.
+for each name in the words given to the program:
+    say "Hello, " followed by name followed by "!".
+```
+
+```bash
+./easyscript run greet.es Ada Grace     # Hello, Ada!  Hello, Grace!
+./easyscript build greet.es -o greet
+./greet "Ada Lovelace"                  # Hello, Ada Lovelace!
+```
+
+`word 1 given to the program` is the first one. Asking for one that isn't there stops the program ("There's no word 2: the program was given 1 word."), so check `the number of words given to the program` first.
+
+### Text sent to the program
+
+`the text sent to the program` is everything sent to it: a file given with `<`, or another program's output given with `|`. `the lines sent to the program` is the same, split into lines:
+
+```
+let count be 0.
+for each line in the lines sent to the program:
+    if line contains "error", add 1 to count.
+say count followed by " lines mention an error.".
+```
+
+```bash
+./easyscript run errors.es < server.log
+```
+
+`ask` still works: it reads one line, and `the text sent to the program` is what's left after the lines `ask` has read.
+
+### Settings
+
+`the setting called "HOME"` is an environment setting, or nothing if it isn't set, so it has to be checked before it's used:
+
+```
+let editor be the setting called "EDITOR".
+if editor is nothing:
+    say "No editor is set.".
+otherwise:
+    say "Your editor is " followed by editor followed by ".".
+```
+
+### Running other programs
+
+`run` starts another program with a list of words and waits for it:
+
+```
+run "git" with "status".
+```
+
+Its output is shown as it comes, and if it doesn't work, this program stops too. To look at what it printed, and carry on whether it worked or not, call the result something:
+
+```
+run "git" with "log", "-1" and "--format=%s" and call the result last.
+if last worked:
+    say "The last change: " followed by last's output.
+otherwise:
+    complain "git said: " followed by last's error output.
+```
+
+A program result has an `output`, an `error output` and a `code` (0 when it worked). The words after `with` go to the program exactly as written: **there's no shell in between**, so a word like `"notes; rm -rf ~"` is one strange word, never a second command. A list of text gives one word per item: `run "ls" with "-l" and the files in "photos".`.
+
+### The error output and the exit code
+
+`complain X` is like `say X`, but writes to the error output, which stays on the screen when the normal output goes to a file (`./report > out.txt`). `stop the program, saying it failed` ends it with the code 1, and `stop the program with code N` with any code from 0 to 255, so scripts and other programs can tell whether it worked:
+
+```bash
+./greet && echo "it worked"
+```
+
+## 20. The keyboard
+
+**Available.** Programs can read keys one at a time, without Enter: for menus, games and anything that reacts as you type.
+
+```
+say "Press a key (Q stops).".
+forever:
+    wait for a key and call it key.
+    if key is "q", stop the loop.
+    say "You pressed " followed by key.
+```
+
+`wait for a key and call it key` waits for the next key. `the key being pressed` doesn't wait: it's a key pressed since the last one read, or nothing, so a game can keep moving between key presses:
+
+```
+forever:
+    let key be the key being pressed.
+    if key is not nothing:
+        if key is "left", say "going left".
+        if key is "escape", stop the loop.
+    wait 100 milliseconds.
+```
+
+Arrow keys are `"up"`, `"down"`, `"left"` and `"right"`; others with names are `"enter"`, `"escape"`, `"space"`, `"tab"`, `"backspace"`, `"delete"`, `"home"`, `"end"`, `"page up"`, `"page down"` and `"insert"`. Any other key is the character it types (`"a"`, `"A"`, `"7"`).
+
+While the keyboard is in use, keys aren't shown as you type them. The terminal goes back to normal when the program ends, however it ends (even with Ctrl+C or a mistake), and while `ask` reads a line or another program runs. Keys can also come from a file (`./game < keys.txt`), read one at a time, which is how games are tested.
+
+The keyboard works on macOS and Linux; on Windows, use WSL until the Windows port.
+

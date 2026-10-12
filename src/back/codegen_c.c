@@ -345,7 +345,8 @@ static void emit_call_statement(Codegen *g, const Stmt *stmt) {
     }
 }
 
-static void emit_stop(Codegen *g) {
+static void emit_stop(Codegen *g, const Stmt *stmt) {
+    cg_emit_stop_code(g, stmt);
     cg_indent(g);
     if (!g->function) {  // the end of main() releases everything
         sb_append(&g->body, "goto es_end;\n");
@@ -402,7 +403,7 @@ void cg_emit_stmt(Codegen *g, const Stmt *stmt) {
                    arena_sprintf(g->arena, "es_read_file(%zu, %s)", cg_site(g, stmt->as.read_file.path->pos),
                                  expr_code(g, stmt->as.read_file.path)));
         break;
-    case STMT_STOP: emit_stop(g); break;
+    case STMT_STOP: emit_stop(g, stmt); break;
     case STMT_IF: emit_if(g, stmt); break;
     case STMT_LOOP: emit_loop(g, stmt); break;
     case STMT_FUNCTION: break;  // generated separately, before main()

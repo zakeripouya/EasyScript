@@ -1,9 +1,10 @@
 /* EasyScript runtime, part 1: heap objects (text, lists, records and maps) and memory.
  *
- * The runtime is nine files, embedded into the compiler at build time (in
+ * The runtime is sixteen files, embedded into the compiler at build time (in
  * this order: es_memory.h, es_program.h, es_runtime.h, es_list.h, es_sort.h,
- * es_text.h, es_record.h, es_map.h, es_kind.h, es_closure.h) and copied to the top of every generated C program, so
- * programs need nothing else to build.
+ * es_text.h, es_record.h, es_map.h, es_kind.h, es_closure.h, es_math.h,
+ * es_time.h, es_files.h, es_csv.h, es_keys.h, es_system.h) and copied to the
+ * top of every generated C program, so programs need nothing else to build.
  * Everything is static; generated code calls it.
  *
  * The compiler knows the kind of every value, so generated code uses plain C

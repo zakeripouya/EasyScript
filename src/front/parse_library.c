@@ -92,6 +92,8 @@ static Expr *parse_exists(Parser *p) {
 
 Expr *parser_parse_library_word(Parser *p) {
     if (parser_is_function(p, parser_peek(p, 0)->text)) return NULL;  // the program's own "to bigger of ..."
+    Expr *system = parser_parse_system_word(p);
+    if (system) return system;
     static const struct {
         const char *words;
         LibraryOp op;
@@ -194,6 +196,8 @@ Expr *parser_parse_library_postfix(Parser *p, Expr *expr) {
 }
 
 Expr *parser_parse_library_test(Parser *p, Expr *left) {
+    Expr *system = parser_parse_system_test(p, left);
+    if (system) return system;
     if (parser_match_words(p, "is before") || parser_match_words(p, "is after")) {
         LibraryOp op = parser_at_word(p, 1, "before") ? LIB_BEFORE : LIB_AFTER;
         Span op_span = parser_consume(p, 2);

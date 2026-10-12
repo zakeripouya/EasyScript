@@ -748,6 +748,42 @@ To delete it with everything in it, add "and everything in it".
 
 Mistakes in how the sentences are written are parser errors, like "Say how long to wait: seconds, milliseconds or minutes.", "Only a folder has everything in it." and ""to the power of" twice could mean two things."; the full set is in [`err_library.err`](../tests/ast/err_library.err).
 
+### System tools and the keyboard
+
+Kind mistakes are caught before the program runs: [`system_errors.es`](../tests/errors/system_errors.es)
+
+```
+Line 2: The position of a word has to be a number, but this is text.
+    let first be word "one" given to the program
+                      ^^^^^
+```
+
+| Problem | Message (summary) |
+|---|---|
+| A word for a program that isn't one | "Each word given to a program has to be text, a number or a list of text, but this is a list of numbers." |
+| A program that isn't text | "The program to run has to be text, like "git", but this is a number." |
+| `worked` on something else | "Only a program result can have worked, but this is a number." with "Run a program first, like ..." |
+| A setting's name or a code of the wrong kind | "The name of a setting has to be text, like "HOME", but this is a number." / "The code has to be a number, but this is text." |
+| A program's own `program result` kind ([test](../tests/errors/system_own_program_result.es)) | "This program defines its own kind called "program result", so running a program can't make one." |
+
+While the program runs (one test each, `tests/run/err_sys_*.es` and `err_keys_ran_out.es`):
+
+```
+Line 1: I couldn't find a program called "easyscript-no-such-program".
+    run "easyscript-no-such-program" with "x".
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Check its name, and that it's installed. A program in this folder is run with its path, like "./tool".
+```
+
+| Problem | Message (summary) |
+|---|---|
+| A word that wasn't given | "There's no word 1: the program wasn't given any words." / "There's no word 2: the program was given 1 word." with "Check how many there are first, like ..." / "The position of a word has to be a whole number, but it's 1.5." |
+| Running a program | "I couldn't run "./notes.txt": it isn't a program I'm allowed to run." / "The name of the program to run is empty." / ""false" didn't work: it finished with code 1." with "To carry on when it doesn't work, write "... and call the result r", then check "if r worked:"." |
+| A code that isn't one | "The code has to be a whole number from 0 to 255, but it's 256." |
+| No keys left | "There's no key to wait for: the keys sent to the program have run out." |
+
+Parser errors, like "Something is missing after "word"." with "Say which word, like "word 1 given to the program"." and "I expected "saying it failed" here, but found "saying it worked".", are in [`err_system.err`](../tests/ast/err_system.err).
+
 ### While the program runs
 
 Runtime errors look like compile errors: `Line N:` and what went wrong, the line with carets under the part that failed, and sometimes a hint. Anything the program printed before the error stays printed. Only mistakes that kinds can't catch are left for this.
