@@ -91,9 +91,9 @@ People ask "how many", "any", "all" and "per" far more than they write loops. Ea
 | `the average of scores`, `the total of scores`, `the median of scores` | `added together` and division | English pass |
 | `the top 5 scores`, `the lowest 3`, `the 10 most common` | Sort then slice | English pass |
 | `the customer with the highest total`, `the one with the most orders` | A search loop with two variables | English pass |
-| `the total amount of orders per region` (also `by region`) | A map and a loop | English pass |
+| `the total amount of orders per region` (`per` only: `by` already means sorting and steps) | A map and a loop | English pass |
 | `half of total`, `twice price`, `20 percent of price` | Arithmetic | English pass |
-| `price rounded to 2 decimal places` | Not possible today | English pass |
+| `price rounded to 2 decimal places` | Already built (step 21) | Done |
 | `how many questions there are` | `the number of items in` | English pass |
 
 ## Choices without if: the six patterns
@@ -102,12 +102,12 @@ Each pattern has its own trigger words, so the parser recognizes it without gues
 
 | # | Pattern | Trigger | Example | Effort |
 | --- | --- | --- | --- | --- |
-| 1 | Defaults | `, or X`, `starting at X`, `if there isn't one` | `the nickname, or "friend" if it's missing` | Small (partly exists) |
+| 1 | Defaults | `, or X`, `starting at X`, `if there isn't one` | `the nickname, or "friend" if there isn't one` | Small (partly exists) |
 | 2 | Adjectives (definitions) | `a NAME is WORD if ...` at the top level | `a customer is loyal if they ordered more than 5 times.` | Small to medium |
 | 3 | Acting on a group | A verb + `every` / `the ... that` / `the ... whose` | `remove the tasks that are done.`, `give every loyal customer a 10 percent discount.` | Medium |
-| 4 | Depends-on tables | `... depends on X:` + `case: value.` lines; every case must be covered | `the shipping cost depends on the total: over 100: free. over 50: 5. otherwise: 10.` | Medium |
+| 4 | Depends-on tables | `... depends on X:` + indented `VALUE when it's CONDITION.` lines and `VALUE otherwise.` (no colon on the line); every case must be covered | `the shipping cost depends on the total:` / `0 when it's over 100.` / `5 when it's over 50.` / `10 otherwise.` | Medium |
 | 5 | Rules | `must`, `must not`, `must be between` | `an age must be between 0 and 150.` | Medium |
-| 6 | Events | `when` / `whenever` starting a sentence, `every N seconds` | `whenever the score passes 100, level up.` | Medium to large (needs an event loop) |
+| 6 | Events | `when` / `whenever` starting a sentence, `every N seconds`, `every Monday at 9am` (part 3) | `whenever the score passes 100, level up.` | Medium to large (needs an event loop) |
 
 **Also:** `unless` as the negative of `if`, and definitions of values, not just yes/no: `a customer's profit is their revenue minus their costs.`, `the best customers are the ones with the highest profit.`
 
@@ -122,17 +122,17 @@ Each pattern has its own trigger words, so the parser recognizes it without gues
 | Input validation | `ask for a number`, `ask yes or no` (re-asks until valid) | `ask for a number: "How old are you?"` | English pass |
 | Number formatting | `as money`, `as a percent`, `with commas` | `say price as money.` | English pass |
 | Exceptions | `try to ... if that fails, ...` | `try to read the table in "sales.csv". if that fails, say "No file yet."` | English pass |
-| Null | `missing`, `if there isn't one` | `the nickname, or "friend" if it's missing` | English pass |
+| Null | `or X if there isn't one` (never "missing": `nothing` is the one word) | `the nickname, or "friend" if there isn't one` | English pass |
 | Escape characters | Words | `say "Line one", then a new line, then "Line two".` | English pass |
 | Variables | `starts at`, `remember` | `the total starts at 0.` | English pass |
 | Array index | `the one whose` | `the student whose name is "Ann"` | English pass |
 | Map / dictionary | `per`, `a table of` | `a table of prices: coffee 3, tea 2.` | English pass |
 | Units of measure | Numbers with units, checked | `5 meters per second`, `3 hours`, `$20` | English pass |
-| Dates | Natural dates | `tomorrow at 3pm`, `3 days ago`, `this month` | Step 21 |
-| Scheduling / cron | Natural times | `every Monday at 9am:` | Step 21 |
-| Randomness | `random`, `pick`, `shuffle`, `roll a die` | `pick one of the colors.` | Step 21 |
-| File paths | `the file called`, `save ... to` | `save the tasks to "tasks.txt".` | Step 21 |
-| CSV / Excel parsing | `read the table in` | `read the table in "sales.xlsx"` | csv step 21, xlsx Phase 4 |
+| Dates | Natural dates | `3 days ago`, `is in this month` (built, step 21); `tomorrow at 3pm` | Step 21; times of day in part 3 |
+| Scheduling / cron | Natural times | `every Monday at 9am:` | English pass part 3 |
+| Randomness | `random`, `pick`, `shuffle`, `roll a die` | `pick one of the colors.` | Built (step 21) |
+| File paths | `file F` in every file sentence | `put the tasks in file "tasks.txt".` | Built (step 21) |
+| CSV / Excel parsing | `read csv file ... and call it`, `save ... as csv file` (the main forms) | `read csv file "sales.csv" and call it sales.` | csv built (step 21), xlsx Phase 4 |
 | Persistence / database | `kept in` | `the tasks are kept in "tasks.txt".` | Phase 4 |
 | HTTP | `get the page at`, `send ... to`, `when someone visits` | `get the page at "https://example.com"` | Phase 4 |
 | Concurrency | `at the same time`, `in the background` | `download these pages at the same time.` | Phase 4 |
@@ -157,7 +157,7 @@ Each pattern has its own trigger words, so the parser recognizes it without gues
 | Proposed phrase | What it does | Rule that keeps it deterministic |
 | --- | --- | --- |
 | `take scores, sort them biggest first, then show the first 3.` | Steps in a row instead of nested values; fused into one pass | `them` and `the ones` mean only the previous step's value |
-| `the dogs whose age is over 3`, `the orders where the amount is above 1000` | Filter by a field | `whose`/`where` start the condition |
+| `the dogs whose age is over 3`, `the orders where the amount is above 1000` (`where` and `is over` already built) | Filter by a field | `whose`/`where` start the condition |
 | `set every monster's color to blue` | Change a whole group | `every` + a list's items |
 | `remove the tasks that are done.` | Remove a filtered group | `the ... that` names the group |
 | `the name of rex` | Same as `rex's name`; removes parentheses like `(item 1 of dogs)'s name` | `of` after a field name |
@@ -182,12 +182,12 @@ The example above means exactly:
 
 ```
 make a new file called "groceries.txt".
-write "milk" to "groceries.txt".
-add "eggs" and "bread" to the end of "groceries.txt", one per line.
-show the contents of "groceries.txt".
+write "milk" in file "groceries.txt".
+add "eggs" and "bread" to the end of file "groceries.txt", one per line.
+show the contents of file "groceries.txt".
 ```
 
-**File and folder words (step 21):** `make a new file called`, `make a folder called`, `put ... in`, `add ... to the end of`, `show me what's in`, `if ... exists`, `rename ... to`, `copy ... to`, `move every file older than 30 days to`, `delete`, `show me the files in ... that end with ".jpg"`.
+**File and folder words:** built in step 21: `make a new file called`, `make a folder called`, `put ... in file`, `write ... in file`, `add ... to the end of file`, `file|folder F exists`, `rename|copy|move the file ...`, `delete the file|folder`, `the files in the folder`. Still to come: `show me what's in`, `move every file older than 30 days to`, `show me the files in ... that end with ".jpg"`. File sentences always say `file` (a design-principles exception), because `add X to the end of F` without it is the list sentence.
 
 **Safety:** deleting or replacing a file asks first in the notebook ("This will replace groceries.txt. Go ahead?"); `it` never reaches back more than one step.
 
@@ -203,7 +203,7 @@ It needs four things:
 
 1. **Line continuation:** a line ending with a comma, `then` or `and` continues onto the next line (today a new line always ends a sentence).
 2. **Action forms of value phrases:** every value form gets a matching action (`the total amount per month` / `total the amount per month`; `L sorted biggest first` / `sort it biggest first`).
-3. **The `it` rule:** each `it` is the previous step's result.
+3. **The `it` rule:** inside a `, then` chain, `it` is the previous step's result; elsewhere it's the loop's or match's item; where both could apply it's an error asking for a name. Chain steps need `, then` (comma first), so `if C then S` keeps its meaning.
 4. **Charts:** a small charts module that saves bar, line and pie charts as SVG, written in EasyScript (an SVG is just text). Planned right after the English pass; PNG output waits for Phase 4.
 
 The example reads as exactly: read the table into step 1; step 2 = the total amount of step 1 per month; step 3 = step 2 sorted biggest first; save step 3 as "best months.csv"; save a bar chart of step 3 as "best months.svg".
@@ -243,7 +243,7 @@ The chat notebook is Phase 4, but its grammar has to be designed now: after the 
 | `make me a quiz`, `start a budget tracker` | Open a starter template | Playground |
 | Anything vague (`make something cool`) | Optional AI writes EasyScript, shown before it runs | Last, optional |
 
-**Do now (English pass):** the `?` mark and question forms; `show me` / `give me` / `tell me` / `list`; `what`, `which`, `who`, `how many` questions; stripping polite wrappers; reserving `me`, `that`, `the result`, `again`, `undo`; conversational error wording ("I don't know X yet. Did you mean Y?").
+**Do now (English pass):** the `?` mark and question forms; `show me` / `give me` / `tell me` / `list`; `what`, `which`, `who`, `how many` questions; stripping polite wrappers; reserving `me` and `undo` (`again` and `the result` are notebook-only words, not reserved in programs, which already use them as names); conversational error wording ("I don't know X yet. Did you mean Y?").
 
 **Later (Phase 4):** sessions that keep variables between messages, multi-turn references, the chat interface, tables and charts in replies, the JIT, the AI fallback.
 
@@ -299,7 +299,7 @@ When a word could mean two columns ("what did I spend" with both amount and tip)
 
 ## Error messages
 
-**Today:** about 110 compile errors and 57 runtime errors, all tested. Each shows the line, a caret under the problem, and a fix in first-person plain English. Examples from the current compiler:
+**Today:** about 350 compile errors and 110 runtime errors, all tested. Each shows the line, a caret under the problem, and a fix in first-person plain English. Examples from the current compiler:
 
 ```
 Line 2: I don't know anything called "totl".
@@ -366,11 +366,11 @@ Every new error in the English pass is stored as structured data as well as its 
 | Today | Problem | Fix |
 | --- | --- | --- |
 | `set the value for word in counts to (the value for word in counts, or 0) plus 1` | Says the lookup twice | `add 1 to the value for word in counts, starting at 0` |
-| `(item 1 of dogs)'s name` | Parentheses before `'s` | `the name of item 1 of dogs` |
+| `(item 1 of dogs)'s name` | Parentheses before `'s` | `the name of item 1 of dogs` (wins only when no function is called `name`; both is an error asking which) |
 | `(item 3 of fields) as a number` | Parentheses for a conversion | `item 3 of fields, as a number` |
 | `a list of (a new circle with radius 1), (a new point)` | Parentheses around each new value | Allow them without parentheses when unambiguous |
 | `a dog is a kind of thing with:` + `a name, which is text.` | Wordy | `a dog has a name (text) and an age (a number).` |
-| `"Total: " followed by total followed by "!"` | Clunky joins | Text templates |
+| `"Total: " followed by total followed by "!"` | Clunky joins | Commas: `say "Total:", total, "!"` (only at the top level of `say`/`show`/`print`/`display`/`complain`; a comma before `or`, `sorted`, `as`, `rounded`, `starting` keeps its postfix meaning) |
 | `only the scores that ...` vs `every score in scores plus 5` | Two shapes for filter and map | One family: `the scores that ...`, `each score in scores plus 5` |
 | `profit by customer` rejected as a name | `by` can't be in names; the suggestion `profit customer` is bad English | Allow `by`/`per` in names when unambiguous, or suggest `customer profits` |
 | `for each name in ages` is an error | People expect the keys | Accept it as the keys, or keep the error |
@@ -661,6 +661,20 @@ The strongest single source is Pane's study of how non-programmers describe prog
 
 ### Decided (2026-10-11)
 
+- [x] **File sentences say `file`** (`write "milk" in file "groceries.txt"`), as design-principles.md already requires.
+- [x] **Planned breaking changes** (recorded in design-principles.md): joining text with `and` is removed (part 1); inputs get natural joiners (part 5).
+- [x] **No "missing":** `nothing` is the one word; defaults read `or X if there isn't one`.
+- [x] **`every` means "each one", with distinct triggers:** `every X is/are ...` tests (part 2); `every N seconds` / `every Monday at 9am` schedule (part 3). Transforming is `each X in L ...`; `every X in L ...` stays as a synonym.
+- [x] **`it`:** inside a `, then` chain it's the previous step's result; elsewhere the loop's or match's item; where both could apply, an error asks for a name.
+- [x] **Grouping uses `per` only;** `by` keeps its meanings (sorting, steps, dividing).
+- [x] **Chain steps need `, then`** (comma first); `if C then S` keeps its meaning.
+- [x] **`the X of Y`** (a field, or a built-in phrase) wins only when no function is called X; if both exist, it's an error asking which.
+- [x] **The program result's `code` field becomes `exit code`.**
+- [x] **Commas join pieces only at the top level of `say`/`show`/`print`/`display`/`complain`** (and later `reply`); a comma followed by a postfix word (`or`, `sorted`, `as`, `rounded`, `starting`) keeps its postfix meaning.
+- [x] **Depends-on tables** use `VALUE when it's CONDITION.` lines and `VALUE otherwise.` (no colon on the line).
+- [x] **Already built:** `rounded to N decimal places`, `is over`, the file sentences, `file X exists`, `N days ago`, `is in this month`, `pick`, `shuffle`, `roll a die`, filtering by a field with `where`, `rounded down`. `read csv file` and `save ... as csv file` stay the main forms.
+- [x] **`every Monday at 9am` moves to part 3.** `again` and `the result` are notebook-only words, not reserved in programs.
+
 - [x] **`is` keeps its uses.** `is 5`, `is empty`, `is nothing`, `is a circle`, `is loyal` all mean "states a fact you can check", one meaning in English.
 - [x] **`and` has two meanings, chosen by position.** Between values or conditions: "both", or joining a list. Between two actions: "and then" (`make a file called "a.txt" and write "hi" in it`). Joining text with `and` (`"Hello, " and name`) is removed once the new text joining exists; it becomes an error showing the new form.
 - [x] **Records: `has` is the main form;** `is a kind of thing with:` stays as a synonym. `a dog has a name (text) and an age (a number).`
@@ -695,6 +709,7 @@ The strongest single source is Pane's study of how non-programmers describe prog
 | 2026-10-11 | Added: EasyScript Studio as the Phase 4 goal |
 | 2026-10-11 | Added: findings from step 22's JSON parser (count direction, value kinds, exact numbers, raw text, early exit, math words) |
 | 2026-10-11 | Merged the repo's step 22 notes (escapes, positions, helper name clashes, workarounds); heading renamed to "Rough spots to fix" so links from CHANGELOG and the roadmap still work |
+| 2026-10-11 | Part 1 decisions: file sentences say `file`; text `and` and input joiners recorded as planned changes; no "missing"; `every` triggers; the `it` rule; `per` only; `, then` chains; `the X of Y` rule; `exit code`; the comma rule; depends-on lines; already-built list; error counts and step 21 list updated |
 
 ## Sources
 

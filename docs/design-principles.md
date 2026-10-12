@@ -120,6 +120,13 @@ Each exception exists because following the rule would cost more than it gives. 
 
 The English pass's plan for new phrases, and the decisions already made about them, are in [english-pass.md](english-pass.md#decided-2026-10-11).
 
+## Planned changes
+
+Decided for the English pass ([english-pass.md](english-pass.md)); each breaks some existing programs, so each will be marked in the changelog when it lands.
+
+- **Joining text with `and` will be removed** (part 1). Pieces of text are joined with commas in `say` (`say "Hello,", name, "!"`) or with `followed by`; `"Hello, " and name` becomes an error showing the comma form. The "`and` joins text" exception above goes with it.
+- **Inputs will get natural joiners where unambiguous** (part 5): `the column of cell in grid`, `from ... to ...`, besides `and`.
+
 ## Open questions
 
 None at the moment. Phrasings that may not follow these rules go here until they're decided.
