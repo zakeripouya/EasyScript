@@ -62,6 +62,7 @@ What exists today:
 | `src/front/parse_expr.c` | Done. Recursive-descent expression parser: the operator levels (`every`, `or`, `and`, `not`, comparisons, `followed by`, arithmetic, unary minus, postfix conversions and list operations) and `only`'s comparison. |
 | `src/front/parse_value.c` | Done. The tightest level: literals, names, calls (with their argument rules), groups, `length of`/`contents of file`, and the dispatch to the list forms that start with a word. |
 | `src/front/parse_stmt.c` | A table of statement forms, names (with filler and reserved-word errors), and the statement loop (`parse_statements`), used for the whole program and for each block. |
+| `src/front/parse_sentence.c` | The pieces of `say A, B` and sentences joined by `and` (`parser_at_next_action`, `parser_parse_actions`). |
 | `src/front/parse_if.c` | `if` / `otherwise if` / `otherwise`: blocks, one-line forms, and errors for misplaced `otherwise`s. Also the shared block parser. |
 | `src/front/parse_loop.c` | Every loop form, and `stop the loop` / `skip this one`. |
 | `src/front/parse_names.c` | Names, which can be several words: the pre-scan that finds every name the program makes (`let`, `keep`, `to`, `as`, `call`, `for each`, `every`) so values can match the longest known one, and `parser_parse_name` for names a sentence makes or changes (up to the sentence's next word), with the error for a name containing a word that already means something. |
