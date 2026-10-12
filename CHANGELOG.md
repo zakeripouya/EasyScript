@@ -16,6 +16,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 - **`easyscript run FILE WORDS...` gives the words after the file to the program** (`the words given to the program`), so `easyscript run a.es b.es` no longer says "Give one .es file at a time." (`emit`, `build`, `tokens` and `ast` still do). Generated programs' `main` takes `argc`/`argv` and returns the program's code.
 
+- **Runtime errors from `run`, and from a word past the end of the words given to the program, no longer leak** (LeakSanitizer on Linux found `argv` and a number shown in the message left unreachable).
+
 ### Added
 
 - **System tools** (Phase 2, step 22). See [stdlib.md](docs/stdlib.md#system-tools) and the new [chapter 19](docs/language-guide.md#19-programs-and-the-system).

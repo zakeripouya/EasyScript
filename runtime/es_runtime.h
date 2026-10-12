@@ -44,13 +44,19 @@ static EsText *es_number_text(double x) {
 }
 
 /* A number as text for an error message. The program stops right after,
- * so the text is never released; keeping it in a static slot keeps it
- * reachable, so leak checkers don't report it. */
-static EsText *es_error_number;
+ * so the text is never released; every one made is kept in a static list,
+ * so it stays reachable and leak checkers (LeakSanitizer on Linux checks
+ * error programs too) don't report it, even when one message shows two. */
+static EsText **es_error_numbers;
+static size_t es_error_number_count;
 
 static const char *es_shown(double x) {
-    es_error_number = es_number_text(x);
-    return es_error_number->chars;
+    EsText **kept = realloc(es_error_numbers, (es_error_number_count + 1) * sizeof *kept);
+    if (!kept) es_out_of_memory();
+    es_error_numbers = kept;
+    EsText *text = es_number_text(x);
+    es_error_numbers[es_error_number_count++] = text;
+    return text->chars;
 }
 
 static EsText *es_yesno_text(bool yes) {

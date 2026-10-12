@@ -51,7 +51,8 @@ static EsText *es_program_word(int site, double n) {
                                               "the program is at least %s:\".";
             const char *shown = es_shown(n);
             size_t size = strlen(format) + strlen(shown);
-            char *text = malloc(size);
+            static char *text; /* static, so it stays reachable for leak checkers */
+            text = malloc(size);
             if (!text) es_out_of_memory();
             snprintf(text, size, format, shown);
             hint = text;
@@ -203,12 +204,18 @@ static double es_spawn(int site, EsList *command, EsText **out, EsText **err) {
     fflush(stderr);
     int report[2], out_pipe[2] = {-1, -1}, err_pipe[2] = {-1, -1};
     if (pipe(report) != 0 || (out && (pipe(out_pipe) != 0 || pipe(err_pipe) != 0))) {
-        es_fail(site, NULL, "I couldn't start \"%s\": %s.", name, es_reason(errno));
+        int failed = errno;
+        free(argv);
+        es_fail(site, NULL, "I couldn't start \"%s\": %s.", name, es_reason(failed));
     }
     es_close_on_exec(report[0]);
     es_close_on_exec(report[1]);
     pid_t pid = fork();
-    if (pid < 0) es_fail(site, NULL, "I couldn't start \"%s\": %s.", name, es_reason(errno));
+    if (pid < 0) {
+        int failed = errno;
+        free(argv);
+        es_fail(site, NULL, "I couldn't start \"%s\": %s.", name, es_reason(failed));
+    }
     if (pid == 0) { /* the new program: its outputs into the pipes, then it replaces this copy */
         if (out) {
             dup2(out_pipe[1], STDOUT_FILENO);
@@ -238,6 +245,7 @@ static double es_spawn(int site, EsList *command, EsText **out, EsText **err) {
     int status = 0;
     while (waitpid(pid, &status, 0) < 0 && errno == EINTR) {
     }
+    free(argv); /* before failing: nothing malloc'd may be left unreachable */
     if (got == (ssize_t)sizeof why) {
         if (why == ENOENT) {
             es_fail(site, strchr(name, '/') ? NULL : "Check its name, and that it's installed. A program in this folder "
@@ -247,7 +255,6 @@ static double es_spawn(int site, EsList *command, EsText **out, EsText **err) {
         es_fail(site, NULL, "I couldn't run \"%s\": %s.", name, why == EACCES ? "it isn't a program I'm allowed to run"
                                                                               : es_reason(why));
     }
-    free(argv);
     double code = WIFEXITED(status) ? WEXITSTATUS(status) : WIFSIGNALED(status) ? 128 + WTERMSIG(status) : 1;
     if (out) {
         *out = es_bytes_text(&out_bytes);
