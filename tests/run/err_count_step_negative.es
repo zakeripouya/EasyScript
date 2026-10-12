@@ -1,2 +1,2 @@
-count from 3 to 1 by -1:
+count from 1 to 3 by -1:
     say it

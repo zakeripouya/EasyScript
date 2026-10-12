@@ -6,6 +6,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Breaking
 
+- **Counting goes up only, unless it says `count down`.** `count from 3 to 1` used to count down by itself; now a count whose start is above its end runs zero times, so `count from 1 to the number of items in L` does nothing for an empty list instead of running twice. A count written with two numbers that can never run gets a warning suggesting `count down from 3 to 1`. `examples/programs/loops.es` and `tests/run/loop_count.es` now say `count down`.
+
 - **A program result's `code` is now its `exit code`** (`say r's exit code`), so the field says what it is.
 
 - **`wait`, `shuffle`, `save` and `put` start sentences** (the standard library), so they can no longer be the one-word name of a function. `tests/ast/err_func_header.es` renamed its `to wait for:` to `to pause for:`. `pi`, `today`, `tomorrow` and `yesterday` are still names a program can make; `rename`, `copy`, `move`, `delete`, `make` and `clear` only start library sentences with `the file`, `the folder` or `the screen` after them.

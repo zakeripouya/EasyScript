@@ -440,7 +440,7 @@ count from 0 to 100 by 25 as percent:
     say percent followed by "%".
 ```
 
-If the start is bigger than the end, the count goes down by itself: `count from 3 to 1` says 3, 2, 1. `for each i from 1 to 10:` and `go from 0 to 1 in steps of 0.25:` are other ways to say the same thing. `for each score in scores:` goes through a list instead (see [Lists](#10-lists)); there, `it` is the item.
+Counting goes up: if the start is bigger than the end, the count runs zero times, so `count from 1 to the number of items in scores` does nothing for an empty list. To count down, say so: `count down from 3 to 1` says 3, 2, 1. (A count written with two numbers that can never run, like `count from 10 to 1:`, gets a warning suggesting `count down`.) `for each i from 1 to 10:` and `go from 0 to 1 in steps of 0.25:` are other ways to say the same thing. `for each score in scores:` goes through a list instead (see [Lists](#10-lists)); there, `it` is the item.
 
 To repeat something a number of times, or while something is true:
 

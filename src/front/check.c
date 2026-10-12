@@ -4,6 +4,7 @@
 // then the main program, so a call's mistakes are reported at the call;
 // errors are sorted into source order at the end.
 
+#include <stdlib.h>
 #include <string.h>
 #include "front/check_internal.h"
 
@@ -321,11 +322,34 @@ static void check_loop_value(Checker *c, const Expr *value, Type type, const cha
     if (value) checker_require(c, checker_check_expr(c, value), type, value, message, hint);
 }
 
+// A number written out, maybe with a "-" before it: its value and text.
+static const char *written_number(Checker *c, const Expr *expr, double *out) {
+    bool negative = expr && expr->kind == EXPR_UNARY && expr->as.unary.op == UNARY_NEGATE;
+    if (negative) expr = expr->as.unary.operand;
+    if (!expr || expr->kind != EXPR_NUMBER) return NULL;
+    *out = strtod(expr->as.number.text, NULL) * (negative ? -1 : 1);
+    return negative ? arena_sprintf(c->arena, "-%s", expr->as.number.text) : expr->as.number.text;
+}
+
+// "count from 10 to 1": counting goes up, so this never runs.
+static void warn_never_counts(Checker *c, const Stmt *stmt) {
+    if (stmt->as.loop.kind != LOOP_COUNT || stmt->as.loop.down) return;
+    double from, to;
+    const char *from_text = written_number(c, stmt->as.loop.from, &from);
+    const char *to_text = written_number(c, stmt->as.loop.to, &to);
+    if (!from_text || !to_text || !(from > to)) return;
+    size_t start = stmt->as.loop.from->pos.span.offset;
+    Span span = {start, stmt->as.loop.to->pos.span.offset + stmt->as.loop.to->pos.span.length - start};
+    diag_warning(c->diag, span, "This count never runs: it starts above where it ends, and counting goes up.");
+    diag_note(c->diag, "To count down, write \"count down from %s to %s\".", from_text, to_text);
+}
+
 static void check_loop(Checker *c, const Stmt *stmt) {
     // A check made before the loop doesn't hold in later rounds if the body
     // sets what was checked; the loop's own condition is checked every round.
     size_t checked = c->present.len;
     checker_kill_set_in(c, &stmt->as.loop.body);
+    warn_never_counts(c, stmt);
     check_loop_value(c, stmt->as.loop.from, TYPE_NUMBER, "A count has to start at a number", NULL);
     check_loop_value(c, stmt->as.loop.to, TYPE_NUMBER, "A count has to end at a number", NULL);
     check_loop_value(c, stmt->as.loop.step, TYPE_NUMBER, "The step of a count has to be a number", NULL);

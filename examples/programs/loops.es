@@ -1,7 +1,7 @@
 note: Counting, repeating, and leaving loops early.
 count from 1 to 3:
     say number
-count from 10 to 0 by 5 as n:
+count down from 10 to 0 by 5 as n:
     say "down " followed by n
 repeat 2 times:
     say "round " followed by it

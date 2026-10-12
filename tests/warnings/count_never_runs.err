@@ -1,0 +1,9 @@
+Line 2 (a warning): This count never runs: it starts above where it ends, and counting goes up.
+    count from 10 to 1:
+               ^^^^^^^
+To count down, write "count down from 10 to 1".
+
+Line 4 (a warning): This count never runs: it starts above where it ends, and counting goes up.
+    for each n from 0 to -2.5:
+                    ^^^^^^^^^
+To count down, write "count down from 0 to -2.5".

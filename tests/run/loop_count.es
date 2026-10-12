@@ -1,6 +1,6 @@
 count from 1 to 3:
     say number
-count from 3 to 1 as n:
+count down from 3 to 1 as n:
     say n
 count from 0 to 1 by 0.25 and call each number x:
     say x
@@ -26,3 +26,9 @@ let finish be 4
 count from start to finish:
     set finish to 100
     say it
+note: counting goes up only, so a count that starts above its end runs zero times
+let stock be 0
+count from 1 to stock as n:
+    say "never: no stock"
+count from stock to -1:
+    say "never: below zero"

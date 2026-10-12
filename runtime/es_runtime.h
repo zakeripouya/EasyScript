@@ -336,8 +336,9 @@ static _Noreturn void es_no_result(int site, const char *name) {
 
 /* --- Loops ----------------------------------------------------------------- */
 
-/* "count from A to B by S": counts toward B, up or down, by S each round.
- * "count down" never counts up (it runs zero times if A is below B).
+/* "count from A to B by S": counts up to B by S each round, and runs zero
+ * times if A is above B. "count down" counts down, and runs zero times if A
+ * is below B.
  *
  * Round i's number is A + direction * i * S, worked out from the start each
  * time (no drifting). The count goes on while that number isn't past B, and
@@ -365,7 +366,7 @@ static EsCount es_count_start(int site, double from, double to, double step, boo
     EsCount c = {from, to, 1, 1, -1, LLONG_MAX};
     if (has_step) {
         if (!(step > 0)) {
-            es_fail(site, "Counting goes up or down by itself; the step only says how far to go each time.",
+            es_fail(site, "Counting goes up by itself (or down, with \"count down\"); the step only says how far to go each time.",
                     "The step of a count has to be more than zero, but it's %s.", es_shown(step));
         }
         c.step = step;
@@ -373,8 +374,8 @@ static EsCount es_count_start(int site, double from, double to, double step, boo
     if (down) {
         c.direction = -1;
         if (from < to && !es_close(from, to)) return c; /* empty */
-    } else {
-        c.direction = from <= to || es_close(from, to) ? 1 : -1;
+    } else if (from > to && !es_close(from, to)) {
+        return c; /* counting goes up only: empty */
     }
     double rounds = floor((to - from) * c.direction / c.step);
     if (!(rounds < 9e18)) { /* endless in practice (or not a number): count until stopped */

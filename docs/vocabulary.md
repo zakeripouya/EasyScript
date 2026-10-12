@@ -236,7 +236,7 @@ All loops are **Available**. Every loop ends its first line with a colon and put
 
 | Pattern | Meaning | Example |
 |---|---|---|
-| `count from A to B:` | Count from A to B, one at a time. Counts **down** by itself when A is bigger than B | `count from 1 to 10:` |
+| `count from A to B:` | Count up from A to B, one at a time. Runs zero times when A is bigger than B (a warning when both are written as numbers); use `count down` to count down | `count from 1 to 10:` |
 | `... by S` / `... in steps of S` | Count S at a time. S must be more than zero; the direction still comes from A and B | `count from 0 to 100 by 10:` |
 | `... and call each number N` / `... as N` | Name the number (it's called `number` otherwise) | `count from 1 to 3 as row:` |
 | `count down from A to B:` | Count down only; runs zero times if A is smaller than B | `count down from 10 to 1:` |

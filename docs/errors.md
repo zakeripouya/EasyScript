@@ -594,6 +594,15 @@ Line 12 (a warning): This "otherwise" can never run: the "when"s above it cover 
 Take it out, or the sentences in it will never be used.
 ```
 
+**A count that can never run**, because it's written with a start above its end, is a warning too: [`count_never_runs.es`](../tests/warnings/count_never_runs.es)
+
+```
+Line 2 (a warning): This count never runs: it starts above where it ends, and counting goes up.
+    count from 10 to 1:
+               ^^^^^^^
+To count down, write "count down from 10 to 1".
+```
+
 ### Functions as values
 
 A function kept as a value has a kind that says what it takes and gives back, so calling one wrongly is caught before the program runs.
@@ -843,7 +852,7 @@ Positions start at 1: the first item is item 1.
 |---|---|
 | Dividing or `mod` by zero | "You divided by zero." |
 | A function that keeps calling itself | "Functions are calling each other too deeply (more than 10000 calls inside each other)." with a hint to check that it stops |
-| A count step that's zero or negative | "The step of a count has to be more than zero, but it's -1." with a hint that counting picks its own direction |
+| A count step that's zero or negative | "The step of a count has to be more than zero, but it's -1." with a hint that counting goes up by itself (or down, with `count down`) |
 | `repeat N times` with N that isn't a whole number of zero or more | "The number of times has to be a whole number, but it's 2.5." (or "can't be negative") |
 | `as a number` on text that isn't a number | "I can't turn "12abc" into a number." (or "I can't turn empty text into a number."), with the hint "A number is digits, with a "-" before them if it's negative, a "." for decimals and an "e" for powers of ten, like 42, -7, 3.5 or 1e5." Long text is cut short after 60 characters |
 | A file that can't be read or written | "I couldn't read the file "nope.txt": it doesn't exist." |
