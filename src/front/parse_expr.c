@@ -181,7 +181,12 @@ static const Phrase conversions[] = {
     {"as number", "as a number", CONVERT_TO_NUMBER, false},
     {"as text", "as text", CONVERT_TO_TEXT, false},
     {"as exact text", "as exact text", CONVERT_TO_EXACT_TEXT, false},
+    {"as money", "as money", CONVERT_TO_MONEY, false},
+    {"as percent", "as a percent", CONVERT_TO_PERCENT, false},
 };
+
+// "with commas" (matched as a whole: "with" alone starts a call's inputs or "with X replaced by Y").
+static const Phrase with_commas = {"with commas", "with commas", CONVERT_WITH_COMMAS, false};
 
 typedef Expr *(*ParseFn)(Parser *p);
 
@@ -520,6 +525,9 @@ Expr *parser_continue_postfix(Parser *p, Expr *expr) {
             continue;
         }
         const Phrase *conversion = parser_match_phrase(p, conversions, COUNT(conversions), &len);
+        if (!conversion && !p->sentence_failed && (len = parser_match_words(p, with_commas.words)) > 0) {
+            conversion = &with_commas;
+        }
         if (!conversion) return expr;
         Span op_span = parser_consume(p, len);
         SourcePos end = {op_span, 0, 0, 0};

@@ -387,8 +387,10 @@ static void emit_convert(Codegen *g, const Expr *expr, StrBuf *out) {
     const Expr *operand_expr = expr->as.convert.operand;
     if (expr->as.convert.target == CONVERT_TO_TEXT) {
         cg_emit_text(g, operand_expr, out);
-    } else if (expr->as.convert.target == CONVERT_TO_EXACT_TEXT) {
-        sb_append(out, "es_number_exact_text(");
+    } else if (expr->as.convert.target >= CONVERT_TO_EXACT_TEXT) {
+        static const char *const functions[] = {"es_number_exact_text", "es_money_text", "es_percent_text",
+                                                "es_commas_text"};
+        sb_appendf(out, "%s(", functions[expr->as.convert.target - CONVERT_TO_EXACT_TEXT]);
         cg_emit_expr(g, operand_expr, out);
         sb_append(out, ")");
     } else if (operand_expr->type == TYPE_TEXT) {

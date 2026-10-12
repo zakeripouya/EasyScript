@@ -1,0 +1,23 @@
+Line 1: A constant can't be a number written as money, a percent or with commas.
+    keep price as 5 as money.
+                  ^^^^^^^^^^
+Make it with "let", or format the number where it's used.
+
+Line 2: "try to" only works with a file or a folder.
+    try to say "hi". if that fails, say the reason.
+           ^^^^^^^^
+Use it to read, write, make or delete one, like "try to read file "notes.txt" and call it notes."
+
+Line 4: In "try to", the file's name has to be text or a name.
+    try to read file first item of names and call it notes. if that fails, say the reason.
+                     ^^^^^^^^^^^^^^^^^^^
+Keep it in a name first, like "let path be ...", and use the name here.
+
+Line 8: This doesn't say what to do when s is a circle.
+    check which kind s is:
+    ^^^^^^^^^^^^^^^^^^^^^^
+Add "when it's a circle:", or an "otherwise:" at the end.
+
+Line 9: A "when" can only be narrowed by a test that's yes or no, but this is a number.
+        when it's a circle whose radius plus 1:
+                                 ^^^^^^^^^^^^^

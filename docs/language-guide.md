@@ -133,10 +133,21 @@ Text goes in double quotes, and must end on the same line. Inside text, these es
 | `\t` | a tab |
 | `\"` | a double quote |
 | `\\` | a backslash |
+| `\r` | back to the start of the line |
+| `\u{e9}` or `\u00e9` | the character with that code, in hex (here `é`) |
 
 ```
 say "Two lines:\nfirst\nsecond".
 say "She said \"hi\"".
+```
+
+For text of several lines, end a sentence with `the text below:` and indent the lines under it. They're kept exactly as written: no escapes, no values in brackets, and the indentation they share is taken off.
+
+```
+let page be the text below:
+    {"name": "Ann", "path": "C:\notes"}
+    [this is just text]
+say page.
 ```
 
 Try it: [`examples/lexer/text.es`](../examples/lexer/text.es)
@@ -1403,6 +1414,18 @@ check which kind s is:
 
 `when it's a rectangle or a square:` covers several variants; `when it is a circle:` works too. If S is a name (or a field, like `the drawing's shape`), it's checked in the `when` too, so `s's radius` works there as well.
 
+A `when` can also test the value: `when it's a circle whose radius is over 10:` (or `where ...`, or `that ...`) runs only for those circles. It doesn't cover every circle, so a plain `when it's a circle:` (or an `otherwise`) is still needed after it:
+
+```
+check which kind s is:
+    when it's a circle whose radius is over 10:
+        say "a big circle".
+    when it's a circle:
+        say "a small circle".
+    otherwise:
+        say "not a circle".
+```
+
 Every variant needs a `when`, unless there's an `otherwise`. A missing one is an error before the program runs:
 
 ```
@@ -2203,8 +2226,51 @@ save the sales whose region is "East" as "east.csv".
 
 A table's rows are records whose fields are the columns the program uses: `amount` is a number because the program adds it up, `region` is text. The program checks the file when it reads it: a column that isn't there stops it with "sales.csv has no column called "amout". Did you mean "amount"?", and so does a value of the wrong kind. Saved rows keep every column of the file, with any changes the program made.
 
+### Asking for numbers and yes or no
+
+```
+ask for a number "How old are you? " and call it age.
+ask yes or no "Do you like tea? " and call it likes tea.
+```
+
+They ask again until the answer fits: "Please type a number, like 42." or "Please answer yes or no." (`y` and `n` work too, in any case).
+
+### Writing numbers for people
+
+```
+say 1234.5 as money.          # $1,234.50
+say 0.25 as a percent.        # 25%
+say 1234567 with commas.      # 1,234,567
+```
+
+Like `as text`, they take the value just before them, so write `(price times 3) as money`.
+
+### Values that are always up to date
+
+```
+let prices be a list of 3, 4 and 5.
+the total is always the sum of prices.
+add 10 to the end of prices.
+say total.                    # 22
+```
+
+### When a file can't be used
+
+```
+try to read file "notes.txt" and call it notes.
+if that fails:
+    say "No notes yet:", the reason.
+    let notes be "".
+```
+
+`try to` works with sentences that use a file or a folder. EasyScript checks first that the sentence can be done (the file is there, the folder for a new file exists, nothing is in the way of a new name); if it can't, the sentences after `if that fails` run instead, and `the reason` says why.
+
 ### What each one means exactly
 
+- `ask for a number Q and call it age` asks Q until the answer reads as a number, then keeps that number. `ask yes or no` is the same with `yes`/`y`/`no`/`n`.
+- `X as money` is a dollar sign, X rounded to two decimals, with commas between thousands. `X as a percent` is X times 100 (up to 10 digits) followed by `%`.
+- `the total is always E` makes `total` mean E wherever it's read.
+- `try to S. if that fails, F` checks S's files first and runs S, or else F with `the reason`.
 - `what is X?` and `X?` are `say X`; `is X above 100?` is `say X is above 100`; `which customer has the highest total?` is `say the customer with the highest total`.
 - `S1, then S2` is S1, then (if S2 says "it") a hidden name for what S1 gave, then S2 with "it" meaning that name.
 - `total the amount per month` is `let (a hidden name) be the total amount of it per month`.

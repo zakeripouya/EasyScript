@@ -30,7 +30,9 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | ordinals | A whole number with `st`, `nd`, `rd` or `th`, only in `every 3rd item of L`. The ending has to be the right one (`2th` is an error) | `2nd`, `3rd`, `21st`, `7th` | Available |
 | decimals | Digits, a point, digits | `19.99` (but `3.` is the number 3 and then a period, and `.5` is an error: write `0.5`) | Available |
 | `"..."` | Text. It must end on the line it starts on | `"Hello, world!"` | Available |
-| `\n` `\t` `\"` `\\` | Escapes inside text: new line, tab, quote, backslash | `"Line one\nLine two"` | Available |
+| `\n` `\t` `\r` `\"` `\\` | Escapes inside text: new line, tab, back to the line's start, quote, backslash | `"Line one\nLine two"` | Available |
+| `\u{CODE}` / `\uXXXX` | The character with that code, in hex (1 to 10FFFF, not D800 to DFFF) | `"caf\u{e9}"`, `"\u{1F600}"` | Available |
+| `the text below:` + indented lines | Text of several lines, exactly as written (no escapes, no values in brackets), without the indentation they share; blank lines inside are kept, and it ends at the first line that isn't indented more than the sentence | `let page be the text below:` | Available |
 | `yes`, `true` | The yes value | `done is yes` | Available |
 | `no`, `false` | The no value | `ready is false` | Available |
 | `nothing` | What a function gives back when it gives back no value. Otherwise it can only be used where a record can be nothing (see [Records](#records)) | `return` (gives back nothing), `set node's next to nothing` | Available |
@@ -814,6 +816,37 @@ All **Available** (English pass part 4). A question or request means exactly wha
 | `count L` / `count the Ls that ...` | `let NAME be the number of items in L` | `count the orders whose amount is over 50` |
 | `... and call it NAME` / `..., called NAME` / `called NAME` / `named NAME` | The name the action's value is kept in (otherwise a hidden one, for the next step's `it`) | `total the amount of orders and call it everything` |
 
+### Asking for numbers and yes or no
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `ask for a number Q and call it NAME` (or `and call the answer NAME`) | Asks Q until the answer is a number (otherwise "Please type a number, like 42." and Q again), and keeps it as a number. With no more input it's a runtime error | `ask for a number "How old are you? " and call it age.` |
+| `ask yes or no Q and call it NAME` | Asks Q until the answer is yes or no (`yes`, `y`, `no`, `n`, any case; otherwise "Please answer yes or no."), and keeps it as yes/no | `ask yes or no "More? " and call it more.` |
+
+### Writing numbers for people
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `X as money` | Text: a dollar sign, commas between thousands and two decimals (`-$5.00` for minus 5) | `1234.5 as money` is `"$1,234.50"` |
+| `X as a percent` | Text: X times 100 with up to 10 digits and a `%` | `0.25 as a percent` is `"25%"` |
+| `X with commas` | Text: the number with commas between thousands | `1234567 with commas` is `"1,234,567"` |
+
+They bind like `as text` (to the value just before them): `(price times 3) as money`. A constant can't use them.
+
+### Values that are always up to date
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `the NAME is always VALUE.` | A name whose value is worked out again each time it's read, so it follows the names it uses. It can't be set | `the total is always the sum of the prices.` |
+| `the sum of L` | The same as `the total of L` | `the sum of prices` |
+
+### When a file can't be used
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `try to S. if that fails, S2.` / `try to S.` + `if that fails:` and indented sentences | S is a sentence that reads, writes or adds to a file, reads a table or csv file, saves a csv file, or makes, deletes, renames, copies or moves a file or folder. Just before it, EasyScript checks it can be done; if not, S is skipped and the other sentences run instead of stopping the program. The file's name has to be text or a name (it's looked at twice). A name S makes exists after it either way; if S failed, it holds empty text (or 0, no, an empty list) | `try to read file "notes.txt" and call it notes. if that fails, say "No notes yet."` |
+| `the reason` | In `if that fails`: text saying why, the same words the error would have used | `say the reason.` |
+
 ### Tables in files
 
 | Pattern | Meaning | Example |
@@ -838,6 +871,7 @@ All of these are **Available**. A kind with variants is a value that's one of se
 | `when it's VARIANT:` / `when it is VARIANT:` | The sentences indented below run when S is that variant. Inside, `it` is S, and S itself (if it's a name or a field) is checked to be that variant | `when it's a circle:` |
 | `when it's VARIANT or VARIANT:` | For any of several variants | `when it's a rectangle or a square:` |
 | `when it's nothing:` | When S (a kind or nothing) is nothing | `when it's nothing:` |
+| `when it's VARIANT whose FIELD ...:` / `... where C:` / `... that ...:` | Only when the test is yes too (`it` is S, checked to be that variant). It doesn't count as covering the variant: another `when` for it (or `otherwise`) is still needed | `when it's a circle whose radius is over 10:` |
 | `otherwise:` / `else:` | Last, for every variant without a `when`. Without it, every variant needs one; with it but nothing left to do, it's a warning | `otherwise:` |
 | `its FIELD` | `it's FIELD`: the field of `it` (only before a field's name; elsewhere `its` is an ordinary name) | `its radius` |
 | `S is VARIANT` / `S is not VARIANT` / `S isn't VARIANT` | Yes if S is (or isn't) that variant. The `a` or `an` before it is needed: `s is circle` compares with a name | `if s is a circle:` |

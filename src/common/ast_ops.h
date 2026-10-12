@@ -42,6 +42,7 @@ typedef enum {
     LIB_TWICE,           // twice A
     LIB_PERCENT_OF,      // A percent of B
     LIB_IS_INFINITE,     // A is infinite (part 0) / A is not infinite (part 1)
+    LIB_REASON,          // the reason (in "if that fails, ..."): why the sentence tried couldn't be done
     LIB_PERIOD_KEY,      // "per month": A's month as a group ("October 2026"); `part` a DatePart (year, month,
                          // day or weekday). A is the item's date field; its name is NULL until the checker finds it.
     LIB_PROGRAM_WORDS,   // the words given to the program (system tools, parse_system.c)
@@ -97,6 +98,9 @@ typedef enum {
     CONVERT_TO_NUMBER,
     CONVERT_TO_TEXT,
     CONVERT_TO_EXACT_TEXT,  // "as exact text": digits that read back as the same number
+    CONVERT_TO_MONEY,       // "as money": "$1,234.50"
+    CONVERT_TO_PERCENT,     // "as a percent": 0.25 is "25%"
+    CONVERT_WITH_COMMAS,    // "with commas": "1,234,567.5"
 } ConvertTarget;
 
 // Which item of a list: item N, the first item, or the last item.

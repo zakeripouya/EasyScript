@@ -27,6 +27,15 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 - **`the position of X in T` (and `in L`) is `a number or nothing`,** and gives **nothing** instead of 0 when X isn't there, following the design rule that "not found" results use `or nothing`. Using it as a number now needs a check first: `if at is not nothing:`, `if at is nothing, ...`, or `check which kind at is:`. Programs that compared it with 0 (`if the position of "@" in address is 0`) write `is nothing` instead. The exception for it is gone from the design principles.
 
+### Added (English pass part 4, continued)
+
+- `ask for a number Q and call it NAME` and `ask yes or no Q and call it NAME`, asking again until the answer fits.
+- `X as money` (`$1,234.50`), `X as a percent` (`25%`), `X with commas` (`1,234,567`).
+- `the NAME is always VALUE.`: a name worked out again each time it's read; `the sum of L` as another way to say `the total of L`.
+- `try to S. if that fails, ...` for sentences that use a file or a folder, with `the reason`.
+- `the text below:` with indented lines: text of several lines, exactly as written. Escapes `\r` and `\u{e9}`/`\u00e9`.
+- `when it's a circle whose radius is over 10:` (and `where`, `that`) in `check which kind`.
+
 ### Changed
 
 - **Messages use the plain words of the new [voice guide](docs/voice.md):** no more "variable" ("name") or "function" for `to` definitions ("I don't know how to "aera".", ""give back" only works inside a definition.", "Definitions are using each other too deeply ..."), and seven long messages were split or shortened to read at grade 8 or below. A new audit (`audit/plain-words`) keeps it that way: no banned programmer words outside quotes, and a reading level of grade 8 or below for every tested error.

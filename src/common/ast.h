@@ -267,6 +267,7 @@ typedef enum {
     STMT_LIBRARY,      // the standard library's sentences: wait 2 seconds, shuffle L, delete the file F, ...
     STMT_RULE,         // an age must be between 0 and 150 / a customer's email must contain "@" (top level only)
     STMT_EVENT,        // every 2 seconds: / every Monday at 9am: / whenever C: / when C, S / whenever a key is pressed:
+    STMT_TRY,          // try to S. if that fails, S2. (S uses a file or a folder; "the reason" says why it couldn't)
 } StmtKind;
 
 // What a sentence of the standard library does (STMT_LIBRARY), with its parts in a and b.
@@ -393,6 +394,7 @@ typedef struct {
     Vec(size_t) variants;  // Records.variants
     bool nothing;          // "when it's nothing" (alone, or with variants)
     bool otherwise;
+    Expr *guard;  // "when it's a circle whose radius is over 10": a test of "it" too (NULL: none)
     Block body;
     SourcePos pos;  // from "when"/"otherwise" to its colon
 } MatchBranch;
@@ -432,6 +434,7 @@ struct Stmt {
         struct {
             Expr *prompt;
             Name answer;
+            Type kind;  // TYPE_TEXT, or TYPE_NUMBER ("ask for a number") / TYPE_YESNO ("ask yes or no"): asked again until it fits
         } ask;
         struct {
             Expr *text;
@@ -482,6 +485,10 @@ struct Stmt {
             const char *message;  // "An age must be between 0 and 150", as written
             size_t id;          // filled in by the checker: its C function (es_rule1, ...)
         } rule;
+        struct {
+            struct Stmt *attempt;  // the sentence tried
+            Block fallback;        // what to do if its file or folder can't be used
+        } attempt;  // STMT_TRY
         Expr *returned;  // STMT_RETURN; NULL for a bare "return"
         Expr *call;      // STMT_CALL: an EXPR_CALL
         struct {

@@ -17,7 +17,7 @@ static const char *const op_display[] = {
     "\"is in\"", "\"the number of days between\"", "\"is before\"", "\"is after\"", "\"file ... exists\"",
     "\"folder ... exists\"", "\"the lines of file\"", "\"the files in\"", "\"the folders in\"",
     "\"the size of file\"", "\"the last change of file\"", "\"half of\"", "\"twice\"", "\"percent of\"",
-    "\"is infinite\"", "\"per\"",
+    "\"is infinite\"", "\"the reason\"", "\"per\"",
 };
 
 static TypeVar require(Checker *c, const Expr *operand, Type type, const char *display, const char *needs) {
@@ -118,6 +118,7 @@ TypeVar checker_check_library(Checker *c, const Expr *expr) {
     case LIB_IS_INFINITE:
         number(c, a, display);
         return types_new(c, TYPE_YESNO, line);
+    case LIB_REASON: return types_new(c, TYPE_TEXT, line);
     case LIB_PERIOD_KEY:  // "per year" groups by a number, the others by text ("October 2026")
         date(c, a, arena_sprintf(c->arena, "\"per %s\"", ast_date_part_name(expr->as.library.part)));
         return types_new(c, expr->as.library.part == DATE_YEAR ? TYPE_NUMBER : TYPE_TEXT, line);
@@ -259,4 +260,58 @@ void checker_check_library_stmt(Checker *c, const Stmt *stmt) {
     case DO_RUN:
     case DO_WAIT_KEY: checker_check_system_stmt(c, stmt); break;
     }
+}
+
+// --- try to ... -------------------------------------------------------------------------
+
+// The files and folders the sentence uses (a and b), or false if it's a
+// sentence "try to" doesn't cover.
+static bool tried_paths(const Stmt *stmt, const Expr **a, const Expr **b) {
+    *a = *b = NULL;
+    switch (stmt->kind) {
+    case STMT_READ_FILE: *a = stmt->as.read_file.path; return true;
+    case STMT_WRITE_FILE:
+    case STMT_APPEND_FILE: *a = stmt->as.file_write.path; return true;
+    case STMT_LIBRARY:
+        switch (stmt->as.library.op) {
+        case DO_READ_TABLE:
+        case DO_READ_CSV:
+        case DO_MAKE_FILE:
+        case DO_MAKE_FOLDER:
+        case DO_DELETE_FILE:
+        case DO_DELETE_FOLDER: *a = stmt->as.library.a; return true;
+        case DO_SAVE_CSV: *a = stmt->as.library.b; return true;
+        case DO_RENAME:
+        case DO_COPY:
+        case DO_MOVE:
+            *a = stmt->as.library.a;
+            *b = stmt->as.library.b;
+            return true;
+        default: return false;
+        }
+    default: return false;
+    }
+}
+
+// "try to S. if that fails, ...": S uses a file or a folder (written as text
+// or a name, since it's looked at twice: once to check, once to use).
+void checker_check_try(Checker *c, const Stmt *stmt) {
+    const Stmt *attempt = stmt->as.attempt.attempt;
+    const Expr *a, *b;
+    if (!tried_paths(attempt, &a, &b)) {
+        diag_error(c->diag, attempt->pos.span, "\"try to\" only works with a file or a folder.");
+        diag_note(c->diag, "Use it to read, write, make or delete one, like \"try to read file \"notes.txt\" and call it "
+                           "notes.\"");
+        diag_info(c->diag, DIAG_NOT_ALLOWED, "a sentence that uses a file or a folder", NULL);
+    } else {
+        const Expr *paths[] = {a, b};
+        for (size_t i = 0; i < 2; i++) {
+            if (!paths[i] || paths[i]->kind == EXPR_TEXT || paths[i]->kind == EXPR_NAME) continue;
+            diag_error(c->diag, paths[i]->pos.span, "In \"try to\", the file's name has to be text or a name.");
+            diag_note(c->diag, "Keep it in a name first, like \"let path be ...\", and use the name here.");
+            diag_info(c->diag, DIAG_NOT_ALLOWED, "a name worked out here", "text");
+        }
+    }
+    checker_check_statements(c, &(Block){(Stmt **)&stmt->as.attempt.attempt, 1, 1});
+    checker_check_block(c, &stmt->as.attempt.fallback, stmt->pos.line, "\"if that fails\"");
 }

@@ -340,9 +340,10 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
     case STMT_LIBRARY: checker_check_library_stmt(c, stmt); break;
     case STMT_RULE: checker_check_rule(c, (Stmt *)stmt); break;
     case STMT_EVENT: checker_check_event(c, stmt); break;
+    case STMT_TRY: checker_check_try(c, stmt); break;
     case STMT_ASK:
         checker_check_expr(c, stmt->as.ask.prompt);
-        make_text(c, &stmt->as.ask.answer);
+        checker_make_or_store(c, &stmt->as.ask.answer, types_new(c, stmt->as.ask.kind, stmt->pos.line));
         break;
     case STMT_WRITE_FILE:
     case STMT_APPEND_FILE:

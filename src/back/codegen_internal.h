@@ -278,6 +278,7 @@ void cg_emit_text_op(Codegen *g, const Expr *expr, StrBuf *out);       // EXPR_T
 void cg_emit_library(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_LIBRARY
 bool cg_library_effects(const Codegen *g, const Expr *expr);      // cg_has_effects for EXPR_LIBRARY
 void cg_emit_library_stmt(Codegen *g, const Stmt *stmt);          // STMT_LIBRARY
+void cg_emit_try(Codegen *g, const Stmt *stmt);                   // STMT_TRY
 void cg_emit_characters(Codegen *g, const Expr *expr, StrBuf *out);    // EXPR_ITEM/EXPR_SLICE of text
 void cg_emit_text_search(Codegen *g, const Expr *expr, StrBuf *out);   // contains (text), starts with, ends with
 bool cg_text_op_effects(const Codegen *g, const Expr *expr);           // cg_has_effects for EXPR_TEXT_OP

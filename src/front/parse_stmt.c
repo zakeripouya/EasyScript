@@ -199,6 +199,11 @@ static bool expect_call_phrase(Parser *p, const char *phrase, const char *writte
 
 static Stmt *parse_ask(Parser *p, const Token *verb, const StmtForm *form) {
     Stmt *stmt = parser_new_stmt(p, STMT_ASK, verb);
+    stmt->as.ask.kind = TYPE_TEXT;
+    size_t n = parser_match_words(p, "for number");  // ask for a number "How old are you?"
+    if (n) stmt->as.ask.kind = TYPE_NUMBER;
+    if (!n && (n = parser_match_words(p, "yes or no"))) stmt->as.ask.kind = TYPE_YESNO;
+    parser_consume(p, n + (n && parser_at(p, n, TOK_COMMA)));
     stmt->as.ask.prompt = parse_expression(p);
     if (p->sentence_failed || !expect_call_phrase(p, "and call answer", "and call the answer", form->example)) return NULL;
     if (!parser_parse_name(p, &stmt->as.ask.answer, NULL)) return NULL;
@@ -464,6 +469,9 @@ Stmt *parse_statement(Parser *p) {
     if (parser_at_table(p)) return parser_parse_table(p);            // the shipping cost depends on the total:
     if (parser_at_event(p)) return parser_parse_event(p);            // every 2 seconds: / whenever C:
     if (parser_at_action(p)) return parser_parse_action(p);          // total the amount per month
+    if (parser_at_word(p, 0, "try") && parser_at_word(p, 1, "to") && !parser_is_function(p, "try")) {
+        return parser_parse_try(p);  // try to read file "x". if that fails, ...
+    }
     if (parser_interface_words(p, p->pos) > 0) return parse_interface(p);
     if (parser_at_library_sentence(p)) {  // "delete the file F", "clear the screen", "run "git"", ...
         Stmt *stmt = parser_parse_library_sentence(p);

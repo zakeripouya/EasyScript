@@ -149,10 +149,14 @@ void cg_emit_match(Codegen *g, const Stmt *stmt) {
         } else {
             sb_append(&g->body, " else ");
         }
-        if (!branch->otherwise) sb_appendf(&g->body, "if (%s) ", condition(g, branch, var.data));
-        sb_append(&g->body, "{\n");
         LoopCode when = {stmt, id, g->scopes.len, hidden, type};
         vec_push(g->arena, &g->loops, when);
+        if (!branch->otherwise && branch->guard) {  // "whose radius is over 10": tested once it's a circle
+            sb_appendf(&g->body, "if ((%s) && %s) ", condition(g, branch, var.data), cg_operand(g, branch->guard, false));
+        } else if (!branch->otherwise) {
+            sb_appendf(&g->body, "if (%s) ", condition(g, branch, var.data));
+        }
+        sb_append(&g->body, "{\n");
         cg_emit_block(g, &branch->body);
         g->loops.len--;
         cg_indent(g);

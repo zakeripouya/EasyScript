@@ -16,6 +16,11 @@
 #include <string.h>
 #include "front/parse_internal.h"
 
+static bool parser_at_sentence_end_ahead(const Parser *p, size_t ahead) {
+    TokenKind kind = parser_peek(p, ahead)->kind;
+    return kind == TOK_PERIOD || kind == TOK_NEWLINE || kind == TOK_EOF || kind == TOK_DEDENT || kind == TOK_INDENT;
+}
+
 static bool at_line_start(const Parser *p) {
     if (p->pos == 0) return true;
     TokenKind before = p->tokens[p->pos - 1].kind;
@@ -41,13 +46,18 @@ static bool after_the(const Parser *p, size_t ahead) {
 
 typedef enum { NONE, ADJECTIVE_IF, ADJECTIVE_ONE, VALUE, NAMED, RULE } Shape;
 
-// How many words name the value in "the best customer is the one ...", or 0.
+// How many words name the value in "the best customer is the one ..." (or
+// "the total is always ..."), or 0.
 static size_t named_words(const Parser *p, size_t *verb) {
     const Token *first = parser_peek(p, 0);
     if (!parser_is_name_word(first) || parser_is_statement_word(first->text)) return 0;
     size_t n = 0;
     while (parser_is_name_word(parser_peek(p, n)) && !parser_at_word(p, n, "are")) n++;
     if (n == 0 || !(parser_at_word(p, n, "is") || parser_at_word(p, n, "are"))) return 0;
+    if (parser_at_word(p, n + 1, "always") && !parser_at_sentence_end_ahead(p, n + 2)) {
+        *verb = n;
+        return n;
+    }
     bool one = parser_at_word(p, n + 1, "one") || parser_at_word(p, n + 1, "ones");
     if (!one || !after_the(p, n + 1) || !(parser_at_word(p, n + 2, "with") || at_filter_word(p, n + 2))) return 0;
     *verb = n;
@@ -129,7 +139,8 @@ void parser_find_definitions(Parser *p) {
             parser_take_name(p, n, &name);
             p->pos = at;
             const char *last = strrchr(name.text, ' ');
-            Definition def = {name.text, n, at + n + 1, last ? last + 1 : name.text, 0, false};
+            bool always = parser_at_word(p, n + 1, "always");
+            Definition def = {name.text, n, at + n + 1 + always, last ? last + 1 : name.text, 0, false, always};
             vec_push(p->arena, &p->definitions, def);
             break;
         }
@@ -253,6 +264,7 @@ static Definition *definition_here(Parser *p) {
 // The value of a named value, from its words: "one with the highest ..." or
 // "ones whose|that|where ...".
 static Expr *read_value(Parser *p, const Definition *def) {
+    if (def->always) return parse_expression(p);  // "the total is always the sum of the prices"
     SourcePos start = parser_token_pos(parser_peek(p, 0));
     bool plural = parser_at_word(p, 0, "ones");
     Span one = parser_advance(p)->span;
@@ -311,7 +323,7 @@ static Expr *expand(Parser *p, Definition *def) {
 
 static Stmt *parse_named(Parser *p) {
     Definition *def = definition_here(p);
-    parser_consume(p, def->words + 1);  // the name and "is"/"are"
+    parser_consume(p, def->words + 1 + def->always);  // the name, "is"/"are" (and "always")
     if (def->state == 0) {  // read it once here, so its mistakes are reported even if it's never used
         def->expanding = true;
         read_value(p, def);

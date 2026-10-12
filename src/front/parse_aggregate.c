@@ -256,6 +256,7 @@ static const struct {
     const char *example;
 } totals[] = {
     {"total", AGG_TOTAL, "To add up a list, write it like \"scores added together\"."},
+    {"sum", AGG_TOTAL, "To add up a list, write it like \"scores added together\"."},
     {"average", AGG_AVERAGE, "To find the average of a list, give the definition another name."},
     {"median", AGG_MEDIAN, "To find the middle of a list, give the definition another name."},
 };

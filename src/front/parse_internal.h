@@ -30,6 +30,7 @@ typedef struct {
     const char *noun;   // its last word, naming the items: "customer", "orders"
     int state;          // 0: not read yet; 1: read; 2: has a mistake (reported once)
     bool expanding;     // being read now (a name used in its own definition)
+    bool always;        // "the total is always ...": any value, not "the one ..."
 } Definition;
 
 typedef struct {
@@ -65,6 +66,7 @@ typedef struct {
     Vec(size_t) tables;     // the row kind (Records index) of each "read the table in", in order (pre-scan)
     size_t tables_read;     // how many of them have been parsed
     bool chain_used;        // the step being read said "it" (so the step before's result is kept)
+    bool in_failure;        // reading "if that fails, ...": "the reason" is why
     const char *chain_it;   // in a step after ", then": the hidden name "it" means ("" if the step before gives
                             // nothing), else NULL
 } Parser;
@@ -225,6 +227,7 @@ bool parser_parse_group(Parser *p, Expr *aggregate);  // "per region" / "per mon
 // parse_table_file.c: "read the table in F"
 void parser_find_table_files(Parser *p);  // pre-scan: a kind of row for each
 Stmt *parser_parse_read_table(Parser *p, const Token *verb);  // after "read", at "table"
+Stmt *parser_parse_try(Parser *p);  // try to S. if that fails, S2.
 // A field's words at `ahead`: a known field's, or, in a program that reads a table, any one name word (a column).
 size_t parser_field_words(const Parser *p, size_t ahead);
 

@@ -1009,6 +1009,42 @@ Positions start at 1: the first item is item 1.
 
 Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).
 
+### Talking to it, part 4
+
+```
+Line 1: Say what to do if it fails.
+    try to read file "x.txt" and call it notes.
+    ^^^
+Write it like "try to read file "notes.txt" and call it notes. if that fails, say "No notes yet."".
+```
+
+```
+Line 2: "try to" only works with a file or a folder.
+    try to say "hi". if that fails, say the reason.
+           ^^^^^^^^
+Use it to read, write, make or delete one, like "try to read file "notes.txt" and call it notes."
+```
+
+```
+Line 1: A constant can't be a number written as money, a percent or with commas.
+    keep price as 5 as money.
+                  ^^^^^^^^^^
+Make it with "let", or format the number where it's used.
+```
+
+```
+Line 1: "\u12" isn't a character I know.
+    say "\u{110000} \u12 \u{}".
+                    ^^^^
+Write the character's code in hex, like \u{e9} for "é" or \u{1F600}. Codes go from 1 to 10FFFF.
+```
+
+While the program runs, `ask for a number` with no more answers stops with:
+
+```
+Line 1: There's no answer to read: the input has run out.
+```
+
 ## Coming soon
 
 Nothing is planned for error messages right now; new features bring their own.

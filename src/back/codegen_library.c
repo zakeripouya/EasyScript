@@ -78,6 +78,7 @@ void cg_emit_library(Codegen *g, const Expr *expr, StrBuf *out) {
     case LIB_HALF: sb_appendf(out, "(%s * 0.5)", a); break;
     case LIB_TWICE: sb_appendf(out, "(%s * 2.0)", a); break;
     case LIB_PERCENT_OF: sb_appendf(out, "(%s * %s / 100.0)", a, b); break;
+    case LIB_REASON: cg_emit_var(g, out, "0reason", TYPE_TEXT); break;
     case LIB_PERIOD_KEY:
         if (expr->as.library.part == DATE_YEAR) {
             sb_appendf(out, "es_date_part(%s, %d)", a, DATE_YEAR);
@@ -198,4 +199,67 @@ void cg_emit_library_stmt(Codegen *g, const Stmt *stmt) {
     }
     default: break;
     }
+}
+
+// "try to S. if that fails, ...": the check for S's file or folder first
+// (NULL if it can go ahead, otherwise the reason), then S, or the fallback
+// with "the reason" (kept in a hidden name).
+void cg_emit_try(Codegen *g, const Stmt *stmt) {
+    const Stmt *attempt = stmt->as.attempt.attempt;
+    const char *check = NULL;
+    if (attempt->kind == STMT_READ_FILE) {
+        check = arena_sprintf(g->arena, "es_try_read(%s)", cg_operand(g, attempt->as.read_file.path, false));
+    } else if (attempt->kind == STMT_WRITE_FILE || attempt->kind == STMT_APPEND_FILE) {
+        check = arena_sprintf(g->arena, "es_try_write(%s)", cg_operand(g, attempt->as.file_write.path, false));
+    } else {
+        const Expr *a = attempt->as.library.a, *b = attempt->as.library.b;
+        bool folder = attempt->as.library.folder;
+        switch (attempt->as.library.op) {
+        case DO_READ_TABLE:
+        case DO_READ_CSV: check = arena_sprintf(g->arena, "es_try_read(%s)", cg_operand(g, a, false)); break;
+        case DO_SAVE_CSV: check = arena_sprintf(g->arena, "es_try_write(%s)", cg_operand(g, b, false)); break;
+        case DO_MAKE_FILE:
+        case DO_MAKE_FOLDER:
+            check = arena_sprintf(g->arena, "es_try_make(%s, %s)", cg_operand(g, a, false),
+                                  attempt->as.library.op == DO_MAKE_FOLDER ? "true" : "false");
+            break;
+        case DO_DELETE_FILE:
+        case DO_DELETE_FOLDER:
+            check = arena_sprintf(g->arena, "es_try_find(%s, %s)", cg_operand(g, a, false),
+                                  attempt->as.library.op == DO_DELETE_FOLDER ? "true" : "false");
+            break;
+        default:  // rename, copy, move
+            check = arena_sprintf(g->arena, "es_try_two(%s, %s, %s, %s)", cg_operand(g, a, false),
+                                  cg_operand(g, b, false), folder ? "true" : "false",
+                                  attempt->as.library.op == DO_MOVE ? "true" : "false");
+            break;
+        }
+    }
+    cg_declare_name(g, "0reason", TYPE_TEXT);
+    StrBuf reason;
+    sb_init(&reason, g->arena);
+    cg_append_var(g, &reason, "0reason", TYPE_TEXT);
+    size_t id = ++g->loop_ids;
+    cg_indent(g);
+    sb_appendf(&g->body, "{\n");
+    g->depth++;
+    cg_indent(g);
+    sb_appendf(&g->body, "EsText *es_why%zu = %s;\n", id, check);
+    cg_indent(g);
+    sb_appendf(&g->body, "if (!es_why%zu) {\n", id);
+    g->depth++;
+    cg_emit_stmt(g, attempt);  // in the scope around it: the names it makes are used after it
+    g->depth--;
+    cg_indent(g);
+    sb_appendf(&g->body, "} else {\n");
+    g->depth++;
+    cg_indent(g);
+    sb_appendf(&g->body, "es_set(&%s, es_why%zu);\n", reason.data, id);
+    g->depth--;
+    cg_emit_block(g, &stmt->as.attempt.fallback);
+    cg_indent(g);
+    sb_append(&g->body, "}\n");
+    g->depth--;
+    cg_indent(g);
+    sb_append(&g->body, "}\n");
 }

@@ -99,3 +99,20 @@ A running record of the unattended English-pass run (parts 2 to 5, then charts),
 - **File sentences keep `file`:** `write "milk" in file it` (not `in it`), as decided in part 1.
 - **`me` and `undo` are reserved.**
 
+### Done (second commit)
+
+- `ask for a number` / `ask yes or no`, asking again until the answer fits (item 4).
+- `as money`, `as a percent`, `with commas` (item 5); `the NAME is always VALUE.` and `the sum of` (item 6).
+- `try to S. if that fails, ...` with `the reason` (item 7), for sentences that use a file or a folder.
+- `the text below:` text blocks, `\r` and `\u{e9}` escapes (item 10); `when it's a circle whose radius is over 10:` guards (item 11, first half).
+- Example `tip_calculator.es`. Text lexing moved into `src/front/lexer_text.c` (lexer.c was over 600 lines).
+
+### Decisions made (second commit)
+
+- **`try to` checks first instead of catching the failure.** Catching it would need `setjmp`/`longjmp` around generated C, which leaves the sentence's half-made text and lists unreleased (the memory check would fail) and isn't safe for C locals. So `try to` covers the sentences whose failures can be checked before they start: file and folder sentences. The check uses the same words as the error. A file that changes between the check and the sentence still stops the program (very unlikely in practice). Other failures (dividing by zero, a missing map key) aren't covered: they have their own forms (`if ... is 0`, `, or D`). Logged as an open question.
+- **The file's name in `try to` must be text or a name**, since it's looked at twice.
+- **A name a tried sentence makes exists after it either way** (empty if it failed), like a name made in a loop that ran zero times.
+- **`as money` is dollars only** for now; other currencies are an open question. It binds like `as text`: `(price times 3) as money`.
+- **Exact money amounts ($19.99 kept exactly) and units of measure: skipped** for this run. Both need a new kind of value through the checker, code generation and runtime (exact decimals, or a unit carried by every number's kind), which is a step on its own. Logged under Open questions.
+- **Guards don't cover their variant:** `when it's a circle whose radius is over 10:` still needs a plain `when it's a circle:` or `otherwise`, so "every variant covered" stays a check the compiler can do.
+

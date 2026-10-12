@@ -8,15 +8,8 @@
 #include <string.h>
 #include "front/parse_internal.h"
 
-// "read table in F" at a sentence's start (the "the" is dropped).
+// "read table in F" (the "the" is dropped): only ever this sentence.
 static bool at_read_table(const Parser *p, size_t i) {
-    if (!(i == 0 || p->tokens[i - 1].kind == TOK_NEWLINE || p->tokens[i - 1].kind == TOK_INDENT ||
-          p->tokens[i - 1].kind == TOK_DEDENT || p->tokens[i - 1].kind == TOK_PERIOD ||
-          p->tokens[i - 1].kind == TOK_COMMA || (p->tokens[i - 1].kind == TOK_WORD &&
-                                                (strcmp(p->tokens[i - 1].text, "then") == 0 ||
-                                                 strcmp(p->tokens[i - 1].text, "and") == 0)))) {
-        return false;
-    }
     return i + 3 < p->count && p->tokens[i].kind == TOK_WORD && strcmp(p->tokens[i].text, "read") == 0 &&
            p->tokens[i + 1].kind == TOK_WORD && strcmp(p->tokens[i + 1].text, "table") == 0 &&
            p->tokens[i + 2].kind == TOK_WORD && strcmp(p->tokens[i + 2].text, "in") == 0;
@@ -88,4 +81,39 @@ Stmt *parser_parse_read_table(Parser *p, const Token *verb) {
         stmt->as.library.name.pos = stmt->as.library.a->pos;
     }
     return stmt;
+}
+
+// --- try to ... --------------------------------------------------------------------------
+
+// try to S. if that fails, S2. / ... if that fails: (indented sentences)
+Stmt *parser_parse_try(Parser *p) {
+    static const char *const example = "try to read file \"notes.txt\" and call it notes. if that fails, say \"No notes yet.\"";
+    const Token *verb = parser_advance(p);
+    parser_advance(p);  // to
+    Stmt *stmt = parser_new_stmt(p, STMT_TRY, verb);
+    stmt->as.attempt.attempt = parse_statement(p);
+    if (!stmt->as.attempt.attempt || p->sentence_failed) return NULL;
+    size_t gap = 0;  // the sentence's end, then "if that fails" (on the same line or the next)
+    if (parser_at(p, gap, TOK_PERIOD) || parser_at(p, gap, TOK_COMMA)) gap++;
+    if (parser_at(p, gap, TOK_NEWLINE)) gap++;
+    if (!parser_match_words_at(p, gap, "if that fails")) {
+        if (parser_error(p, verb->span, "Say what to do if it fails.")) {
+            diag_note(p->diag, "Write it like \"%s\".", example);
+            diag_info(p->diag, DIAG_MISSING, "\"if that fails\"", NULL);
+        }
+        return NULL;
+    }
+    parser_consume(p, gap + 3);
+    bool outer = p->in_failure;
+    p->in_failure = true;  // "the reason" means why it failed
+    if (parser_at(p, 0, TOK_COMMA)) {
+        parser_advance(p);
+        parser_parse_actions(p, &stmt->as.attempt.fallback);
+    } else {
+        SourcePos header = stmt->pos;
+        parser_parse_block(p, &stmt->as.attempt.fallback, &header, NULL, "\"if that fails\"");
+        p->ended_with_block = true;
+    }
+    p->in_failure = outer;
+    return p->sentence_failed ? NULL : stmt;
 }

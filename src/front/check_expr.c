@@ -571,9 +571,12 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_CONVERT: {
         TypeVar operand = checker_check_expr(c, expr->as.convert.operand);
         if (expr->as.convert.target == CONVERT_TO_TEXT) return types_new(c, TYPE_TEXT, line);
-        if (expr->as.convert.target == CONVERT_TO_EXACT_TEXT) {
+        if (expr->as.convert.target >= CONVERT_TO_EXACT_TEXT) {  // and "as money", "as a percent", "with commas"
+            static const char *const names[] = {"as exact text", "as money", "as a percent", "with commas"};
             size_t before = diag_count(c->diag);
-            checker_require(c, operand, TYPE_NUMBER, expr->as.convert.operand, "\"as exact text\" needs a number",
+            checker_require(c, operand, TYPE_NUMBER, expr->as.convert.operand,
+                            arena_sprintf(c->arena, "\"%s\" needs a number",
+                                          names[expr->as.convert.target - CONVERT_TO_EXACT_TEXT]),
                             NULL);
             if (diag_count(c->diag) > before) diag_info(c->diag, DIAG_WRONG_KIND, NULL, "a number");
             return types_new(c, TYPE_TEXT, line);

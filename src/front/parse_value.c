@@ -274,6 +274,12 @@ static Expr *parse_word(Parser *p) {
         return expr;
     }
     if (strcmp(word, "nothing") == 0) return literal(p, EXPR_NOTHING);
+    if (strcmp(word, "reason") == 0 && p->in_failure) {  // "if that fails, say the reason"
+        Expr *reason = literal(p, EXPR_LIBRARY);
+        reason->as.library.op = LIB_REASON;
+        reason->as.library.op_span = reason->pos.span;
+        return reason;
+    }
     if (strcmp(word, "it") == 0) return parser_chain_it(p, literal(p, EXPR_IT));
     if ((strcmp(word, "its") == 0 || strcmp(word, "their") == 0) &&
         parser_field_words(p, 1) > 0) {  // "its radius", "their orders": "it's radius"

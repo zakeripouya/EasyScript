@@ -140,7 +140,10 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
     case EXPR_BINARY: return ast_binary_op_name(expr->as.binary.op);
     case EXPR_CONVERT: return expr->as.convert.target == CONVERT_TO_NUMBER ? "as number"
                                          : expr->as.convert.target == CONVERT_TO_TEXT ? "as text"
-                                                                                       : "as exact text";
+                                         : expr->as.convert.target == CONVERT_TO_EXACT_TEXT ? "as exact text"
+                                         : expr->as.convert.target == CONVERT_TO_MONEY      ? "as money"
+                                         : expr->as.convert.target == CONVERT_TO_PERCENT    ? "as a percent"
+                                                                                           : "with commas";
     case EXPR_LIST: return "list of";
     case EXPR_EMPTY_LIST:
         sb_appendf(scratch, "empty %s", ast_type_name(scratch->arena, records, expr->as.list_type) + 2);  // without "a "
@@ -408,6 +411,7 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
         }
         break;
     }
+    case STMT_TRY: return "try to";
     case STMT_RULE:
         sb_append(scratch, "rule: ");
         if (stmt->as.rule.kind != TYPE_UNKNOWN) {
@@ -553,6 +557,11 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
     case STMT_CALL: dump_expr(stmt->as.call, depth + 1, d); break;
     case STMT_USE: break;
     case STMT_RULE: dump_expr(stmt->as.rule.condition, depth + 1, d); break;
+    case STMT_TRY:
+        dump_stmt(stmt->as.attempt.attempt, depth + 1, d);
+        dump_label(depth + 1, d, "if that fails");
+        for (size_t i = 0; i < stmt->as.attempt.fallback.len; i++) dump_stmt(stmt->as.attempt.fallback.items[i], depth + 2, d);
+        break;
     case STMT_EVENT:
         dump_children(stmt->as.event.every, stmt->as.event.condition, depth, d);
         dump_label(depth + 1, d, "do");

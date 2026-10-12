@@ -246,4 +246,95 @@ static void es_clear_screen(void) {
     es_out("\033[2J\033[H", 7);
 }
 
+/* --- "try to ..." ----------------------------------------------------------------
+ *
+ * Checked just before a sentence that uses a file or folder: why it can't
+ * (the text "the reason" gives), or NULL when it can go ahead. Each consumes
+ * its paths. */
+
+static EsText *es_why(const char *fmt, const char *a, const char *b) {
+    int n = snprintf(NULL, 0, fmt, a, b);
+    char *chars;
+    EsText *t = es_text_new((size_t)n, &chars);
+    snprintf(chars, (size_t)n + 1, fmt, a, b);
+    return t;
+}
+
+/* Reading a file: it's there, and it can be opened. */
+static EsText *es_try_read(EsText *path) {
+    EsText *why = NULL;
+    if (es_path_kind(path->chars) == 2) {
+        why = es_why("I couldn't read the file \"%s\": %s.", path->chars, "it's a folder, not a file");
+    } else {
+        FILE *f = fopen(path->chars, "rb");
+        if (f) fclose(f);
+        if (!f) why = es_why("I couldn't read the file \"%s\": %s.", path->chars, es_reason(errno));
+    }
+    es_release(path);
+    return why;
+}
+
+/* Writing or adding to a file: it can be opened for writing (which makes it if it isn't there). */
+static EsText *es_try_write(EsText *path) {
+    EsText *why = NULL;
+    if (es_path_kind(path->chars) == 2) {
+        why = es_why("I couldn't write to the file \"%s\": %s.", path->chars, "it's a folder, not a file");
+    } else {
+        FILE *f = fopen(path->chars, "ab");
+        if (f) fclose(f);
+        if (!f) {
+            why = es_why("I couldn't write to the file \"%s\": %s.", path->chars,
+                         errno == ENOENT ? "the folder it should go in doesn't exist" : es_reason(errno));
+        }
+    }
+    es_release(path);
+    return why;
+}
+
+/* Nothing is at path yet, and the folder it would go in is there. */
+static EsText *es_try_free(const char *path, const char *what) {
+    struct stat st;
+    int kind = es_path_kind(path);
+    if (kind || lstat(path, &st) == 0) return es_why("There's already a %s called \"%s\".", kind == 2 ? "folder" : "file", path);
+    const char *slash = strrchr(path, '/');
+    if (!slash || slash == path) return NULL;
+    char *folder = malloc((size_t)(slash - path) + 1);
+    if (!folder) es_out_of_memory();
+    memcpy(folder, path, (size_t)(slash - path));
+    folder[slash - path] = '\0';
+    bool there = es_path_kind(folder) == 2;
+    free(folder);
+    return there ? NULL : es_why("I couldn't make the %s \"%s\": the folder it should go in doesn't exist.", what, path);
+}
+
+/* "make a new file called F", "make a folder called F". */
+static EsText *es_try_make(EsText *path, bool folder) {
+    EsText *why = es_try_free(path->chars, folder ? "folder" : "file");
+    es_release(path);
+    return why;
+}
+
+/* A file (or folder) that has to be there: delete, rename, copy, move. */
+static EsText *es_try_find(EsText *path, bool folder) {
+    int kind = es_path_kind(path->chars);
+    EsText *why = NULL;
+    if (kind && kind != (folder ? 2 : 1)) {
+        why = es_why("\"%s\" is a %s.", path->chars, folder ? "file, not a folder" : "folder, not a file");
+    } else if (!kind) {
+        why = es_why("I couldn't find the %s \"%s\".", folder ? "folder" : "file", path->chars);
+    }
+    es_release(path);
+    return why;
+}
+
+/* rename or copy A to B (B free), or move A to the folder B (B a folder). */
+static EsText *es_try_two(EsText *from, EsText *to, bool folder, bool move) {
+    EsText *why = es_try_find(es_retain(from), folder);
+    if (!why && move && es_path_kind(to->chars) != 2) why = es_why("I couldn't find the folder \"%s\".%s", to->chars, "");
+    if (!why && !move) why = es_try_free(to->chars, folder ? "folder" : "file");
+    es_release(from);
+    es_release(to);
+    return why;
+}
+
 #endif

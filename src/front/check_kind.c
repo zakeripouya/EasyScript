@@ -406,6 +406,8 @@ static bool check_whens(Checker *c, const Stmt *stmt, Type type, size_t *seen) {
                 diag_note(c->diag, "Only a value whose kind is like \"%s or nothing\" can be nothing.",
                           checker_type_name(c, type));
                 ok = false;
+            } else if (branch->guard) {
+                continue;  // "when it's a circle whose radius is over 10" doesn't cover every circle
             } else if (seen[id]) {
                 diag_error(c->diag, branch->pos.span, "There's already a \"when\" for %s, on line %zu.",
                            is_nothing ? "nothing" : variant_name(c, id), seen[id]);
@@ -468,6 +470,10 @@ static void check_branch(Checker *c, const Stmt *stmt, const MatchBranch *branch
     if (branch->variants.len == 1 && !branch->nothing) loop.variant = branch->variants.items[0];
     if (present || loop.variant != NO_VARIANT) checker_add_narrowing(c, path, loop.variant);
     vec_push(c->arena, &c->loops, loop);
+    if (branch->guard) {
+        checker_require(c, checker_check_expr(c, branch->guard), TYPE_YESNO, branch->guard,
+                        "A \"when\" can only be narrowed by a test that's yes or no", NULL);
+    }
     checker_check_block(c, &branch->body, branch->pos.line, branch->otherwise ? "the \"otherwise\"" : "the \"when\"");
     c->loops.len--;
     c->present.len = checked;
