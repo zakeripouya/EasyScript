@@ -70,7 +70,7 @@ If the left side is `no`, the answer is `no` and the right side isn't worked out
 | `"... [VALUE] ..."` | Text with a value in brackets: the value is worked out and put in the text exactly where it is (no spaces added); `"[name]!"` is `"" followed by name followed by "!"` | `say "You have [tasks] tasks."` | Available |
 | `[[` and `]]` in text | A `[` or `]` in the text itself (a single `]` outside a value is an error) | `"[[draft]]"` is `[draft]` | Available |
 
-Pieces are separated by commas at the top level of the sentence. A comma that belongs to a value keeps its meaning: the items of `a list of 1, 2 and 3`, the inputs after `using`, the fields of `a new dog with name "Rex", age 3`, and a comma followed by `or`, `sorted`, `as`, `rounded` or `starting` (`say the value for K in M, or 0` is one piece). The value in brackets can't contain text in quotes (its quote would end the text); give it a name first.
+Pieces are separated by commas at the top level of the sentence. A comma that belongs to a value keeps its meaning: the items of `a list of 1, 2 and 3`, the inputs after `using`, the fields of `a new dog with name "Rex", age 3`, and a comma followed by `or`, `sorted`, `as`, `rounded` or `starting` (`say the value for K in M, or 0` is one piece). The value in brackets can contain text in quotes (`"([note, or "none"])"`) when that text ends, and the `]` comes after it, on the same line.
 
 ### Comparisons
 

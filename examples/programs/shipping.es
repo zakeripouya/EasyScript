@@ -24,7 +24,7 @@ let parcels be a list of a new parcel with weight 1.5, country "Canada" and note
     a new parcel with weight 30, country "Canada" and note nothing.
 
 for each parcel:
-    say parcel's weight, "kg to", parcel's country, "costs", parcel's price, "(", parcel's note, or "no note", ")".
+    say parcel's weight, "kg to", parcel's country, "costs", parcel's price, "([parcel's note, or "no note"])".
 
 say "Heavy parcels:", how many parcels are heavy.
 say "Going abroad:", how many parcels are abroad.

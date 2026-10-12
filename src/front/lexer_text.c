@@ -87,12 +87,32 @@ void lexer_skip_to_line_end(Lexer *lx) {
 // "[VALUE]" inside text: LBRACKET, the value's tokens, RBRACKET. A quote or
 // the end of the line before the "]" is an error: the rest of the line is
 // skipped, and an RBRACKET with no text tells the parser not to report it again.
+// The index after the text in quotes starting at `quote`, or 0 if it doesn't end on the line.
+static size_t after_quoted(const Lexer *lx, size_t quote) {
+    size_t i = quote + 1;
+    while (!lexer_at_line_end(lx, i) && lx->src[i] != '"') i += lx->src[i] == '\\' && !lexer_at_line_end(lx, i + 1) ? 2 : 1;
+    return lexer_at_line_end(lx, i) ? 0 : i + 1;
+}
+
+// A quote inside a value in brackets starts text of its own ("[the note, or
+// "none"]") when that text ends on the line and a "]" comes after it (with
+// any more text in quotes skipped); otherwise the "[" is the mistake (a
+// missing "]").
+static bool quote_in_value(const Lexer *lx) {
+    size_t i = after_quoted(lx, lx->pos);
+    while (i && !lexer_at_line_end(lx, i)) {
+        if (lx->src[i] == ']') return true;
+        i = lx->src[i] == '"' ? after_quoted(lx, i) : i + 1;  // more text in quotes in the value
+    }
+    return false;
+}
+
 static void lex_text_value(Lexer *lx) {
     size_t open = lx->pos++;
     lexer_emit_content(lx, TOK_LBRACKET, open, open + 1, "[", 1);
     for (;;) {
         while (lx->pos < lx->len && (lx->src[lx->pos] == ' ' || lx->src[lx->pos] == '\t')) lx->pos++;
-        if (lexer_at_line_end(lx, lx->pos) || lx->src[lx->pos] == '"') {
+        if (lexer_at_line_end(lx, lx->pos) || (lx->src[lx->pos] == '"' && !quote_in_value(lx))) {
             diag_error(lx->diag, lexer_span(open, open + 1),
                        "This \"[\" starts a value inside the text, but there's no \"]\" to end it.");
             diag_note(lx->diag, "End the value with \"]\", like \"Hello, [name]!\". To put a \"[\" in text, write it "

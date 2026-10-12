@@ -28,3 +28,4 @@ A doubt that comes up while building goes back into the proposal, not into the p
 - [0007: exact money](0007-exact-money.md) (Built)
 - [0008: kinds of text with a rule](0008-kinds-of-text.md) (Built)
 - [0009: wordings from the "Still not English" list](0009-still-not-english.md) (Built)
+- [0010: text in quotes inside brackets](0010-quotes-in-brackets.md) (Built)
