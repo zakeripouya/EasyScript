@@ -183,6 +183,7 @@ static const Phrase conversions[] = {
     {"as exact text", "as exact text", CONVERT_TO_EXACT_TEXT, false},
     {"as money", "as money", CONVERT_TO_MONEY, false},
     {"as percent", "as a percent", CONVERT_TO_PERCENT, false},
+    {"as table", "as a table", CONVERT_TO_TABLE, false},
 };
 
 // "with commas" (matched as a whole: "with" alone starts a call's inputs or "with X replaced by Y").

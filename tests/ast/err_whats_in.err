@@ -1,0 +1,4 @@
+Line 2: "what's in" only reads files, so it needs "file" before the file's name.
+    say what's in scores.
+        ^^^^^^^^^
+Write it like "show me what's in file "notes.txt"". To show a list, write "show me scores".

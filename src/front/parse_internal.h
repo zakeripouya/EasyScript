@@ -67,6 +67,7 @@ typedef struct {
     size_t tables_read;     // how many of them have been parsed
     bool chain_used;        // the step being read said "it" (so the step before's result is kept)
     bool in_failure;        // reading "if that fails, ...": "the reason" is why
+    bool chain_file;        // the step before used a file ("what's in it" reads it)
     const char *chain_it;   // in a step after ", then": the hidden name "it" means ("" if the step before gives
                             // nothing), else NULL
 } Parser;
@@ -228,6 +229,11 @@ bool parser_parse_group(Parser *p, Expr *aggregate);  // "per region" / "per mon
 void parser_find_table_files(Parser *p);  // pre-scan: a kind of row for each
 Stmt *parser_parse_read_table(Parser *p, const Token *verb);  // after "read", at "table"
 Stmt *parser_parse_try(Parser *p);  // try to S. if that fails, S2.
+Stmt *parser_parse_example(Parser *p);  // parse_question.c: for example, X is Y.
+size_t parser_form_count(void);              // parse_stmt.c: the statement words' table
+const char *parser_form_word(size_t i);
+const char *parser_form_example(size_t i);
+void parser_report_unknown_start(Parser *p);  // parse_sentence.c: "I don't know a sentence that starts with ..."
 // A field's words at `ahead`: a known field's, or, in a program that reads a table, any one name word (a column).
 size_t parser_field_words(const Parser *p, size_t ahead);
 

@@ -8,3 +8,6 @@ let s be a new circle with radius 2.
 check which kind s is:
     when it's a circle whose radius plus 1:
         say "x".
+keep shown as (a list of 1 and 2) as a table.
+say 5 as a table.
+keep shown number as 5 as a table.

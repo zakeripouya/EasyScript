@@ -59,6 +59,15 @@ void parser_skip_polite(Parser *p) {
     }
 }
 
+// for example, X is Y.
+Stmt *parser_parse_example(Parser *p) {
+    const Token *first = parser_peek(p, 0);
+    parser_consume(p, 3);  // for example ,
+    Stmt *stmt = parser_new_stmt(p, STMT_EXAMPLE, first);
+    stmt->as.value = parse_expression(p);
+    return p->sentence_failed ? NULL : stmt;
+}
+
 static Expr *which(Parser *p) {
     SourcePos start = parser_token_pos(parser_advance(p));
     size_t n = 0;
@@ -92,7 +101,8 @@ Stmt *parser_parse_question(Parser *p) {
         }
         return NULL;
     }
-    if (parser_at_word(p, 0, "what")) {
+    bool what_in = (parser_at(p, 1, TOK_POSSESSIVE) || parser_at_word(p, 1, "is")) && parser_at_word(p, 2, "in");
+    if (parser_at_word(p, 0, "what") && !what_in) {
         parser_advance(p);
         if (parser_at_word(p, 0, "is") || parser_at_word(p, 0, "are") || parser_at(p, 0, TOK_POSSESSIVE)) {
             parser_advance(p);

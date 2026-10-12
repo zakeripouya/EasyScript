@@ -93,6 +93,8 @@ Stmt *parser_parse_actions(Parser *p, Block *block) {
     while (stmt && !p->sentence_failed && !p->ended_with_block && (n = link_words(p)) > 0) {
         parser_consume(p, n);
         Expr *result = step_result(p, stmt);
+        p->chain_file = stmt->kind == STMT_WRITE_FILE || stmt->kind == STMT_APPEND_FILE ||
+                        (stmt->kind == STMT_LIBRARY && stmt->as.library.op == DO_MAKE_FILE);
         Stmt *keep = NULL;
         if (result && result->kind == EXPR_NAME && strncmp(result->as.name, "0step", 5) == 0) {
             p->chain_it = result->as.name;  // already kept in a hidden name
@@ -121,6 +123,7 @@ Stmt *parser_parse_actions(Parser *p, Block *block) {
         }
     }
     p->chain_it = outer;
+    p->chain_file = false;
     return stmt;
 }
 

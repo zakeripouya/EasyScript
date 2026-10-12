@@ -290,6 +290,20 @@ static Expr *parse_word(Parser *p) {
         expr->pos = ast_pos_join(it->pos, expr->as.field.name.pos);
         return expr;
     }
+    if (parser_at_word(p, 0, "what") && (parser_at(p, 1, TOK_POSSESSIVE) || parser_at_word(p, 1, "is")) &&
+        parser_at_word(p, 2, "in")) {  // what's in file F; what's in it (after a step that used a file)
+        if (parser_at_word(p, 3, "file")) return parse_prefixed(p, EXPR_FILE_CONTENTS, 4);
+        if (parser_at_word(p, 3, "it") && p->chain_file) return parse_prefixed(p, EXPR_FILE_CONTENTS, 3);
+        Span span = parser_consume(p, 3);
+        if (parser_error(p, span, "\"%s\" only reads files, so it needs \"file\" before the file's name.",
+                         parser_text(p, span))) {
+            diag_note(p->diag, "Write it like \"show me what's in file \"notes.txt\"\". To show a list, write \"show me "
+                               "scores\".");
+            diag_info(p->diag, DIAG_MISSING, "\"file\"", NULL);
+            diag_choice(p->diag, "what's in file");
+        }
+        return parser_error_expr(p);
+    }
     if (parser_match_words(p, "length of")) return parse_prefixed(p, EXPR_LENGTH, 2);
     if (parser_match_words(p, "contents of file")) return parse_prefixed(p, EXPR_FILE_CONTENTS, 3);
     if (parser_match_words(p, "contents of")) {

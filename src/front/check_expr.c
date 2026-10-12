@@ -571,6 +571,11 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_CONVERT: {
         TypeVar operand = checker_check_expr(c, expr->as.convert.operand);
         if (expr->as.convert.target == CONVERT_TO_TEXT) return types_new(c, TYPE_TEXT, line);
+        if (expr->as.convert.target == CONVERT_TO_TABLE) {
+            types_defer_one_of(c, expr->as.convert.operand, operand, operand, KIND_LIST | KIND_MAP,
+                               "\"as a table\" needs a list or a map");
+            return types_new(c, TYPE_TEXT, line);
+        }
         if (expr->as.convert.target >= CONVERT_TO_EXACT_TEXT) {  // and "as money", "as a percent", "with commas"
             static const char *const names[] = {"as exact text", "as money", "as a percent", "with commas"};
             size_t before = diag_count(c->diag);

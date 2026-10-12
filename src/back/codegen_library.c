@@ -263,3 +263,35 @@ void cg_emit_try(Codegen *g, const Stmt *stmt) {
     cg_indent(g);
     sb_append(&g->body, "}\n");
 }
+
+// "for example, X is Y.": es_example(site, right, what X is) where it's
+// written. For "X is Y" (and "is not"), X is worked out once, into a hidden
+// name, so it can be shown when the example is wrong.
+void cg_emit_example(Codegen *g, const Stmt *stmt) {
+    const Expr *condition = stmt->as.value;
+    size_t site = cg_site(g, condition->pos);
+    bool equal = condition->kind == EXPR_BINARY &&
+                 (condition->as.binary.op == BINARY_EQUAL || condition->as.binary.op == BINARY_NOT_EQUAL) &&
+                 !type_is_func(condition->as.binary.left->type);
+    if (!equal) {
+        cg_indent(g);
+        sb_appendf(&g->body, "es_example(%zu, %s, NULL, false);\n", site, cg_operand(g, condition, false));
+        return;
+    }
+    const Expr *left = condition->as.binary.left;
+    const char *hidden = arena_sprintf(g->arena, "0example%zu", ++g->loop_ids);
+    cg_declare_name(g, hidden, left->type);
+    StrBuf value;
+    sb_init(&value, g->arena);
+    cg_emit_expr(g, left, &value);
+    cg_emit_store(g, hidden, left->type, value.data);
+    Expr *name = ast_new_expr(g->arena, EXPR_NAME, left->pos);
+    name->as.name = hidden;
+    name->type = left->type;
+    Expr *test = ast_new_expr(g->arena, EXPR_BINARY, condition->pos);
+    *test = *condition;
+    test->as.binary.left = name;
+    cg_indent(g);
+    sb_appendf(&g->body, "es_example(%zu, %s, %s, %s);\n", site, cg_operand(g, test, false), cg_operand(g, name, true),
+               left->type == TYPE_TEXT ? "true" : "false");
+}

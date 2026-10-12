@@ -6,6 +6,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Breaking
 
+- **A table read with `and call it NAME` (a plural) has rows of a kind named after it** (`purchases`: `a purchase`), so a row prints as `a purchase with ...` instead of `a row of spending.csv with ...`, and that word now names the kind. `tests/run/table_files.out` changed for this.
 - **`me` and `undo` are reserved** for talking to EasyScript, so they can't be names; **`tell` and `list` start sentences** (`tell me ...`, `list the big orders`), so they can't be one-word definition names. In a program that reads a table, `the WORD of X`, `whose WORD` and `its WORD` can read a column, so a misspelled field there is reported by the checker instead.
 - **`every`, `whenever` and `when` start sentences** (events) at the top level, so a function can no longer be called `whenever` or `when` with one word. Sentence definitions (`a customer is loyal if ...`) are written in place where they're used, so a runtime error inside one no longer adds "while working out ..." to the call chain.
 - **A word a kind defines with `is ... if` is that word everywhere:** with `an order is big if ...` in the program, `x is big` asks the definition instead of comparing x with a name `big`. Sentences starting `NAME must`, `NAME depends on`, `KIND's FIELD is`, and `the NAME is the one ...` now define things instead of being errors.
@@ -35,6 +36,10 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - `try to S. if that fails, ...` for sentences that use a file or a folder, with `the reason`.
 - `the text below:` with indented lines: text of several lines, exactly as written. Escapes `\r` and `\u{e9}`/`\u00e9`.
 - `when it's a circle whose radius is over 10:` (and `where`, `that`) in `check which kind`.
+- Examples as tests: `for example, double with 3 is 6.` is checked where it's written (a warning if it isn't right), and `easyscript test FILE` says how many were right.
+- `X as a table` (lists and maps in columns), `L sorted by FIELD` (a field of the items), `add A and B to the end of file F, one per line`, and `what's in file F` / `what's in it`.
+- Examples `groceries.es` and `budget.es` (the plan's multi-step request and the budget session's saved program).
+- A sentence EasyScript doesn't understand (with no close statement word) gets the 2 or 3 sentences that share the most words with it.
 
 ### Changed
 

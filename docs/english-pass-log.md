@@ -107,6 +107,23 @@ A running record of the unattended English-pass run (parts 2 to 5, then charts),
 - `the text below:` text blocks, `\r` and `\u{e9}` escapes (item 10); `when it's a circle whose radius is over 10:` guards (item 11, first half).
 - Example `tip_calculator.es`. Text lexing moved into `src/front/lexer_text.c` (lexer.c was over 600 lines).
 
+### Done (third commit)
+
+- Examples as tests (item 9): `for example, X is Y.` checked where it's written (a warning with the real value when it's wrong, and the program goes on); `easyscript test FILE` says how many were right and fails if any weren't.
+- The closest sentences (item 12): an unknown first word with no close statement word gets the 2 or 3 example sentences sharing the most words with it.
+- Examples (item 13): `groceries.es` (the plan's multi-step request, word for word but with quotes and `file`) and `budget.es` (the budget session's saved program).
+- For those: `, one per line`, `what's in file F` / `what's in it`, `as a table`, `sorted by FIELD`, and table rows named after the table (`purchases` → `a purchase`).
+
+### Decisions made (third commit)
+
+- **Examples warn, they don't stop the program**, as the plan says ("warns when it stops being true"). `easyscript test` is the strict form. A wrong example shows the left side's value only for `X is Y`/`X is not Y`.
+- **Closest sentences** are ranked by how many words they share with the sentence (ties: a short list of common sentences first, then the statement table's order), so it's deterministic. They're shown only where the generic "Sentences start with ..." note was; a misspelled statement word keeps its single "Did you mean".
+- **`the store with the highest total amount`** (the best group, from the budget session) isn't built: it would need a group's totals inside `the X with the highest Y`. The example writes `the first item of the keys of totals per store` instead. Left for part 5's rough spots.
+- **`sorted by amount`** reads a field only when `amount` isn't a definition, a name or a constant and some kind has that field (or the program reads a table); otherwise it's as before.
+- **A table's row kind takes the table's name in the singular** (`purchases` → `purchase`: `-ies` → `-y`, `-xes/-ches/-shes/-sses/-zzes` drop `es`, otherwise drop `s`, and the plural rule must give the name back). Breaking: rows print as `a purchase with ...`.
+- **`what's in`** only reads files: `what's in file F`, or `what's in it` right after a step that made or wrote to a file. For a list, `show me scores` already works.
+- **Named kinds of text with rules** (item 11, second half: `an email is text that must contain "@".`) **skipped**: the plan doesn't say how a value becomes an email (`"a@b" as an email`? any text put where an email is kept?) or what an email can be used as. Logged as an open question.
+
 ### Decisions made (second commit)
 
 - **`try to` checks first instead of catching the failure.** Catching it would need `setjmp`/`longjmp` around generated C, which leaves the sentence's half-made text and lists unreleased (the memory check would fail) and isn't safe for C locals. So `try to` covers the sentences whose failures can be checked before they start: file and folder sentences. The check uses the same words as the error. A file that changes between the check and the sentence still stops the program (very unlikely in practice). Other failures (dividing by zero, a missing map key) aren't covered: they have their own forms (`if ... is 0`, `, or D`). Logged as an open question.

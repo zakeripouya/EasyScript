@@ -499,6 +499,9 @@ static bool convert(Eval *ev, const Expr *expr, ConstValue *out) {
         *out = to_text(ev, a);
         return true;
     }
+    if (expr->as.convert.target == CONVERT_TO_TABLE) {
+        return fail(ev, expr->pos.span, "Make it with \"let\".", "A constant can't be laid out as a table.");
+    }
     if (expr->as.convert.target > CONVERT_TO_EXACT_TEXT) {
         return fail(ev, expr->pos.span, "Make it with \"let\", or format the number where it's used.",
                     "A constant can't be a number written as money, a percent or with commas.");

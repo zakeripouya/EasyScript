@@ -281,4 +281,196 @@ static EsMap *es_map_sorted(EsMap *m, int how) {
     return r;
 }
 
+/* --- "as a table" ------------------------------------------------------------------
+ *
+ * A list of records (or a table's rows) as lines with a column per field and
+ * the fields' names on top; a map as two columns (keys, values); any other
+ * list as one item per line. Columns are padded with spaces to their widest
+ * cell, numbers on the right. Text isn't quoted. */
+
+/* A cell holding a value of a list or map. */
+static void es_cell_value(EsBuf *b, EsItems kind, EsValue v) {
+    switch (kind) {
+    case ES_ITEMS_NUMBER: {
+        EsText *t = es_number_text(v.n);
+        es_buf_add(b, t->chars, t->len);
+        es_release(t);
+        break;
+    }
+    case ES_ITEMS_DATE: {
+        EsText *t = es_date_text(v.n);
+        es_buf_add(b, t->chars, t->len);
+        es_release(t);
+        break;
+    }
+    case ES_ITEMS_YESNO: es_buf_add_text(b, v.b ? "yes" : "no"); break;
+    case ES_ITEMS_TEXT: es_buf_add(b, v.t->chars, v.t->len); break;
+    default: es_value_render(b, kind, v, 1); break;
+    }
+}
+
+/* A cell holding field i of r. */
+static void es_cell_field(EsBuf *b, const EsRecord *r, int i) {
+    size_t at = r->type->offsets[i];
+    EsValue v;
+    switch (r->type->kinds[i]) {
+    case 'n': v.n = ES_FIELD(r, double, at); es_cell_value(b, ES_ITEMS_NUMBER, v); break;
+    case 'd': v.n = ES_FIELD(r, double, at); es_cell_value(b, ES_ITEMS_DATE, v); break;
+    case 'b': v.b = ES_FIELD(r, bool, at); es_cell_value(b, ES_ITEMS_YESNO, v); break;
+    case 't': v.t = ES_FIELD(r, EsText *, at); es_cell_value(b, ES_ITEMS_TEXT, v); break;
+    default: es_field_render(b, r, i, 1); break;
+    }
+}
+
+typedef struct {
+    EsText **cells; /* row by row, each owned */
+    size_t count, cap, cols;
+    bool *right;    /* per column: numbers, put on the right */
+} EsGrid;
+
+static EsGrid es_grid_new(size_t cols) {
+    EsGrid g = {NULL, 0, 0, cols, calloc(cols, sizeof(bool))};
+    if (!g.right) es_out_of_memory();
+    return g;
+}
+
+/* Adds the text in b (then emptied) as the next cell. */
+static void es_grid_add(EsGrid *g, EsBuf *b) {
+    if (g->count == g->cap) {
+        size_t cap = g->cap ? g->cap * 2 : 16;
+        EsText **cells = realloc(g->cells, cap * sizeof *cells);
+        if (!cells) es_out_of_memory();
+        g->cells = cells;
+        g->cap = cap;
+    }
+    g->cells[g->count++] = es_buf_text(b);
+    b->data = NULL;
+    b->len = b->cap = 0;
+}
+
+/* The cells, laid out. Frees the grid. */
+static EsText *es_grid_text(EsGrid *g) {
+    size_t count = g->count;
+    size_t *widths = calloc(g->cols ? g->cols : 1, sizeof *widths);
+    if (!widths) es_out_of_memory();
+    for (size_t i = 0; i < count; i++) {
+        size_t w = es_text_chars(g->cells[i]);
+        if (w > widths[i % g->cols]) widths[i % g->cols] = w;
+    }
+    EsBuf b = {NULL, 0, 0};
+    for (size_t i = 0; i < count; i++) {
+        size_t col = i % g->cols, w = es_text_chars(g->cells[i]);
+        bool last = col + 1 == g->cols;
+        if (col == 0 && i > 0) es_buf_add(&b, "\n", 1);
+        if (col > 0) es_buf_add(&b, "  ", 2);
+        if (g->right[col]) {
+            for (size_t k = w; k < widths[col]; k++) es_buf_add(&b, " ", 1);
+        }
+        es_buf_add(&b, g->cells[i]->chars, g->cells[i]->len);
+        if (!g->right[col] && !last) {
+            for (size_t k = w; k < widths[col]; k++) es_buf_add(&b, " ", 1);
+        }
+        es_release(g->cells[i]);
+    }
+    free(widths);
+    free(g->cells);
+    free(g->right);
+    return es_buf_text(&b);
+}
+/* The columns of a list of records: a table's rows show every column of the
+ * file; other records their fields. */
+static void es_record_rows(EsGrid *g, const EsList *l, const EsRecord *first) {
+    const EsRecordType *type = first->type;
+    bool table = type->fields >= 2 && strcmp(type->field_names[0], "0header") == 0;
+    const EsList *header = table ? ES_FIELD(first, EsList *, type->offsets[0]) : NULL;
+    EsBuf b = {NULL, 0, 0};
+    for (size_t c = 0; c < g->cols; c++) {  /* the names on top */
+        if (table) {
+            es_buf_add(&b, header->at.t[c]->chars, header->at.t[c]->len);
+        } else {
+            es_buf_add_text(&b, type->field_names[c]);
+        }
+        es_grid_add(g, &b);
+    }
+    for (size_t i = 0; i < l->len; i++) {
+        const EsRecord *r = l->at.r[i];
+        for (size_t c = 0; c < g->cols; c++) {
+            if (!r || r->type != type) {  /* nothing, or another variant: the whole value in the first column */
+                if (c == 0) es_record_render(&b, r, 1);
+            } else if (table) {
+                int field = -1;
+                for (int f = 2; f < type->fields && field < 0; f++) {
+                    if (es_column_is(header->at.t[c], type->field_names[f])) field = f;
+                }
+                if (field >= 0) {
+                    es_cell_field(&b, r, field);
+                    g->right[c] |= type->kinds[field] == 'n';
+                } else {
+                    const EsList *cells = ES_FIELD(r, EsList *, type->offsets[1]);
+                    es_buf_add(&b, cells->at.t[c]->chars, cells->at.t[c]->len);
+                }
+            } else {
+                es_cell_field(&b, r, (int)c);
+                g->right[c] |= type->kinds[c] == 'n';
+            }
+            es_grid_add(g, &b);
+        }
+    }
+}
+
+/* "L as a table". Consumes L. */
+static EsText *es_list_table(EsList *l) {
+    const EsRecord *first = NULL;
+    for (size_t i = 0; l->items == ES_ITEMS_RECORD && i < l->len && !first; i++) {
+        const EsRecord *r = l->at.r[i];
+        if (r && r->type->style != ES_BOX && r->type->style != ES_CLOSURE) first = r;
+    }
+    size_t cols = 1;
+    if (first) {
+        const EsRecordType *type = first->type;
+        bool table = type->fields >= 2 && strcmp(type->field_names[0], "0header") == 0;
+        cols = table ? ES_FIELD(first, EsList *, type->offsets[0])->len : (size_t)type->fields;
+    }
+    EsGrid g = es_grid_new(cols ? cols : 1);
+    if (first && cols > 0) {
+        es_record_rows(&g, l, first);
+    } else {
+        EsBuf b = {NULL, 0, 0};
+        for (size_t i = 0; i < l->len; i++) {
+            EsValue v;
+            switch (l->items) {
+            case ES_ITEMS_NUMBER:
+            case ES_ITEMS_DATE: v.n = l->at.n[i]; break;
+            case ES_ITEMS_YESNO: v.b = l->at.b[i]; break;
+            case ES_ITEMS_TEXT: v.t = l->at.t[i]; break;
+            case ES_ITEMS_LIST: v.l = l->at.l[i]; break;
+            case ES_ITEMS_RECORD: v.r = l->at.r[i]; break;
+            case ES_ITEMS_MAP: v.m = l->at.m[i]; break;
+            }
+            es_cell_value(&b, l->items, v);
+            es_grid_add(&g, &b);
+        }
+        g.right[0] = l->items == ES_ITEMS_NUMBER;
+    }
+    es_list_release(l);
+    return es_grid_text(&g);
+}
+
+/* "M as a table": its keys and values, in order. Consumes M. */
+static EsText *es_map_table(EsMap *m) {
+    EsGrid g = es_grid_new(2);
+    g.right[1] = m->values == ES_ITEMS_NUMBER;
+    EsBuf b = {NULL, 0, 0};
+    for (size_t i = 0; i < m->used; i++) {
+        const EsEntry *e = &m->entries[i];
+        if (e->hash == 0) continue;
+        es_cell_value(&b, m->keys, e->key);
+        es_grid_add(&g, &b);
+        es_cell_value(&b, m->values, e->value);
+        es_grid_add(&g, &b);
+    }
+    es_map_release(m);
+    return es_grid_text(&g);
+}
+
 #endif

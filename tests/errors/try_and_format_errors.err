@@ -21,3 +21,17 @@ Add "when it's a circle:", or an "otherwise:" at the end.
 Line 9: A "when" can only be narrowed by a test that's yes or no, but this is a number.
         when it's a circle whose radius plus 1:
                                  ^^^^^^^^^^^^^
+
+Line 11: A constant can't work things out from a list.
+    keep shown as (a list of 1 and 2) as a table.
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A constant can be a list written out, like "keep weekdays as a list of "Mon" and "Tue"" (and its length). To work something out from a list, use "let" instead of "keep".
+
+Line 12: "as a table" needs a list or a map, but this is a number.
+    say 5 as a table.
+        ^
+
+Line 13: A constant can't be laid out as a table.
+    keep shown number as 5 as a table.
+                         ^^^^^^^^^^^^
+Make it with "let".

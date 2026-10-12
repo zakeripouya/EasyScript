@@ -219,7 +219,8 @@ static void emit_helper(Codegen *g, Question *q, Codegen *helper, size_t id) {
     sb_append(out, ") {\n");
     cg_emit_declarations(helper, out);
     if (q->kind == AGG_TOP || q->kind == AGG_MOST_COMMON) {  // how many to take is checked first
-        sb_appendf(out, "    EsTop es_top = es_top_start(%zu, es_take, es_list->len, %s);\n", q->site,
+        sb_appendf(out, "    EsTop es_top = es_top_start(%zu, %s, es_list->len, %s);\n", q->site,
+                   agg->as.aggregate.count ? "es_take" : "(double)es_list->len",  // "sorted by amount": all of them
                    agg->as.aggregate.lowest ? "true" : "false");
     }
     // A call could change the list while it's being gone through; then go through it as it was.

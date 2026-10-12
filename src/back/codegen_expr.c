@@ -387,6 +387,9 @@ static void emit_convert(Codegen *g, const Expr *expr, StrBuf *out) {
     const Expr *operand_expr = expr->as.convert.operand;
     if (expr->as.convert.target == CONVERT_TO_TEXT) {
         cg_emit_text(g, operand_expr, out);
+    } else if (expr->as.convert.target == CONVERT_TO_TABLE) {
+        sb_appendf(out, "%s(%s)", type_is_map(operand_expr->type) ? "es_map_table" : "es_list_table",
+                   cg_operand(g, operand_expr, false));
     } else if (expr->as.convert.target >= CONVERT_TO_EXACT_TEXT) {
         static const char *const functions[] = {"es_number_exact_text", "es_money_text", "es_percent_text",
                                                 "es_commas_text"};

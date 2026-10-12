@@ -46,7 +46,7 @@ Did you mean "followed by"?
 Line 10: Something is missing after "as".
     say y as numbr
           ^^
-Did you mean "as a number", "as text", "as money" or "as a percent"?
+Did you mean "as a number", "as text", "as money", "as a percent" or "as a table"?
 
 Line 11: Something is missing after "contents of".
     say contents of "a.txt"

@@ -143,6 +143,7 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
                                          : expr->as.convert.target == CONVERT_TO_EXACT_TEXT ? "as exact text"
                                          : expr->as.convert.target == CONVERT_TO_MONEY      ? "as money"
                                          : expr->as.convert.target == CONVERT_TO_PERCENT    ? "as a percent"
+                                         : expr->as.convert.target == CONVERT_TO_TABLE      ? "as a table"
                                                                                            : "with commas";
     case EXPR_LIST: return "list of";
     case EXPR_EMPTY_LIST:
@@ -412,6 +413,7 @@ static const char *stmt_label(const Stmt *stmt, StrBuf *scratch, const Records *
         break;
     }
     case STMT_TRY: return "try to";
+    case STMT_EXAMPLE: return "for example";
     case STMT_RULE:
         sb_append(scratch, "rule: ");
         if (stmt->as.rule.kind != TYPE_UNKNOWN) {
@@ -531,7 +533,8 @@ static void dump_stmt(const Stmt *stmt, size_t depth, Dump *d) {
         if (stmt->as.change.start) dump_section("starting at", stmt->as.change.start, depth + 1, d);
         break;
     }
-    case STMT_SAY: dump_expr(stmt->as.value, depth + 1, d); break;
+    case STMT_SAY:
+    case STMT_EXAMPLE: dump_expr(stmt->as.value, depth + 1, d); break;
     case STMT_ASK: dump_expr(stmt->as.ask.prompt, depth + 1, d); break;
     case STMT_WRITE_FILE:
     case STMT_APPEND_FILE:

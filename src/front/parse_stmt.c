@@ -399,49 +399,16 @@ bool parser_looks_like_assignment(const Token *next) {
             (strcmp(next->text, "is") == 0 || strcmp(next->text, "equals") == 0 || strcmp(next->text, "be") == 0));
 }
 
-static void report_unknown_start(Parser *p) {
-    static const char *const generic = "Sentences start with a word like \"let\", \"set\", \"say\" or \"ask\".";
-    const Token *token = parser_peek(p, 0);
-    if (token->kind != TOK_WORD) {
-        if (parser_error(p, token->span, "A sentence can't start with %s.", parser_describe(p, token))) {
-            diag_note(p->diag, "%s", generic);
-        }
-        return;
-    }
-    // A name of several words ("late fee is 5") is shown whole.
-    const KnownName *known = parser_match_name(p, 0, false);
-    size_t words = known ? known->words : 1;
-    Span span = {token->span.offset, parser_peek(p, words - 1)->span.offset + parser_peek(p, words - 1)->span.length -
-                                         token->span.offset};
-    const char *written = parser_text(p, span);
-    if (!parser_error(p, span, "I don't know a sentence that starts with \"%s\".", written)) return;
-    // Statement words and the program's function names, as suggestions.
-    size_t n = COUNT(forms) + 1 + p->functions.len;
-    const char **candidates = arena_alloc(p->arena, n * sizeof(char *));
-    for (size_t i = 0; i < COUNT(forms); i++) candidates[i] = forms[i].word;
-    candidates[COUNT(forms)] = "please";
-    for (size_t i = 0; i < p->functions.len; i++) candidates[COUNT(forms) + 1 + i] = p->functions.items[i];
-    const char *closest = words == 1 ? parser_closest_words(p, token->text, candidates, n) : NULL;
-    const char *longer = NULL;  // a function whose name starts with this word: "to greet someone:"
-    for (size_t i = 0; words == 1 && !longer && i < p->functions.len; i++) {
-        const char *f = p->functions.items[i];
-        if (strncmp(f, token->text, token->text_len) == 0 && f[token->text_len] == ' ') longer = f;
-    }
-    if (longer) {
-        diag_note(p->diag, "The definition is called \"%s\": its name is every word before \"with\", "
-                           "\"of\", \"using\" or \"to\". To give \"%s\" an input, write \"to %s with %s:\".",
-                  longer, written, written, longer + token->text_len + 1);
-    } else if (parser_at_word(p, words, "can")) {  // "a cat can purr:" before any cat is defined
-        diag_note(p->diag, "\"%s\" isn't a kind of record I know. Define it first, like \"a %s has a name.\", "
-                           "and then what it can do.", written, written);
-    } else if (closest) {
-        diag_note(p->diag, "Did you mean %s?", closest);
-    } else if (parser_looks_like_assignment(parser_peek(p, words))) {
-        diag_note(p->diag, "To keep a value in a name, write \"let %s be ...\". To change it, write \"set %s to ...\".",
-                  written, written);
-    } else {
-        diag_note(p->diag, "%s", generic);
-    }
+size_t parser_form_count(void) {
+    return COUNT(forms);
+}
+
+const char *parser_form_word(size_t i) {
+    return forms[i].word;
+}
+
+const char *parser_form_example(size_t i) {
+    return forms[i].example;
 }
 
 Stmt *parse_statement(Parser *p) {
@@ -472,6 +439,9 @@ Stmt *parse_statement(Parser *p) {
     if (parser_at_word(p, 0, "try") && parser_at_word(p, 1, "to") && !parser_is_function(p, "try")) {
         return parser_parse_try(p);  // try to read file "x". if that fails, ...
     }
+    if (parser_at_word(p, 0, "for") && parser_at_word(p, 1, "example") && parser_at(p, 2, TOK_COMMA)) {
+        return parser_parse_example(p);  // for example, total is 12.
+    }
     if (parser_interface_words(p, p->pos) > 0) return parse_interface(p);
     if (parser_at_library_sentence(p)) {  // "delete the file F", "clear the screen", "run "git"", ...
         Stmt *stmt = parser_parse_library_sentence(p);
@@ -498,7 +468,7 @@ Stmt *parse_statement(Parser *p) {
         return call;
     }
     if (!form) {
-        report_unknown_start(p);
+        parser_report_unknown_start(p);
         return NULL;
     }
     parser_advance(p);

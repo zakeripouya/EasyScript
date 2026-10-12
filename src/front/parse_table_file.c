@@ -15,6 +15,56 @@ static bool at_read_table(const Parser *p, size_t i) {
            p->tokens[i + 2].kind == TOK_WORD && strcmp(p->tokens[i + 2].text, "in") == 0;
 }
 
+// The one-word name after "and call it" / "called" (token index), or 0.
+static size_t table_name_at(const Parser *p, size_t i) {
+    static const char *const calls[] = {"and call it", ", called", "called"};
+    for (size_t c = 0; c < 3; c++) {
+        size_t at = i;
+        bool match = true;
+        for (const char *w = calls[c]; *w && match;) {
+            const char *space = strchr(w, ' ');
+            size_t len = space ? (size_t)(space - w) : strlen(w);
+            const Token *token = at < p->count ? &p->tokens[at] : NULL;
+            match = token && (len == 1 && *w == ',' ? token->kind == TOK_COMMA
+                                                    : token->kind == TOK_WORD && strlen(token->text) == len &&
+                                                          strncmp(token->text, w, len) == 0);
+            at++;
+            w += space ? len + 1 : len;
+        }
+        if (match && at < p->count && p->tokens[at].kind == TOK_WORD &&
+            (at + 1 >= p->count || p->tokens[at + 1].kind != TOK_WORD)) {
+            return at;
+        }
+    }
+    return 0;
+}
+
+// "purchases" -> "purchase": the kind of row of a table called with a plural
+// name (whose plural is that name again), unless that's already a kind. NULL
+// otherwise.
+static bool ends_with(const char *word, size_t len, const char *end) {
+    size_t n = strlen(end);
+    return len > n && strcmp(word + len - n, end) == 0;
+}
+
+static const char *row_kind_name(Parser *p, const char *table) {
+    size_t len = strlen(table);
+    const char *row = NULL;
+    if (ends_with(table, len, "ies")) {
+        row = arena_sprintf(p->arena, "%.*sy", (int)(len - 3), table);
+    } else if (ends_with(table, len, "xes") || ends_with(table, len, "ches") || ends_with(table, len, "shes") ||
+               ends_with(table, len, "sses") || ends_with(table, len, "zzes")) {
+        row = arena_sprintf(p->arena, "%.*s", (int)(len - 2), table);
+    } else if (ends_with(table, len, "s")) {
+        row = arena_sprintf(p->arena, "%.*s", (int)(len - 1), table);
+    }
+    if (!row || strcmp(parser_plural_of(p->arena, row), table) != 0) return NULL;
+    for (size_t k = 0; k < p->records->len; k++) {
+        if (strcmp(p->records->items[k].name, row) == 0) return NULL;
+    }
+    return row;
+}
+
 void parser_find_table_files(Parser *p) {
     for (size_t i = 0; i < p->count; i++) {
         if (!at_read_table(p, i)) continue;
@@ -24,6 +74,12 @@ void parser_find_table_files(Parser *p) {
         RecordKind kind = {arena_sprintf(p->arena, "0row%zu", index), arena_sprintf(p->arena, "row of %s", shown), NULL,
                            NULL, true};
         kind.plural = arena_sprintf(p->arena, "rows of %s", shown);
+        size_t called = table_name_at(p, i + 4);  // "... and call it purchases": a kind called "purchase"
+        const char *row = called ? row_kind_name(p, p->tokens[called].text) : NULL;
+        if (row) {
+            kind.name = kind.display = row;
+            kind.plural = p->tokens[called].text;
+        }
         Stmt *definition = ast_new_stmt(p->arena, STMT_RECORD, parser_token_pos(&p->tokens[i]));
         definition->as.record.name.text = kind.name;
         definition->as.record.name.display = kind.display;

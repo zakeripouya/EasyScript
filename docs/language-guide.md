@@ -2265,8 +2265,56 @@ if that fails:
 
 `try to` works with sentences that use a file or a folder. EasyScript checks first that the sentence can be done (the file is there, the folder for a new file exists, nothing is in the way of a new name); if it can't, the sentences after `if that fails` run instead, and `the reason` says why.
 
+### Showing lists and maps as tables
+
+```
+show the total amount of purchases per category, sorted biggest first, as a table.
+show the big purchases sorted by amount biggest first, as a table.
+```
+
+```
+rent           2400
+groceries    396.95
+date        store        category     amount
+2026-09-20  Whole Foods  groceries    312.75
+```
+
+`as a table` lays a list or a map out in columns: a list of records gets a column per field with the names on top, a map its keys and values. `sorted by amount` sorts by a field when `amount` isn't something the program made. A table read with `and call it purchases` has rows that are `a purchase`, so `a purchase is big if ...` describes them.
+
+### Several lines in a file, and what's in it
+
+```
+I want to make a new file called "groceries.txt", then write "milk" in file it,
+then add "eggs" and "bread" to the end of file it, one per line,
+and then show me what's in it.
+```
+
+`, one per line` puts each value on a line of its own. `what's in file F` is the contents of the file; right after a step that made or wrote to a file, `what's in it` reads that file.
+
+### Examples as tests
+
+```
+to double with x:
+    give back x times 2.
+
+for example, double with 3 is 6.
+for example, the total of a list of 1, 2 and 3 is 6.
+```
+
+An example says something that should be true. It's checked where it's written; if it isn't right, EasyScript shows a warning with the line and what the value really is, and the program goes on:
+
+```
+Line 4 (a warning): This example isn't right.
+    for example, double with 4 is 9.
+                 ^^^^^^^^^^^^^^^^^^
+It's 8 here.
+```
+
+`easyscript test FILE` runs the program the same way, then says how many examples were right ("All 2 examples are right.", or "1 of 2 examples are right." and a failed ending), so examples work as tests.
+
 ### What each one means exactly
 
+- `for example, C.` is `C` checked where it's written: a warning if it's no, nothing if it's yes.
 - `ask for a number Q and call it age` asks Q until the answer reads as a number, then keeps that number. `ask yes or no` is the same with `yes`/`y`/`no`/`n`.
 - `X as money` is a dollar sign, X rounded to two decimals, with commas between thousands. `X as a percent` is X times 100 (up to 10 digits) followed by `%`.
 - `the total is always E` makes `total` mean E wherever it's read.

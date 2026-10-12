@@ -6,7 +6,7 @@ West 80.5 no Thursday, October 1, 2026
 East 40 yes Thursday, October 15, 2026, 2:30 PM
 North 300 true Sunday, September 20, 2026
 2
-a row of sales.csv with date (Thursday, October 15, 2026, 2:30 PM), region "East", Amount 40, paid "yes" and note ""
+a sale with date (Thursday, October 15, 2026, 2:30 PM), region "East", Amount 40, paid "yes" and note ""
 date,region,Amount,paid,note
 2026-09-03,East,7,yes,first
 2026-10-15 14:30,East,40,yes,

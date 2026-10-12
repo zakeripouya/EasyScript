@@ -488,10 +488,10 @@ fi
 # What a program tells whoever started it: "stop the program with code N",
 # "saying it failed" (1), and "complain" writing to the error output only.
 exit_code_check() {
-    name=$1 want_status=$2 want_out=$3 want_err=$4 program=$5
+    name=$1 want_status=$2 want_out=$3 want_err=$4 program=$5 command=${6:-run}
     fresh_dir
     printf '%b' "$program" >"$WORK/code.es"
-    (cd "$WORK/cwd" && "$ES" run "$WORK/code.es") >"$WORK/stdout" 2>"$WORK/stderr"
+    (cd "$WORK/cwd" && "$ES" "$command" "$WORK/code.es") >"$WORK/stdout" 2>"$WORK/stderr"
     status=$?
     if [ $status -ne "$want_status" ] || [ "$(cat "$WORK/stdout")" != "$want_out" ] ||
         [ "$(cat "$WORK/stderr")" != "$want_err" ]; then
@@ -509,6 +509,25 @@ exit_code_check "system/complain-keeps-going" 0 "one
 two" "oops" 'say "one"\ncomplain "oops"\nsay "two"\n'
 exit_code_check "system/run-gives-its-code" 0 "5" "" \
     'run "sh" with "-c" and "exit 5" and call the result r\nsay r'"'"'s exit code\n'
+
+# "easyscript test": runs the program, then says how many examples were right.
+exit_code_check "cli/test-all-right" 0 "" "All 2 examples are right." \
+    'for example, 1 plus 1 is 2.\nfor example, "a" is "a".\n' test
+exit_code_check "cli/test-one-right" 0 "hi" "The 1 example is right." 'say "hi".\nfor example, 2 is above 1.\n' test
+exit_code_check "cli/test-wrong" 1 "" "Line 1 (a warning): This example isn't right.
+    for example, 2 is 3.
+                 ^^^^^^
+It's 2 here.
+Line 2 (a warning): This example isn't right.
+    for example, 2 is above 3.
+                 ^^^^^^^^^^^^
+0 of 2 examples are right." 'for example, 2 is 3.\nfor example, 2 is above 3.\n' test
+exit_code_check "cli/test-no-examples" 0 "" \
+    "This program has no examples to check. Write one like \"for example, total is 12.\"" 'let x be 1.\n' test
+exit_code_check "cli/run-keeps-going-after-a-wrong-example" 0 "after" "Line 1 (a warning): This example isn't right.
+    for example, \"ab\" is \"abc\".
+                 ^^^^^^^^^^^^^
+It's \"ab\" here." 'for example, "ab" is "abc".\nsay "after".\n'
 
 # The keyboard: on a real terminal (a pseudo-terminal), keys are read one at
 # a time, and the terminal is put back as it was however the program ends.

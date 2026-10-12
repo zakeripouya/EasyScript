@@ -144,6 +144,7 @@ Arithmetic needs numbers on both sides; anything else is an error before the pro
 |---|---|---|---|
 | `length of X` | How many characters a text has, or how many items a list has | `length of name` | Available |
 | `contents of file X` | Everything in a file, as text | `contents of file "notes.txt"` | Available |
+| `what's in file X` / `what is in file X` | The same as `contents of file X`; `what's in it` works in a step right after one that made or wrote to a file | `show me what's in file "notes.txt"` | Available |
 
 These take a single value, so `length of name plus 1` means `(length of name) plus 1`. Write `length of (name plus 1)` for the other meaning.
 
@@ -221,6 +222,7 @@ The words that start statements are only special at the start of a sentence, so 
 | `file X exists` / `folder X exists` | A condition: is there a file (a folder)? | `if file "notes.txt" exists:` | Available |
 | `put X in file F` / `write X in file F` | Like `write X to file F` | `put "hello" in file "notes.txt"` | Available |
 | `add X to the end of file F` | Like `append X to file F` | `add "more" to the end of file "notes.txt"` | Available |
+| `add A and B to the end of file F, one per line` | Each value on a line of its own (`A followed by` a new line `followed by B`, then a new line at the end); one list is its items joined with new lines | `add "eggs" and "bread" to the end of file "groceries.txt", one per line` | Available |
 
 More file and folder sentences are in [the standard library](#the-standard-library).
 
@@ -846,6 +848,21 @@ They bind like `as text` (to the value just before them): `(price times 3) as mo
 |---|---|---|
 | `try to S. if that fails, S2.` / `try to S.` + `if that fails:` and indented sentences | S is a sentence that reads, writes or adds to a file, reads a table or csv file, saves a csv file, or makes, deletes, renames, copies or moves a file or folder. Just before it, EasyScript checks it can be done; if not, S is skipped and the other sentences run instead of stopping the program. The file's name has to be text or a name (it's looked at twice). A name S makes exists after it either way; if S failed, it holds empty text (or 0, no, an empty list) | `try to read file "notes.txt" and call it notes. if that fails, say "No notes yet."` |
 | `the reason` | In `if that fails`: text saying why, the same words the error would have used | `say the reason.` |
+
+### Showing lists and maps as tables
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `X as a table` | Text with X laid out in columns: a list of records has a column per field with the fields' names on top (a table's rows: every column of the file); a map has its keys and values; any other list one item per line. Columns are as wide as their widest value, numbers on the right; text isn't quoted | `show the dogs as a table.` |
+| `L sorted by FIELD [biggest first \| smallest first]` | When FIELD isn't a definition, name or constant, but a field of some kind (or a column of a table): the items in order of that field (a number or a date), smallest first unless it says `biggest first`; equal ones keep their order | `the orders sorted by amount biggest first` |
+
+A table read with `... and call it purchases` has rows of a kind named after it: `a purchase` (the name without its plural ending, if that's not a kind already). So `a purchase is big if its amount is over 200.` and `the big purchases` work, and a row prints as `a purchase with date ...`.
+
+### Examples as tests
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `for example, X is Y.` (any yes/no value after the comma) | Checked where it's written. If it isn't right, a warning shows the line and what X really is ("It's 8 here."), and the program goes on. `easyscript test FILE` runs the program and then says how many examples were right ("2 of 3 examples are right."), failing if any weren't | `for example, double with 3 is 6.` |
 
 ### Tables in files
 

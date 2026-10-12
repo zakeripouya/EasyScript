@@ -1039,6 +1039,47 @@ Line 1: "\u12" isn't a character I know.
 Write the character's code in hex, like \u{e9} for "é" or \u{1F600}. Codes go from 1 to 10FFFF.
 ```
 
+A sentence EasyScript doesn't know, with no close statement word, gets the sentences that share the most words with it:
+
+```
+Line 13: I don't know a sentence that starts with "duplicate".
+    duplicate the file "a.txt"
+    ^^^^^^^^^
+Sentences like these work: "make a new file called "notes.txt"", "write "hello" to file "notes.txt"" or "append "hello" to file "notes.txt"".
+```
+
+`what's in` reads files only:
+
+```
+Line 2: "what's in" only reads files, so it needs "file" before the file's name.
+    say what's in scores.
+        ^^^^^^^^^
+Write it like "show me what's in file "notes.txt"". To show a list, write "show me scores".
+```
+
+```
+Line 12: "as a table" needs a list or a map, but this is a number.
+    say 5 as a table.
+        ^
+```
+
+An example that isn't yes or no:
+
+```
+Line 2: An example says something that's yes or no, like "total is 12", but this is a number.
+    for example, total plus 1.
+                 ^^^^^^^^^^^^
+```
+
+While the program runs, a wrong example is a warning (the program goes on):
+
+```
+Line 12 (a warning): This example isn't right.
+    for example, double with 4 is 9.
+                 ^^^^^^^^^^^^^^^^^^
+It's 8 here.
+```
+
 While the program runs, `ask for a number` with no more answers stops with:
 
 ```

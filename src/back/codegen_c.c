@@ -425,6 +425,7 @@ void cg_emit_stmt(Codegen *g, const Stmt *stmt) {
     case STMT_LIBRARY: cg_emit_library_stmt(g, stmt); break;
     case STMT_RULE: cg_emit_rule(g, stmt); break;
     case STMT_TRY: cg_emit_try(g, stmt); break;
+    case STMT_EXAMPLE: cg_emit_example(g, stmt); break;
     case STMT_EVENT: vec_push(g->arena, &g->events, stmt); break;  // run at the end of main()
     case STMT_MATCH: cg_emit_match(g, stmt); break;
     case STMT_RETURN: emit_return(g, stmt); break;

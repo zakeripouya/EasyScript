@@ -52,3 +52,13 @@ Line 11: I don't know a sentence that starts with "dance".
     please dance
            ^^^^^
 Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 12: I don't know a sentence that starts with "loop".
+    loop over scores
+    ^^^^
+Did you mean "stop"?
+
+Line 13: I don't know a sentence that starts with "duplicate".
+    duplicate the file "a.txt"
+    ^^^^^^^^^
+Sentences like these work: "make a new file called "notes.txt"", "write "hello" to file "notes.txt"" or "append "hello" to file "notes.txt"".
