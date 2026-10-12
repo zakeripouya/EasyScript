@@ -32,6 +32,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 | [20. The keyboard](#20-the-keyboard) | Available |
 | [21. Questions and totals](#21-questions-and-totals) | Available |
 | [22. Choices without if](#22-choices-without-if) | Available |
+| [23. Talking to it](#23-talking-to-it) | Available |
 
 ---
 
@@ -2161,4 +2162,51 @@ Events run once the rest of the program has: `every 2 seconds:` runs its lines e
 - Definitions (describing words, values, tables of a kind, rules) only see the value they're about and constants, like `to` definitions: "This only sees the value it's about ("it") and constants."
 - `a big order is one whose ...` (with "a ... one") describes, and `the big orders are the ones whose ...` (with "the ... the ones") names: the words `a` and `the` tell them apart.
 - A table that makes a name (`the shipping cost depends on the total:`) works it out once, where it's written; use `the price of a drink depends on ...` (or a value of a record) for one that's worked out each time.
+
+## 23. Talking to it
+
+**Available.** EasyScript reads questions, requests and steps in a row the way people say them, and each means exactly what the same words mean in a program.
+
+### Questions and requests
+
+```
+what is the total?          # say the total
+total?                      # say the total
+is total above 100?         # say total is above 100
+how many orders are big?
+which customer has the highest total?
+show me the total.
+can you show me the big orders?
+```
+
+A `?` ends a sentence like a period. `show me`, `give me`, `tell me` and `list` mean `say`, and polite words before a sentence (`please`, `can you`, `I want to`, `let's`, ...) are left out. Questions that start with `who`, `where`, `when` or `why` aren't understood yet, and EasyScript says so.
+
+### Steps in a row
+
+```
+read the table in "sales.csv", then total the amount per month,
+then sort it biggest first, then save it as "best months.csv".
+```
+
+Sentences joined by `, then`, `and then` or `and` are steps, done in order. In each step, `it` is what the step before gave: the table it read, the value it worked out, the list it sorted, the file it wrote to, or the name it made. A line that ends with a comma, `then` or `and` goes on to the next line. When `it` could also mean a loop's or a filter's item, EasyScript asks for a name instead.
+
+`total the amount per month`, `average the score`, `median the price` and `count the big orders` are actions: they work something out and keep it (`... and call it totals`, or for the next step's `it`).
+
+### Tables in files
+
+```
+read the table in "sales.csv" and call it sales.
+say the total amount of sales per region, sorted biggest first.
+say how many sales whose amount is over 100.
+save the sales whose region is "East" as "east.csv".
+```
+
+A table's rows are records whose fields are the columns the program uses: `amount` is a number because the program adds it up, `region` is text. The program checks the file when it reads it: a column that isn't there stops it with "sales.csv has no column called "amout". Did you mean "amount"?", and so does a value of the wrong kind. Saved rows keep every column of the file, with any changes the program made.
+
+### What each one means exactly
+
+- `what is X?` and `X?` are `say X`; `is X above 100?` is `say X is above 100`; `which customer has the highest total?` is `say the customer with the highest total`.
+- `S1, then S2` is S1, then (if S2 says "it") a hidden name for what S1 gave, then S2 with "it" meaning that name.
+- `total the amount per month` is `let (a hidden name) be the total amount of it per month`.
+- `read the table in F` reads the csv file, makes a record for each row with the columns the program uses, and keeps them in a list.
 

@@ -158,6 +158,7 @@ static Stmt *parse_target_first(Parser *p, const Token *verb, const StmtForm *fo
 static Stmt *parse_say(Parser *p, const Token *verb, const StmtForm *form) {
     (void)form;
     Stmt *stmt = parser_new_stmt(p, STMT_SAY, verb);
+    if (parser_at_word(p, 0, "me")) parser_advance(p);  // "show me the total", "tell me ..."
     stmt->as.value = parser_parse_pieces(p);
     return stmt;
 }
@@ -215,6 +216,7 @@ static Stmt *parse_append(Parser *p, const Token *verb, const StmtForm *form) {
 
 static Stmt *parse_read(Parser *p, const Token *verb, const StmtForm *form) {
     static const char *const file[] = {"file", NULL};
+    if (parser_match_words(p, "table in")) return parser_parse_read_table(p, verb);  // read the table in "x.csv"
     Stmt *stmt = parser_new_stmt(p, STMT_READ_FILE, verb);
     if (!parser_expect_word(p, file, form->example)) return NULL;
     stmt->as.read_file.path = parse_expression(p);
@@ -329,6 +331,8 @@ static const StmtForm forms[] = {
     {"print", parse_say, false, 0, NULL, "print \"hello\""},
     {"show", parse_say, false, 0, NULL, "show \"hello\""},
     {"display", parse_say, false, 0, NULL, "display \"hello\""},
+    {"tell", parse_say, false, 0, NULL, "tell me the total"},
+    {"list", parse_say, false, 0, NULL, "list the big orders"},
     {"write", parse_write, false, 0, NULL, "write \"hello\" to file \"notes.txt\""},
     {"ask", parse_ask, true, 0, NULL, "ask \"What's your name?\" and call the answer name"},
     {"append", parse_append, false, 0, NULL, "append \"hello\" to file \"notes.txt\""},
@@ -448,6 +452,8 @@ Stmt *parse_statement(Parser *p) {
             return NULL;
         }
     }
+    parser_skip_polite(p);  // "can you show me the total?", "let's say hello"
+    parser_skip_step_words(p);  // "first, ...", "after that, ..."
     const Token *verb = parser_peek(p, 0);
     if (parser_at_record_definition(p)) return parse_record(p);
     if (parser_at_has_definition(p)) return parser_parse_has(p);
@@ -457,6 +463,7 @@ Stmt *parse_statement(Parser *p) {
     if (parser_at_definition(p)) return parser_parse_definition(p);  // a customer is loyal if ...
     if (parser_at_table(p)) return parser_parse_table(p);            // the shipping cost depends on the total:
     if (parser_at_event(p)) return parser_parse_event(p);            // every 2 seconds: / whenever C:
+    if (parser_at_action(p)) return parser_parse_action(p);          // total the amount per month
     if (parser_interface_words(p, p->pos) > 0) return parse_interface(p);
     if (parser_at_library_sentence(p)) {  // "delete the file F", "clear the screen", "run "git"", ...
         Stmt *stmt = parser_parse_library_sentence(p);
@@ -471,6 +478,11 @@ Stmt *parse_statement(Parser *p) {
     const StmtForm *form = find_form(verb);
     // A function's name starts a call: one of several words even if its first
     // word starts sentences ("add tax to 100"), a one-word one otherwise.
+    if (!form && parser_question_ahead(p)) {  // "what is total?", "total?", "is rex big?"
+        Stmt *question = parser_parse_question(p);
+        if (question) question->pos = ast_pos_join(question->pos, (SourcePos){p->prev_span, 0, 0, 0});
+        return question;
+    }
     const KnownName *function = parser_match_name(p, 0, true);
     if (function && (function->words > 1 || !form)) {
         Stmt *call = parse_call_statement(p, verb, function);

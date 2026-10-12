@@ -427,7 +427,8 @@ static TokenKind two_char_symbol(char a, char b) {
 
 static TokenKind one_char_symbol(char c) {
     switch (c) {
-    case '.': return TOK_PERIOD;
+    case '.':
+    case '?': return TOK_PERIOD;  // "what is total?": a question ends a sentence too
     case ',': return TOK_COMMA;
     case ':': return TOK_COLON;
     case '(': return TOK_LPAREN;

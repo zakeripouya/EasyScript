@@ -402,6 +402,24 @@ Line 14: "the total" could mean two things here.
 
 Also: "I expected "there are" or a test like "are above 70" here, ...", "I expected a test like "are above 50" after "all scores", ...", "I expected a field after "per" here, ...", "I expected "with the highest" here, ...", "I expected "divided by" here, ..." (after `the remainder of`), ""per month" needs a date to group by, but a dog has no date in it.", "The top items are picked from a list of numbers or dates, ...", "I can only count how often numbers or text come up, ...".
 
+**Talking to it**: [`chain_errors.es`](../tests/errors/chain_errors.es), [`err_questions_chains.es`](../tests/ast/err_questions_chains.es)
+
+```
+Line 3: "it" could mean what the sentence before gave, or the item here.
+    let more be scores, then say the scores where it is above 4.
+                                                  ^^
+Use a name instead: end the sentence before with "and call it ...", or say the item's name.
+```
+
+```
+Line 1: I can't answer "who" questions yet.
+    who is the best?
+    ^^^
+Ask with "what", "which", "how many" or "is", like "which customer has the highest total?".
+```
+
+Also: "The sentence before this one doesn't give anything that "it" could mean.".
+
 **Choices without if**: [`definition_errors.es`](../tests/errors/definition_errors.es), [`err_definitions.es`](../tests/ast/err_definitions.es)
 
 ```
@@ -984,6 +1002,8 @@ Positions start at 1: the first item is item 1.
 | The average or median of an empty list | "There's nothing to average: the list is empty." / "There's no middle number: the list is empty." |
 | The one with the highest (or lowest) of an empty list | "There's nothing to choose from: the list is empty." with the hint "Check that the list isn't empty first, like "if dogs is not empty:"." |
 | The top N with N not whole or below 0 | "How many to take has to be a whole number, 0 or more, but it's 1.5." |
+| A table's column that isn't in the file | "sales.csv has no column called "amout"." with "Did you mean "amount"?" when one is close |
+| A table's value of the wrong kind | "In sales.csv, line 3, "amount" is "lots", which isn't a number." (or "yes or no", or "a date like 2026-10-31") |
 | An event's "every N seconds" with N 0 or less | "How often has to be more than 0 seconds, but it's 0." |
 | A field given a value its rule doesn't allow | "An age must be between 0 and 150, but this one is 230." / "A person's email must contain "@", but this one is "bob.example.com"." / for other kinds, "..., but this one doesn't follow it." |
 

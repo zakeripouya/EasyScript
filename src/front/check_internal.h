@@ -358,7 +358,8 @@ void checker_check_event(Checker *c, const Stmt *stmt);  // check_loop.c: STMT_E
 TypeVar checker_field_kind(Checker *c, Field *field, size_t line);
 void checker_report_undecided_fields(Checker *c);
 TypeVar checker_check_field(Checker *c, const Expr *expr);       // EXPR_FIELD
-void checker_check_rule(Checker *c, Stmt *stmt);                 // STMT_RULE: "an age must be between 0 and 150"
+void checker_check_rule(Checker *c, Stmt *stmt);
+Field *checker_add_column(Checker *c, Stmt *def, Field column);  // a table's row: a column the program uses                 // STMT_RULE: "an age must be between 0 and 150"
 TypeVar checker_check_new(Checker *c, const Expr *expr);         // EXPR_NEW
 const char *checker_capitalized(Checker *c, Type type);           // "A dog", for the start of a sentence
 

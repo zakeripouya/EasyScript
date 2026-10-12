@@ -183,7 +183,13 @@ Stmt *parser_parse_save(Parser *p, const Token *verb) {
     p->as_ends_value = true;  // "save rows as csv": "as" isn't a conversion here
     stmt->as.library.a = expect_value(p, example);
     p->as_ends_value = false;
-    if (!stmt->as.library.a || !expect(p, "as csv file", "as csv file", example)) return NULL;
+    if (!stmt->as.library.a) return NULL;
+    size_t n = parser_match_words(p, "as csv file");  // or "as F": csv is the only kind of file saved
+    if (n) {
+        parser_consume(p, n);
+    } else if (!expect(p, "as", "as", example)) {
+        return NULL;
+    }
     stmt->as.library.b = expect_value(p, example);
     return stmt->as.library.b ? stmt : NULL;
 }

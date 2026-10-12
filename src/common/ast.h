@@ -283,7 +283,8 @@ typedef enum {
     DO_DELETE_FILE,    // delete the file A
     DO_DELETE_FOLDER,  // delete the folder A [and everything in it: `everything`]
     DO_READ_CSV,       // read csv file A and call it NAME
-    DO_SAVE_CSV,       // save A as csv file B
+    DO_SAVE_CSV,       // save A as csv file B (or "save A as B"): a list of maps or records, or a map
+    DO_READ_TABLE,     // read the table in A [and call it NAME]: rows of a kind made for it (`type`)
     DO_COMPLAIN,       // complain A (to the error output)
     DO_RUN,            // run A [with parts...] [and call the result NAME]
     DO_WAIT_KEY,       // wait for a key and call it NAME

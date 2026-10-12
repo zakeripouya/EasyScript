@@ -774,6 +774,55 @@ Events can only be written at the top level, and they see every name the program
 | `remove the Ls that ... / whose ... / where ...` / `remove the ADJECTIVE Ls` | Takes the items the filter keeps out of the list itself (the same as `keep only the items in L where not ...`) | `remove the tasks that are done.` |
 | `set every ITEM's FIELD to X` (and `add X to every ITEM's FIELD`, `increase every ITEM's FIELD by X`, ...) | Does the sentence for each item of the list named like ITEM's plural (a `for each` loop); ITEM can start with an adjective | `set every monster's color to "blue".` |
 
+## Talking to it
+
+All **Available** (English pass part 4). A question or request means exactly what the same words mean in a program.
+
+### Questions and requests
+
+| Pattern | Means | Example |
+|---|---|---|
+| `...?` | A `?` ends a sentence, like `.` | `say total?` |
+| `what is X?` / `what's X?` / `what are X?` / `X?` | `say X` | `what is the total?` |
+| `is X ...?` (any comparison after `is`, or a describing word) | `say X is ...` | `is total above 100?`, `is rex big?` |
+| `how many ...?` | `say how many ...` | `how many orders are big?` |
+| `which ITEM has the highest FIELD?` / `which ITEM with the lowest FIELD?` | `say the ITEM with the highest FIELD` | `which customer has the highest total?` |
+| `which Ls are ...?` | `say the Ls that are ...` | `which orders are big?` |
+| `show me X` / `give me X` / `tell me X` / `list X` | `say X` | `show me the total.` |
+| `who ...?`, `where ...?`, `when ...?`, `why ...?` | An error for now: "I can't answer "who" questions yet." | |
+
+`me` and `undo` are kept for talking to EasyScript, so they can't be names.
+
+### Polite words
+
+`I want to`, `I'd like to`, `I would like to`, `let's`, `can you`, `could you`, `would you` and `please` before a sentence are left out: `can you show me the total?` is `show the total`.
+
+### Steps in a row
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `S1, then S2` / `S1, and then S2` / `S1 and then S2` / `S1 and S2` / `S1, after that S2` / `S1, next S2` / `S1, finally S2` | Do S1, then S2 (a line ending with `,`, `then` or `and` goes on to the next line) | `read the table in "sales.csv", then total the amount per month` |
+| `it` in a step | What the step before gave: the name it made (`let`, `and call it`), the list it changed (`sort`, `remove`, `add ... to the end of`), the file it wrote to (`write ... in file`), the table it read, or the value an action worked out. In a step where a loop's or a filter's item could also be meant, it's an error asking for a name | `let scores be a list of 5, 3 and 9, then sort it, then say it.` |
+| `first, ...` / `next, ...` / `after that, ...` / `finally, ...` / `then ...` | Before a sentence: only say the order | `first, say "Hello".` |
+
+### Actions
+
+| Pattern | Means | Example |
+|---|---|---|
+| `total the FIELD [of L] [per G]` | `let NAME be the total FIELD of L [per G]`; in a step, L is `it` | `total the amount per month` |
+| `average the FIELD [of L] [per G]` / `median the FIELD ...` | The same with the average or the middle | `average the score of students` |
+| `count L` / `count the Ls that ...` | `let NAME be the number of items in L` | `count the orders whose amount is over 50` |
+| `... and call it NAME` / `..., called NAME` / `called NAME` / `named NAME` | The name the action's value is kept in (otherwise a hidden one, for the next step's `it`) | `total the amount of orders and call it everything` |
+
+### Tables in files
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `read the table in F [and call it NAME]` / `..., called NAME` | The rows of the csv file F, as records of a kind made for it ("a row of sales.csv"). Their fields are the columns the program uses (`its amount`, `the total amount of sales`, `per region`), each the kind its use needs (a number, text, yes/no, or a date like 2026-10-31); other columns are kept as they are. Reading checks every column used is in the file ("sales.csv has no column called "amout". Did you mean "amount"?") and that each value is the right kind. `per month` uses the column called `date` | `read the table in "sales.csv" and call it sales.` |
+| `save X as F` (or `as csv file F`) | Saves a list of maps or records (a table's rows with all their columns), or a map (a `key` and a `value` column), as a csv file | `save it as "best months.csv"` |
+
+In a program that reads a table, a word where a field goes can be one of its columns even if no kind of record has that field.
+
 ## Kinds with variants
 
 All of these are **Available**. A kind with variants is a value that's one of several things, each with its own fields. Values never change once made, and are equal when they're the same variant with equal fields. See the [language guide](language-guide.md#14-kinds-with-variants).

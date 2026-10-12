@@ -19,6 +19,8 @@
 #include "es_text.h"
 #endif
 
+#include <ctype.h>
+
 /* --- Fields -------------------------------------------------------------------- */
 
 /* "R's F" for a record that isn't kept in a variable: the field's value
@@ -117,6 +119,90 @@ static void es_box_render(EsBuf *b, const EsRecord *r, bool quoted) {
     }
 }
 
+/* Field i of r, as "say" shows it inside a record. */
+static void es_field_render(EsBuf *b, const EsRecord *r, int i, int depth) {
+    const EsRecordType *type = r->type;
+    size_t at = type->offsets[i];
+    switch (type->kinds[i]) {
+    case 'n': {
+        EsText *t = es_number_text(ES_FIELD(r, double, at));
+        es_buf_add(b, t->chars, t->len);
+        es_release(t);
+        break;
+    }
+    case 'd': es_buf_add_date(b, ES_FIELD(r, double, at)); break;
+    case 'b': es_buf_add_text(b, ES_FIELD(r, bool, at) ? "yes" : "no"); break;
+    case 't': {
+        const EsText *t = ES_FIELD(r, EsText *, at);
+        es_buf_add(b, "\"", 1);
+        es_buf_add(b, t->chars, t->len);
+        es_buf_add(b, "\"", 1);
+        break;
+    }
+    case 'l': {
+        const EsList *l = ES_FIELD(r, EsList *, at);
+        es_buf_add(b, "(", 1);
+        if (l->len == 0) es_buf_add_text(b, "an empty list");
+        es_list_render(b, l, depth + 1);
+        es_buf_add(b, ")", 1);
+        break;
+    }
+    case 'm': {
+        const EsMap *m = ES_FIELD(r, EsMap *, at);
+        es_buf_add(b, "(", 1);
+        if (m->len == 0) es_buf_add_text(b, "an empty map");
+        es_map_render(b, m, depth + 1);
+        es_buf_add(b, ")", 1);
+        break;
+    }
+    default: {
+        const EsRecord *inner = ES_FIELD(r, EsRecord *, at);
+        bool parenthesized = inner && inner->type->style != ES_BOX && inner->type->style != ES_CLOSURE;
+        if (parenthesized) es_buf_add(b, "(", 1);
+        es_record_render(b, inner, depth + 1);
+        if (parenthesized) es_buf_add(b, ")", 1);
+        break;
+    }
+    }
+}
+
+/* Whether a column's name in a table's header is a field's name: the same
+ * letters, capitals or not, with "_" for a space. */
+static bool es_column_is(const EsText *column, const char *field) {
+    size_t n = strlen(field);
+    if (column->len != n) return false;
+    for (size_t i = 0; i < n; i++) {
+        char x = column->chars[i], y = field[i];
+        if (x == '_') x = ' ';
+        if (tolower((unsigned char)x) != tolower((unsigned char)y)) return false;
+    }
+    return true;
+}
+
+/* A row of "read the table in F" (fields 0 and 1 hold the file's header and
+ * the row's cells): every column in the file's order, the ones the program
+ * uses with their values now. */
+static void es_table_render(EsBuf *b, const EsRecord *r, int depth) {
+    const EsRecordType *type = r->type;
+    const EsList *header = ES_FIELD(r, EsList *, type->offsets[0]), *cells = ES_FIELD(r, EsList *, type->offsets[1]);
+    for (size_t c = 0; c < header->len; c++) {
+        es_buf_add_text(b, c == 0 ? " with " : c + 1 == header->len ? " and " : ", ");
+        es_buf_add(b, header->at.t[c]->chars, header->at.t[c]->len);
+        es_buf_add(b, " ", 1);
+        int field = -1;
+        for (int f = 2; f < type->fields && field < 0; f++) {
+            if (es_column_is(header->at.t[c], type->field_names[f])) field = f;
+        }
+        if (field >= 0) {
+            es_field_render(b, r, field, depth);
+        } else {
+            es_buf_add(b, "\"", 1);
+            es_buf_add(b, cells->at.t[c]->chars, cells->at.t[c]->len);
+            es_buf_add(b, "\"", 1);
+        }
+    }
+}
+
 /* `a dog with name "Rex" and age 3`; a record, list or map in a field is in
  * parentheses, text in quotes, nothing as "nothing". A box shows what it
  * holds (quoted text inside records). Only looks. */
@@ -139,52 +225,15 @@ static void es_record_render(EsBuf *b, const EsRecord *r, int depth) {
         es_buf_add_text(b, " with ...");
         return;
     }
+    if (type->fields >= 2 && strcmp(type->field_names[0], "0header") == 0) {
+        es_table_render(b, r, depth);
+        return;
+    }
     for (int i = 0; i < type->fields; i++) {
         es_buf_add_text(b, i == 0 ? " with " : i + 1 == type->fields ? " and " : ", ");
         es_buf_add_text(b, type->field_names[i]);
         es_buf_add(b, " ", 1);
-        size_t at = type->offsets[i];
-        switch (type->kinds[i]) {
-        case 'n': {
-            EsText *t = es_number_text(ES_FIELD(r, double, at));
-            es_buf_add(b, t->chars, t->len);
-            es_release(t);
-            break;
-        }
-        case 'd': es_buf_add_date(b, ES_FIELD(r, double, at)); break;
-        case 'b': es_buf_add_text(b, ES_FIELD(r, bool, at) ? "yes" : "no"); break;
-        case 't': {
-            const EsText *t = ES_FIELD(r, EsText *, at);
-            es_buf_add(b, "\"", 1);
-            es_buf_add(b, t->chars, t->len);
-            es_buf_add(b, "\"", 1);
-            break;
-        }
-        case 'l': {
-            const EsList *l = ES_FIELD(r, EsList *, at);
-            es_buf_add(b, "(", 1);
-            if (l->len == 0) es_buf_add_text(b, "an empty list");
-            es_list_render(b, l, depth + 1);
-            es_buf_add(b, ")", 1);
-            break;
-        }
-        case 'm': {
-            const EsMap *m = ES_FIELD(r, EsMap *, at);
-            es_buf_add(b, "(", 1);
-            if (m->len == 0) es_buf_add_text(b, "an empty map");
-            es_map_render(b, m, depth + 1);
-            es_buf_add(b, ")", 1);
-            break;
-        }
-        default: {
-            const EsRecord *inner = ES_FIELD(r, EsRecord *, at);
-            bool parenthesized = inner && inner->type->style != ES_BOX && inner->type->style != ES_CLOSURE;
-            if (parenthesized) es_buf_add(b, "(", 1);
-            es_record_render(b, inner, depth + 1);
-            if (parenthesized) es_buf_add(b, ")", 1);
-            break;
-        }
-        }
+        es_field_render(b, r, i, depth);
     }
 }
 

@@ -91,7 +91,7 @@ static Expr *parse_map_literal(Parser *p) {
         map->pos = ast_pos_join(map->pos, value->pos);
         if (parser_at_and(p)) {
             after_and = true;
-        } else if (after_and || !parser_at(p, 0, TOK_COMMA)) {
+        } else if (after_and || !parser_at(p, 0, TOK_COMMA) || parser_at_step_link(p)) {
             return map;
         }
         parser_advance(p);

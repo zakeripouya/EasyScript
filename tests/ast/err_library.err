@@ -78,9 +78,9 @@ Line 16: Something is missing after "shuffle".
     ^^^^^^^
 Write it like "shuffle cards".
 
-Line 17: I expected "as csv file" here, but found "as "out.csv"".
-    save rows as "out.csv"
-              ^^^^^^^^^^^^
+Line 17: I expected "as" here, but found "to".
+    save rows to "out.csv"
+              ^^
 Write it like "save rows as csv file "out.csv"".
 
 Line 18: Something is missing after "put".

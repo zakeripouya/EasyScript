@@ -1,0 +1,16 @@
+540.5
+"North" is 300, "East" is 160 and "West" is 80.5
+"September 2026" is 2 and "October 2026" is 2
+East 120 yes Thursday, September 3, 2026
+West 80.5 no Thursday, October 1, 2026
+East 40 yes Thursday, October 15, 2026, 2:30 PM
+North 300 true Sunday, September 20, 2026
+2
+a row of sales.csv with date (Thursday, October 15, 2026, 2:30 PM), region "East", Amount 40, paid "yes" and note ""
+date,region,Amount,paid,note
+2026-09-03,East,7,yes,first
+2026-10-15 14:30,East,40,yes,
+key,value
+September 2026,420
+October 2026,120.5
+(a row of east.csv with date "2026-09-03", region "East", Amount "7", paid "yes" and note "first") and (a row of east.csv with date "2026-10-15 14:30", region "East", Amount "40", paid "yes" and note "")

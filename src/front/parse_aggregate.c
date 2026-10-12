@@ -45,7 +45,7 @@ static Expr *parse_item_field(Parser *p, size_t words) {
 // "per region" / "by amount": a field of the item after `word`, or an error showing `example`.
 static Expr *parse_field_after(Parser *p, const char *word, const char *example) {
     Span at = parser_advance(p)->span;
-    size_t words = parser_known_field_words(p, 0);
+    size_t words = parser_field_words(p, 0);
     if (words == 0) {
         const Token *token = parser_peek(p, 0);
         if (parser_error(p, token->kind == TOK_WORD ? token->span : at,
@@ -71,9 +71,9 @@ static Expr *parse_period(Parser *p) {
         const Token *per = parser_advance(p);
         Span word = parser_advance(p)->span;
         Expr *date;
-        if (parser_at_word(p, 0, "of") && parser_known_field_words(p, 1) > 0) {
+        if (parser_at_word(p, 0, "of") && parser_field_words(p, 1) > 0) {
             parser_advance(p);
-            date = parse_item_field(p, parser_known_field_words(p, 0));
+            date = parse_item_field(p, parser_field_words(p, 0));
         } else {
             date = ast_new_expr(p->arena, EXPR_FIELD, parser_token_pos(&p->tokens[p->pos - 1]));
             date->as.field.record = ast_new_expr(p->arena, EXPR_IT, date->pos);
@@ -271,17 +271,18 @@ static Expr *parse_total(Parser *p, AggregateKind kind, size_t field) {
     if (missing_after(p, of, example)) return parser_error_expr(p);
     total->as.aggregate.list = parse_list_part(p);
     if (p->sentence_failed) return parser_error_expr(p);
-    Expr *last = total->as.aggregate.list;
-    if (parser_at_word(p, 0, "per") && (parser_known_field_words(p, 1) == 0 || parser_at_word(p, 2, "of")) &&
-        (total->as.aggregate.group = parse_period(p)) != NULL) {
-        return finish(total, total->as.aggregate.group);
+    if (parser_at_word(p, 0, "per") && !parser_parse_group(p, total)) return parser_error_expr(p);
+    return finish(total, total->as.aggregate.group ? total->as.aggregate.group : total->as.aggregate.list);
+}
+
+// "per region", "per month", "per year of signup", at "per".
+bool parser_parse_group(Parser *p, Expr *aggregate) {
+    if ((parser_known_field_words(p, 1) == 0 || parser_at_word(p, 2, "of")) &&
+        (aggregate->as.aggregate.group = parse_period(p)) != NULL) {
+        return true;
     }
-    if (parser_at_word(p, 0, "per")) {
-        total->as.aggregate.group = parse_field_after(p, "per", "the total amount of orders per region");
-        if (!total->as.aggregate.group) return parser_error_expr(p);
-        last = total->as.aggregate.group;
-    }
-    return finish(total, last);
+    aggregate->as.aggregate.group = parse_field_after(p, "per", "the total amount of orders per region");
+    return aggregate->as.aggregate.group != NULL;
 }
 
 static Expr *parse_totals(Parser *p) {
@@ -289,7 +290,7 @@ static Expr *parse_totals(Parser *p) {
     bool number = strcmp(word, "number") == 0;
     for (size_t i = 0; i < COUNT(totals) && !number; i++) {
         if (strcmp(word, totals[i].word) != 0) continue;
-        size_t field = parser_known_field_words(p, 1);
+        size_t field = parser_field_words(p, 1);
         if (!parser_at_word(p, 1 + field, "of") && !parser_at_word(p, 1, "of")) return NULL;
         if (!parser_at_word(p, 1 + field, "of")) field = 0;
         if (is_function_word(p, 0, totals[i].example)) return p->sentence_failed ? parser_error_expr(p) : NULL;
@@ -433,7 +434,7 @@ Expr *parser_implied_list(Parser *p, const Name *item) {
 
 // "with the highest|lowest|most ... FIELD", after the item and its list.
 Expr *parser_finish_best(Parser *p, Expr *best) {
-    if (!parser_at_word(p, 0, "with") || superlative_at(p, 1) < 0) {
+    if (!(parser_at_word(p, 0, "with") || parser_at_word(p, 0, "has")) || superlative_at(p, 1) < 0) {
         const Token *token = parser_peek(p, 0);
         if (parser_error(p, token->span, "I expected \"with the highest\" here, but found %s.",
                          parser_describe(p, token))) {

@@ -21,7 +21,7 @@ static bool at_postfix_after_comma(const Parser *p) {
 // text, with a space between them where it's needed (BINARY_PIECES).
 Expr *parser_parse_pieces(Parser *p) {
     Expr *expr = parse_expression(p);
-    while (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) && !at_postfix_after_comma(p)) {
+    while (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) && !at_postfix_after_comma(p) && !parser_at_step_link(p)) {
         Span comma = parser_advance(p)->span;
         if (parser_at_sentence_end(p)) {
             if (parser_error(p, comma, "Something is missing after \",\".")) {
@@ -95,15 +95,3 @@ bool parser_at_and(const Parser *p) {
     return parser_at_word(p, 0, "and") && !parser_at_word(p, 1, "call") && !parser_at_next_action(p);
 }
 
-// A sentence, and the ones joined to it with "and" (or "and then"), each
-// added to the block. Returns the last.
-Stmt *parser_parse_actions(Parser *p, Block *block) {
-    Stmt *stmt = parse_statement(p);
-    if (stmt && !p->sentence_failed) vec_push(p->arena, block, stmt);
-    while (stmt && !p->sentence_failed && !p->ended_with_block && parser_at_next_action(p)) {
-        parser_consume(p, parser_at_word(p, 1, "then") ? 2 : 1);
-        stmt = parse_statement(p);
-        if (stmt && !p->sentence_failed) vec_push(p->arena, block, stmt);
-    }
-    return stmt;
-}

@@ -164,8 +164,8 @@ static size_t record_definition_words(const Parser *p, size_t i) {
 // can't start sentences, so "if ages has ..." and "while ..." stay sentences.
 size_t parser_has_definition_words(const Parser *p, size_t i) {
     if (!at_line_start(p, i) || !parser_is_name_word(&p->tokens[i]) || parser_is_statement_word(p->tokens[i].text) ||
-        word_at(p, i, "otherwise") || word_at(p, i, "else") || word_at(p, i, "when")) {
-        return 0;
+        word_at(p, i, "otherwise") || word_at(p, i, "else") || word_at(p, i, "when") || word_at(p, i, "which")) {
+        return 0;  // ("which order has the highest total?" is a question)
     }
     size_t n = 1;
     while (i + n < p->count && is_inner_word(&p->tokens[i + n]) && !word_at(p, i + n, "has")) n++;
@@ -214,7 +214,7 @@ static bool add_kind(Parser *p, size_t i, size_t n, bool sum) {
     for (size_t r = 0; r < p->records->sums.len; r++) {
         if (strcmp(p->records->sums.items[r].name, name) == 0 && sum) return false;
     }
-    RecordKind kind = {name, join_words(p, i, n, true, ' '), parser_plural_of(p->arena, name), NULL};
+    RecordKind kind = {name, join_words(p, i, n, true, ' '), parser_plural_of(p->arena, name), NULL, false};
     if (sum) {
         vec_push(p->arena, &p->records->sums, kind);
     } else {
@@ -331,7 +331,7 @@ static size_t find_interface(Parser *p, size_t i, size_t n) {
     bool known = false;
     for (size_t k = 0; k < p->records->interfaces.len; k++) known |= strcmp(p->records->interfaces.items[k].name, name) == 0;
     if (!known) {
-        RecordKind kind = {name, join_words(p, i, n, true, ' '), interface_plural(p->arena, name), NULL};
+        RecordKind kind = {name, join_words(p, i, n, true, ' '), interface_plural(p->arena, name), NULL, false};
         vec_push(p->arena, &p->records->interfaces, kind);
     }
     size_t j = i + n + 4;  // is anything with :
@@ -395,7 +395,7 @@ bool parser_add_builtin_kind(Parser *p, const char *name, size_t words) {
     for (size_t r = 0; r < p->records->len; r++) {
         if (strcmp(p->records->items[r].name, name) == 0) return false;
     }
-    RecordKind kind = {name, name, parser_plural_of(p->arena, name), NULL};
+    RecordKind kind = {name, name, parser_plural_of(p->arena, name), NULL, false};
     vec_push(p->arena, p->records, kind);
     add_known(p, name, words, false, false, false);
     return true;
@@ -418,6 +418,7 @@ bool parser_is_method(const Parser *p, const char *name) {
 
 void parser_find_names(Parser *p) {
     find_records(p);
+    parser_find_table_files(p);
     parser_find_definitions(p);
     parser_find_tables(p);
     parser_find_program_result(p);

@@ -585,6 +585,13 @@ bool parser_at_item_test(const Parser *p, size_t ahead) {
 // it's "small"", "when it's not empty"): a comparison of `left` (an "it").
 // `is` is where the "is" was, for an equality's operator.
 Expr *parser_parse_is_rest(Parser *p, Expr *left, Span is) {
+    bool not = parser_at_word(p, 0, "not");
+    if (parser_peek(p, not)->kind == TOK_WORD && parser_is_adjective(p, parser_peek(p, not)->text)) {  // "is rex big?", "when it's not big"
+        if (not) parser_advance(p);
+        const Token *word = parser_advance(p);
+        Expr *call = parser_adjective_call(p, left, word->text, ast_pos_join(left->pos, parser_token_pos(word)));
+        return not ? new_unary(p, UNARY_NOT, word, call) : call;
+    }
     if (parser_match_words(p, "empty") || parser_match_words(p, "not empty")) {
         bool not = parser_at_word(p, 0, "not");
         return new_list_op(p, not ? LIST_NOT_EMPTY : LIST_IS_EMPTY, parser_consume(p, not ? 2 : 1), left);

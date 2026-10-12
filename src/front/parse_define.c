@@ -433,7 +433,7 @@ Expr *parser_parse_adjective_test(Parser *p, Expr *left, bool plural) {
     const char *const *verbs = plural ? plural_words : singular_words;
     for (size_t i = 0; i < 3; i++) {
         size_t n = parser_match_words(p, verbs[i]);
-        if (!n || !parser_is_adjective(p, parser_peek(p, n)->text)) continue;
+        if (!n || parser_peek(p, n)->kind != TOK_WORD || !parser_is_adjective(p, parser_peek(p, n)->text)) continue;
         Span verb = parser_consume(p, n);
         const Token *word = parser_advance(p);
         SourcePos pos = ast_pos_join(left->pos, parser_token_pos(word));

@@ -239,7 +239,41 @@ static TypeVar check_unary(Checker *c, const Expr *expr) {
 
 // "it" is the number of the innermost loop that has one (count and times
 // loops), or the item of a for-each loop (or of "every" and "only").
+static TypeVar check_name(Checker *c, const Expr *expr);
+
+// "it" in a step after ", then" (its display is the step before's hidden
+// name): that name, unless a loop's or question's item could be meant too.
+static bool check_step_it(Checker *c, const Expr *expr, TypeVar *result) {
+    if (!expr->display) return false;
+    bool item = false;
+    for (size_t i = 0; i < c->loops.len; i++) item |= c->loops.items[i].has_it;
+    if (!*expr->display) {
+        diag_error(c->diag, expr->pos.span, "The sentence before this one doesn't give anything that \"it\" could mean.");
+        diag_note(c->diag, "Use a name instead, or say it in the sentence before, like \"total the amount per month "
+                           "and call it totals\".");
+        diag_info(c->diag, DIAG_UNKNOWN, "what \"it\" means", NULL);
+    } else if (item) {
+        diag_error(c->diag, expr->pos.span, "\"it\" could mean what the sentence before gave, or the item here.");
+        diag_note(c->diag, "Use a name instead: end the sentence before with \"and call it ...\", or say the item's "
+                           "name.");
+        diag_info(c->diag, DIAG_TWO_MEANINGS, "which \"it\" is meant", NULL);
+        diag_choice(c->diag, "what the sentence before gave");
+        diag_choice(c->diag, "the item here");
+    } else {
+        Expr *e = (Expr *)expr;
+        e->kind = EXPR_NAME;
+        e->as.name = expr->display;
+        e->display = "it";
+        *result = check_name(c, e);
+        return true;
+    }
+    *result = error_var(c);
+    return true;
+}
+
 static TypeVar check_it(Checker *c, const Expr *expr) {
+    TypeVar step;
+    if (check_step_it(c, expr, &step)) return step;
     for (size_t i = c->loops.len; i > 0; i--) {
         if (c->loops.items[i - 1].has_it) return c->loops.items[i - 1].it;
     }

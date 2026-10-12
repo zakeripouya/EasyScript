@@ -95,6 +95,12 @@ static TypeVar field_of(Checker *c, const Expr *expr, TypeVar base, Type type) {
     }
     size_t index;
     const Field *field = find_field(c, type_present(type), expr->as.field.name.text, &index);
+    const RecordKind *kind = &c->records->items[type_record_index(type)];
+    if (!field && kind->table) {  // a table's row: a column the program uses, added as a field
+        Field column = {expr->as.field.name, TYPE_UNKNOWN, NULL, expr->as.field.name.pos, {0}, {0}};
+        checker_add_column(c, kind->definition, column);
+        field = find_field(c, type_present(type), expr->as.field.name.text, &index);
+    }
     if (!field) {
         report_no_field(c, &expr->as.field.name, type);
         return error_var(c);
@@ -390,6 +396,30 @@ void checker_check_record(Checker *c, Stmt *stmt) {
         if (field->initial) check_default(c, field);
         if (field->type == TYPE_UNKNOWN) checker_field_kind(c, field, field->pos.line);  // reported if nothing decides it
     }
+}
+
+// --- Tables' columns ----------------------------------------------------------------------
+
+// Adds a column to a table's kind of row. Its fields may move as they grow,
+// so what the checker keeps about them (their kinds, where to write them) is
+// moved too. Gives back the new field.
+Field *checker_add_column(Checker *c, Stmt *def, Field column) {
+    Field *before = def->as.record.fields.items;
+    size_t len = def->as.record.fields.len;
+    vec_push(c->arena, &def->as.record.fields, column);
+    Field *after = def->as.record.fields.items;
+    if (after != before) {
+        for (size_t i = 0; i < c->field_kinds.len; i++) {
+            FieldKind *kind = &c->field_kinds.items[i];
+            if (kind->field >= before && kind->field < before + len) kind->field = after + (kind->field - before);
+        }
+        for (size_t i = 0; i < c->slots.len; i++) {
+            TypedSlot *slot = &c->slots.items[i];
+            char *at = (char *)slot->slot, *start = (char *)before, *end = (char *)(before + len);
+            if (at >= start && at < end) slot->slot = (Type *)((char *)after + (at - start));
+        }
+    }
+    return &after[len];
 }
 
 // --- Rules ("an age must be between 0 and 150") ------------------------------------------

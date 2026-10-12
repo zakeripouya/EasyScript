@@ -32,7 +32,7 @@ const char *ast_library_action_name(LibraryAction op) {
     static const char *const names[] = {
         "wait", "use the same random numbers", "shuffle", "clear the screen", "make a file", "make a folder",
         "rename", "copy", "move", "delete the file", "delete the folder", "read csv file", "save as csv file",
-        "complain", "run", "wait for a key",
+        "read the table", "complain", "run", "wait for a key",
     };
     return names[op];
 }

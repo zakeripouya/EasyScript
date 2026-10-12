@@ -1,0 +1,3 @@
+Line 4: In sales.csv, line 3, "amount" is "lots", which isn't a number.
+    read the table in "sales.csv" and call it sales.
+                      ^^^^^^^^^^^

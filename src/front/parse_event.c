@@ -35,6 +35,7 @@ static int unit_at(const Parser *p, size_t ahead) {
 }
 
 bool parser_at_event(const Parser *p) {
+    if (parser_question_ahead(p)) return false;  // "when is ...?" is a question
     if (parser_at_word(p, 0, "whenever") || parser_at_word(p, 0, "when")) return true;
     if (!parser_at_word(p, 0, "every")) return false;
     if (parser_at_word(p, 1, "day") || weekday_at(p, 1) >= 0) return parser_at_word(p, 2, "at");

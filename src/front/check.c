@@ -513,6 +513,14 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
             if (kind_pass == (int)pass && checker_check_module_stmt(&c, stmt)) check_stmt(&c, stmt);
         }
     }
+    for (size_t r = 0; r < c.records->len; r++) {  // a table's columns that nothing decided are text, as in the file
+        if (!c.records->items[r].table) continue;
+        Stmt *def = c.records->items[r].definition;
+        for (size_t f = 0; f < def->as.record.fields.len; f++) {
+            TypeVar column = checker_field_kind(&c, &def->as.record.fields.items[f], def->pos.line);
+            if (types_of(&c, column) == TYPE_UNKNOWN) types_require(&c, column, TYPE_TEXT, def->pos.line);
+        }
+    }
     types_finish(&c, first_error);
     diag_sort(diag, first_error);
     if (diag_count(diag) == first_error) checker_rename_modules(&c);

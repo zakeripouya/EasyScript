@@ -139,6 +139,20 @@ static bool find_date_field(Checker *c, const Expr *group, TypeVar item) {
             if (count++ == 0) found = field;
         }
     }
+    if (count == 0 && type_is_record(type) && c->records->items[type_record_index(type)].table) {
+        // a table's rows: the column called "date" (added if the program hasn't used it yet)
+        Stmt *def = c->records->items[type_record_index(type)].definition;
+        Field *column = NULL;
+        for (size_t i = 0; i < def->as.record.fields.len && !column; i++) {
+            if (strcmp(def->as.record.fields.items[i].name.text, "date") == 0) column = &def->as.record.fields.items[i];
+        }
+        if (!column) {
+            Field added = {{"date", "date", group->pos}, TYPE_DATE, NULL, group->pos, {0}, {0}};
+            column = checker_add_column(c, def, added);
+        }
+        types_require(c, checker_field_kind(c, column, group->pos.line), TYPE_DATE, group->pos.line);
+        found = column, count = 1;
+    }
     if (count == 1) {
         date->as.field.name.text = found->name.text;
         date->as.field.name.display = found->name.display;

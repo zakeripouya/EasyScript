@@ -1,0 +1,18 @@
+Line 2: The sentence before this one doesn't give anything that "it" could mean.
+    say "hi", then say it.
+                       ^^
+Use a name instead, or say it in the sentence before, like "total the amount per month and call it totals".
+
+Line 3: "it" could mean what the sentence before gave, or the item here.
+    let more be scores, then say the scores where it is above 4.
+                                                  ^^
+Use a name instead: end the sentence before with "and call it ...", or say the item's name.
+
+Line 5: "it" could mean what the sentence before gave, or the item here.
+        let doubled be score times 2, then say it.
+                                               ^^
+Use a name instead: end the sentence before with "and call it ...", or say the item's name.
+
+Line 6: I can only save a list of maps or records, or a map, as csv, but this is a number.
+    save 5 as "five.csv".
+         ^

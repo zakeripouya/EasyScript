@@ -332,8 +332,8 @@ static Expr *parse_list_literal(Parser *p) {
         list->pos = ast_pos_join(list->pos, item->pos);
         if (parser_at_and(p)) {
             after_and = true;
-        } else if (after_and || !parser_at(p, 0, TOK_COMMA)) {
-            return list;
+        } else if (after_and || !parser_at(p, 0, TOK_COMMA) || parser_at_step_link(p)) {
+            return list;  // (", then ..." starts the next step)
         }
         parser_advance(p);
     }

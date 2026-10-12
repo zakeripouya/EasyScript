@@ -1,0 +1,4 @@
+Line 3: sales.csv has no column called "date".
+    read the table in "sales.csv", then total the amount per month.
+                      ^^^^^^^^^^^
+Did you mean "day"?

@@ -82,3 +82,20 @@ A running record of the unattended English-pass run (parts 2 to 5, then charts),
 
 - `each drink in drinks's name` can't be written: the `'s` attaches to the list. Left for part 5's rough spots.
 
+## Part 4: talking to it
+
+### Done (first commit)
+
+- Questions ending in `?`, requests (`show me`, `give me`, `tell me`, `list`), polite words (`I want to`, `I'd like to`, `let's`, `can you`, `could you`, `would you`, `please`).
+- Steps in a row (`, then`, `and then`, `and`, `after that`, `next`, `first`, `finally`) with the `it` rule, and actions (`total the amount per month`, `average`, `median`, `count`, `... and call it`, `called`).
+- Tables: `read the table in "sales.csv"` learns its columns from the program, checks them when it reads the file ("sales.csv has no column called "amout". Did you mean "amount"?"), keeps every other column for printing and saving; `save X as F` for lists of maps, lists of records and maps.
+- The plan's "best months" request compiles and runs (`examples/programs/best_months.es`), without its chart line (charts come after part 5).
+
+### Decisions made
+
+- **`?`** is a sentence end like `.`; a question uses the same words as a program (`what is total?` is `say total`).
+- **`it` in steps**: the step before's result is kept in a hidden name only when the next step says `it`; where a loop's or filter's item could also be meant, it's an error asking for a name.
+- **Tables:** the plan's `read the table in "sales.csv", then total the amount per month` needs to know the columns before the file exists, so a table's kind of row learns its columns from the program's use (like `has` fields with kinds from use) and the file is checked when read; `per month` on rows uses the column called `date`; columns nothing decides are text. Saved maps get `key` and `value` columns.
+- **File sentences keep `file`:** `write "milk" in file it` (not `in it`), as decided in part 1.
+- **`me` and `undo` are reserved.**
+

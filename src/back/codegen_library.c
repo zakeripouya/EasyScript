@@ -171,11 +171,29 @@ void cg_emit_library_stmt(Codegen *g, const Stmt *stmt) {
         cg_emit_store(g, name, type, arena_sprintf(g->arena, "es_read_csv(%zu, %s)", site, a));
         break;
     }
+    case DO_READ_TABLE: {  // the rows, as records of the kind made for this sentence
+        const char *name = stmt->as.library.name.text;
+        Type type = stmt->as.library.type;
+        cg_declare_name(g, name, type);
+        cg_emit_new_cell(g, name, type);
+        cg_emit_store(g, name, type, arena_sprintf(g->arena, "es_read_table(%zu, %s, &es_rt%zu)", site, a,
+                                                   type_record_index(type_item(type))));
+        break;
+    }
     case DO_SAVE_CSV: {
-        Type row = type_item(stmt->as.library.type);
-        const char *kind = cg_value_suffix(ast_map_value(g->records, row));
+        Type saved = stmt->as.library.type;
         cg_indent(g);
-        sb_appendf(&g->body, "es_save_csv(%zu, %s, %s, '%s')%s;\n", site, a, b, kind, close);
+        if (type_is_map(saved)) {  // a "key" and a "value" column
+            Type key = ast_map_key(g->records, saved), value = ast_map_value(g->records, saved);
+            sb_appendf(&g->body, "es_save_map(%zu, %s, %s, '%c', '%c')%s;\n", site, a, b, cg_field_kind(key),
+                       cg_field_kind(value), close);
+        } else if (type_is_record(type_item(saved))) {  // a column per field
+            sb_appendf(&g->body, "es_save_records(%zu, %s, %s, &es_rt%zu)%s;\n", site, a, b,
+                       type_record_index(type_item(saved)), close);
+        } else {  // a list of maps from column names to values
+            const char *kind = cg_value_suffix(ast_map_value(g->records, type_item(saved)));
+            sb_appendf(&g->body, "es_save_csv(%zu, %s, %s, '%s')%s;\n", site, a, b, kind, close);
+        }
         break;
     }
     default: break;

@@ -190,11 +190,27 @@ static void check_read_csv(Checker *c, const Stmt *stmt) {
     vec_push(c->arena, &c->slots, slot);
 }
 
-// save L as csv file F: L is a list of maps from text to numbers, text or yes/no.
+// save L as csv file F: L is a list of maps from text to numbers, text or
+// yes/no; or a list of records (a column per field); or a map (a "key" and a
+// "value" column).
 static void check_save_csv(Checker *c, const Stmt *stmt) {
     const Expr *list = stmt->as.library.a;
     TypeVar var = checker_check_expr(c, list);
-    TypeVar row = checker_require_list(c, var, list, "I can only save a list of maps as csv");
+    Type type = types_of(c, var);
+    TypedSlot slot = {(Type *)&stmt->as.library.type, var};
+    if (type_is_map(type)) {
+        vec_push(c->arena, &c->slots, slot);
+        types_defer_one_of(c, list, types_item(c, var), types_item(c, var), KIND_NUMBER | KIND_TEXT | KIND_YESNO | KIND_DATE,
+                           "The values saved in a csv file have to be numbers, text, yes/no values or dates");
+        action_text(c, stmt->as.library.b, "The name of a file");
+        return;
+    }
+    if (type_is_list(type) && type_is_record(type_item(type)) && !type_is_maybe(type_item(type))) {
+        vec_push(c->arena, &c->slots, slot);
+        action_text(c, stmt->as.library.b, "The name of a file");
+        return;
+    }
+    TypeVar row = checker_require_list(c, var, list, "I can only save a list of maps or records, or a map, as csv");
     TypeVar key, value;
     if (checker_require_map(c, row, list, "Each row saved as csv has to be a map from column names to values", NULL,
                             &key, &value)) {
@@ -202,7 +218,6 @@ static void check_save_csv(Checker *c, const Stmt *stmt) {
         types_defer_one_of(c, list, value, value, KIND_NUMBER | KIND_TEXT | KIND_YESNO,
                            "The values saved in a csv file have to be numbers, text or yes/no values");
     }
-    TypedSlot slot = {(Type *)&stmt->as.library.type, var};
     vec_push(c->arena, &c->slots, slot);
     action_text(c, stmt->as.library.b, "The name of a file");
 }
@@ -235,6 +250,11 @@ void checker_check_library_stmt(Checker *c, const Stmt *stmt) {
         break;
     case DO_READ_CSV: check_read_csv(c, stmt); break;
     case DO_SAVE_CSV: check_save_csv(c, stmt); break;
+    case DO_READ_TABLE: {  // rows of the kind made for it; its fields come from use
+        action_text(c, stmt->as.library.a, "The name of a file");
+        checker_make_or_store(c, &stmt->as.library.name, types_new(c, stmt->as.library.type, stmt->pos.line));
+        break;
+    }
     case DO_COMPLAIN:
     case DO_RUN:
     case DO_WAIT_KEY: checker_check_system_stmt(c, stmt); break;

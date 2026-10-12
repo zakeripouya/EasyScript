@@ -229,6 +229,12 @@ Stmt *parse_constant(Parser *p, const Token *verb) {
 
 Stmt *parse_return(Parser *p, const Token *verb) {
     static const char *const back[] = {"back", NULL};
+    if (strcmp(verb->text, "give") == 0 && parser_at_word(p, 0, "me")) {  // "give me the total": say it
+        parser_advance(p);
+        Stmt *say = parser_new_stmt(p, STMT_SAY, verb);
+        say->as.value = parser_parse_pieces(p);
+        return say;
+    }
     if (strcmp(verb->text, "give") == 0 && !parser_expect_word(p, back, "give back total")) return NULL;
     Stmt *stmt = parser_new_stmt(p, STMT_RETURN, verb);
     bool condition = parser_at_word(p, 0, "if") || parser_at_word(p, 0, "unless");

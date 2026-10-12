@@ -274,13 +274,13 @@ static Expr *parse_word(Parser *p) {
         return expr;
     }
     if (strcmp(word, "nothing") == 0) return literal(p, EXPR_NOTHING);
-    if (strcmp(word, "it") == 0) return literal(p, EXPR_IT);
+    if (strcmp(word, "it") == 0) return parser_chain_it(p, literal(p, EXPR_IT));
     if ((strcmp(word, "its") == 0 || strcmp(word, "their") == 0) &&
-        parser_known_field_words(p, 1) > 0) {  // "its radius", "their orders": "it's radius"
-        Expr *it = literal(p, EXPR_IT);
+        parser_field_words(p, 1) > 0) {  // "its radius", "their orders": "it's radius"
+        Expr *it = parser_chain_it(p, literal(p, EXPR_IT));
         Expr *expr = ast_new_expr(p->arena, EXPR_FIELD, it->pos);
         expr->as.field.record = it;
-        parser_take_name(p, parser_known_field_words(p, 0), &expr->as.field.name);
+        parser_take_name(p, parser_field_words(p, 0), &expr->as.field.name);
         expr->pos = ast_pos_join(it->pos, expr->as.field.name.pos);
         return expr;
     }
@@ -325,7 +325,7 @@ static Expr *parse_word(Parser *p) {
     if (question) return question;
     if (parser_at_only(p)) return parser_parse_only(p);
     if (parser_at_every(p)) return reject_inner_every(p);
-    size_t field = parser_known_field_words(p, 0);
+    size_t field = parser_field_words(p, 0);
     if (field > 0 && parser_at_word(p, field, "of")) return parse_field_of(p, field);  // the name of rex
 
     return parse_name_or_call(p);

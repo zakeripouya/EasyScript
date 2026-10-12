@@ -288,7 +288,7 @@ bool parser_parse_target(Parser *p, Name *name, Expr **field, const char *const 
         return false;
     }
     Expr *base;
-    size_t words = parser_known_field_words(p, 0);
+    size_t words = parser_field_words(p, 0);
     if (words > 0 && parser_at_word(p, words, "of")) {  // "set the age of rex to 5"
         base = parse_primary(p);
         if (base->kind != EXPR_FIELD || p->sentence_failed) return false;

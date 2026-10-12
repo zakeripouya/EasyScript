@@ -62,6 +62,11 @@ typedef struct {
     Expr *group_list;       // "set every monster's color to blue": the monsters (the sentence is done for each)
     Name group_item;        // ... and "monster"
     Span group_every;       // ... and its "every"
+    Vec(size_t) tables;     // the row kind (Records index) of each "read the table in", in order (pre-scan)
+    size_t tables_read;     // how many of them have been parsed
+    bool chain_used;        // the step being read said "it" (so the step before's result is kept)
+    const char *chain_it;   // in a step after ", then": the hidden name "it" means ("" if the step before gives
+                            // nothing), else NULL
 } Parser;
 
 // A word or symbol sequence with a meaning, e.g. "is greater than".
@@ -215,6 +220,20 @@ Expr *parser_implied_list(Parser *p, const Name *item);  // "scores" for "any sc
 // "the customer with the highest ...": a question whose list is the item's plural; then, from "with" on.
 Expr *parser_new_best(Parser *p, const Name *item, SourcePos start);
 Expr *parser_finish_best(Parser *p, Expr *best);
+bool parser_parse_group(Parser *p, Expr *aggregate);  // "per region" / "per month", at "per"
+
+// parse_table_file.c: "read the table in F"
+void parser_find_table_files(Parser *p);  // pre-scan: a kind of row for each
+Stmt *parser_parse_read_table(Parser *p, const Token *verb);  // after "read", at "table"
+// A field's words at `ahead`: a known field's, or, in a program that reads a table, any one name word (a column).
+size_t parser_field_words(const Parser *p, size_t ahead);
+
+// parse_chain.c: steps in a row (", then", "and then"), "it" between them, and action forms
+void parser_skip_step_words(Parser *p);
+bool parser_at_step_link(const Parser *p);  // ", then", ", next", ...: ends lists and the pieces of "say"    // "first", "next", "after that", "finally", "then" before a sentence
+Expr *parser_chain_it(Parser *p, Expr *it); // "it" in a step: marks it with the step before's hidden name
+bool parser_at_action(const Parser *p);    // "total the amount per month", "count the big orders"
+Stmt *parser_parse_action(Parser *p);
 
 // parse_define.c: definitions written as sentences
 // "a customer is loyal if ...", "a big order is one whose ...", "a customer's profit is ...", "the
@@ -225,6 +244,11 @@ void parser_find_definitions(Parser *p);   // pre-scan: adjectives, values, name
 bool parser_is_adjective(const Parser *p, const char *word);
 // A method for the kind at the current token (its words consumed), the kind its input: what a sentence defines.
 Stmt *parser_new_method(Parser *p, size_t kind_words, int defines);
+
+// parse_question.c: "what is total?", "which customer has the highest total?", "show me X", polite words
+bool parser_question_ahead(const Parser *p);  // the sentence starting here ends with "?"
+Stmt *parser_parse_question(Parser *p);       // a question whose first word doesn't start a sentence
+void parser_skip_polite(Parser *p);           // "I want to", "can you", "let's", ...
 
 // parse_event.c: "every 2 seconds:", "every Monday at 9am:", "whenever C:", "when C, S", "whenever a key is pressed:"
 bool parser_at_event(const Parser *p);
