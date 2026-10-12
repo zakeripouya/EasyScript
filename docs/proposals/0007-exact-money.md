@@ -31,7 +31,7 @@ after:  let tip be bill times tip rate.                                 say tip.
 
 - Closeness of mapping: "$1,200" is how people write money; results print the same way.
 - Error-proneness: `rent plus 3` is an error (did you mean $3?) instead of a silent mix.
-- Hidden dependencies: a definition's input in arithmetic is a number unless written `(dollars)`.
+- Hidden dependencies: a definition's input gets money as its kind from its calls; called with money and with a plain number, it's an error saying to write both as money.
 
 ## Open questions
 

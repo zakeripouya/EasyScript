@@ -1,0 +1,14 @@
+Line 4: "split some bill between some people" needs an amount in dollars for "bill", but this is a number.
+    split 90 between 4.
+          ^^
+"bill" is an amount in dollars because of line 3. Write this one as money too, like "$90".
+
+Line 8: "tip" needs a number for "price", but this is an amount in dollars.
+    say tip for $20.
+                ^^^
+"price" is a number because of line 7. Give every call money, or write the definition's input as "price (dollars)".
+
+Line 10: This gives an amount in dollars, but it's used as a number.
+        give back x divided by 2.
+                  ^^^^^^^^^^^^^^
+It's used as a number because of line 11. Keep it as an amount in dollars there too.

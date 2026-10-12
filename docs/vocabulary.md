@@ -882,7 +882,7 @@ They bind like `as text` (to the value just before them): `(price times 3) as mo
 | `A is B`, `A is above B`, ... | Compared exactly, cent by cent | `if total is over $100:` |
 | `say A` / `A as text` / `A as money` / `A with commas` | Its currency's sign, commas between thousands and two decimals | `$1,200.00`, `€4.50`, `-$5.00` |
 | `A as a number` | The amount as a plain number | `$19.99 as a number` is 19.99 |
-| `(dollars)`, `(euros)`, `(pounds)`; `a list of dollars` / `amounts in euros` | The kinds, written after an input or a field. A definition's input used in arithmetic is a number unless its kind says money | `to add tax to price (dollars):` |
+| `(dollars)`, `(euros)`, `(pounds)`; `a list of dollars` / `amounts in euros` | The kinds, written after an input or a field (optional: a definition's inputs get money as their kind from its calls, like any kind) | `to add tax to price (dollars):` |
 
 Amounts work in lists, maps and fields, in `the total`, `the average` and `the median` (rounded to the cent), `sorted`, `the biggest of`, `the top N`, and in tables read from csv files: a column the program uses as money (`whose amount is over $200`) reads cells like `$84.20`, `84.20` or `"$1,200"`, and is saved as `$1200.00`. `X as money` on a plain number stays dollars, as before.
 

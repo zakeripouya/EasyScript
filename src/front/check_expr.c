@@ -92,9 +92,43 @@ void checker_require(Checker *c, TypeVar var, Type type, const Expr *at, const c
     }
 }
 
+// Whether arithmetic has to wait for a side's kind: it could still turn out to
+// be money ("the bill divided by the people", where the bill is an input).
+static bool arith_waits(Checker *c, BinaryOp op, TypeVar left, TypeVar right) {
+    if (!c->records->money) return false;  // a program with no money: numbers, as soon as they're used
+    Type l = types_of(c, left), r = types_of(c, right);
+    bool lu = l == TYPE_UNKNOWN, ru = r == TYPE_UNKNOWN;
+    switch (op) {
+    case BINARY_ADD:
+    case BINARY_SUBTRACT: return lu && ru;  // a number on one side makes both numbers
+    case BINARY_MULTIPLY: return (lu && (ru || r == TYPE_NUMBER)) || (ru && l == TYPE_NUMBER);
+    case BINARY_DIVIDE: return lu && (ru || r == TYPE_NUMBER);
+    default: return false;
+    }
+}
+
+bool checker_settle_arith(Checker *c, const Deferred *d) {
+    BinaryOp op = (BinaryOp)d->allowed;
+    if (arith_waits(c, op, d->left, d->right)) return false;
+    TypeVar result = checker_arithmetic(c, op, d->left, d->right, d->span, d->line);
+    if (types_of(c, result) != TYPE_ERROR && !types_unify(c, d->result, result)) {
+        diag_error(c->diag, d->span, "This gives %s, but it's used as %s.", checker_kind(c, result),
+                   checker_kind(c, d->result));
+        diag_note(c->diag, "It's used as %s because of line %zu. Keep it as %s there too.", checker_kind(c, d->result),
+                  types_line(c, d->result), checker_kind(c, result));
+        diag_info(c->diag, DIAG_WRONG_KIND, NULL, checker_kind(c, d->result));
+    }
+    return true;
+}
+
 TypeVar checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Span span, size_t line) {
     TypeVar money = checker_money_arithmetic(c, op, left, right, span, line);  // "$5 plus $3"
     if (money) return money;
+    if (arith_waits(c, op, left, right)) {  // decided once the sides are (by the calls of a definition, say)
+        TypeVar result = types_new(c, TYPE_UNKNOWN, line);
+        types_defer_arith(c, op, left, right, result, span, line);
+        return result;
+    }
     bool ok_left = types_require(c, left, TYPE_NUMBER, line);
     bool ok_right = types_require(c, right, TYPE_NUMBER, line);
     if (ok_left && ok_right) return types_new(c, TYPE_NUMBER, line);
@@ -393,6 +427,22 @@ static void report_argument_kind(Checker *c, const Function *f, size_t i, const 
         diag_note(c->diag, "It's defined on line %zu: \"%s\".", def->pos.line, checker_function_header(c, f));
         return;
     }
+    Type given_type = types_of(c, given);
+    if (type_is_money(wanted) && given_type == TYPE_NUMBER) {  // called with $90 before, and 90 here
+        diag_note(c->diag, "\"%s\" is %s because of line %zu. Write this one as money too, like \"%s90\".", param,
+                  checker_type_name(c, wanted), types_line(c, f->params.items[i]),
+                  wanted == TYPE_DOLLARS ? "$" : wanted == TYPE_EUROS ? "€" : "£");
+        diag_info(c->diag, DIAG_WRONG_KIND, NULL, checker_type_name(c, wanted));
+        return;
+    }
+    if (wanted == TYPE_NUMBER && type_is_money(given_type)) {  // called with 90 before, and $90 here
+        diag_note(c->diag, "\"%s\" is a number because of line %zu. Give every call money, or write the "
+                           "definition's input as \"%s (%s)\".",
+                  param, types_line(c, f->params.items[i]), param,
+                  given_type == TYPE_DOLLARS ? "dollars" : given_type == TYPE_EUROS ? "euros" : "pounds");
+        diag_info(c->diag, DIAG_WRONG_KIND, NULL, "a number");
+        return;
+    }
     diag_note(c->diag, "\"%s\" is %s because of line %zu. An input has one kind of value everywhere; to make it "
                        "clear, write it in the definition, like \"%s:\".",
               param, checker_type_name(c, wanted), types_line(c, f->params.items[i]), header(c, f, i, wanted));
@@ -522,7 +572,7 @@ static TypeVar check_call(Checker *c, const Expr *expr, bool as_value) {
     checker_resolved(c, expr, f->definition);
     if (n == 0 || !checker_shared_method(c, expr->as.call.name)) return finish_call(c, f, expr, args, as_value);
     TypeVar result = types_new(c, TYPE_UNKNOWN, 0);  // which method depends on the record's kind
-    Deferred d = {DEFER_METHOD, expr, args[0], 0, result, false, as_value, NULL, args};
+    Deferred d = {DEFER_METHOD, expr, args[0], 0, result, false, as_value, NULL, args, {0, 0}, 0};
     if (checker_settle_method(c, &d)) return result;
     vec_push(c->arena, &c->deferred, d);
     return result;

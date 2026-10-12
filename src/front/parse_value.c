@@ -42,6 +42,7 @@ static Type currency_word(const char *word) {
 static Expr *money_after_number(Parser *p, Expr *expr, const Token *token) {
     const Token *word = parser_advance(p);
     expr->as.number.money = currency_word(word->text);
+    p->records->money = true;
     expr->pos = ast_pos_join(expr->pos, parser_token_pos(word));
     const char *point = strchr(token->text, '.');
     size_t decimals = point ? strlen(point + 1) : 0;
@@ -84,6 +85,7 @@ static Expr *parse_money(Parser *p) {
     const Token *token = &p->tokens[p->pos - 1];
     const char *space = strchr(token->text, ' ');
     expr->as.number.money = currency_word(arena_sprintf(p->arena, "%.*s", (int)(space - token->text), token->text));
+    p->records->money = true;
     expr->as.number.text = space + 1;
     return expr;
 }

@@ -235,6 +235,7 @@ static Stmt *parse_ask(Parser *p, const Token *verb, const StmtForm *form) {
     if (n) stmt->as.ask.kind = TYPE_NUMBER;
     if (!n && (n = parser_match_words(p, "for amount"))) {  // ask for an amount [in euros]: money
         stmt->as.ask.kind = TYPE_DOLLARS;
+        p->records->money = true;
         static const char *const in[] = {"in dollars", "in euros", "in pounds"};
         for (size_t i = 0; i < 3; i++) {
             size_t more = parser_match_words_at(p, n, in[i]);

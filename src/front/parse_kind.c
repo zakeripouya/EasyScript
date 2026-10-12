@@ -151,6 +151,7 @@ static size_t money_kind(const Parser *p, bool plural, Type *type) {
     size_t skip = parser_at_word(p, 0, plural ? "amounts" : "amount") && parser_at_word(p, 1, "in") ? 2 : 0;
     for (size_t i = 0; i < 3; i++) {
         if (parser_at_word(p, skip, words[i])) {
+            p->records->money = true;
             *type = TYPE_DOLLARS + (Type)i;
             return skip + 1;
         }

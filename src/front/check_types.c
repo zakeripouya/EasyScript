@@ -240,6 +240,7 @@ static bool settle(Checker *c, Deferred *d) {
     if (d->kind == DEFER_FIELD) return checker_settle_field(c, d);
     if (d->kind == DEFER_PRESENT) return checker_settle_present(c, d);
     if (d->kind == DEFER_METHOD) return checker_settle_method(c, d);
+    if (d->kind == DEFER_ARITH) return checker_settle_arith(c, d);
     Type type = types_of(c, d->left);
     if (type == TYPE_UNKNOWN) return false;
     const char *name = checker_type_name(c, type);
@@ -259,13 +260,18 @@ static void defer(Checker *c, Deferred d) {
 }
 
 void types_defer(Checker *c, DeferKind kind, const Expr *expr, TypeVar left, TypeVar right, TypeVar result) {
-    Deferred d = {kind, expr, left, right, result, false, 0, NULL, NULL};
+    Deferred d = {kind, expr, left, right, result, false, 0, NULL, NULL, {0, 0}, 0};
+    defer(c, d);
+}
+
+void types_defer_arith(Checker *c, BinaryOp op, TypeVar left, TypeVar right, TypeVar result, Span span, size_t line) {
+    Deferred d = {DEFER_ARITH, NULL, left, right, result, false, (unsigned)op, NULL, NULL, span, line};
     defer(c, d);
 }
 
 void types_defer_one_of(Checker *c, const Expr *expr, TypeVar var, TypeVar shown, unsigned allowed,
                         const char *message) {
-    Deferred d = {DEFER_ONE_OF, expr, var, shown, var, false, allowed, message, NULL};
+    Deferred d = {DEFER_ONE_OF, expr, var, shown, var, false, allowed, message, NULL, {0, 0}, 0};
     defer(c, d);
 }
 
@@ -278,6 +284,10 @@ void types_default_numbers(Checker *c) {
         if (!d->done && d->kind == DEFER_ONE_OF && (d->allowed & KIND_NUMBER_FIRST) &&
             types_of(c, d->left) == TYPE_UNKNOWN) {
             types_require(c, d->left, TYPE_NUMBER, d->expr->pos.line);  // "the total of x": x is a number
+        }
+        if (!d->done && d->kind == DEFER_ARITH) {  // "x times 2" where nothing said x is money: numbers
+            if (types_of(c, d->left) == TYPE_UNKNOWN) types_require(c, d->left, TYPE_NUMBER, d->line);
+            if (types_of(c, d->right) == TYPE_UNKNOWN) types_require(c, d->right, TYPE_NUMBER, d->line);
         }
     }
     settle_all(c);

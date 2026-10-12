@@ -117,6 +117,9 @@ TypeVar checker_check_library(Checker *c, const Expr *expr) {
         if (expr->as.library.op == LIB_PERCENT_OF) number(c, a, display);
         TypeVar var = checker_check_expr(c, amount);
         if (type_is_money(types_of(c, var))) return var;
+        if (c->records->money && types_of(c, var) == TYPE_UNKNOWN) {  // could still turn out to be money
+            return checker_arithmetic(c, BINARY_MULTIPLY, var, types_new(c, TYPE_NUMBER, line), amount->pos.span, line);
+        }
         checker_require(c, var, TYPE_NUMBER, amount, arena_sprintf(c->arena, "%s needs a number", display), NULL);
         return types_new(c, TYPE_NUMBER, line);
     }

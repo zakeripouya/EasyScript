@@ -2496,7 +2496,7 @@ say rent divided by $400.                          # 3
 
 An amount written with `$`, `€` or `£` (or `dollars`, `euros`, `pounds` after a number) is kept exactly, as whole cents, so adding up prices never gives rounding errors. Adding or taking away amounts of one currency is exact; multiplying or dividing an amount by a number rounds to the cent, half away from zero, and `easyscript plan` points out each place that happens. An amount divided by an amount is a plain number. Adding a plain number to an amount (`rent plus 3`), or mixing currencies, is an error that says how to write it.
 
-`ask for an amount "How much was the bill? " and call it bill.` asks until the answer is an amount. Amounts work in lists, maps, records, totals and averages, sorting, and tables read from csv files (a column used as money reads cells like `$84.20` or `84.20`). A definition's input that's used in arithmetic is a number unless you say it's money: `to add tax to price (dollars):`.
+`ask for an amount "How much was the bill? " and call it bill.` asks until the answer is an amount. Amounts work in lists, maps, records, totals and averages, sorting, and tables read from csv files (a column used as money reads cells like `$84.20` or `84.20`). A definition's input gets money as its kind from its calls, like any kind: `to split some bill between some people:` called as `split $90 between 4.` makes the bill money. Calling it once with `$90` and once with `90` is an error that says to write the second as money too. You can still write the kind, like `to add tax to price (dollars):`.
 
 ### Values that are always up to date
 

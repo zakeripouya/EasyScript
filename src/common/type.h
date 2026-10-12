@@ -156,6 +156,8 @@ typedef struct {
     Vec(MapKind) maps;
     Vec(FuncKind) funcs;
     Vec(RecordKind) interfaces;
+    bool money;             // the program writes money somewhere ("$5", "(dollars)"): arithmetic on a kind not
+                            // decided yet waits, as the value could turn out to be money
     Vec(RecordKind) texts;  // kinds of text ("an email is text that must contain "@"."); definition: the STMT_RULE
     size_t program_result;  // 1 + the index of "program result" (what "run ... and call the result r" makes), or 0
 } Records;

@@ -46,6 +46,8 @@ typedef enum {
     DEFER_PRESENT,    // a record or nothing (`left`) checked not to be nothing: `right` is the record
     DEFER_METHOD,     // a call of a method several kinds of record have: `left` is the record, `args`
                       // every input, `result` what it gives back, `allowed` 1 when used as a value
+    DEFER_ARITH,      // arithmetic with a side not decided yet (it could be money): `allowed` is the BinaryOp,
+                      // `result` what it gives, reported at `span`
 } DeferKind;
 
 // Kinds for DEFER_ONE_OF.
@@ -61,6 +63,8 @@ typedef struct {
     unsigned allowed;     // DEFER_ONE_OF: KIND_ bits
     const char *message;  // DEFER_ONE_OF: "<message>, but this is <the kind of right>."
     const TypeVar *args;  // DEFER_METHOD
+    Span span;            // DEFER_ARITH: where to report
+    size_t line;          // DEFER_ARITH
 } Deferred;
 
 typedef struct {
@@ -285,6 +289,8 @@ TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value);
 void checker_require(Checker *c, TypeVar var, Type type, const Expr *at, const char *message, const char *hint);
 // The type-checked arithmetic rule: both sides numbers, with the runtime's wording.
 TypeVar checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Span span, size_t line);
+bool checker_settle_arith(Checker *c, const Deferred *d);  // check_expr.c: DEFER_ARITH
+void types_defer_arith(Checker *c, BinaryOp op, TypeVar left, TypeVar right, TypeVar result, Span span, size_t line);
 TypeVar checker_money_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Span span, size_t line);
 
 // The name each item of a list gets ("for each score in", "every score in").
