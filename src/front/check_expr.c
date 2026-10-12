@@ -38,12 +38,19 @@ static const char *kind_words(Checker *c, Type type) {
 static const char *header(Checker *c, const Function *f, size_t marked, Type mark) {
     StrBuf sb;
     sb_init(&sb, c->arena);
-    sb_appendf(&sb, "to %s", f->display);
     const Stmt *def = f->definition;
-    size_t first = def->as.function.method ? 1 : 0;  // a method: "to bark, for a dog"
-    if (first) sb_appendf(&sb, ", for %s", checker_type_name(c, def->as.function.declared.items[0]));
+    size_t first = def->as.function.method ? 1 : 0;  // a method: "to bark, for a dog" or "a dog can bark"
+    if (def->as.function.can) {
+        sb_appendf(&sb, "%s can %s", checker_type_name(c, def->as.function.declared.items[0]), f->display);
+    } else {
+        sb_appendf(&sb, "to %s", f->display);
+        if (first) sb_appendf(&sb, ", for %s", checker_type_name(c, def->as.function.declared.items[0]));
+    }
     for (size_t i = first; i < def->as.function.params.len; i++) {
-        if (i == first) sb_appendf(&sb, "%s %s ", first ? "," : "", def->as.function.intro ? def->as.function.intro : "with");
+        if (i == first) {
+            sb_appendf(&sb, "%s %s ", first && !def->as.function.can ? "," : "",
+                       def->as.function.intro ? def->as.function.intro : "with");
+        }
         if (i > first) sb_append(&sb, " and ");
         sb_append(&sb, def->as.function.params.items[i].display);
         Type kind = i == marked ? mark : def->as.function.declared.items[i];

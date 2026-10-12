@@ -79,17 +79,9 @@ static bool at_intro(const Parser *p, size_t ahead) {
     return false;
 }
 
-// ", for KIND" or "for" and a kind of record: a method, whose first input is
-// the record, called like its kind. Without a comma or a kind of record,
-// "for" introduces inputs ("to pause for seconds:").
-static bool parse_method_record(Parser *p, Stmt *stmt) {
-    size_t words;
-    if (parser_at(p, 0, TOK_COMMA) && parser_at_word(p, 1, "for")) {
-        parser_advance(p);
-    } else if (!parser_at_word(p, 0, "for") || !parser_match_kind_name(p, 1, false, &words)) {
-        return true;
-    }
-    parser_advance(p);
+// The kind of record (or kind with variants) a method is for: its first
+// input, named like the kind.
+static bool parse_record_input(Parser *p, Stmt *stmt, const char *example) {
     Name record = {0};
     SourcePos start = parser_token_pos(parser_peek(p, 0));
     Type type;
@@ -98,7 +90,7 @@ static bool parse_method_record(Parser *p, Stmt *stmt) {
     if (!(type_is_record(type) || type_is_sum(type)) || type_is_maybe(type)) {
         if (parser_error(p, record.pos.span, "A method is for a kind of record, but this is %s.",
                          ast_type_name(p->arena, p->records, type))) {
-            diag_note(p->diag, "Write the kind of record it works on, like \"to bark, for a dog:\".");
+            diag_note(p->diag, "Write the kind of record it works on, like \"%s\".", example);
         }
         return false;
     }
@@ -109,6 +101,22 @@ static bool parse_method_record(Parser *p, Stmt *stmt) {
     stmt->as.function.method = true;
     vec_push(p->arena, &stmt->as.function.params, record);
     vec_push(p->arena, &stmt->as.function.declared, type);
+    return true;
+}
+
+// ", for KIND" or "for" and a kind of record: a method, whose first input is
+// the record, called like its kind. Without a comma or a kind of record,
+// "for" introduces inputs ("to pause for seconds:").
+static bool parse_method_record(Parser *p, Stmt *stmt) {
+    size_t words;
+    if (stmt->as.function.method) return true;  // "a dog can bark:" has it already
+    if (parser_at(p, 0, TOK_COMMA) && parser_at_word(p, 1, "for")) {
+        parser_advance(p);
+    } else if (!parser_at_word(p, 0, "for") || !parser_match_kind_name(p, 1, false, &words)) {
+        return true;
+    }
+    parser_advance(p);
+    if (!parse_record_input(p, stmt, "to bark, for a dog:")) return false;
     if (parser_at(p, 0, TOK_COMMA) && (parser_at_word(p, 1, "giving") || at_intro(p, 1))) parser_advance(p);
     if (parser_at(p, 0, TOK_COLON) || parser_at_word(p, 0, "giving") || at_intro(p, 0)) return true;
     const Token *token = parser_peek(p, 0);
@@ -160,8 +168,36 @@ static bool parse_params(Parser *p, Stmt *stmt) {
     return true;
 }
 
+static const char *const after_name[] = {"with", "using", "of", "to", "for", "from", "in", "giving", NULL};
+
+// "a dog can bark:" at the start of a line: a method (the same as "to bark,
+// for a dog:"), written like an interface's ways ("something that can speak").
+bool parser_at_can_method(const Parser *p) {
+    size_t words;
+    bool line_start = p->pos == 0 || p->tokens[p->pos - 1].kind == TOK_NEWLINE ||
+                      p->tokens[p->pos - 1].kind == TOK_INDENT || p->tokens[p->pos - 1].kind == TOK_DEDENT;
+    return line_start && parser_match_kind_name(p, 0, false, &words) && parser_at_word(p, words, "can");
+}
+
+Stmt *parser_parse_can(Parser *p) {
+    Stmt *stmt = parser_new_stmt(p, STMT_FUNCTION, parser_peek(p, 0));
+    stmt->as.function.can = true;
+    bool ok = parse_record_input(p, stmt, "a dog can bark:");
+    if (ok) parser_advance(p);  // can
+    ok = ok && parser_parse_name(p, &stmt->as.function.name, after_name) &&
+         (strchr(stmt->as.function.name.text, ' ') || !reject_statement_word_name(p, &stmt->as.function.name)) &&
+         parse_params(p, stmt);
+    if (!ok) {
+        parser_skip_line_and_block(p);
+    } else {
+        SourcePos header = stmt->pos;
+        ok = parser_parse_block(p, &stmt->as.function.body, &header, NULL, "this method");
+    }
+    p->ended_with_block = true;  // set last: statements inside the block reset it
+    return ok ? stmt : NULL;
+}
+
 Stmt *parse_function(Parser *p, const Token *verb) {
-    static const char *const after_name[] = {"with", "using", "of", "to", "for", "from", "in", "giving", NULL};
     Stmt *stmt = parser_new_stmt(p, STMT_FUNCTION, verb);
     bool ok = parser_parse_name(p, &stmt->as.function.name, after_name) &&
               (strchr(stmt->as.function.name.text, ' ') || !reject_statement_word_name(p, &stmt->as.function.name)) &&

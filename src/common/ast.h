@@ -413,6 +413,7 @@ struct Stmt {
             Name name;
             const char *intro;     // the word before the inputs: "with", "of", "using" or "to" (NULL: none)
             bool method;           // "to bark, for a dog:": the first input is the dog
+            bool can;              // written "a dog can bark:" (a method)
             size_t overload;       // a method sharing its name with another kind's: 1 + its kind's index (checker)
             Vec(Name) params;
             Vec(Type) declared;    // per input: the kind written in "(a number)", or TYPE_UNKNOWN

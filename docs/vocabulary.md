@@ -578,6 +578,7 @@ X is a name or a chain of fields (`node`, `the node's next`). Setting X (or anyt
 
 | Pattern | Meaning | Example |
 |---|---|---|
+| `KIND can NAME:` | A method (the main form), at the start of a line: the same as `to NAME, for a KIND:`. Inputs and a result come after the name as in any function | `a dog can bark:`<br>`a dog can fetch with a toy:`<br>`a dog can tell its age, giving back text:` |
 | `to NAME, for a KIND:` / `to NAME for a KIND:` | A method: a function whose first input is a record of that kind, called like its kind inside (`the dog`). Its name is every word before `for` | `to bark, for a dog:`<br>`to have a birthday for a dog:` |
 | `to NAME, for a KIND, with INPUTS:` | A method with more inputs (also `using`, `of`, `to`, `from`, `in`, and `giving back`) | `to rename, for a dog, with new name:` |
 | `NAME R` / `NAME for R` | Calls a method, as a sentence or as a value | `bark rex.`, `have a birthday for rex.` |

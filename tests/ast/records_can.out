@@ -1,0 +1,11 @@
+record dog [1:3]
+  field name: text [1:13]
+define bark (dog: a dog) [2:3]
+  do
+    say [3:5]
+      field name [3:13]
+        name dog [3:13]
+define fetch (dog: a dog, toy: text, speed) giving back text [4:3]
+  do
+    give back [5:5]
+      name toy [5:15]

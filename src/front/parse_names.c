@@ -100,7 +100,8 @@ static bool at_sentence_end_index(const Parser *p, size_t i) {
 }
 
 // to NAME [[,] for KIND] [with | of | using | to] INPUT [(KIND)] [and | ,] INPUT ...
-static void find_function(Parser *p, size_t i) {
+// (or KIND can NAME ...: `can` is at i, and it's a method)
+static void find_function(Parser *p, size_t i, bool can) {
     size_t n = name_words(p, i + 1), words;
     for (size_t k = 1; k < n; k++) {  // the name ends before "for" (a method's kind, or inputs)
         if (word_at(p, i + 1 + k, "for")) {
@@ -112,7 +113,9 @@ static void find_function(Parser *p, size_t i) {
     size_t j = i + 1 + n;
     bool method = (word_at(p, j, "for") && parser_match_kind_name(p, j + 1, false, &words)) ||
                   (p->tokens[j].kind == TOK_COMMA && word_at(p, j + 1, "for"));
-    if (method) {  // skip "for KIND" and a comma after it
+    if (can) {
+        method = true;
+    } else if (method) {  // skip "for KIND" and a comma after it
         j += p->tokens[j].kind == TOK_COMMA ? 2 : 1;
         while (j < p->count && p->tokens[j].kind != TOK_COLON && !at_sentence_end_index(p, j) &&
                (word_at(p, j, "for") || !word_among(&p->tokens[j], parser_input_intros))) {
@@ -398,8 +401,12 @@ void parser_find_names(Parser *p) {
         if (p->tokens[i].kind != TOK_WORD) continue;
         const char *word = p->tokens[i].text;
         size_t n = name_words(p, i + 1), after = i + 1 + n;
+        size_t kind_words;
         if (strcmp(word, "to") == 0 && (at_line_start(p, i) || parser_after_privately(p, i))) {
-            find_function(p, i);
+            find_function(p, i, false);
+        } else if (at_line_start(p, i) && parser_match_kind_name(p, i, false, &kind_words) &&
+                   word_at(p, i + kind_words, "can")) {  // a dog can bark:
+            find_function(p, i + kind_words, true);
         } else if (strcmp(word, "let") == 0 && (word_at(p, after, "be") || word_at(p, after, "equal"))) {
             add_name(p, i + 1, n, false);
         } else if (strcmp(word, "keep") == 0 && (word_at(p, after, "as") || word_at(p, after, "at"))) {

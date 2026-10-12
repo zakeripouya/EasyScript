@@ -1135,16 +1135,16 @@ Numbers, text and yes/no values can be nothing too: see [values that can be noth
 
 ### Methods
 
-A **method** is a function for a kind of record: `to bark, for a dog:`. Inside it, the record is called like its kind (`the dog`). The name is every word before `for`, so `to have a birthday for a dog:` is "have birthday" (the `a` is ignored), and more inputs come after `with`:
+A **method** is something a kind of record can do: `a dog can bark:`. Inside it, the record is called like its kind (`the dog`). The method's name is every word after `can` (the `a` in `have a birthday` is ignored), and more inputs come after `with`, as in any function:
 
 ```
-to bark, for a dog:
-    say the dog's name followed by " says woof".
+a dog can bark:
+    say the dog's name, "says woof".
 
-to have a birthday for a dog:
+a dog can have a birthday:
     add 1 to the dog's age.
 
-to rename, for a dog, with new name:
+a dog can rename with new name:
     set the dog's name to new name.
 
 bark rex.
@@ -1153,7 +1153,7 @@ rename rex with "Max".
 say (describe rex) followed by "!".
 ```
 
-A method is called with the record straight after its name (`bark rex`) or after `for`, as a sentence or inside a value.
+A method is called with the record straight after its name (`bark rex`) or after `for`, as a sentence or inside a value. The older form `to bark, for a dog:` means the same as `a dog can bark:`; `can` matches how interfaces are written (`something that can speak`).
 
 **Different kinds of record can have methods with the same name.** The call picks the one for the kind of its record:
 

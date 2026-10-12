@@ -1,0 +1,4 @@
+Line 5: "fetch" needs 2 values, but this gives it 1.
+    fetch rex.
+    ^^^^^^^^^
+It's defined on line 2: "a dog can fetch with toy".

@@ -506,6 +506,9 @@ static void report_unknown_start(Parser *p) {
         diag_note(p->diag, "The function is called \"%s\": a function's name is every word before \"with\", "
                            "\"of\", \"using\" or \"to\". To give \"%s\" an input, write \"to %s with %s:\".",
                   longer, written, written, longer + token->text_len + 1);
+    } else if (parser_at_word(p, words, "can")) {  // "a cat can purr:" before any cat is defined
+        diag_note(p->diag, "\"%s\" isn't a kind of record I know. Define it first, like \"a %s has a name.\", "
+                           "and then what it can do.", written, written);
     } else if (closest) {
         diag_note(p->diag, "Did you mean %s?", closest);
     } else if (parser_looks_like_assignment(parser_peek(p, words))) {
@@ -532,6 +535,7 @@ Stmt *parse_statement(Parser *p) {
     const Token *verb = parser_peek(p, 0);
     if (parser_at_record_definition(p)) return parse_record(p);
     if (parser_at_has_definition(p)) return parser_parse_has(p);
+    if (parser_at_can_method(p)) return parser_parse_can(p);
     if (parser_at_sum_definition(p)) return parse_sum(p);
     if (parser_interface_words(p, p->pos) > 0) return parse_interface(p);
     if (parser_at_library_sentence(p)) {  // "delete the file F", "clear the screen", "run "git"", ...

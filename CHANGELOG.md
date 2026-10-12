@@ -27,6 +27,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added
 
+- **`a dog can bark:`** defines a method (the main form now; `to bark, for a dog:` stays as a synonym), with inputs and a result as usual: `a dog can fetch with a toy:`, `a shape can tell its area, giving back a number:`. Messages show methods the way they were written.
+
 - **`a dog has a name (text) and an age (a number).`** defines a kind of record in one sentence (the main form now; `is a kind of thing with:` stays as a synonym). Kinds can be left out: each field's kind is then worked out from how it's used, and one nothing decides is an error asking for it. `(starting at 0)` gives a starting value; `some drinks` is the field `drinks`.
 
 - **`and` between two sentences:** `add 5 to total and say total.`, `if done, say "bye" and stop the loop.` (both belong to the one-line if), `greet with "Ann" and then greet with "Bo".` `and` starts a new sentence when a sentence word follows it with a value after that word (`and stop`/`and skip` need nothing); between values it still means both.

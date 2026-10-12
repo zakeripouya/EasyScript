@@ -1,0 +1,14 @@
+Line 2: I don't know a sentence that starts with "cat".
+    a cat can purr:
+      ^^^
+"cat" isn't a kind of record I know. Define it first, like "a cat has a name.", and then what it can do.
+
+Line 4: "say" starts sentences in EasyScript, so it can't be the name of a function.
+    a dog can say:
+              ^^^
+Add a word to it, like "say something", or pick another name.
+
+Line 6: Something is missing after "with".
+    a dog can fetch with:
+                    ^^^^
+Name the inputs, like "to area with width and height:", or leave out "with".
