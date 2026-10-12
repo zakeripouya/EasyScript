@@ -54,6 +54,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 ### Fixed
 
 - The compiler no longer depends on the order C works out a call's arguments in. Built with GCC on Linux, `easyscript plan` listed the parts of `any ... and not every ...` backwards, and some generated programs numbered their sites differently. Each part is now worked out first, in written order.
+- `read the table in F` no longer leaves memory unreachable when a column is missing or a cell can't be read: what it was building is kept until the program stops (LeakSanitizer on Linux reported it). Replacing a list's items with an empty list no longer passes a null pointer to `memcpy` (UBSan on Linux).
 
 ### Changed (examples)
 

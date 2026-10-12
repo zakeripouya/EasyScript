@@ -306,32 +306,40 @@ static void es_table_cell(const EsCsv *r, long line, const char *field, char kin
             cell->chars, what);
 }
 
+/* What "read the table in F" is building, kept here so it's still reachable
+ * when a mistake in the file stops the program (nothing is lost at es_fail). */
+static struct {
+    EsCsv csv;
+    EsText *path, *text;
+    EsList *header, *fields, *rows;
+    size_t *column;
+} es_table_read;
+
 /* "read the table in F": every row as a record of `type`, its fields read
  * from the columns with their names. Consumes path. */
 static EsList *es_read_table(int site, EsText *path, const EsRecordType *type) {
+    es_table_read.path = path;
     const char *slash = strrchr(path->chars, '/');
-    EsText *text = es_read_file(site, es_retain(path));
-    EsCsv r = {site, slash ? slash + 1 : path->chars, text->chars, text->len, 0, 1, {NULL, 0, 0}};
-    EsList *header = es_list_new(ES_ITEMS_TEXT, 0), *fields = es_list_new(ES_ITEMS_TEXT, 0);
+    EsText *text = es_table_read.text = es_read_file(site, es_retain(path));
+    EsCsv *r = &es_table_read.csv;
+    *r = (EsCsv){site, slash ? slash + 1 : path->chars, text->chars, text->len, 0, 1, {NULL, 0, 0}};
+    EsList *header = es_table_read.header = es_list_new(ES_ITEMS_TEXT, 0);
+    EsList *fields = es_table_read.fields = es_list_new(ES_ITEMS_TEXT, 0);
     long line;
-    if (!es_csv_row(&r, header, &line)) es_fail(site, NULL, "%s is empty, so it has no header row.", r.name);
-    size_t *column = malloc(((size_t)type->fields + 1) * sizeof *column);
+    if (!es_csv_row(r, header, &line)) es_fail(site, NULL, "%s is empty, so it has no header row.", r->name);
+    size_t *column = es_table_read.column = malloc(((size_t)type->fields + 1) * sizeof *column);
     if (!column) es_out_of_memory();
     for (int f = 2; f < type->fields; f++) {  /* (fields 0 and 1 keep the header and the row's cells) */
         column[f] = header->len;
         for (size_t i = 0; i < header->len && column[f] == header->len; i++) {
             if (es_column_is(header->at.t[i], type->field_names[f])) column[f] = i;
         }
-        if (column[f] == header->len) {
-            free(column);
-            es_no_column(site, &r, header, type->field_names[f]);
-        }
+        if (column[f] == header->len) es_no_column(site, r, header, type->field_names[f]);
     }
-    EsList *rows = es_list_new(ES_ITEMS_RECORD, 0);
-    while (es_csv_row(&r, fields, &line)) {
+    EsList *rows = es_table_read.rows = es_list_new(ES_ITEMS_RECORD, 0);
+    while (es_csv_row(r, fields, &line)) {
         if (fields->len != header->len) {
-            free(column);
-            es_fail(site, NULL, "In %s, line %ld has %zu value%s, but the header has %zu.", r.name, line, fields->len,
+            es_fail(site, NULL, "In %s, line %ld has %zu value%s, but the header has %zu.", r->name, line, fields->len,
                     fields->len == 1 ? "" : "s", header->len);
         }
         EsRecord *row = es_record_new(type);
@@ -342,17 +350,18 @@ static EsList *es_read_table(int site, EsText *path, const EsRecordType *type) {
         for (size_t i = 0; i < fields->len; i++) es_push_t(cells, es_retain(fields->at.t[i]));
         ES_FIELD(row, EsList *, type->offsets[1]) = cells;
         for (int f = 2; f < type->fields; f++) {
-            es_table_cell(&r, line, type->field_names[f], type->kinds[f], es_retain(fields->at.t[column[f]]),
+            es_table_cell(r, line, type->field_names[f], type->kinds[f], es_retain(fields->at.t[column[f]]),
                           (char *)row + type->offsets[f]);
         }
         es_csv_clear(fields);
     }
     free(column);
-    free(r.field.data);
+    free(r->field.data);
     es_list_release(header); /* (the rows keep it) */
     es_list_release(fields);
     es_release(text);
     es_release(path);
+    memset(&es_table_read, 0, sizeof es_table_read);
     return rows;
 }
 
