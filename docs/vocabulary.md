@@ -592,6 +592,9 @@ All record words are **Available**. A record holds named values, its **fields**,
 | `FIELD` (no kind) | The kind is worked out from how the field is used (`a new dog with name "Rex"` makes `name` text). If nothing decides it, it's an error asking for `(KIND)` | `a cat has a name and a favorite toy.` |
 | `FIELD (starting at X)` / `FIELD (KIND, starting at X)` | A field with a starting value (its kind is the value's, unless written) | `an age (starting at 0)`, `some pets (a list of cats, starting at an empty list of cats)` |
 | `some FIELD` | `some` before a field's name is left out, like `a` and `an`: `some drinks` is the field `drinks` | `an order has a customer and some drinks.` |
+| `..., and can be WORD.` / `KIND can be WORD [and can be WORD].` | A yes/no field called WORD that starts as no (the sentence form adds it to a kind defined above). It reads like a describing word: `X is WORD`, `the WORD Ls`, `how many Ls are WORD`, `every WORD ITEM` | `a parcel has a weight and a country, and can be fragile.`<br>`a parcel can be urgent.` |
+| `a new WORD KIND with ...` | A new record with the yes/no field WORD set to yes | `a new fragile parcel with weight 12` |
+| `mark X as WORD` / `mark X as not WORD` | Set the yes/no field WORD of X to yes (or no). The same as `set X's WORD to yes` | `mark box as not fragile.` |
 | `NAME is a kind of thing with:` + indented fields | The same, a field per line (a synonym of `has`) | `a dog is a kind of thing with:` |
 | `NAME, which is KIND.` | A field, one per line (or sentence). KIND is any kind: `a number`, `text`, `yes or no`, a list, or a kind of record | `a name, which is text.`<br>`a start time, which is a number.` |
 | `NAME, which is KIND, starting at X.` | A field with a starting value, used when `new` doesn't give one. X is fixed before the program runs, like a constant: numbers, text, yes or no, constants, fixed lists, or an empty list | `an age, which is a number, starting at 0.` |
@@ -722,6 +725,13 @@ All **Available** (English pass part 3). Each is a sentence at the start of a li
 | `X, or D` / `X, or D if there isn't one` | X when it isn't nothing; otherwise D (a single value, only worked out then). X must be something that can be nothing | `the nickname, or "friend" if there isn't one` |
 | `..., starting at S` | See [Looking up and setting](#looking-up-and-setting) | `add 1 to the value for word in counts, starting at 0` |
 
+### One-line choices
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `A if CONDITION, otherwise B` | A value: A when CONDITION is yes, B when it's no (only that one is worked out). Both have the same kind. The comma before `otherwise` makes it a value; without it, a trailing `if` stays the sentence's own condition (`give back X if C`) | `a parcel's care fee is 4 if it's fragile, otherwise 0.` |
+| `X, plus N if CONDITION` / `X, minus N if CONDITION` | X with N added (or taken away) only when CONDITION is yes; the same as `X plus (N if CONDITION, otherwise 0)`. The comma is required | `its base price, plus 12 if it's abroad, plus 4 if it's fragile` |
+
 ### Describing words (adjectives)
 
 | Pattern | Meaning | Example |
@@ -732,7 +742,7 @@ All **Available** (English pass part 3). Each is a sentence at the start of a li
 | `the ADJECTIVE Ls` | The items of L it describes (a filter) | `the loyal customers` |
 | `how many L are ADJECTIVE`, `every ADJECTIVE ITEM ...`, `L that are ADJECTIVE` | In questions and filters too | `if every loyal customer's total is above 100` |
 
-An adjective is one word; where it's defined, `X is WORD` means the adjective, not a comparison with a name. Several kinds can define the same word. Using one that no kind defines is "I don't know what "loyal" means for a customer."; using it on another kind is "I know what "best" means for a customer, but not for a product.".
+A field written as yes or no (`can be WORD`, `a fragile (yes or no)`) reads the same way: `X is fragile` is `X's fragile`, and in a definition `it's WORD` means "it is WORD" when WORD is a describing word. An adjective is one word; where it's defined, `X is WORD` means the adjective, not a comparison with a name. Several kinds can define the same word. Using one that no kind defines is "I don't know what "loyal" means for a customer."; using it on another kind is "I know what "best" means for a customer, but not for a product.".
 
 ### Values worked out from a record
 

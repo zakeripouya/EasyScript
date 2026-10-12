@@ -2291,7 +2291,29 @@ say the cheap orders.
 if every order is big, say "All big.".
 ```
 
-`its` (or `their`, or `it`) is the order being described. Once a word is defined, `X is big` means the word, and `the big orders` means the orders it describes.
+`its` (or `their`, or `it`) is the order being described. Once a word is defined, `X is big` means the word, and `the big orders` means the orders it describes. In a definition, `it's big` means "it is big" when `big` is a describing word.
+
+A yes-or-no field works the same way. `can be WORD` adds one that starts as no, at the end of a `has` sentence or as its own sentence after it. `a new WORD KIND` makes one with it set to yes, and `mark X as WORD` (or `as not WORD`) changes it:
+
+```
+a parcel has a weight and a country, and can be fragile.
+let box be a new fragile parcel with weight 12 and country "France".
+if box is fragile, say "Handle with care.".
+say how many parcels are fragile.
+mark box as not fragile.
+```
+
+Any field written as `(yes or no)` reads like a describing word too.
+
+### One-line choices
+
+```
+a parcel's care fee is 4 if it's fragile, otherwise 0.
+a parcel's price is its base price, plus 12 if it's abroad, plus 4 if it's fragile.
+let label be "glass" if box is fragile, otherwise "other".
+```
+
+`A if C, otherwise B` is A when C is yes and B when it's no; only the one chosen is worked out. The comma before `otherwise` is what makes it a choice: without it, `give back X if C` is still a sentence that only happens when C is yes. `, plus N if C` adds N only when C is yes (`, minus N if C` takes it away); the comma is needed there too.
 
 ### Values worked out from a record, and named values
 

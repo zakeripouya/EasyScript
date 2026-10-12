@@ -92,6 +92,7 @@ struct Expr {
         struct {
             const char *text;  // as written, e.g. "19.99"
             bool is_decimal;
+            bool zero;         // the 0 of ", plus N if C" when C is no: the same kind as N
         } number;
         struct {
             const char *value;  // decoded; may contain any byte but NUL

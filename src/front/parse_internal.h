@@ -95,6 +95,7 @@ typedef struct {
     const char *chain_it;   // in a step after ", then": the hidden name "it" means ("" if the step before gives
                             // nothing), else NULL
     Vec(Pattern) patterns;  // every definition with inputs in the middle of its first line (pre-scan)
+    Vec(const char *) yes_fields;  // fields written as yes or no ("can be fragile", "a fragile (yes or no)"): describing words
     size_t limit;           // reading one input of such a call: tokens from here on look like a sentence's end
     Token limit_token;      // ... and this is what they look like
 } Parser;
@@ -535,5 +536,18 @@ Stmt *parser_parse_pattern_definition(Parser *p, const Token *verb, const Patter
 bool parser_at_pattern_call(const Parser *p);
 Stmt *parser_parse_pattern_call(Parser *p);
 void parser_add_name_words(Parser *p, const char *text, size_t words);  // a known name of several words
+
+// --- Yes/no fields as describing words (parse_record.c, parse_define.c) -------------------
+
+bool parser_is_yes_field(const Parser *p, const char *name);  // written as yes or no, or "can be NAME"
+bool parser_is_describing(const Parser *p, const char *word);  // an adjective a kind defines, or such a field
+bool parser_at_can_be(const Parser *p);                         // "a parcel can be fragile."
+Stmt *parser_parse_can_be(Parser *p);
+Stmt *parser_parse_mark(Parser *p, const Token *verb);           // "mark box as fragile"
+Expr *parser_parse_choice(Parser *p, Expr *value);               // "4 if it's fragile, otherwise 0"
+bool parser_at_choice(const Parser *p);
+Expr *parser_parse_add_if(Parser *p, Expr *value);              // ", plus 12 if it's abroad"
+bool parser_parse_can_be_field(Parser *p, Field *field);         // "can be fragile" in a "has" sentence
+Expr *parse_or_condition(Parser *p);                             // a value up to a comma: "or" and below
 
 #endif

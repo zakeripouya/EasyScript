@@ -20,3 +20,4 @@ A doubt that comes up while building goes back into the proposal, not into the p
 ## Proposals
 
 - [0001: inputs in the middle of a definition's first line](0001-inputs-in-the-middle.md) (Built)
+- [0002: yes/no fields as describing words, and one-line choices](0002-yes-no-fields-and-choices.md) (Built)

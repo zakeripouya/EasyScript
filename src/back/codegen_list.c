@@ -230,7 +230,7 @@ static void collect(Codegen *g, const Expr *expr, Names *bound, Codegen *helper)
         return;
     }
     case EXPR_TABLE:
-        collect(g, expr->as.table.subject, bound, helper);
+        if (expr->as.table.subject) collect(g, expr->as.table.subject, bound, helper);
         collect_all(g, expr->as.table.values.items, expr->as.table.values.len, bound, helper);
         collect_all(g, expr->as.table.conditions.items, expr->as.table.conditions.len, bound, helper);
         return;
@@ -301,7 +301,7 @@ static bool calls_function(const Codegen *g, const Expr *expr) {
     case EXPR_EVERY: return calls_function(g, expr->as.every.list) || calls_function(g, expr->as.every.body);
     case EXPR_ONLY: return calls_function(g, expr->as.only.list) || calls_function(g, expr->as.only.condition);
     case EXPR_TABLE:
-        if (calls_function(g, expr->as.table.subject)) return true;
+        if (expr->as.table.subject && calls_function(g, expr->as.table.subject)) return true;
         for (size_t i = 0; i < expr->as.table.values.len; i++) {
             const Expr *condition = expr->as.table.conditions.items[i];
             if (calls_function(g, expr->as.table.values.items[i]) || (condition && calls_function(g, condition))) {

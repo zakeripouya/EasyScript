@@ -340,6 +340,11 @@ static Stmt *parse_use_form(Parser *p, const Token *verb, const StmtForm *form) 
     return parser_parse_use(p, verb);
 }
 
+static Stmt *parse_mark_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parser_parse_mark(p, verb);
+}
+
 static Stmt *parse_privately_form(Parser *p, const Token *verb, const StmtForm *form) {
     (void)form;
     return parser_parse_privately(p, verb);
@@ -353,6 +358,7 @@ static const StmtForm forms[] = {
     {"subtract", parse_amount_first, true, CHANGE_SUBTRACT, "from", "subtract 5 from total"},
     {"increase", parse_target_first, false, CHANGE_ADD, "by", "increase total by 5"},
     {"decrease", parse_target_first, false, CHANGE_SUBTRACT, "by", "decrease total by 5"},
+    {"mark", parse_mark_form, false, 0, NULL, "mark box as fragile"},
     {"reduce", parse_target_first, false, CHANGE_SUBTRACT, "by", "reduce price by 10 percent"},
     {"multiply", parse_target_first, false, CHANGE_MULTIPLY, "by", "multiply total by 2"},
     {"divide", parse_target_first, false, CHANGE_DIVIDE, "by", "divide total by 2"},
@@ -453,6 +459,7 @@ Stmt *parse_statement(Parser *p) {
     const Token *verb = parser_peek(p, 0);
     if (parser_at_record_definition(p)) return parse_record(p);
     if (parser_at_has_definition(p)) return parser_parse_has(p);
+    if (parser_at_can_be(p)) return parser_parse_can_be(p);  // a parcel can be fragile.
     if (parser_at_can_method(p)) return parser_parse_can(p);
     if (parser_at_sum_definition(p)) return parse_sum(p);
     if (parser_at_made_of(p)) return parser_parse_made_of(p);

@@ -417,7 +417,7 @@ static size_t best_item_words(const Parser *p) {
 Expr *parser_implied_list(Parser *p, const Name *item) {
     Expr *list = ast_new_expr(p->arena, EXPR_NAME, item->pos);
     const char *space = strchr(item->text, ' ');
-    if (space && parser_is_adjective(p, arena_sprintf(p->arena, "%.*s", (int)(space - item->text), item->text))) {
+    if (space && parser_is_describing(p, arena_sprintf(p->arena, "%.*s", (int)(space - item->text), item->text))) {
         const char *shown = strchr(item->display, ' ');
         list->as.name = parser_plural_of(p->arena, space + 1);
         list->display = parser_plural_of(p->arena, shown ? shown + 1 : space + 1);

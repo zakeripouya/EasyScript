@@ -210,6 +210,15 @@ Stmt *parser_parse_has(Parser *p) {
         Field field = {0};
         field.type = TYPE_UNKNOWN;
         SourcePos start = parser_token_pos(parser_peek(p, 0));
+        if (parser_at_word(p, 0, "can") && parser_at_word(p, 1, "be")) {  // "and can be fragile"
+            if (!parser_parse_can_be_field(p, &field)) return NULL;
+            vec_push(p->arena, &stmt->as.record.fields, field);
+            if (parser_at_sentence_end(p)) break;
+            bool comma = parser_at(p, 0, TOK_COMMA);
+            if (comma) parser_advance(p);
+            if (parser_at_word(p, 0, "and")) parser_advance(p);
+            continue;
+        }
         if (parser_at_word(p, 0, "some") && parser_is_name_word(parser_peek(p, 1))) parser_advance(p);  // "some pets"
         if (!parser_parse_name(p, &field.name, after_field)) return NULL;
         if (parser_at(p, 0, TOK_LPAREN) && !parse_has_details(p, &field)) return NULL;
@@ -263,6 +272,12 @@ Expr *parser_parse_field(Parser *p, Expr *record) {
             diag_note(p->diag, "Write the name of a field after it, like \"rex's name\".");
         }
         return parser_error_expr(p);
+    }
+    const Token *word = parser_peek(p, 0);
+    if (record->kind == EXPR_IT && words == 1 && parser_is_adjective(p, word->text) &&
+        parser_known_field_words(p, 0) == 0) {  // "if it's abroad": it is abroad
+        parser_advance(p);
+        return parser_adjective_call(p, record, word->text, ast_pos_join(record->pos, parser_token_pos(word)));
     }
     Expr *expr = ast_new_expr(p->arena, EXPR_FIELD, record->pos);
     expr->as.field.record = record;
@@ -326,10 +341,21 @@ bool parser_parse_target(Parser *p, Name *name, Expr **field, const char *const 
 
 // --- New records ----------------------------------------------------------------------------
 
+// "new fragile urgent": how many yes/no fields come before the kind's name.
+static size_t yes_words(const Parser *p, size_t ahead) {
+    size_t n = 0, words;
+    while (parser_peek(p, ahead + n)->kind == TOK_WORD && parser_is_yes_field(p, parser_peek(p, ahead + n)->text) &&
+           parser_match_record(p, ahead + n, false, &words) < 0) {
+        n++;
+    }
+    return n;
+}
+
 static bool at_new_at(const Parser *p, size_t ahead) {
     size_t words;
-    return parser_at_word(p, ahead, "new") &&
-           (parser_match_record(p, ahead + 1, false, &words) >= 0 || parser_match_variant(p, ahead + 1, &words) >= 0);
+    if (!parser_at_word(p, ahead, "new")) return false;
+    ahead += 1 + yes_words(p, ahead + 1);
+    return parser_match_record(p, ahead, false, &words) >= 0 || parser_match_variant(p, ahead, &words) >= 0;
 }
 
 bool parser_at_new(const Parser *p) {
@@ -387,6 +413,15 @@ Expr *parser_parse_new(Parser *p) {
         start.span.length += start.span.offset - new_word->filler.offset;
         start.span.offset = new_word->filler.offset;
     }
+    Vec(FieldValue) described = {0};  // "a new fragile parcel": fragile is yes
+    for (size_t n = yes_words(p, 0); n > 0; n--) {
+        FieldValue value = {0};
+        parser_take_name(p, 1, &value.field);
+        Expr *yes = ast_new_expr(p->arena, EXPR_BOOLEAN, value.field.pos);
+        yes->as.boolean = true;
+        value.value = yes;
+        vec_push(p->arena, &described, value);
+    }
     size_t words, variant_words;
     int index = parser_match_record(p, 0, false, &words);
     int variant = parser_match_variant(p, 0, &variant_words);
@@ -399,6 +434,7 @@ Expr *parser_parse_new(Parser *p) {
         expr->as.new_record.type = type_record((size_t)index);
     }
     parser_consume(p, words);
+    for (size_t i = 0; i < described.len; i++) vec_push(p->arena, &expr->as.new_record.values, described.items[i]);
     if (parser_at_word(p, 0, "with")) {
         parser_advance(p);
         do {

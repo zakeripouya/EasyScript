@@ -1,0 +1,2 @@
+record parcel [2:3]
+  field weight (kind from use) [2:16]

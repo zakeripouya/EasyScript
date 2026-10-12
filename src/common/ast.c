@@ -211,7 +211,7 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
     case EXPR_MAP_GET: return expr->as.lookup.fallback ? "value for, or" : "value for";
     case EXPR_MAP_WITHOUT: return "map without";
     case EXPR_DEFAULT: return "or if there isn't one";
-    case EXPR_TABLE: return "depends on";
+    case EXPR_TABLE: return expr->as.table.subject ? "depends on" : "choice";
     }
     return scratch->data;
 }

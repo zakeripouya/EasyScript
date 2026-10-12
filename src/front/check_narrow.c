@@ -265,25 +265,34 @@ TypeVar checker_check_default(Checker *c, const Expr *expr) {
 // A "depends on" table: the subject is "it" in each condition (yes or no),
 // and every line's value is the same kind, which the table is.
 TypeVar checker_check_table(Checker *c, const Expr *expr) {
-    TypeVar subject = checker_check_expr(c, expr->as.table.subject);
-    Loop loop = {true, subject, true, NO_VARIANT, false};
-    vec_push(c->arena, &c->loops, loop);
+    const Expr *subject_expr = expr->as.table.subject;  // NULL: a choice ("4 if C, otherwise 0")
+    if (subject_expr) {
+        TypeVar subject = checker_check_expr(c, subject_expr);
+        Loop loop = {true, subject, true, NO_VARIANT, false};
+        vec_push(c->arena, &c->loops, loop);
+    }
     TypeVar result = 0;
     for (size_t i = 0; i < expr->as.table.values.len; i++) {
         const Expr *condition = expr->as.table.conditions.items[i];
         if (condition) {
             checker_require(c, checker_check_expr(c, condition), TYPE_YESNO, condition,
-                            "A line's condition has to be yes or no", NULL);
+                            subject_expr ? "A line's condition has to be yes or no"
+                                         : "The condition after \"if\" has to be yes or no", NULL);
         }
         const Expr *value = expr->as.table.values.items[i];
         TypeVar var = checker_check_value(c, value);
         if (i == 0) {
             result = var;
         } else if (!types_unify(c, result, var)) {
-            diag_error(c->diag, value->pos.span, "All the values of a table have to be the same kind: the first is %s, "
-                                                 "but this is %s.", checker_kind(c, result), checker_kind(c, var));
+            if (subject_expr) {
+                diag_error(c->diag, value->pos.span, "All the values of a table have to be the same kind: the first is "
+                                                     "%s, but this is %s.", checker_kind(c, result), checker_kind(c, var));
+            } else {
+                diag_error(c->diag, value->pos.span, "Both values of a choice have to be the same kind: the first is %s, "
+                                                     "but this is %s.", checker_kind(c, result), checker_kind(c, var));
+            }
         }
     }
-    c->loops.len--;
+    if (subject_expr) c->loops.len--;
     return result;
 }

@@ -289,6 +289,12 @@ static Expr *parse_comma_postfixes(Parser *p, Expr *expr) {
         expr = parse_default(p, expr);
     }
     while (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) &&
+           (parser_at_word(p, 1, "plus") || parser_at_word(p, 1, "minus"))) {  // ", plus 12 if it's abroad"
+        Expr *after = parser_parse_add_if(p, expr);
+        if (after == expr) break;
+        expr = after;
+    }
+    while (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) &&
            (parser_at_word(p, 1, "rounded") || parser_at_word(p, 1, "sorted") || parser_at_word(p, 1, "as"))) {
         size_t comma = p->pos;
         parser_advance(p);
@@ -303,7 +309,13 @@ static Expr *parse_comma_postfixes(Parser *p, Expr *expr) {
 }
 
 Expr *parse_expression(Parser *p) {
-    return parse_comma_postfixes(p, parser_at_every(p) ? parse_every(p) : parse_or(p));
+    Expr *expr = parse_comma_postfixes(p, parser_at_every(p) ? parse_every(p) : parse_or(p));
+    if (!p->sentence_failed && parser_at_choice(p)) expr = parser_parse_choice(p, expr);  // 4 if C, otherwise 0
+    return expr;
+}
+
+Expr *parse_or_condition(Parser *p) {
+    return parse_or(p);
 }
 
 // --- or, and, not -----------------------------------------------------------
@@ -595,7 +607,7 @@ bool parser_at_item_test(const Parser *p, size_t ahead) {
 // `is` is where the "is" was, for an equality's operator.
 Expr *parser_parse_is_rest(Parser *p, Expr *left, Span is) {
     bool not = parser_at_word(p, 0, "not");
-    if (parser_peek(p, not)->kind == TOK_WORD && parser_is_adjective(p, parser_peek(p, not)->text)) {  // "is rex big?", "when it's not big"
+    if (parser_peek(p, not)->kind == TOK_WORD && parser_is_describing(p, parser_peek(p, not)->text)) {  // "is rex big?", "when it's not big"
         if (not) parser_advance(p);
         const Token *word = parser_advance(p);
         Expr *call = parser_adjective_call(p, left, word->text, ast_pos_join(left->pos, parser_token_pos(word)));
