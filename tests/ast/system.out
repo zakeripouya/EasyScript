@@ -62,7 +62,7 @@ if (one line) [19:1]
         name r [19:4]
     then
       say [19:20]
-        field code [19:24]
+        field exit code [19:24]
           name r [19:24]
 complain [20:1]
   text "Something went wrong." [20:10]

@@ -6,6 +6,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Breaking
 
+- **A program result's `code` is now its `exit code`** (`say r's exit code`), so the field says what it is.
+
 - **`wait`, `shuffle`, `save` and `put` start sentences** (the standard library), so they can no longer be the one-word name of a function. `tests/ast/err_func_header.es` renamed its `to wait for:` to `to pause for:`. `pi`, `today`, `tomorrow` and `yesterday` are still names a program can make; `rename`, `copy`, `move`, `delete`, `make` and `clear` only start library sentences with `the file`, `the folder` or `the screen` after them.
 
 - **`apply` starts sentences** (`apply double to every number in scores.`), so it can no longer be the one-word name of a function (`to apply with f:`). A name of several words starting with it still works. `lambda.es` renamed its `apply` to `evaluate application`.
@@ -23,7 +25,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - **System tools** (Phase 2, step 22). See [stdlib.md](docs/stdlib.md#system-tools) and the new [chapter 19](docs/language-guide.md#19-programs-and-the-system).
   - **What the program is given:** `the words given to the program`, `the number of words given to the program`, `word N given to the program` (with "There's no word 2: the program was given 1 word."), `the text sent to the program` and `the lines sent to the program` (piped input, read once, after whatever `ask` has read).
   - **Settings:** `the setting called X`, text or nothing.
-  - **Running other programs:** `run P with A, B and C.` (output shown; the program stops if it doesn't work) and `... and call the result r` (or `and call it r`), a `program result` with `r's output`, `r's error output` and `r's code`, and the tests `r worked` / `r didn't work`. The words after `with` are text, numbers or lists of text, passed as a list of words with `fork`/`execvp`, never through a shell; a missing program is "I couldn't find a program called "gti".". `program result` is a kind of record the language adds to programs that use it.
+  - **Running other programs:** `run P with A, B and C.` (output shown; the program stops if it doesn't work) and `... and call the result r` (or `and call it r`), a `program result` with `r's output`, `r's error output` and `r's exit code`, and the tests `r worked` / `r didn't work`. The words after `with` are text, numbers or lists of text, passed as a list of words with `fork`/`execvp`, never through a shell; a missing program is "I couldn't find a program called "gti".". `program result` is a kind of record the language adds to programs that use it.
   - **Finishing:** `complain X` writes to the error output; `stop the program, saying it failed` (code 1) and `stop the program with code N` (0 to 255).
   - `run` and `complain` only start these sentences where the program hasn't defined a function with that name.
 - **The keyboard** (step 22; [chapter 20](docs/language-guide.md#20-the-keyboard)): `wait for a key and call it K` and `the key being pressed` (text or nothing), with plain names (`"up"`, `"enter"`, `"escape"`, `"space"`, `"page up"`, ...) and the typed character otherwise. On a terminal the first key read turns on key-at-a-time mode (no echo, no Enter) until the program ends, `ask`s or runs another program; the terminal is put back at exit, after runtime errors and on Ctrl+C (and SIGTERM, SIGHUP, SIGQUIT). Keys can come from a file or a pipe, which is how they're tested. macOS and Linux; Windows waits for the Windows port.

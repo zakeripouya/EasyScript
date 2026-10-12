@@ -241,7 +241,7 @@ static void add_field(Parser *p, Stmt *definition, const char *name, size_t word
 }
 
 // A kind of record the language defines: "a program result" with its output,
-// error output and code. Added when any word that uses it appears ("run",
+// error output and exit code. Added when any word that uses it appears ("run",
 // "worked", "work", "program result"), so other programs don't carry it.
 void parser_find_program_result(Parser *p) {
     bool used = false;
@@ -260,7 +260,7 @@ void parser_find_program_result(Parser *p) {
     definition->as.record.index = index;
     add_field(p, definition, "output", 1, TYPE_TEXT);
     add_field(p, definition, "error output", 2, TYPE_TEXT);
-    add_field(p, definition, "code", 1, TYPE_NUMBER);
+    add_field(p, definition, "exit code", 2, TYPE_NUMBER);
     p->records->items[index].definition = definition;
     p->records->program_result = index + 1;
 }

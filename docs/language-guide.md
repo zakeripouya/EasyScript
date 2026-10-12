@@ -1887,7 +1887,7 @@ otherwise:
     complain "git said: " followed by last's error output.
 ```
 
-A program result has an `output`, an `error output` and a `code` (0 when it worked). The words after `with` go to the program exactly as written: **there's no shell in between**, so a word like `"notes; rm -rf ~"` is one strange word, never a second command. A list of text gives one word per item: `run "ls" with "-l" and the files in "photos".`.
+A program result has an `output`, an `error output` and an `exit code` (0 when it worked). The words after `with` go to the program exactly as written: **there's no shell in between**, so a word like `"notes; rm -rf ~"` is one strange word, never a second command. A list of text gives one word per item: `run "ls" with "-l" and the files in "photos".`.
 
 ### The error output and the exit code
 

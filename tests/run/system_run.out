@@ -8,7 +8,7 @@ error output: err
 code: 3
 it didn't work
 still didn't
-a program result with output "out", error output "err" and code 3
+a program result with output "out", error output "err" and exit code 3
 two and lines
 shown directly
 0

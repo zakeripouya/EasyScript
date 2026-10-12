@@ -16,7 +16,7 @@ run "make".
 run tool with "a", "b" and words.
 if r worked, say r's output
 if r didn't work, say r's error output
-if r did not work, say r's code
+if r did not work, say r's exit code
 complain "Something went wrong."
 stop the program, saying it failed.
 stop the program saying it failed.

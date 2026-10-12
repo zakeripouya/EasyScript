@@ -113,8 +113,8 @@ How a program talks to whoever (or whatever) started it: the words it was starte
 | `run P.` / `run P with A, B and C.` | `run "git" with "status".` | Starts the program P with the words A, B and C, and waits for it to finish. Its output and error output are shown as it prints them. If it doesn't work (its code isn't 0), this program stops: ""git" didn't work: it finished with code 128." |
 | `run P with ... and call the result R.` (or `and call it R`) | `run "git" with "status" and call the result r.` | The same, but nothing is shown: R is a program result, holding what it printed and its code, and the program carries on either way |
 | `R's output` / `R's error output` | `say r's output` | Text: everything it printed (to its output, or to its error output), without the last new line |
-| `R's code` | `say r's code` | A number from 0 to 255: what it said when it finished (0 means it worked). A program stopped by a signal (like Ctrl+C) has 128 plus the signal's number |
-| `R worked` / `R didn't work` (or `R did not work`) | `if r worked:` | `R's code is 0` / `R's code is not 0` |
+| `R's exit code` | `say r's exit code` | A number from 0 to 255: what it said when it finished (0 means it worked). A program stopped by a signal (like Ctrl+C) has 128 plus the signal's number |
+| `R worked` / `R didn't work` (or `R did not work`) | `if r worked:` | `R's exit code is 0` / `R's exit code is not 0` |
 
 P is text: a program's name, found the way a terminal finds it (in the folders listed in the `PATH` setting), or a path with a `/` in it (`"./tool"`, `"/bin/ls"`). Each word after `with` is text, a number (turned into text, like `as text`) or a list of text (each item is one word); they're separated by `and` or commas, and given to P exactly as they are. **No shell is involved**: spaces, quotes, `;`, `|`, `$`, `*` and `~` in a word are just characters of that word, so text from a user can't run anything else. To use a shell's features on purpose, run it: `run "sh" with "-c" and "ls | wc -l"`.
 

@@ -492,7 +492,7 @@ exit_code_check "system/saying-it-failed" 1 "" "No input." 'complain "No input."
 exit_code_check "system/complain-keeps-going" 0 "one
 two" "oops" 'say "one"\ncomplain "oops"\nsay "two"\n'
 exit_code_check "system/run-gives-its-code" 0 "5" "" \
-    'run "sh" with "-c" and "exit 5" and call the result r\nsay r'"'"'s code\n'
+    'run "sh" with "-c" and "exit 5" and call the result r\nsay r'"'"'s exit code\n'
 
 # The keyboard: on a real terminal (a pseudo-terminal), keys are read one at
 # a time, and the terminal is put back as it was however the program ends.

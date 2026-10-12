@@ -13,7 +13,7 @@ static const char *code_of(Codegen *g, const Expr *expr, bool text) {
     return sb.data;
 }
 
-// "R worked": R's code (its third field) is 0.
+// "R worked": R's exit code (its third field) is 0.
 static void emit_worked(Codegen *g, const Expr *expr, StrBuf *out) {
     Expr *code = ast_new_expr(g->arena, EXPR_FIELD, expr->pos);
     code->as.field.record = expr->as.library.a;

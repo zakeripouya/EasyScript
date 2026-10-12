@@ -743,7 +743,7 @@ All of these are **Available**, without `use`. Exact meanings are in [stdlib.md]
 | `the setting called X` | text or nothing | `the setting called "HOME"` (an environment setting) |
 | `run P.` / `run P with A and B.` | (a sentence) | `run "git" with "status".`: runs the program P with those words, showing its output; the program stops if it doesn't work |
 | `run P with A and B and call the result NAME.` / `... and call it NAME.` | (a sentence): a program result | `run "git" with "status" and call the result r.` |
-| `R's output`, `R's error output`, `R's code` | text, text, a number | `say r's output` |
+| `R's output`, `R's error output`, `R's exit code` | text, text, a number | `say r's output` |
 | `R worked`, `R didn't work`, `R did not work` | yes/no | `if r worked:` |
 | `complain X.` | (a sentence) | `complain "That file is missing."` |
 | `stop the program, saying it failed.`, `stop the program with code N.` | (a sentence) | `stop the program with code 2.` |
