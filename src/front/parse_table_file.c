@@ -47,18 +47,23 @@ static bool ends_with(const char *word, size_t len, const char *end) {
     return len > n && strcmp(word + len - n, end) == 0;
 }
 
-static const char *row_kind_name(Parser *p, const char *table) {
-    size_t len = strlen(table);
-    const char *row = NULL;
-    if (ends_with(table, len, "ies")) {
-        row = arena_sprintf(p->arena, "%.*sy", (int)(len - 3), table);
-    } else if (ends_with(table, len, "xes") || ends_with(table, len, "ches") || ends_with(table, len, "shes") ||
-               ends_with(table, len, "sses") || ends_with(table, len, "zzes")) {
-        row = arena_sprintf(p->arena, "%.*s", (int)(len - 2), table);
-    } else if (ends_with(table, len, "s")) {
-        row = arena_sprintf(p->arena, "%.*s", (int)(len - 1), table);
+const char *parser_singular_of(Arena *arena, const char *plural) {
+    size_t len = strlen(plural);
+    const char *one = NULL;
+    if (ends_with(plural, len, "ies")) {
+        one = arena_sprintf(arena, "%.*sy", (int)(len - 3), plural);
+    } else if (ends_with(plural, len, "xes") || ends_with(plural, len, "ches") || ends_with(plural, len, "shes") ||
+               ends_with(plural, len, "sses") || ends_with(plural, len, "zzes")) {
+        one = arena_sprintf(arena, "%.*s", (int)(len - 2), plural);
+    } else if (ends_with(plural, len, "s")) {
+        one = arena_sprintf(arena, "%.*s", (int)(len - 1), plural);
     }
-    if (!row || strcmp(parser_plural_of(p->arena, row), table) != 0) return NULL;
+    return one && strcmp(parser_plural_of(arena, one), plural) == 0 ? one : NULL;
+}
+
+static const char *row_kind_name(Parser *p, const char *table) {
+    const char *row = parser_singular_of(p->arena, table);
+    if (!row) return NULL;
     for (size_t k = 0; k < p->records->len; k++) {
         if (strcmp(p->records->items[k].name, row) == 0) return NULL;
     }

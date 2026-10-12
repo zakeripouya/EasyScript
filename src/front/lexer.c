@@ -366,7 +366,7 @@ void lexer_token(Lexer *lx) {
         lex_number(lx);
     } else if (c == '"') {
         lexer_string(lx);
-    } else {
+    } else if (!lexer_money(lx)) {  // "$19.99"
         lex_symbol(lx);
     }
 }

@@ -46,11 +46,14 @@ typedef enum {
     DEFER_PRESENT,    // a record or nothing (`left`) checked not to be nothing: `right` is the record
     DEFER_METHOD,     // a call of a method several kinds of record have: `left` is the record, `args`
                       // every input, `result` what it gives back, `allowed` 1 when used as a value
+    DEFER_ARITH,      // arithmetic with a side not decided yet (it could be money): `allowed` is the BinaryOp,
+                      // `result` what it gives, reported at `span`
 } DeferKind;
 
 // Kinds for DEFER_ONE_OF.
 // KIND_OTHER: a function, an interface's value, or anything that can be nothing (but not nothing itself).
-enum { KIND_NUMBER = 1, KIND_TEXT = 2, KIND_YESNO = 4, KIND_LIST = 8, KIND_RECORD = 16, KIND_MAP = 32, KIND_OTHER = 64, KIND_DATE = 128 };
+enum { KIND_NUMBER = 1, KIND_TEXT = 2, KIND_YESNO = 4, KIND_LIST = 8, KIND_RECORD = 16, KIND_MAP = 32, KIND_OTHER = 64, KIND_DATE = 128, KIND_MONEY = 256,
+       KIND_NUMBER_FIRST = 512 };  // with KIND_NUMBER: a number, unless something decides otherwise before the end
 
 typedef struct {
     DeferKind kind;
@@ -60,6 +63,8 @@ typedef struct {
     unsigned allowed;     // DEFER_ONE_OF: KIND_ bits
     const char *message;  // DEFER_ONE_OF: "<message>, but this is <the kind of right>."
     const TypeVar *args;  // DEFER_METHOD
+    Span span;            // DEFER_ARITH: where to report
+    size_t line;          // DEFER_ARITH
 } Deferred;
 
 typedef struct {
@@ -159,6 +164,8 @@ typedef struct {
     size_t blocks;                    // how many if/loop blocks we're inside
     size_t rules;                     // "must" rules so far (each gets a C function, es_rule1, ...)
     bool in_rule;                     // checking a rule's condition (it sees only constants and "it")
+    bool storing_field;               // storing a field's value (new, set): text can become its kind of text
+                                      // there, as the field's rules check it
     Vec(Symbol) made;    // names that exist here: made so far, in blocks still open
     Vec(Symbol) later;   // every name the program makes anywhere, for "you make it later"
     Vec(Symbol) ended;   // names whose block has ended; line = the if or loop that held them
@@ -245,6 +252,7 @@ size_t types_line(Checker *c, TypeVar var);  // where its kind was decided
 void types_defer(Checker *c, DeferKind kind, const Expr *expr, TypeVar left, TypeVar right, TypeVar result);
 // `var` must turn out to have one of the `allowed` kinds; otherwise reports
 // "<message>, but this is <the kind of shown>." at expr.
+void types_default_numbers(Checker *c);  // check_types.c: KIND_NUMBER_FIRST kinds nothing decided become numbers
 void types_defer_one_of(Checker *c, const Expr *expr, TypeVar var, TypeVar shown, unsigned allowed,
                         const char *message);
 // Settles the deferred operators, reports kinds nothing decided (if no error
@@ -280,7 +288,10 @@ TypeVar checker_check_call(Checker *c, const Expr *expr, bool as_value);
 // Requires a kind; otherwise reports "<message>, but this is <kind>." with the hint.
 void checker_require(Checker *c, TypeVar var, Type type, const Expr *at, const char *message, const char *hint);
 // The type-checked arithmetic rule: both sides numbers, with the runtime's wording.
-void checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Span span, size_t line);
+TypeVar checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Span span, size_t line);
+bool checker_settle_arith(Checker *c, const Deferred *d);  // check_expr.c: DEFER_ARITH
+void types_defer_arith(Checker *c, BinaryOp op, TypeVar left, TypeVar right, TypeVar result, Span span, size_t line);
+TypeVar checker_money_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Span span, size_t line);
 
 // The name each item of a list gets ("for each score in", "every score in").
 void checker_make_item_name(Checker *c, const Name *name, TypeVar item);
@@ -309,6 +320,7 @@ void checker_write_lambdas(Checker *c);  // the kinds of their inputs, results a
 // check_apply.c: built-ins that take a function
 TypeVar checker_check_apply(Checker *c, const Expr *expr);  // EXPR_APPLY
 TypeVar checker_check_aggregate(Checker *c, const Expr *expr);  // check_aggregate.c: EXPR_AGGREGATE
+bool checker_resolve_rows(Checker *c, Expr *expr);  // check_aggregate.c: the list "0rows FIELD" means
 TypeVar checker_check_default(Checker *c, const Expr *expr);    // check_narrow.c: X, or D
 TypeVar checker_check_table(Checker *c, const Expr *expr);      // check_narrow.c: a "depends on" table
 void checker_check_replace(Checker *c, const Stmt *stmt);   // apply F to every X in L, keep only ..., sort L by F

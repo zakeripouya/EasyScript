@@ -1,0 +1,9 @@
+Line 2: I expected what to count after the number, like "has more than 5 orders".
+    if ann has more than 2, say "x".
+           ^^^^^^^^^^^^^
+Write the name of a list the record has after the number.
+
+Line 3: Something is missing after "'s".
+    say each customer's.
+                     ^^
+Write the name of a field after it, like "each drink's name".

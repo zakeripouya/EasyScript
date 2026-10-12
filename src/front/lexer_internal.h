@@ -40,6 +40,7 @@ void lexer_emit_content(Lexer *lx, TokenKind kind, size_t start, size_t end, con
 void lexer_token(Lexer *lx);                                // one token at lx->pos
 void lexer_skip_to_line_end(Lexer *lx);
 void lexer_string(Lexer *lx);                               // lexer_text.c: text in quotes, at its quote
-bool lexer_text_block(Lexer *lx);  // lexer_text.c: at the end of a line ending "the text below:", its text
+bool lexer_text_block(Lexer *lx);
+bool lexer_money(Lexer *lx);       // lexer_money.c: "$1,200", "€4.50", "£3" at lx->pos  // lexer_text.c: at the end of a line ending "the text below:", its text
 
 #endif

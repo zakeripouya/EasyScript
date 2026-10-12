@@ -1,0 +1,15 @@
+Line 3: Both values of a choice have to be the same kind: the first is text, but this is a number.
+    let label be "glass" if box is fragile, otherwise 0.
+                                                      ^
+
+Line 4: The condition after "if" has to be yes or no, but this is a number.
+    let size be 1 if box's weight, otherwise 2.
+                     ^^^^^^^^^^^^
+
+Line 5: The field "weight" is a number, but this is a yes/no value.
+    mark box as weight.
+                ^^^^^^
+
+Line 6: The condition after "if" has to be yes or no, but this is text.
+    let total be box's weight, plus 4 if box's country.
+                                         ^^^^^^^^^^^^^

@@ -31,6 +31,21 @@ void cg_append_prefixed(StrBuf *out, const char *prefix, const char *name) {
     }
 }
 
+// One letter per simple kind, in C names and the runtime's descriptions of
+// fields and inputs: n number, t text, b yes/no, d date, u dollars, e euros,
+// p pounds.
+char cg_kind_letter(Type present) {
+    switch (present) {
+    case TYPE_TEXT: return 't';
+    case TYPE_YESNO: return 'b';
+    case TYPE_DATE: return 'd';
+    case TYPE_DOLLARS: return 'u';
+    case TYPE_EUROS: return 'e';
+    case TYPE_POUNDS: return 'p';
+    default: return 'n';
+    }
+}
+
 const char *cg_ctype(Type type) {
     if (type_is_list(type)) return "EsList *";
     if (type_is_map(type)) return "EsMap *";
@@ -38,6 +53,9 @@ const char *cg_ctype(Type type) {
     switch (type) {
     case TYPE_NUMBER:
     case TYPE_DATE: return "double";
+    case TYPE_DOLLARS:
+    case TYPE_EUROS:
+    case TYPE_POUNDS: return "long long";  // whole cents
     case TYPE_YESNO: return "bool";
     case TYPE_TEXT: return "EsText *";
     case TYPE_NOTHING: return "void";
@@ -55,7 +73,7 @@ const char *cg_ctype(Type type) {
 void cg_append_raw_var(StrBuf *out, const char *name, Type type) {
     Type base = type_base(type), present = type_present(base);
     bool maybe = type_is_maybe(base);
-    char kind = present == TYPE_TEXT ? 't' : present == TYPE_YESNO ? 'b' : present == TYPE_DATE ? 'd' : 'n';
+    char kind = cg_kind_letter(present);
     if (type_is_list(type)) sb_appendf(out, "es_vl%u", type / TYPE_LIST);
     sb_append(out, type_is_list(type) ? "" : "es_v");
     if (type_is_record(base)) {

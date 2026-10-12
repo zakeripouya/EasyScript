@@ -35,6 +35,26 @@ typedef struct {
     bool always;        // "the total is always ...": any value, not "the one ..."
 } Definition;
 
+// "to give a customer a discount of some percent:": a definition whose inputs
+// are in the middle of its first line (pre-scan, parse_pattern.c). Each part
+// is a fixed word or an input ("a customer", "another person", "some percent").
+typedef struct {
+    const char *word;   // a fixed word, or NULL for an input
+    const char *name;   // an input: its name inside the definition ("customer", "other person", "percent")
+    const char *shown;  // an input: how the first line writes it ("a customer", "another person", "some percent")
+    bool some;          // "some NAME": a call can repeat NAME after the value ("of 10 percent")
+    size_t token;       // the input's (or word's) first token
+    size_t tokens;      // how many tokens the input takes in the first line
+} PatternPart;
+
+typedef struct {
+    size_t at;          // the index of its "to"
+    const char *text;   // "give a customer a discount of some percent": its name
+    Vec(PatternPart) parts;
+    size_t line;
+    bool broken;        // two inputs in a row: its definition is an error, and nothing calls it
+} Pattern;
+
 typedef struct {
     Arena *arena;
     Diag *diag;
@@ -74,6 +94,11 @@ typedef struct {
     bool chain_file;        // the step before used a file ("what's in it" reads it)
     const char *chain_it;   // in a step after ", then": the hidden name "it" means ("" if the step before gives
                             // nothing), else NULL
+    Vec(Pattern) patterns;  // every definition with inputs in the middle of its first line (pre-scan)
+    bool describing;        // reading a definition ("a customer is loyal if ..."): "they" is "it"
+    Vec(const char *) yes_fields;  // fields written as yes or no ("can be fragile", "a fragile (yes or no)"): describing words
+    size_t limit;           // reading one input of such a call: tokens from here on look like a sentence's end
+    Token limit_token;      // ... and this is what they look like
 } Parser;
 
 // A word or symbol sequence with a meaning, e.g. "is greater than".
@@ -503,5 +528,51 @@ void parser_add_field_name(Parser *p, const char *name, size_t words);
 // while, as, keep, forever), and stop/break/skip/continue/move on.
 Stmt *parse_loop(Parser *p, const Token *verb);
 Stmt *parse_loop_control(Parser *p, const Token *verb);
+
+// --- Definitions with inputs in the middle (parse_pattern.c) ------------------------
+
+void parser_find_patterns(Parser *p);  // pre-scan, after the kinds are known
+const Pattern *parser_pattern_at(const Parser *p, size_t to);  // the pattern whose "to" is token `to`, or NULL
+Stmt *parser_parse_pattern_definition(Parser *p, const Token *verb, const Pattern *pattern);
+bool parser_at_pattern_call(const Parser *p);
+Stmt *parser_parse_pattern_call(Parser *p);
+void parser_add_name_words(Parser *p, const char *text, size_t words);  // a known name of several words
+
+// --- Yes/no fields as describing words (parse_record.c, parse_define.c) -------------------
+
+bool parser_is_yes_field(const Parser *p, const char *name);  // written as yes or no, or "can be NAME"
+bool parser_is_describing(const Parser *p, const char *word);
+size_t parser_text_kind_words(const Parser *p, size_t i);  // "an email is text that must": the kind's words, or 0
+Stmt *parser_parse_text_kind(Parser *p);                    // parse_define.c  // an adjective a kind defines, or such a field
+bool parser_at_can_be(const Parser *p);                         // "a parcel can be fragile."
+Stmt *parser_parse_can_be(Parser *p);
+Stmt *parser_parse_mark(Parser *p, const Token *verb);           // "mark box as fragile"
+Expr *parser_parse_choice(Parser *p, Expr *value);               // "4 if it's fragile, otherwise 0"
+bool parser_at_choice(const Parser *p);
+Expr *parser_parse_add_if(Parser *p, Expr *value);              // ", plus 12 if it's abroad"
+bool parser_parse_can_be_field(Parser *p, Field *field);         // "can be fragile" in a "has" sentence
+Expr *parse_or_condition(Parser *p);                             // a value up to a comma: "or" and below
+
+// --- The best group (parse_best_group.c) ---------------------------------------------------
+
+const char *parser_singular_of(Arena *arena, const char *plural);  // "purchases" -> "purchase", or NULL
+bool parser_at_best_group(const Parser *p);    // the store with the highest total amount
+Expr *parser_parse_best_group(Parser *p);
+bool parser_at_top_group(const Parser *p);     // the top 3 stores by total amount
+Expr *parser_parse_top_group(Parser *p);
+
+// --- A field across a list, counting a list field (parse_across.c) -------------------------
+
+bool parser_at_field_across(const Parser *p);  // the names of the drinks; each drink's name
+Expr *parser_parse_field_across(Parser *p);
+Expr *parser_parse_count_test(Parser *p, Expr *left);  // has more than 5 orders, or NULL
+
+// --- The file a step names (parse_chain_file.c) ----------------------------------------------
+
+bool parser_at_chain_it_file(const Parser *p, size_t ahead);  // "it", right after a step with a file
+bool parser_at_bare_file(const Parser *p, size_t ahead);      // "file" with no name after it ("the file")
+Expr *parser_chain_file(Parser *p);                           // reads it: that file (or an error)
+Expr *parser_parse_chain_place(Parser *p);                    // either of them, or NULL
+Stmt *parser_finish_add_file(Parser *p, Stmt *stmt, Expr *value, Expr *path);  // add X to it [, one per line]
 
 #endif

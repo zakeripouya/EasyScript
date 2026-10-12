@@ -1,0 +1,8 @@
+25 25 12 9 24
+25 (a parcel with weight 12, country "France" and fragile yes)
+4
+(a parcel with weight 12, country "France" and fragile yes)
+France 1
+(a parcel with weight 12, country "France" and fragile yes) and (a parcel with weight 1, country "Canada" and fragile no)
+5 5
+10

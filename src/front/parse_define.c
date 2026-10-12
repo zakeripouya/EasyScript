@@ -416,7 +416,33 @@ static Stmt *parse_rule(Parser *p, size_t kind_words) {
     return stmt;
 }
 
-Stmt *parser_parse_definition(Parser *p) {
+// "an email is text that must contain "@".": a kind of text, and its rule (a
+// STMT_RULE whose `text` is the kind). The message leaves out "is text that":
+// "An email must contain "@"".
+Stmt *parser_parse_text_kind(Parser *p) {
+    const Token *first = parser_peek(p, 0);
+    size_t start = first->filler.length ? first->filler.offset : first->span.offset;
+    Stmt *stmt = parser_new_stmt(p, STMT_RULE, first);
+    stmt->as.rule.kind = TYPE_UNKNOWN;
+    size_t words;
+    stmt->as.rule.text = parser_match_kind_name(p, 0, false, &words);
+    parser_take_name(p, parser_text_kind_words(p, p->pos), &stmt->as.rule.field);
+    SourcePos at = stmt->as.rule.field.pos;
+    parser_consume(p, 3);  // is text that
+    size_t must = parser_peek(p, 0)->span.offset;
+    parser_advance(p);  // must
+    stmt->as.rule.condition = parse_must(p, at);
+    if (!stmt->as.rule.condition) return NULL;
+    size_t end = p->prev_span.offset + p->prev_span.length;
+    size_t name_end = stmt->as.rule.field.pos.span.offset + stmt->as.rule.field.pos.span.length;
+    char *message = arena_sprintf(p->arena, "%.*s %.*s", (int)(name_end - start), p->source + start, (int)(end - must),
+                                  p->source + must);
+    message[0] = (char)toupper((unsigned char)message[0]);
+    stmt->as.rule.message = message;
+    return stmt;
+}
+
+static Stmt *parse_shape(Parser *p) {
     size_t words = 0;
     switch (shape_here(p, &words)) {
     case RULE: return parse_rule(p, words);
@@ -429,9 +455,22 @@ Stmt *parser_parse_definition(Parser *p) {
     return NULL;
 }
 
+Stmt *parser_parse_definition(Parser *p) {
+    p->describing = true;  // "they" is the record described
+    Stmt *stmt = parse_shape(p);
+    p->describing = false;
+    return stmt;
+}
+
 // --- Using them ------------------------------------------------------------------------
 
 Expr *parser_adjective_call(Parser *p, Expr *subject, const char *adjective, SourcePos pos) {
+    if (!parser_is_adjective(p, adjective) && parser_is_yes_field(p, adjective)) {  // "is fragile": the field
+        Expr *field = ast_new_expr(p->arena, EXPR_FIELD, pos);
+        field->as.field.record = subject;
+        field->as.field.name = (Name){adjective, adjective, pos};
+        return field;
+    }
     Expr *call = ast_new_expr(p->arena, EXPR_CALL, pos);
     call->as.call.name = arena_sprintf(p->arena, "is %s", adjective);
     call->display = call->as.call.name;
@@ -445,7 +484,7 @@ Expr *parser_parse_adjective_test(Parser *p, Expr *left, bool plural) {
     const char *const *verbs = plural ? plural_words : singular_words;
     for (size_t i = 0; i < 3; i++) {
         size_t n = parser_match_words(p, verbs[i]);
-        if (!n || parser_peek(p, n)->kind != TOK_WORD || !parser_is_adjective(p, parser_peek(p, n)->text)) continue;
+        if (!n || parser_peek(p, n)->kind != TOK_WORD || !parser_is_describing(p, parser_peek(p, n)->text)) continue;
         Span verb = parser_consume(p, n);
         const Token *word = parser_advance(p);
         SourcePos pos = ast_pos_join(left->pos, parser_token_pos(word));
@@ -464,7 +503,7 @@ Expr *parser_parse_defined_word(Parser *p) {
     Definition *def = definition_here(p);
     if (def) return expand(p, def);
     const Token *word = parser_peek(p, 0);
-    if (word->kind != TOK_WORD || !parser_is_adjective(p, word->text) || parser_is_function(p, word->text) ||
+    if (word->kind != TOK_WORD || !parser_is_describing(p, word->text) || parser_is_function(p, word->text) ||
         !parser_is_name_word(parser_peek(p, 1))) {
         return NULL;
     }

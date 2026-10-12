@@ -4,7 +4,30 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Added (reads like text)
+
+- Definitions with inputs in the middle of their first line: `to give a customer a discount of some percent:` (`a KIND`, `another KIND` and `some NAME` are inputs, called `the customer`, `the other person`, `the percent` inside), called with the same words: `give ann a discount of 10 percent.`, `introduce ann to bob.`, `give every loyal customer a discount of 10 percent.` (once per item).
+- `increase X by N percent`, `reduce X by N percent` / `decrease X by N percent`, and `reduce X by N` (the same as `decrease`).
+- Yes/no fields as describing words: `a parcel has a weight, and can be fragile.` (or `a parcel can be fragile.`), `a new fragile parcel with ...`, `mark box as [not] fragile`, and any yes/no field reads like a describing word (`if box is fragile`, `the fragile parcels`, `how many parcels are fragile`). In a definition, `it's abroad` means "it is abroad" when `abroad` is a describing word.
+- One-line choices: `4 if it's fragile, otherwise 0` as a value, and `X, plus N if C` / `X, minus N if C`.
+- The best group: `the store with the highest total amount [of purchases]` (also `average`, `median`, `number of purchases`, and `lowest`), and `the top 3 stores by total amount`: the group with the biggest result, when the item is a field of the rows. Without `of L`, the one list whose items have the field.
+- A field across a list: `the names of the drinks` and `each drink's name`. Counting a list field: `ann has at least 2 orders`, `how many customers have fewer than 2 orders`. `they` means the record in a definition (`a customer is loyal if they have more than 5 orders.`).
+- Files in steps in a row: right after a step that made or wrote to a file, `write X in it`, `put X in it`, `add X to it [, one per line]`, `add X to the end of it`, and `the file` with no name (`what's in the file`). `file F doesn't exist` / `does not exist` (and `folder`).
+- Exact money: `$1,200`, `€4.50`, `£3`, `4.50 dollars` are amounts kept as whole cents; amounts add exactly, times or divided by a number round to the cent (half away from zero, shown by `easyscript plan`), amount divided by amount is a number; mixing currencies or adding a plain number is an error. Amounts print with their currency (`$400.00`) and work in lists, maps, fields, totals, averages, sorting and csv tables. `ask for an amount [in euros]`, and the kinds `(dollars)`, `(euros)`, `(pounds)`. A definition's inputs get money as their kind from its calls (`to split some bill between some people:` called with `$90`); in a program that writes money, arithmetic on a kind not decided yet waits until its sides are known. `budget.es`, `tip_calculator.es` and `coffee_shop.es` use money (their output now shows amounts as money).
+- Kinds of text with a rule: `an email is text that must contain "@".` A field called `email` is one (checked when it's kept), `X as an email` checks text, and an email works anywhere text does; plain text where an email has to be is an error suggesting `as an email`.
+- `for each class and its average in ...`: the value's name is `average` (unless the program also writes `its average` somewhere, which keeps the old name).
+- `say X, indented.` and `say X, indented by N.` (also `show`, `print`, `display`).
+- `put the text below in file F:` (and `write`) with the file's lines indented below.
+- Text in quotes inside brackets in text: `"([the note, or "none"])"`, `"Guests: [names joined with " & "]."`.
+- Wordings from the "Still not English" list: `the name of the student with the highest score` (it used to look for a list called "name of students"), `how many students have a score of at least 60`, `X, minus 10 percent` / `, plus 5 percent`, and `the most common drink`.
+- `L sorted by NAME` works for a value defined with `KIND's NAME is ...` or a table, like a field (`the parcels sorted by price`).
+
 ### Breaking
+
+- **(reads like text)** `reduce` and `mark` start sentences, so a one-word definition with either name needs another name.
+- **(reads like text)** `$` followed by a digit is an amount of money (it used to be an error), and a number followed by `dollars`, `euros` or `pounds` (or the singular) is one too. `the total of` an undecided value keeps it undecided until the end of the program, so it can turn out to be money.
+- **(reads like text)** A yes/no field's name after `is` reads the field (`box is fragile`), even if a name `fragile` exists, like a describing word a kind defines.
+- **(reads like text)** A definition's first line with `a KIND` (a kind the program has), `another KIND` or `some NAME` before any input word (`with`, `of`, `to`, ...) has its inputs in the middle: `to adopt a dog:` used to be a definition called "adopt dog" with no inputs, and is now one with the input `dog`.
 
 - **A table read with `and call it NAME` (a plural) has rows of a kind named after it** (`purchases`: `a purchase`), so a row prints as `a purchase with ...` instead of `a row of spending.csv with ...`, and that word now names the kind. `tests/run/table_files.out` changed for this.
 - **`me` and `undo` are reserved** for talking to EasyScript, so they can't be names; **`tell` and `list` start sentences** (`tell me ...`, `list the big orders`), so they can't be one-word definition names. In a program that reads a table, `the WORD of X`, `whose WORD` and `its WORD` can read a column, so a misspelled field there is reported by the checker instead.

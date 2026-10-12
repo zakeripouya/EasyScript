@@ -89,6 +89,17 @@ static void add_known(Parser *p, const char *text, size_t n, bool function, unsi
     if (function) vec_push(p->arena, &p->functions, text);
 }
 
+bool parser_is_yes_field(const Parser *p, const char *name) {
+    for (size_t i = 0; i < p->yes_fields.len; i++) {
+        if (strcmp(p->yes_fields.items[i], name) == 0) return true;
+    }
+    return false;
+}
+
+void parser_add_name_words(Parser *p, const char *text, size_t words) {
+    add_known(p, text, words, false, 0, false);
+}
+
 static void add_name(Parser *p, size_t at, size_t n, bool function) {
     if (n == 0 || (n == 1 && !function)) return;  // one-word variables need no recognizing
     add_known(p, join_words(p, at, n, false, ' '), n, function, 0, false);
@@ -207,12 +218,23 @@ static void add_field_name(Parser *p, size_t i, size_t n);
 
 // The fields after "has": NAME [(...)] separated by "," and "and". Returns
 // the index after the sentence.
+static void add_yes_field(Parser *p, size_t i, size_t n) {
+    add_field_name(p, i, n);
+    const char *name = join_words(p, i, n, false, ' ');
+    if (!parser_is_yes_field(p, name)) vec_push(p->arena, &p->yes_fields, name);
+}
+
 static size_t find_has_fields(Parser *p, size_t i) {
     for (;;) {
         if (word_at(p, i, "some") && name_words(p, i) > 1) i++;  // "some pets": like "a" or "an"
+        bool can = word_at(p, i, "can") && word_at(p, i + 1, "be");  // "and can be fragile": a yes/no field
+        if (can) i += 2;
         size_t n = name_words(p, i);
         if (n == 0) return i;
         add_field_name(p, i, n);
+        if (can || (i + n + 1 < p->count && p->tokens[i + n].kind == TOK_LPAREN && word_at(p, i + n + 1, "yes"))) {
+            add_yes_field(p, i, n);
+        }
         i += n;
         if (i < p->count && p->tokens[i].kind == TOK_LPAREN) {
             while (i < p->count && p->tokens[i].kind != TOK_RPAREN && !at_sentence_end_index(p, i)) i++;
@@ -378,8 +400,25 @@ static size_t find_interface(Parser *p, size_t i, size_t n) {
 // Every record kind and kind with variants, in order, every variant, and
 // every field name: "NAME, which is" in a record, "with NAME (KIND)" in a
 // variant; and every interface with the names of its ways.
+// "an email is text that must ...": the kind's words at the start of a line, or 0.
+size_t parser_text_kind_words(const Parser *p, size_t i) {
+    if (!at_line_start(p, i)) return 0;
+    size_t n = name_words(p, i);
+    return n > 0 && word_at(p, i + n, "is") && word_at(p, i + n + 1, "text") && word_at(p, i + n + 2, "that") &&
+                   word_at(p, i + n + 3, "must")
+               ? n
+               : 0;
+}
+
 static void find_records(Parser *p) {
     for (size_t i = 0; i < p->count; i++) {
+        size_t text = parser_text_kind_words(p, i);
+        if (text > 0) {  // a kind of text
+            const char *name = join_words(p, i, text, false, ' ');
+            RecordKind kind = {name, join_words(p, i, text, true, ' '), parser_plural_of(p->arena, name), NULL, false};
+            vec_push(p->arena, &p->records->texts, kind);
+            continue;
+        }
         size_t interface = parser_interface_words(p, i);
         if (interface > 0) {
             i = find_interface(p, i, interface) - 1;
@@ -451,13 +490,17 @@ void parser_find_names(Parser *p) {
     parser_find_definitions(p);
     parser_find_tables(p);
     parser_find_program_result(p);
+    parser_find_patterns(p);
     for (size_t i = 0; i + 1 < p->count; i++) {
-        if (p->tokens[i].kind != TOK_WORD) continue;
+        if (p->tokens[i].kind != TOK_WORD || parser_pattern_at(p, i)) continue;
         const char *word = p->tokens[i].text;
         size_t n = name_words(p, i + 1), after = i + 1 + n;
         size_t kind_words;
         if (strcmp(word, "to") == 0 && (at_line_start(p, i) || parser_after_privately(p, i))) {
             find_function(p, i, false);
+        } else if (at_line_start(p, i) && parser_match_kind_name(p, i, false, &kind_words) &&
+                   word_at(p, i + kind_words, "can") && word_at(p, i + kind_words + 1, "be")) {  // a parcel can be fragile.
+            find_has_fields(p, i + kind_words);
         } else if (at_line_start(p, i) && parser_match_kind_name(p, i, false, &kind_words) &&
                    word_at(p, i + kind_words, "can")) {  // a dog can bark:
             find_function(p, i + kind_words, true);

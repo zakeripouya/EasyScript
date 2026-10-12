@@ -16,7 +16,7 @@
 // After "remove": no "from" before the sentence ends, and a filter ("that",
 // "whose", "where") or an adjective first ("the done tasks").
 bool parser_at_remove_filter(const Parser *p) {
-    if (parser_is_adjective(p, parser_peek(p, 0)->text) && parser_is_name_word(parser_peek(p, 1))) return true;
+    if (parser_is_describing(p, parser_peek(p, 0)->text) && parser_is_name_word(parser_peek(p, 1))) return true;
     bool filter = false;
     int depth = 0;
     for (size_t i = 0;; i++) {

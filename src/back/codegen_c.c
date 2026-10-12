@@ -140,18 +140,27 @@ static void emit_change(Codegen *g, const Stmt *stmt) {
         sb_appendf(&g->body, "), %s);\n", amount);
         return;
     }
+    Type type = stmt->as.change.type;  // a number or an amount of money
     StrBuf var;
     sb_init(&var, g->arena);
-    cg_append_var(g, &var, name, TYPE_NUMBER);
+    cg_append_var(g, &var, name, type);
     const char *amount = expr_code(g, stmt->as.change.amount);
-    const char *value;
-    switch (stmt->as.change.op) {
-    case CHANGE_ADD: value = arena_sprintf(g->arena, "%s + %s", var.data, amount); break;
-    case CHANGE_SUBTRACT: value = arena_sprintf(g->arena, "%s - %s", var.data, amount); break;
-    case CHANGE_MULTIPLY: value = arena_sprintf(g->arena, "%s * %s", var.data, amount); break;
-    default: value = arena_sprintf(g->arena, "es_div(%zu, %s, %s)", cg_site(g, stmt->pos), var.data, amount); break;
+    cg_emit_store(g, name, type, cg_changed(g, stmt, type, var.data, amount));
+}
+
+// What "add/subtract/multiply/divide" makes of `slot` (a number or an amount of money).
+const char *cg_changed(Codegen *g, const Stmt *stmt, Type type, const char *slot, const char *amount) {
+    size_t site = stmt->as.change.op == CHANGE_DIVIDE || type_is_money(type) ? cg_site(g, stmt->pos) : 0;
+    if (type_is_money(type)) {
+        static const char *const money[] = {"es_money_add", "es_money_subtract", "es_money_times", "es_money_divide"};
+        return arena_sprintf(g->arena, "%s(%zu, %s, %s)", money[stmt->as.change.op], site, slot, amount);
     }
-    cg_emit_store(g, name, TYPE_NUMBER, value);
+    switch (stmt->as.change.op) {
+    case CHANGE_ADD: return arena_sprintf(g->arena, "%s + %s", slot, amount);
+    case CHANGE_SUBTRACT: return arena_sprintf(g->arena, "%s - %s", slot, amount);
+    case CHANGE_MULTIPLY: return arena_sprintf(g->arena, "%s * %s", slot, amount);
+    default: return arena_sprintf(g->arena, "es_div(%zu, %s, %s)", site, slot, amount);
+    }
 }
 
 // write/append: the text first, then the file name (left to right).
@@ -398,6 +407,9 @@ void cg_emit_stmt(Codegen *g, const Stmt *stmt) {
         const char *prompt = text_code(g, stmt->as.ask.prompt), *call;
         if (kind == TYPE_TEXT) {
             call = arena_sprintf(g->arena, "es_ask(%s)", prompt);
+        } else if (type_is_money(kind)) {
+            call = arena_sprintf(g->arena, "es_ask_money(%zu, %s, %d)", cg_site(g, stmt->pos), prompt,
+                                 (int)(kind - TYPE_DOLLARS));
         } else {
             call = arena_sprintf(g->arena, "es_ask_%s(%zu, %s)", kind == TYPE_NUMBER ? "number" : "yesno",
                                  cg_site(g, stmt->pos), prompt);

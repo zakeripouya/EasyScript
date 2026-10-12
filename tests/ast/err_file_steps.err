@@ -1,0 +1,19 @@
+Line 1: I don't know which file "the file" means here.
+    write "x" in the file.
+                     ^^^^
+Say its name, like "in file "notes.txt"". The file alone works only right after a step that makes a file or writes to one.
+
+Line 2: I don't know which file "the file" means here.
+    add "y" to the end of the file.
+                              ^^^^
+Say its name, like "in file "notes.txt"". The file alone works only right after a step that makes a file or writes to one.
+
+Line 4: I don't know which file "the file" means here.
+    say n, then write "z" in the file.
+                                 ^^^^
+Say its name, like "in file "notes.txt"". The file alone works only right after a step that makes a file or writes to one.
+
+Line 5: I expected "exists" here, but found "doesnt".
+    if file "a" doesnt exist, say 1.
+                ^^^^^^
+Write it like "if file "notes.txt" exists:" or "if file "notes.txt" doesn't exist:".

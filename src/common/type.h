@@ -34,7 +34,12 @@ enum {
     TYPE_NOTHING,  // what a function gives back when it gives back no value, and the value "nothing"
     TYPE_ERROR,    // stands in after a type error, so one mistake gives one message
     TYPE_DATE,     // a day, and maybe a time of day ("today", "the time now"); a number of seconds while running
-    TYPE_RECORD = 16,       // TYPE_RECORD + n: the program's record kind n
+    TYPE_DOLLARS,  // an exact amount of money ("$19.99"): whole cents (a long long while running)
+    TYPE_EUROS,    // the same in euros ("€4.50")
+    TYPE_POUNDS,   // and in pounds ("£3")
+    TYPE_TEXTKIND = 16,     // TYPE_TEXTKIND + n: the program's kind of text n ("an email is text that must ..."),
+                            // only while checking: codegen sees text
+    TYPE_RECORD = 64,       // TYPE_RECORD + n: the program's record kind n
     TYPE_IFACE = 1u << 10,  // TYPE_IFACE + n: the program's interface n (Records.interfaces)
     TYPE_SUM = 1u << 11,    // TYPE_SUM + n: the program's kind with variants n (Records.sums)
     TYPE_FUNC = 1u << 12,   // TYPE_FUNC + n: kind of function n (Records.funcs); TYPE_FUNC alone: inputs not decided
@@ -52,6 +57,9 @@ static inline bool type_is_map(Type type) { return !type_is_list(type) && type >
 static inline bool type_is_record(Type type) {
     return !type_is_list(type) && type_present(type) >= TYPE_RECORD && type_present(type) < TYPE_IFACE;
 }
+static inline bool type_is_textkind(Type type) { return type >= TYPE_TEXTKIND && type < TYPE_RECORD; }
+static inline Type type_textkind(size_t index) { return TYPE_TEXTKIND + (Type)index; }
+static inline size_t type_textkind_index(Type type) { return type - TYPE_TEXTKIND; }
 static inline bool type_is_iface(Type type) {
     return !type_is_list(type) && type_present(type) >= TYPE_IFACE && type_present(type) < TYPE_SUM;
 }
@@ -79,6 +87,9 @@ static inline bool type_can_be_nothing(Type type) {
                                     type_is_record(type) || type_is_sum(type) || type_is_iface(type));
 }
 // Kept in a box while the program runs when it's "or nothing": a number, text or yes/no.
+static inline bool type_is_money(Type type) {
+    return type == TYPE_DOLLARS || type == TYPE_EUROS || type == TYPE_POUNDS;
+}
 static inline bool type_boxed(Type present) {
     return present == TYPE_NUMBER || present == TYPE_TEXT || present == TYPE_YESNO;
 }
@@ -145,6 +156,9 @@ typedef struct {
     Vec(MapKind) maps;
     Vec(FuncKind) funcs;
     Vec(RecordKind) interfaces;
+    bool money;             // the program writes money somewhere ("$5", "(dollars)"): arithmetic on a kind not
+                            // decided yet waits, as the value could turn out to be money
+    Vec(RecordKind) texts;  // kinds of text ("an email is text that must contain "@"."); definition: the STMT_RULE
     size_t program_result;  // 1 + the index of "program result" (what "run ... and call the result r" makes), or 0
 } Records;
 

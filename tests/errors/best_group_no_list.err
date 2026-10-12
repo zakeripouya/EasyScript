@@ -1,0 +1,4 @@
+Line 2: There's no list whose items have a "store" to group by.
+    say the store with the highest total amount.
+            ^^^^^
+Say which list, like "the store with the highest total amount of purchases".

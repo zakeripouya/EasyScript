@@ -10,7 +10,7 @@
 // After a piece, a comma followed by one of these keeps its own meaning
 // ("the value for K in M, or 0"), so it doesn't start another piece.
 static bool at_postfix_after_comma(const Parser *p) {
-    static const char *const words[] = {"or", "sorted", "as", "rounded", "starting"};
+    static const char *const words[] = {"or", "sorted", "as", "rounded", "starting", "indented"};
     for (size_t i = 0; i < COUNT(words); i++) {
         if (parser_at_word(p, 1, words[i])) return true;
     }
@@ -55,6 +55,7 @@ static bool starts_block_or_definition(const char *word) {
 static bool starts_value(const Token *token) {
     switch (token->kind) {
     case TOK_NUMBER:
+    case TOK_MONEY:
     case TOK_STRING:
     case TOK_LPAREN: return true;
     case TOK_WORD: return !parser_is_operator_word(token->text);

@@ -1,0 +1,7 @@
+Line 3: I can only find the length of text or a list, but this is a number.
+    if ann has more than 2 age, say "x".
+       ^^^
+
+Line 4: "every" needs a list to go through, but this is a number.
+    say the names of 5.
+                     ^

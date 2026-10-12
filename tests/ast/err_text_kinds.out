@@ -1,0 +1,4 @@
+rule: email must [1:4]
+  contains [1:4]
+    it [1:4]
+    text "@" [1:36]

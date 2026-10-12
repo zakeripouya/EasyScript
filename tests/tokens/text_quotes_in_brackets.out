@@ -1,0 +1,19 @@
+WORD          1:1     say
+STRING        1:5     "("
+LBRACKET      1:7     [
+WORD          1:8     note
+COMMA         1:12    ,
+WORD          1:14    or
+STRING        1:17    "none"
+RBRACKET      1:23    ]
+STRING        1:24    ") "
+LBRACKET      1:26    [
+WORD          1:27    word
+WORD          1:32    followed
+WORD          1:41    by
+STRING        1:44    "!"
+RBRACKET      1:47    ]
+STRING        1:48    ""
+PERIOD        1:49    .
+NEWLINE       1:50
+EOF           2:1

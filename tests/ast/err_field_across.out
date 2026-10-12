@@ -1,0 +1,3 @@
+record customer [1:3]
+  field name (kind from use) [1:18]
+  field orders (kind from use) [1:27]

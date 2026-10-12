@@ -33,6 +33,18 @@ static const char *kind_words(Checker *c, Type type) {
     }
 }
 
+// "to give a customer a discount of some percent (a number)": a definition with
+// inputs in its first line, with the kind of input `marked` shown after it.
+static const char *pattern_header(Checker *c, const Function *f, size_t marked, Type mark) {
+    const Stmt *def = f->definition;
+    if (marked >= def->as.function.params.len || mark == TYPE_UNKNOWN) return arena_sprintf(c->arena, "to %s", f->display);
+    const char *input = arena_sprintf(c->arena, "some %s", def->as.function.params.items[marked].text);
+    const char *at = strstr(f->display, input);
+    if (!at) return arena_sprintf(c->arena, "to %s", f->display);
+    size_t before = (size_t)(at - f->display) + strlen(input);
+    return arena_sprintf(c->arena, "to %.*s (%s)%s", (int)before, f->display, kind_words(c, mark), f->display + before);
+}
+
 // "to area with width (a number) and height", with input `marked` given the
 // kind `mark` (when marked is in range), and kinds that were written down.
 static const char *header(Checker *c, const Function *f, size_t marked, Type mark) {
@@ -40,6 +52,7 @@ static const char *header(Checker *c, const Function *f, size_t marked, Type mar
     sb_init(&sb, c->arena);
     const Stmt *def = f->definition;
     size_t first = def->as.function.method ? 1 : 0;  // a method: "to bark, for a dog" or "a dog can bark"
+    if (def->as.function.pattern) return pattern_header(c, f, marked, mark);
     if (def->as.function.can) {
         sb_appendf(&sb, "%s can %s", checker_type_name(c, def->as.function.declared.items[0]), f->display);
     } else {
@@ -79,10 +92,46 @@ void checker_require(Checker *c, TypeVar var, Type type, const Expr *at, const c
     }
 }
 
-void checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Span span, size_t line) {
+// Whether arithmetic has to wait for a side's kind: it could still turn out to
+// be money ("the bill divided by the people", where the bill is an input).
+static bool arith_waits(Checker *c, BinaryOp op, TypeVar left, TypeVar right) {
+    if (!c->records->money) return false;  // a program with no money: numbers, as soon as they're used
+    Type l = types_of(c, left), r = types_of(c, right);
+    bool lu = l == TYPE_UNKNOWN, ru = r == TYPE_UNKNOWN;
+    switch (op) {
+    case BINARY_ADD:
+    case BINARY_SUBTRACT: return lu && ru;  // a number on one side makes both numbers
+    case BINARY_MULTIPLY: return (lu && (ru || r == TYPE_NUMBER)) || (ru && l == TYPE_NUMBER);
+    case BINARY_DIVIDE: return lu && (ru || r == TYPE_NUMBER);
+    default: return false;
+    }
+}
+
+bool checker_settle_arith(Checker *c, const Deferred *d) {
+    BinaryOp op = (BinaryOp)d->allowed;
+    if (arith_waits(c, op, d->left, d->right)) return false;
+    TypeVar result = checker_arithmetic(c, op, d->left, d->right, d->span, d->line);
+    if (types_of(c, result) != TYPE_ERROR && !types_unify(c, d->result, result)) {
+        diag_error(c->diag, d->span, "This gives %s, but it's used as %s.", checker_kind(c, result),
+                   checker_kind(c, d->result));
+        diag_note(c->diag, "It's used as %s because of line %zu. Keep it as %s there too.", checker_kind(c, d->result),
+                  types_line(c, d->result), checker_kind(c, result));
+        diag_info(c->diag, DIAG_WRONG_KIND, NULL, checker_kind(c, d->result));
+    }
+    return true;
+}
+
+TypeVar checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Span span, size_t line) {
+    TypeVar money = checker_money_arithmetic(c, op, left, right, span, line);  // "$5 plus $3"
+    if (money) return money;
+    if (arith_waits(c, op, left, right)) {  // decided once the sides are (by the calls of a definition, say)
+        TypeVar result = types_new(c, TYPE_UNKNOWN, line);
+        types_defer_arith(c, op, left, right, result, span, line);
+        return result;
+    }
     bool ok_left = types_require(c, left, TYPE_NUMBER, line);
     bool ok_right = types_require(c, right, TYPE_NUMBER, line);
-    if (ok_left && ok_right) return;
+    if (ok_left && ok_right) return types_new(c, TYPE_NUMBER, line);
     const char *l = checker_kind(c, left), *r = checker_kind(c, right);
     switch (op) {
     case BINARY_ADD:
@@ -96,6 +145,7 @@ void checker_arithmetic(Checker *c, BinaryOp op, TypeVar left, TypeVar right, Sp
     case BINARY_DIVIDE: diag_error(c->diag, span, "I can't divide %s by %s.", l, r); break;
     default: diag_error(c->diag, span, "I can't find the remainder of %s divided by %s.", l, r); break;
     }
+    return types_new(c, TYPE_NUMBER, line);
 }
 
 static void report_compare(Checker *c, const Expr *expr, TypeVar left, TypeVar right) {
@@ -165,6 +215,14 @@ static bool report_unknown_adjective(Checker *c, const Expr *expr, TypeVar left)
     return true;
 }
 
+// An email and text (or two emails): compared as text.
+static bool text_and_kind(Checker *c, TypeVar left, TypeVar right) {
+    Type l = types_of(c, left), r = types_of(c, right);
+    if (!type_is_textkind(l) && !type_is_textkind(r)) return false;
+    return (l == TYPE_TEXT || type_is_textkind(l)) && (r == TYPE_TEXT || type_is_textkind(r)) &&
+           (!type_is_textkind(l) || !type_is_textkind(r) || l == r);
+}
+
 static TypeVar check_binary(Checker *c, const Expr *expr) {
     BinaryOp op = expr->as.binary.op;
     TypeVar result;
@@ -187,13 +245,17 @@ static TypeVar check_binary(Checker *c, const Expr *expr) {
     case BINARY_PIECES: return types_new(c, TYPE_TEXT, line);  // any value can be a piece, like "say X"
     case BINARY_EQUAL:
     case BINARY_NOT_EQUAL:
-        if (!same_record_kind(c, left, right) && !types_unify(c, left, right)) report_compare(c, expr, left, right);
+        if (!same_record_kind(c, left, right) && !text_and_kind(c, left, right) && !types_unify(c, left, right)) {
+            report_compare(c, expr, left, right);
+        }
         return types_new(c, TYPE_YESNO, line);
     case BINARY_LESS:
     case BINARY_LESS_EQUAL:
     case BINARY_GREATER:
     case BINARY_GREATER_EQUAL:
-        if (types_unify(c, left, right)) {
+        if (text_and_kind(c, left, right)) {
+            // an email and text compare as text
+        } else if (types_unify(c, left, right)) {
             types_defer(c, DEFER_ORDER, expr, left, left, left);
         } else {
             report_compare(c, expr, left, right);
@@ -214,12 +276,12 @@ static TypeVar check_binary(Checker *c, const Expr *expr) {
     case BINARY_NOT_HAS: return checker_check_has(c, expr, left, right);
     default: {
         size_t before = diag_count(c->diag);
-        checker_arithmetic(c, op, left, right, expr->pos.span, line);
+        TypeVar result = checker_arithmetic(c, op, left, right, expr->pos.span, line);
         if (diag_count(c->diag) > before) {  // "p plus 1" where p could be nothing
             checker_note_maybe(c, types_of(c, left) == TYPE_NUMBER ? right : left,
                                types_of(c, left) == TYPE_NUMBER ? expr->as.binary.right : expr->as.binary.left);
         }
-        return types_new(c, TYPE_NUMBER, line);
+        return result;
     }
     }
 }
@@ -230,6 +292,7 @@ static TypeVar check_unary(Checker *c, const Expr *expr) {
         checker_require(c, operand, TYPE_YESNO, expr, "\"not\" needs a yes/no value", NULL);
         return types_new(c, TYPE_YESNO, expr->pos.line);
     }
+    if (type_is_money(types_of(c, operand))) return operand;  // -$5
     if (!types_require(c, operand, TYPE_NUMBER, expr->pos.line)) {
         diag_error(c->diag, expr->pos.span, "I can't make %s negative.", checker_kind(c, operand));
     }
@@ -364,6 +427,22 @@ static void report_argument_kind(Checker *c, const Function *f, size_t i, const 
         diag_note(c->diag, "It's defined on line %zu: \"%s\".", def->pos.line, checker_function_header(c, f));
         return;
     }
+    Type given_type = types_of(c, given);
+    if (type_is_money(wanted) && given_type == TYPE_NUMBER) {  // called with $90 before, and 90 here
+        diag_note(c->diag, "\"%s\" is %s because of line %zu. Write this one as money too, like \"%s90\".", param,
+                  checker_type_name(c, wanted), types_line(c, f->params.items[i]),
+                  wanted == TYPE_DOLLARS ? "$" : wanted == TYPE_EUROS ? "€" : "£");
+        diag_info(c->diag, DIAG_WRONG_KIND, NULL, checker_type_name(c, wanted));
+        return;
+    }
+    if (wanted == TYPE_NUMBER && type_is_money(given_type)) {  // called with 90 before, and $90 here
+        diag_note(c->diag, "\"%s\" is a number because of line %zu. Give every call money, or write the "
+                           "definition's input as \"%s (%s)\".",
+                  param, types_line(c, f->params.items[i]), param,
+                  given_type == TYPE_DOLLARS ? "dollars" : given_type == TYPE_EUROS ? "euros" : "pounds");
+        diag_info(c->diag, DIAG_WRONG_KIND, NULL, "a number");
+        return;
+    }
     diag_note(c->diag, "\"%s\" is %s because of line %zu. An input has one kind of value everywhere; to make it "
                        "clear, write it in the definition, like \"%s:\".",
               param, checker_type_name(c, wanted), types_line(c, f->params.items[i]), header(c, f, i, wanted));
@@ -493,7 +572,7 @@ static TypeVar check_call(Checker *c, const Expr *expr, bool as_value) {
     checker_resolved(c, expr, f->definition);
     if (n == 0 || !checker_shared_method(c, expr->as.call.name)) return finish_call(c, f, expr, args, as_value);
     TypeVar result = types_new(c, TYPE_UNKNOWN, 0);  // which method depends on the record's kind
-    Deferred d = {DEFER_METHOD, expr, args[0], 0, result, false, as_value, NULL, args};
+    Deferred d = {DEFER_METHOD, expr, args[0], 0, result, false, as_value, NULL, args, {0, 0}, 0};
     if (checker_settle_method(c, &d)) return result;
     vec_push(c->arena, &c->deferred, d);
     return result;
@@ -503,6 +582,7 @@ static TypeVar check_bare_name(Checker *c, const Expr *expr);
 
 // A bare name: a variable, a constant, or a function that takes no values.
 static TypeVar check_name(Checker *c, const Expr *expr) {
+    if (strncmp(expr->as.name, "0rows ", 6) == 0 && !checker_resolve_rows(c, (Expr *)expr)) return error_var(c);
     NameContext saved;
     if (!checker_enter_names(c, expr, expr->as.name, &saved)) return error_var(c);
     TypeVar result = check_bare_name(c, expr);
@@ -540,7 +620,9 @@ static TypeVar check_bare_name(Checker *c, const Expr *expr) {
 static TypeVar check_expr(Checker *c, const Expr *expr) {
     size_t line = expr->pos.line;
     switch (expr->kind) {
-    case EXPR_NUMBER: return types_new(c, TYPE_NUMBER, line);
+    case EXPR_NUMBER:
+        if (expr->as.number.zero) return types_new(c, TYPE_UNKNOWN, line);  // ", plus N if C": N's kind
+        return types_new(c, expr->as.number.money ? expr->as.number.money : TYPE_NUMBER, line);
     case EXPR_TEXT: return types_new(c, TYPE_TEXT, line);
     case EXPR_BOOLEAN: return types_new(c, TYPE_YESNO, line);
     case EXPR_NOTHING:
@@ -572,10 +654,20 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_CONVERT: {
         TypeVar operand = checker_check_expr(c, expr->as.convert.operand);
         if (expr->as.convert.target == CONVERT_TO_TEXT) return types_new(c, TYPE_TEXT, line);
+        if (expr->as.convert.target == CONVERT_TO_TEXT_KIND) {  // "X as an email": text, checked by its rule
+            const char *kind = checker_type_name(c, expr->as.convert.kind);
+            checker_require(c, operand, TYPE_TEXT, expr->as.convert.operand,
+                            arena_sprintf(c->arena, "Only text can become %s", kind), NULL);
+            return types_new(c, expr->as.convert.kind, line);
+        }
         if (expr->as.convert.target == CONVERT_TO_TABLE) {
             types_defer_one_of(c, expr->as.convert.operand, operand, operand, KIND_LIST | KIND_MAP,
                                "\"as a table\" needs a list or a map");
             return types_new(c, TYPE_TEXT, line);
+        }
+        if ((expr->as.convert.target == CONVERT_TO_MONEY || expr->as.convert.target == CONVERT_WITH_COMMAS) &&
+            type_is_money(types_of(c, operand))) {
+            return types_new(c, TYPE_TEXT, line);  // "$1,200.00" either way
         }
         if (expr->as.convert.target >= CONVERT_TO_EXACT_TEXT) {  // and "as money", "as a percent", "with commas"
             static const char *const names[] = {"as exact text", "as money", "as a percent", "with commas"};

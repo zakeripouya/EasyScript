@@ -1,0 +1,4 @@
+Line 2: I expected a field after "total" here, but found "of".
+    say the store with the highest total of purchases.
+                                   ^^^^^
+Write it like "the store with the highest total amount".

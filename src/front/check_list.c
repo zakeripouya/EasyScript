@@ -116,7 +116,7 @@ static TypeVar check_list_op(Checker *c, const Expr *expr) {
                                   ? "I can only find the biggest item of a list of numbers or text"
                                   : "I can only find the smallest item of a list of numbers or text";
         TypeVar item = checker_require_list(c, var, operand, message);
-        types_defer_one_of(c, operand, item, var, KIND_NUMBER | KIND_TEXT | KIND_DATE, message);
+        types_defer_one_of(c, operand, item, var, KIND_NUMBER | KIND_TEXT | KIND_DATE | KIND_MONEY, message);
         return item;
     }
     case LIST_REVERSED: checker_require_list(c, var, operand, "I can only reverse a list"); return var;
@@ -126,14 +126,14 @@ static TypeVar check_list_op(Checker *c, const Expr *expr) {
     case LIST_SORTED_LENGTH_DOWN: {
         bool length = expr->as.list_op.op >= LIST_SORTED_LENGTH;
         if (!length && type_is_map(types_of(c, var))) {  // a map, in the order of its values
-            types_defer_one_of(c, operand, types_item(c, var), var, KIND_NUMBER | KIND_TEXT | KIND_DATE,
+            types_defer_one_of(c, operand, types_item(c, var), var, KIND_NUMBER | KIND_TEXT | KIND_DATE | KIND_MONEY,
                                "I can only sort a map whose values are numbers or text");
             return var;
         }
         const char *message = length ? "I can only sort a list of text or lists by their length"
                                      : "I can only sort a list of numbers or text";
         TypeVar item = checker_require_list(c, var, operand, message);
-        types_defer_one_of(c, operand, item, var, length ? KIND_TEXT | KIND_LIST : KIND_NUMBER | KIND_TEXT | KIND_DATE, message);
+        types_defer_one_of(c, operand, item, var, length ? KIND_TEXT | KIND_LIST : KIND_NUMBER | KIND_TEXT | KIND_DATE | KIND_MONEY, message);
         return var;
     }
     case LIST_COPY: {  // a record, map or kind with variants when it's known to be one, otherwise a list
@@ -302,14 +302,14 @@ void checker_check_list_stmt(Checker *c, const Stmt *stmt) {
     }
     if (stmt->as.list.op == LIST_SORT && !stmt->as.list.by_length && type_is_map(types_of(c, list_var))) {
         if (checker_reject_fixed(c, list)) return;
-        types_defer_one_of(c, list, types_item(c, list_var), list_var, KIND_NUMBER | KIND_TEXT | KIND_DATE,
+        types_defer_one_of(c, list, types_item(c, list_var), list_var, KIND_NUMBER | KIND_TEXT | KIND_DATE | KIND_MONEY,
                            "I can only sort a map whose values are numbers or text");
         return;
     }
     TypeVar item = checker_require_list(c, list_var, list, message);
     if (types_of(c, item) == TYPE_ERROR) return;
     if (stmt->as.list.op == LIST_SORT) {
-        types_defer_one_of(c, list, item, list_var, stmt->as.list.by_length ? KIND_TEXT | KIND_LIST : KIND_NUMBER | KIND_TEXT | KIND_DATE,
+        types_defer_one_of(c, list, item, list_var, stmt->as.list.by_length ? KIND_TEXT | KIND_LIST : KIND_NUMBER | KIND_TEXT | KIND_DATE | KIND_MONEY,
                            message);
     } else if (value) {
         require_item(c, list, list_var, item, value, value_var, false);

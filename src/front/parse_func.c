@@ -182,7 +182,8 @@ bool parser_at_can_method(const Parser *p) {
     size_t words;
     bool line_start = p->pos == 0 || p->tokens[p->pos - 1].kind == TOK_NEWLINE ||
                       p->tokens[p->pos - 1].kind == TOK_INDENT || p->tokens[p->pos - 1].kind == TOK_DEDENT;
-    return line_start && parser_match_kind_name(p, 0, false, &words) && parser_at_word(p, words, "can");
+    return line_start && parser_match_kind_name(p, 0, false, &words) && parser_at_word(p, words, "can") &&
+           !parser_at_word(p, words + 1, "be");  // "a parcel can be fragile." is a field
 }
 
 Stmt *parser_parse_can(Parser *p) {
@@ -204,6 +205,8 @@ Stmt *parser_parse_can(Parser *p) {
 }
 
 Stmt *parse_function(Parser *p, const Token *verb) {
+    const Pattern *pattern = parser_pattern_at(p, (size_t)(verb - p->tokens));
+    if (pattern) return parser_parse_pattern_definition(p, verb, pattern);  // to give a customer a discount ...
     Stmt *stmt = parser_new_stmt(p, STMT_FUNCTION, verb);
     bool ok = parser_parse_name(p, &stmt->as.function.name, after_name) &&
               (strchr(stmt->as.function.name.text, ' ') || !reject_statement_word_name(p, &stmt->as.function.name)) &&

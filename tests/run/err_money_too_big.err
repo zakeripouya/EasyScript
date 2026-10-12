@@ -1,0 +1,4 @@
+Line 2: This amount of money is too big for me to keep exactly.
+    say savings times 2.
+        ^^^^^^^^^^^^^^^
+Amounts can go up to 90 trillion.

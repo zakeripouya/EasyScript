@@ -59,6 +59,9 @@ static const size_t es_cell_at[] = {sizeof(EsRecord)};
     }
 
 ES_CELL_KIND(n, double, "n")
+ES_CELL_KIND(u, long long, "u")
+ES_CELL_KIND(e, long long, "e")
+ES_CELL_KIND(p, long long, "p")
 ES_CELL_KIND(b, bool, "b")
 ES_CELL_KIND(t, EsText *, "t")
 ES_CELL_KIND(l, EsList *, "l")

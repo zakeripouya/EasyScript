@@ -135,6 +135,9 @@ static Stmt *parse_amount_first(Parser *p, const Token *verb, const StmtForm *fo
     if (reject_missing_value(p, form->connector)) return NULL;
     stmt->as.change.amount = parse_expression(p);
     if (p->sentence_failed || !parser_expect_word(p, connector, form->example)) return NULL;
+    if (form->op == CHANGE_ADD && parser_at_chain_it_file(p, 0)) {  // add "eggs" to it (a file, in steps in a row)
+        return parser_finish_add_file(p, stmt, stmt->as.change.amount, parser_chain_file(p));
+    }
     if (form->op == CHANGE_ADD && parser_match_words(p, "end of")) {
         return parser_finish_add_end(p, stmt, stmt->as.change.amount);
     }
@@ -143,6 +146,27 @@ static Stmt *parse_amount_first(Parser *p, const Token *verb, const StmtForm *fo
 }
 
 // increase/decrease/multiply/divide X by E
+// "increase price by 10 percent": multiply it by (100 plus 10) divided by 100
+// (minus, to reduce or decrease), as it would be written by hand.
+static void by_percent(Parser *p, Stmt *stmt) {
+    Expr *amount = stmt->as.change.amount;
+    SourcePos pos = ast_pos_join(amount->pos, parser_token_pos(parser_advance(p)));
+    Expr *hundred = ast_new_expr(p->arena, EXPR_NUMBER, pos);
+    hundred->as.number.text = "100";
+    Expr *sum = ast_new_expr(p->arena, EXPR_BINARY, pos);
+    sum->as.binary.op = stmt->as.change.op == CHANGE_ADD ? BINARY_ADD : BINARY_SUBTRACT;
+    sum->as.binary.op_span = pos.span;
+    sum->as.binary.left = hundred;
+    sum->as.binary.right = amount;
+    Expr *share = ast_new_expr(p->arena, EXPR_BINARY, pos);
+    share->as.binary.op = BINARY_DIVIDE;
+    share->as.binary.op_span = pos.span;
+    share->as.binary.left = sum;
+    share->as.binary.right = hundred;
+    stmt->as.change.op = CHANGE_MULTIPLY;
+    stmt->as.change.amount = share;
+}
+
 static Stmt *parse_target_first(Parser *p, const Token *verb, const StmtForm *form) {
     const char *const connector[] = {form->connector, NULL};
     Stmt *stmt = parser_new_stmt(p, STMT_CHANGE, verb);
@@ -152,6 +176,8 @@ static Stmt *parse_target_first(Parser *p, const Token *verb, const StmtForm *fo
         return NULL;
     }
     stmt->as.change.amount = parse_expression(p);
+    bool percent = (form->op == CHANGE_ADD || form->op == CHANGE_SUBTRACT) && parser_at_word(p, 0, "percent");
+    if (percent && !p->sentence_failed) by_percent(p, stmt);
     return !p->sentence_failed && parser_parse_starting_at(p, stmt) ? stmt : NULL;
 }
 
@@ -160,6 +186,22 @@ static Stmt *parse_say(Parser *p, const Token *verb, const StmtForm *form) {
     Stmt *stmt = parser_new_stmt(p, STMT_SAY, verb);
     if (parser_at_word(p, 0, "me")) parser_advance(p);  // "show me the total", "tell me ..."
     stmt->as.value = parser_parse_pieces(p);
+    if (!p->sentence_failed && parser_at(p, 0, TOK_COMMA) && parser_at_word(p, 1, "indented")) {
+        Span words = parser_consume(p, 2);  // ", indented [by N]": every line with spaces before it
+        Expr *text = ast_new_expr(p->arena, EXPR_CONVERT, stmt->as.value->pos);
+        text->as.convert.target = CONVERT_TO_TEXT;
+        text->as.convert.op_span = words;
+        text->as.convert.operand = stmt->as.value;
+        Expr *indented = ast_new_expr(p->arena, EXPR_TEXT_OP, ast_pos_join(text->pos, (SourcePos){words, 0, 0, 0}));
+        indented->as.text_op.op = TEXT_INDENTED;
+        indented->as.text_op.operand = text;
+        if (parser_at_word(p, 0, "by")) {
+            parser_advance(p);
+            indented->as.text_op.arg = parse_unary(p);
+            indented->pos = ast_pos_join(indented->pos, indented->as.text_op.arg->pos);
+        }
+        stmt->as.value = indented;
+    }
     return stmt;
 }
 
@@ -168,11 +210,16 @@ static Stmt *parse_write(Parser *p, const Token *verb, const StmtForm *form) {
     if (reject_missing_value(p, "to file")) return NULL;
     Expr *value = parse_expression(p);
     if (p->sentence_failed) return NULL;
-    if (parser_match_words(p, "to file") || parser_match_words(p, "in file")) {  // "in file": like "put X in file F"
-        parser_consume(p, 2);
+    bool chained = (parser_at_word(p, 0, "in") || parser_at_word(p, 0, "to")) && parser_at_chain_it_file(p, 1);
+    if (chained || parser_match_words(p, "to file") || parser_match_words(p, "in file")) {  // "in file": like "put X in file F"
+        parser_advance(p);  // in, to
         Stmt *stmt = parser_new_stmt(p, STMT_WRITE_FILE, verb);
         stmt->as.file_write.text = value;
-        stmt->as.file_write.path = parse_expression(p);
+        stmt->as.file_write.path = parser_parse_chain_place(p);  // "in it", "in the file"
+        if (!stmt->as.file_write.path) {
+            parser_advance(p);  // file
+            stmt->as.file_write.path = parse_expression(p);
+        }
         return stmt;
     }
     if (parser_at_word(p, 0, "to")) {
@@ -202,6 +249,15 @@ static Stmt *parse_ask(Parser *p, const Token *verb, const StmtForm *form) {
     stmt->as.ask.kind = TYPE_TEXT;
     size_t n = parser_match_words(p, "for number");  // ask for a number "How old are you?"
     if (n) stmt->as.ask.kind = TYPE_NUMBER;
+    if (!n && (n = parser_match_words(p, "for amount"))) {  // ask for an amount [in euros]: money
+        stmt->as.ask.kind = TYPE_DOLLARS;
+        p->records->money = true;
+        static const char *const in[] = {"in dollars", "in euros", "in pounds"};
+        for (size_t i = 0; i < 3; i++) {
+            size_t more = parser_match_words_at(p, n, in[i]);
+            if (more) stmt->as.ask.kind = TYPE_DOLLARS + (Type)i, n += more;
+        }
+    }
     if (!n && (n = parser_match_words(p, "yes or no"))) stmt->as.ask.kind = TYPE_YESNO;
     parser_consume(p, n + (n && parser_at(p, n, TOK_COMMA)));
     stmt->as.ask.prompt = parse_expression(p);
@@ -317,6 +373,11 @@ static Stmt *parse_use_form(Parser *p, const Token *verb, const StmtForm *form) 
     return parser_parse_use(p, verb);
 }
 
+static Stmt *parse_mark_form(Parser *p, const Token *verb, const StmtForm *form) {
+    (void)form;
+    return parser_parse_mark(p, verb);
+}
+
 static Stmt *parse_privately_form(Parser *p, const Token *verb, const StmtForm *form) {
     (void)form;
     return parser_parse_privately(p, verb);
@@ -330,6 +391,8 @@ static const StmtForm forms[] = {
     {"subtract", parse_amount_first, true, CHANGE_SUBTRACT, "from", "subtract 5 from total"},
     {"increase", parse_target_first, false, CHANGE_ADD, "by", "increase total by 5"},
     {"decrease", parse_target_first, false, CHANGE_SUBTRACT, "by", "decrease total by 5"},
+    {"mark", parse_mark_form, false, 0, NULL, "mark box as fragile"},
+    {"reduce", parse_target_first, false, CHANGE_SUBTRACT, "by", "reduce price by 10 percent"},
     {"multiply", parse_target_first, false, CHANGE_MULTIPLY, "by", "multiply total by 2"},
     {"divide", parse_target_first, false, CHANGE_DIVIDE, "by", "divide total by 2"},
     {"say", parse_say, false, 0, NULL, "say \"hello\""},
@@ -429,9 +492,11 @@ Stmt *parse_statement(Parser *p) {
     const Token *verb = parser_peek(p, 0);
     if (parser_at_record_definition(p)) return parse_record(p);
     if (parser_at_has_definition(p)) return parser_parse_has(p);
+    if (parser_at_can_be(p)) return parser_parse_can_be(p);  // a parcel can be fragile.
     if (parser_at_can_method(p)) return parser_parse_can(p);
     if (parser_at_sum_definition(p)) return parse_sum(p);
     if (parser_at_made_of(p)) return parser_parse_made_of(p);
+    if (parser_text_kind_words(p, p->pos)) return parser_parse_text_kind(p);  // an email is text that must ...
     if (parser_at_definition(p)) return parser_parse_definition(p);  // a customer is loyal if ...
     if (parser_at_table(p)) return parser_parse_table(p);            // the shipping cost depends on the total:
     if (parser_at_event(p)) return parser_parse_event(p);            // every 2 seconds: / whenever C:
@@ -453,6 +518,7 @@ Stmt *parse_statement(Parser *p) {
         if (call) call->pos = ast_pos_join(call->pos, (SourcePos){p->prev_span, 0, 0, 0});
         return call;
     }
+    if (parser_at_pattern_call(p)) return parser_parse_pattern_call(p);  // give ann a discount of 10 percent
     const StmtForm *form = find_form(verb);
     // A function's name starts a call: one of several words even if its first
     // word starts sentences ("add tax to 100"), a one-word one otherwise.

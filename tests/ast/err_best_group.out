@@ -1,0 +1,3 @@
+record purchase [1:3]
+  field store (kind from use) [1:18]
+  field amount (kind from use) [1:31]

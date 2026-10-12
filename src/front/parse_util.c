@@ -6,6 +6,7 @@
 
 const Token *parser_peek(const Parser *p, size_t ahead) {
     size_t index = p->pos + ahead;
+    if (p->limit && index >= p->limit) return &p->limit_token;  // the end of one input of a pattern's call
     return &p->tokens[index < p->count ? index : p->count - 1];
 }
 
@@ -20,7 +21,7 @@ bool parser_at_word(const Parser *p, size_t ahead, const char *word) {
 
 const Token *parser_advance(Parser *p) {
     const Token *token = parser_peek(p, 0);
-    if (p->pos < p->count - 1) p->pos++;
+    if (p->pos < p->count - 1 && (!p->limit || p->pos < p->limit)) p->pos++;
     p->prev_span = token->span;
     return token;
 }
@@ -71,6 +72,7 @@ bool parser_is_value_word(const char *word) {
 bool parser_starts_operand(const Token *token) {
     switch (token->kind) {
     case TOK_NUMBER:
+    case TOK_MONEY:
     case TOK_STRING:
     case TOK_LPAREN:
     case TOK_MINUS: return true;
@@ -222,6 +224,7 @@ const char *parser_describe(const Parser *p, const Token *token) {
         sb_append_quoted(&sb, token->text, token->text_len);
         return sb.data;
     }
+    case TOK_MONEY: return arena_sprintf(p->arena, "\"%.*s\"", (int)token->span.length, p->source + token->span.offset);
     default: return arena_sprintf(p->arena, "\"%s\"", token->text);
     }
 }

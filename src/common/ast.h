@@ -92,6 +92,8 @@ struct Expr {
         struct {
             const char *text;  // as written, e.g. "19.99"
             bool is_decimal;
+            bool zero;         // the 0 of ", plus N if C" when C is no: the same kind as N
+            Type money;        // "$19.99", "4.50 euros": TYPE_DOLLARS, ... (text is the cents: "1999"), or 0
         } number;
         struct {
             const char *value;  // decoded; may contain any byte but NUL
@@ -124,6 +126,7 @@ struct Expr {
             ConvertTarget target;
             Span op_span;
             Expr *operand;
+            Type kind;  // CONVERT_TO_TEXT_KIND: the kind of text ("as an email")
         } convert;
         Vec(Expr *) items;  // EXPR_LIST, in order (at least one); EXPR_MAP: key, value, key, value, ...
         Type list_type;     // EXPR_EMPTY_LIST, EXPR_EMPTY_MAP: its type, e.g. a list of numbers
@@ -431,6 +434,7 @@ struct Stmt {
                           // EXPR_MAP_GET); target is then unused
             bool append;  // filled in by the checker: "add E to L" where L is a list
             Expr *start;  // ", starting at S" (a map's value): what a missing key's value starts as, or NULL
+            Type type;    // filled in by the checker: the kind of what changes
         } change;
         Expr *value;  // STMT_SAY
         struct {
@@ -456,6 +460,7 @@ struct Stmt {
             const char *intro;     // the word before the inputs: "with", "of", "using" or "to" (NULL: none)
             bool method;           // "to bark, for a dog:": the first input is the dog
             bool can;              // written "a dog can bark:" (a method)
+            bool pattern;          // "to give a customer a discount of some percent:": inputs in the first line
             int defines;           // DEFINES_ADJECTIVE ("a customer is loyal if ...", named "is loyal") or
                                    // DEFINES_VALUE ("a customer's profit is ...", named "the profit"): a
                                    // method whose body is one "give back", with "it" its first input
@@ -488,6 +493,7 @@ struct Stmt {
             Expr *condition;    // yes or no for "it", the field's value
             const char *message;  // "An age must be between 0 and 150", as written
             size_t id;          // filled in by the checker: its C function (es_rule1, ...)
+            Type text;          // "an email is text that must ...": the kind of text it defines, or 0
         } rule;
         struct {
             struct Stmt *attempt;  // the sentence tried

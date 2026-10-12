@@ -22,6 +22,10 @@ static const RecordKind *record_kind(const Records *records, Type type) {
         size_t index = type_iface_index(type);
         return index < records->interfaces.len ? &records->interfaces.items[index] : NULL;
     }
+    if (type_is_textkind(type)) {
+        size_t index = type_textkind_index(type);
+        return index < records->texts.len ? &records->texts.items[index] : NULL;
+    }
     size_t index = type_record_index(type);
     return type_is_record(type) && index < records->len ? &records->items[index] : NULL;
 }
@@ -109,6 +113,11 @@ static const char *plural_name(Arena *arena, const Records *records, Type type) 
     Type present = type_present(base);
     if (present == TYPE_DATE) {
         sb_append(&sb, "dates");
+        return sb.data;
+    }
+    if (type_is_money(present)) {
+        sb_append(&sb, present == TYPE_DOLLARS ? "amounts in dollars" : present == TYPE_EUROS ? "amounts in euros"
+                                                                                               : "amounts in pounds");
         return sb.data;
     }
     if (present == TYPE_NUMBER || present == TYPE_TEXT || present == TYPE_YESNO) {
@@ -200,6 +209,9 @@ const char *ast_type_name(Arena *arena, const Records *records, Type type) {
     case TYPE_TEXT: return "text";
     case TYPE_YESNO: return "a yes/no value";
     case TYPE_DATE: return "a date";
+    case TYPE_DOLLARS: return "an amount in dollars";
+    case TYPE_EUROS: return "an amount in euros";
+    case TYPE_POUNDS: return "an amount in pounds";
     case TYPE_NOTHING: return "nothing";
     default: return "an unknown kind of value";
     }

@@ -259,16 +259,40 @@ static EsList *es_text_split(int site, EsText *t, EsText *by) {
 }
 
 /* "L joined with S": the items as text, with S between each two. */
+/* "say T, indented by N": every line of T with N spaces before it. Consumes t. */
+static EsText *es_text_indent(int site, EsText *t, double n) {
+    if (!(n >= 0 && n <= 1000 && n == floor(n))) {
+        es_release(t);
+        es_fail(site, "Write a whole number of spaces, like \"indented by 4\".",
+                "How far to indent has to be a whole number of spaces from 0 to 1000, but it's %s.", es_shown(n));
+    }
+    size_t spaces = (size_t)n, lines = 1;
+    for (size_t i = 0; i < t->len; i++) lines += t->chars[i] == '\n';
+    char *chars;
+    EsText *out = es_text_new(t->len + lines * spaces, &chars);
+    size_t k = 0;
+    bool start = true;
+    for (size_t i = 0; i < t->len; i++) {
+        if (start) memset(chars + k, ' ', spaces), k += spaces;
+        chars[k++] = t->chars[i];
+        start = t->chars[i] == '\n';
+    }
+    if (start) memset(chars + k, ' ', spaces), k += spaces;  /* empty text, or a last empty line */
+    es_release(t);
+    return out;
+}
+
 static EsText *es_list_joined(EsList *l, EsText *with) {
     EsBuf b = {NULL, 0, 0};
     for (size_t i = 0; i < l->len; i++) {
         if (i > 0) es_buf_add(&b, with->chars, with->len);
         EsText *item = l->items == ES_ITEMS_NUMBER  ? es_number_text(l->at.n[i])
                        : l->items == ES_ITEMS_DATE  ? es_date_text(l->at.n[i])
+                       : es_items_money(l->items)   ? es_cents_text((long long)l->at.n[i], (int)(l->items - ES_ITEMS_DOLLARS))
                        : l->items == ES_ITEMS_YESNO ? es_yesno_text(l->at.b[i])
                                                     : l->at.t[i];
         es_buf_add(&b, item->chars, item->len);
-        if (l->items == ES_ITEMS_NUMBER || l->items == ES_ITEMS_DATE) es_release(item);
+        if (es_items_numeric(l->items)) es_release(item);
     }
     EsText *t = b.len > 0 ? es_text_copy(b.data, b.len) : &es_empty_text;
     free(b.data);

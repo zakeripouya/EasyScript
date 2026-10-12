@@ -191,12 +191,12 @@ for example, double with 3 is 6.
 You can give several steps in one sentence. In each step, `it` means what the step before made.
 
 ```
-make a new file called "shopping.txt", then write "milk" in file it,
-then add "eggs" and "bread" to the end of file it, one per line,
+make a new file called "shopping.txt", then write "milk" in it,
+then add "eggs" and "bread" to it, one per line,
 and then show me what's in it.
 ```
 
-A line that ends with a comma, `then` or `and` goes on to the next line.
+A line that ends with a comma, `then` or `and` goes on to the next line. To check for a file first, write `if file "shopping.txt" doesn't exist:`.
 
 ### When something goes wrong
 
@@ -301,6 +301,14 @@ let page be the text below:
     {"name": "Ann", "path": "C:\notes"}
     [this is just text]
 say page.
+```
+
+A sentence that puts or writes text in a file can take the text below too, with the colon at its end:
+
+```
+put the text below in file "spending.csv":
+    date,store,amount
+    2026-09-01,Landlord,1200
 ```
 
 Try it: [`examples/lexer/text.es`](../examples/lexer/text.es)
@@ -416,7 +424,8 @@ not done and ready
 There are three ways to put values into text, and numbers (or lists) are turned into text for you:
 
 - **Commas in `say`:** `say "Hello,", name, "!"` prints the pieces with a space between them, except next to punctuation, so it prints `Hello, Ann!`. `show`, `print`, `display` and `complain` take pieces too.
-- **Brackets in text:** `"Hello, [name]! You have [tasks plus 1] tasks."` works out each value in brackets and puts it exactly there. Write `[[` and `]]` for a bracket in the text itself.
+- **Indenting:** `say name, score, indented.` puts 2 spaces before each line of what's said; `indented by 4` puts 4.
+- **Brackets in text:** `"Hello, [name]! You have [tasks plus 1] tasks."` works out each value in brackets and puts it exactly there; the value can have text in quotes of its own (`"([note, or "none"])"`). Write `[[` and `]]` for a bracket in the text itself.
 - **`followed by`** joins two values exactly as they are, anywhere: `"Total: " followed by total`.
 
 `and` doesn't join text: it means "both", for yes or no values. Joining happens after the maths, so `"Sum: " followed by 2 plus 3` gives `Sum: 5`. A value can be turned into text with `as text`, and text into a number with `as a number`:
@@ -484,7 +493,7 @@ multiply total by 2.
 divide total by 4.
 ```
 
-`increase total by 5` and `decrease total by 1` mean the same as `add` and `subtract`.
+`increase total by 5` and `decrease total by 1` mean the same as `add` and `subtract`, and `reduce price by 5` the same as `decrease`. With `percent` after the amount, they change it by a share of itself: `increase rent by 3 percent` multiplies `rent` by (100 plus 3) divided by 100, and `reduce price by 10 percent` multiplies it by (100 minus 10) divided by 100.
 
 A name is one word. It can't be `a`, `an`, or `the`, because EasyScript ignores those words, and the compiler explains this if you try:
 
@@ -756,6 +765,34 @@ say range from 1 to 5.
 ```
 
 You don't write down what kind of value each input is: the compiler works it out from how the function uses it and what it's given, and tells you before the program runs if something doesn't fit. When it can't tell, you can say, like `to area with width (a number) and height (a number), giving back a number:`. See [chapter 9](#9-types).
+
+### Inputs in the middle
+
+**Status: Available.**
+
+A definition can put its inputs where a sentence would: `a KIND` (a kind of record your program has) is an input, `another KIND` is a second one of the same kind, and `some NAME` is any other input. Inside, they're `the KIND`, `the other KIND` and `the NAME`. Every other word of the first line is fixed, and a sentence with exactly those words, and a value where each input goes, does it:
+
+```
+a customer has a name and a price.
+a person has a name.
+
+to give a customer a discount of some percent:
+    reduce the customer's price by the percent percent.
+
+to introduce a person to another person:
+    say "[the person's name], meet [the other person's name].".
+
+give ann a discount of 10 percent.
+introduce ann to bob.
+```
+
+A value for `some NAME` can be followed by NAME, so `of 10 percent` gives the input 10. `every customer`, or `every loyal customer` with a describing word, in place of a value does the sentence once for each:
+
+```
+give every loyal customer a discount of 10 percent.
+```
+
+The first line is read this way only when an input comes before any of the usual words for inputs (`with`, `of`, `to`, ...), so the definitions above in this chapter keep their meaning. Each sentence has to fit one definition: two that fit the same sentence, a fixed word that's a kind (`to feed customer some food:`), and two inputs with nothing between them are errors that say how to fix them.
 
 ### When something goes wrong inside a function
 
@@ -1268,6 +1305,18 @@ say rex's name.                    # Rexy
 if same dog is rex, say "same".    # same
 ```
 
+A field across a whole list, and a count of a list field, read the way you'd say them:
+
+```
+say the names of the drinks.                 # latte and tea
+say each drink's size.                       # medium and small
+if ann has at least 2 orders, say "Regular!".
+a customer is loyal if they have more than 5 orders.
+say how many customers have fewer than 2 orders.
+```
+
+`how many students have a score of at least 60` compares a field the same way (`has a score of 95` is equality). `the name of the student with the highest score` is that student's name, and `the most common drink` the one in `drinks` that comes up most. `the names of the drinks` is a new list of each drink's name (`names` is the plural of the field `name`), and `each drink's name` the same for the list called `drinks`. `has more than 5 orders` counts the items of the field `orders` (also `at least`, `fewer than`, `at most` and `exactly`). In a definition like `a customer is loyal if ...`, `they` means the customer.
+
 `a copy of rex` makes a new record with the same field values. The copy is **shallow**: text, lists and records inside it are shared with the original. Two records with the same fields are still two records, so `is` says no for a copy. To compare what's inside, compare the fields, or write a method:
 
 ```
@@ -1454,7 +1503,7 @@ for each name and age in ages:
     say name followed by " is " followed by age.
 ```
 
-The loop names each key and its value, in the map's order. Inside it, `it` is the key. Like a list's loop, it goes through the entries the map had when it started, so changing the map inside the loop doesn't change what it visits. A map always needs both names; to go through only the keys, write `for each name in the keys of ages:`.
+The loop names each key and its value, in the map's order (`for each name and its age in ages:` reads the same way, with the value called `age`). Inside it, `it` is the key. Like a list's loop, it goes through the entries the map had when it started, so changing the map inside the loop doesn't change what it visits. A map always needs both names; to go through only the keys, write `for each name in the keys of ages:`.
 
 ### Sharing and copying
 
@@ -2202,6 +2251,8 @@ say the total amount of orders per region.           # "east" is 140 and "west" 
 say the number of orders per region.                 # "east" is 2 and "west" is 1
 say the order with the highest amount's customer.    # Bo
 say the top 2 orders by amount.
+say the region with the highest total amount.        # west
+say the top 2 regions by number of orders.
 if every order's amount is above 10, say "All above 10.".
 say how many orders whose amount is over 50 there are.
 ```
@@ -2222,6 +2273,7 @@ Each phrase is one pass over the list, written here with the loops it stands for
 - `the top N L` keeps the N biggest seen so far (in a small heap, so it never sorts the whole list) and gives them back biggest first; `the lowest N` the same for the smallest. Ties keep the item that came first.
 - `the N most common L` counts each item in a map, then takes the N biggest counts.
 - `the ITEM with the highest FIELD` keeps the best item seen so far; the first one wins a tie. An empty list is an error.
+- `the region with the highest total amount`, where `region` is a field of the items, is the first key of `the total amount of orders per region, sorted biggest first`; `the top 2 regions by total amount` the first 2 keys. The list is the one whose items have a `region` (say `... of orders` when there's more than one).
 - `... per FIELD` keeps a map from each group to its running result.
 - A filter in the list (`the orders whose amount is over 50`) is tested in the same pass, unless its test calls a definition (then the filter keeps its own pass, so calls happen in order).
 
@@ -2263,7 +2315,29 @@ say the cheap orders.
 if every order is big, say "All big.".
 ```
 
-`its` (or `their`, or `it`) is the order being described. Once a word is defined, `X is big` means the word, and `the big orders` means the orders it describes.
+`its` (or `their`, or `it`) is the order being described. Once a word is defined, `X is big` means the word, and `the big orders` means the orders it describes. In a definition, `it's big` means "it is big" when `big` is a describing word.
+
+A yes-or-no field works the same way. `can be WORD` adds one that starts as no, at the end of a `has` sentence or as its own sentence after it. `a new WORD KIND` makes one with it set to yes, and `mark X as WORD` (or `as not WORD`) changes it:
+
+```
+a parcel has a weight and a country, and can be fragile.
+let box be a new fragile parcel with weight 12 and country "France".
+if box is fragile, say "Handle with care.".
+say how many parcels are fragile.
+mark box as not fragile.
+```
+
+Any field written as `(yes or no)` reads like a describing word too.
+
+### One-line choices
+
+```
+a parcel's care fee is 4 if it's fragile, otherwise 0.
+a parcel's price is its base price, plus 12 if it's abroad, plus 4 if it's fragile.
+let label be "glass" if box is fragile, otherwise "other".
+```
+
+`X, minus 10 percent` takes 10 percent of X away (`, plus 5 percent` adds it). `A if C, otherwise B` is A when C is yes and B when it's no; only the one chosen is worked out. The comma before `otherwise` is what makes it a choice: without it, `give back X if C` is still a sentence that only happens when C is yes. `, plus N if C` adds N only when C is yes (`, minus N if C` takes it away); the comma is needed there too.
 
 ### Values worked out from a record, and named values
 
@@ -2277,7 +2351,7 @@ say o's profit, the profit of o.
 say the best customer's name.
 ```
 
-A value like `profit` is worked out each time it's used, from the record it belongs to, so it's always up to date with the record's fields. A named value (`the best customer`) means its words, worked out where it's used: `the customer with the highest profit`, going through `customers`.
+A value like `profit` is worked out each time it's used, from the record it belongs to, so it's always up to date with the record's fields. It reads like a field everywhere: `its profit`, `the profit of o`, `the orders sorted by profit`, `the order with the highest profit`, and so does a value defined by a table (`the extra of a parcel depends on its country:`), so a definition can say `its base price plus its extra` with no parentheses. A named value (`the best customer`) means its words, worked out where it's used: `the customer with the highest profit`, going through `customers`.
 
 ### Tables
 
@@ -2304,6 +2378,17 @@ a team's players must not be empty.
 ```
 
 A rule is checked every time a field gets a value: in `a new ...`, `set ...`, and `add ... to ...` (and the other changes). If it's broken, the program stops: "Line 12: An age must be between 0 and 150, but this one is 200."
+
+### Kinds of text with a rule
+
+```
+an email is text that must contain "@".
+a customer has a name and an email.
+let ann be a new customer with name "Ann" and email "ann@example.com".
+let typed be "bob@example.com" as an email.
+```
+
+`an email is text that must ...` makes a kind of text. A field called `email` is one; text becomes one when it's kept in such a field (the rule is checked then) or written `X as an email` (checked there). An email works anywhere text does (`say`, `contains`, `in uppercase`, comparisons). But plain text can't go where an email has to be, like a definition's input written `(an email)`: that's an error before the program runs, saying to write `as an email`. A broken rule stops the program: "An email must contain "@", but this one is "nobody"."
 
 ### Acting on a whole group
 
@@ -2407,6 +2492,21 @@ say 1234567 with commas.      # 1,234,567
 
 Like `as text`, they take the value just before them, so write `(price times 3) as money`.
 
+### Exact money
+
+```
+let rent be $1,200.
+let coffee be 4.50 dollars.
+say "Each of us pays", rent divided by 3, ".".     # Each of us pays $400.00.
+say 10 percent of $19.99.                          # $2.00
+say rent plus coffee.                              # $1,204.50
+say rent divided by $400.                          # 3
+```
+
+An amount written with `$`, `€` or `£` (or `dollars`, `euros`, `pounds` after a number) is kept exactly, as whole cents, so adding up prices never gives rounding errors. Adding or taking away amounts of one currency is exact; multiplying or dividing an amount by a number rounds to the cent, half away from zero, and `easyscript plan` points out each place that happens. An amount divided by an amount is a plain number. Adding a plain number to an amount (`rent plus 3`), or mixing currencies, is an error that says how to write it.
+
+`ask for an amount "How much was the bill? " and call it bill.` asks until the answer is an amount. Amounts work in lists, maps, records, totals and averages, sorting, and tables read from csv files (a column used as money reads cells like `$84.20` or `84.20`). A definition's input gets money as its kind from its calls, like any kind: `to split some bill between some people:` called as `split $90 between 4.` makes the bill money. Calling it once with `$90` and once with `90` is an error that says to write the second as money too. You can still write the kind, like `to add tax to price (dollars):`.
+
 ### Values that are always up to date
 
 ```
@@ -2446,12 +2546,12 @@ date        store        category     amount
 ### Several lines in a file, and what's in it
 
 ```
-I want to make a new file called "groceries.txt", then write "milk" in file it,
-then add "eggs" and "bread" to the end of file it, one per line,
-and then show me what's in it.
+I want to make a new file called "groceries.txt", then write "milk" in it,
+then add "eggs" and "bread" to it, one per line,
+and then show me what's in the file.
 ```
 
-`, one per line` puts each value on a line of its own. `what's in file F` is the contents of the file; right after a step that made or wrote to a file, `what's in it` reads that file.
+`, one per line` puts each value on a line of its own. `what's in file F` is the contents of the file. Right after a step that made or wrote to a file, `it` and `the file` (with no name) mean that file: `write X in it`, `put X in the file`, `add X to it`, `add X to the end of the file`, `what's in it`. Anywhere else a file sentence names its file (`in file "notes.txt"`), and `the file` alone is an error. `file F doesn't exist` (or `does not exist`) is the opposite of `file F exists`.
 
 ### Examples as tests
 

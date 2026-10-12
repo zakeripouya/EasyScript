@@ -87,12 +87,32 @@ void lexer_skip_to_line_end(Lexer *lx) {
 // "[VALUE]" inside text: LBRACKET, the value's tokens, RBRACKET. A quote or
 // the end of the line before the "]" is an error: the rest of the line is
 // skipped, and an RBRACKET with no text tells the parser not to report it again.
+// The index after the text in quotes starting at `quote`, or 0 if it doesn't end on the line.
+static size_t after_quoted(const Lexer *lx, size_t quote) {
+    size_t i = quote + 1;
+    while (!lexer_at_line_end(lx, i) && lx->src[i] != '"') i += lx->src[i] == '\\' && !lexer_at_line_end(lx, i + 1) ? 2 : 1;
+    return lexer_at_line_end(lx, i) ? 0 : i + 1;
+}
+
+// A quote inside a value in brackets starts text of its own ("[the note, or
+// "none"]") when that text ends on the line and a "]" comes after it (with
+// any more text in quotes skipped); otherwise the "[" is the mistake (a
+// missing "]").
+static bool quote_in_value(const Lexer *lx) {
+    size_t i = after_quoted(lx, lx->pos);
+    while (i && !lexer_at_line_end(lx, i)) {
+        if (lx->src[i] == ']') return true;
+        i = lx->src[i] == '"' ? after_quoted(lx, i) : i + 1;  // more text in quotes in the value
+    }
+    return false;
+}
+
 static void lex_text_value(Lexer *lx) {
     size_t open = lx->pos++;
     lexer_emit_content(lx, TOK_LBRACKET, open, open + 1, "[", 1);
     for (;;) {
         while (lx->pos < lx->len && (lx->src[lx->pos] == ' ' || lx->src[lx->pos] == '\t')) lx->pos++;
-        if (lexer_at_line_end(lx, lx->pos) || lx->src[lx->pos] == '"') {
+        if (lexer_at_line_end(lx, lx->pos) || (lx->src[lx->pos] == '"' && !quote_in_value(lx))) {
             diag_error(lx->diag, lexer_span(open, open + 1),
                        "This \"[\" starts a value inside the text, but there's no \"]\" to end it.");
             diag_note(lx->diag, "End the value with \"]\", like \"Hello, [name]!\". To put a \"[\" in text, write it "
@@ -170,14 +190,40 @@ static bool word_is(const Token *token, const char *word) {
 // indented under it are the text, exactly as written (no escapes, no values
 // in brackets), without their shared indentation and joined by new lines.
 // It becomes one STRING in place of "text below :"; the lines are skipped.
-bool lexer_text_block(Lexer *lx) {
-    size_t n = lx->tokens.len;
-    if (!lx->line_has_tokens || n < 3 || !word_is(&lx->tokens.items[n - 3], "text") ||
-        !word_is(&lx->tokens.items[n - 2], "below") || lx->tokens.items[n - 1].kind != TOK_COLON) {
-        return false;
+// "put the text below in file "notes.txt":": a "put" or "write" line ending
+// with a colon, with "text below" before it: where "text below" is (or 0).
+static size_t text_below_inside(const Lexer *lx) {
+    size_t n = lx->tokens.len, first = n;
+    while (first > 0) {
+        TokenKind kind = lx->tokens.items[first - 1].kind;
+        if (kind == TOK_NEWLINE || kind == TOK_INDENT || kind == TOK_DEDENT) break;
+        first--;
     }
-    Token text = lx->tokens.items[n - 3];
-    lx->tokens.len -= 3;
+    if (n < first + 5 || lx->tokens.items[n - 1].kind != TOK_COLON ||
+        !(word_is(&lx->tokens.items[first], "put") || word_is(&lx->tokens.items[first], "write"))) {
+        return 0;
+    }
+    for (size_t k = first + 1; k + 3 < n; k++) {
+        if (word_is(&lx->tokens.items[k], "text") && word_is(&lx->tokens.items[k + 1], "below")) return k;
+    }
+    return 0;
+}
+
+bool lexer_text_block(Lexer *lx) {
+    size_t n = lx->tokens.len, inside = 0;
+    if (!lx->line_has_tokens || n < 3) return false;
+    if (!word_is(&lx->tokens.items[n - 3], "text") || !word_is(&lx->tokens.items[n - 2], "below") ||
+        lx->tokens.items[n - 1].kind != TOK_COLON) {
+        inside = text_below_inside(lx);
+        if (!inside) return false;
+    }
+    Vec(Token) after = {0};  // "in file "notes.txt"" after "text below", put back after the text
+    size_t k = inside ? inside : n - 3;
+    for (size_t i = k + 2; inside && i + 1 < n; i++) vec_push(lx->arena, &after, lx->tokens.items[i]);
+    Token text = lx->tokens.items[k];
+    Span words = {text.span.offset, lx->tokens.items[k + 1].span.offset + lx->tokens.items[k + 1].span.length -
+                                        text.span.offset};
+    lx->tokens.len = k;
     size_t outer = lx->indent, at = lx->pos, last = lx->pos, last_start = lx->line_start, shared = SIZE_MAX;
     for (size_t line = at < lx->len ? at + 1 : at; line < lx->len;) {  // which lines belong to it
         size_t end = line, width = 0;
@@ -210,7 +256,9 @@ bool lexer_text_block(Lexer *lx) {
         line = end + 1;
     }
     lx->pending_filler = text.filler;
-    lexer_emit_content(lx, TOK_STRING, text.span.offset, last, value.data ? value.data : "", value.len);
+    lexer_emit_content(lx, TOK_STRING, text.span.offset, inside ? words.offset + words.length : last,
+                       value.data ? value.data : "", value.len);
+    for (size_t i = 0; i < after.len; i++) vec_push(lx->arena, &lx->tokens, after.items[i]);
     lx->line += used;  // the next line is the one after the text
     lx->line_start = last_start;
     lx->pos = last;

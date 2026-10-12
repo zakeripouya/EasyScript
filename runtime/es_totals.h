@@ -101,6 +101,15 @@ static EsMap *es_map_divide(EsMap *totals, EsMap *counts) {
     return totals;
 }
 
+/* The averages or medians per group of amounts of money: rounded to the cent,
+ * and kept as money. Numbers are left as they are. Takes the map. */
+static EsMap *es_map_as(EsMap *m, EsItems values) {
+    if (!es_items_money(values)) return m;
+    for (size_t i = 0; i < m->used; i++) m->entries[i].value.n = round(m->entries[i].value.n);
+    m->values = values;
+    return m;
+}
+
 /* "the median ... per ...": a map of the middle numbers of each list. Takes the map. */
 static EsMap *es_map_medians(int site, EsMap *lists) {
     EsMap *m = es_map_new(lists->keys, ES_ITEMS_NUMBER, lists->len);
@@ -303,6 +312,9 @@ static void es_cell_value(EsBuf *b, EsItems kind, EsValue v) {
         es_release(t);
         break;
     }
+    case ES_ITEMS_DOLLARS:
+    case ES_ITEMS_EUROS:
+    case ES_ITEMS_POUNDS: es_buf_add_money(b, v.n, kind); break;
     case ES_ITEMS_YESNO: es_buf_add_text(b, v.b ? "yes" : "no"); break;
     case ES_ITEMS_TEXT: es_buf_add(b, v.t->chars, v.t->len); break;
     default: es_value_render(b, kind, v, 1); break;
@@ -316,6 +328,9 @@ static void es_cell_field(EsBuf *b, const EsRecord *r, int i) {
     switch (r->type->kinds[i]) {
     case 'n': v.n = ES_FIELD(r, double, at); es_cell_value(b, ES_ITEMS_NUMBER, v); break;
     case 'd': v.n = ES_FIELD(r, double, at); es_cell_value(b, ES_ITEMS_DATE, v); break;
+    case 'u': v.n = (double)ES_FIELD(r, long long, at); es_cell_value(b, ES_ITEMS_DOLLARS, v); break;
+    case 'e': v.n = (double)ES_FIELD(r, long long, at); es_cell_value(b, ES_ITEMS_EUROS, v); break;
+    case 'p': v.n = (double)ES_FIELD(r, long long, at); es_cell_value(b, ES_ITEMS_POUNDS, v); break;
     case 'b': v.b = ES_FIELD(r, bool, at); es_cell_value(b, ES_ITEMS_YESNO, v); break;
     case 't': v.t = ES_FIELD(r, EsText *, at); es_cell_value(b, ES_ITEMS_TEXT, v); break;
     default: es_field_render(b, r, i, 1); break;
@@ -404,14 +419,15 @@ static void es_record_rows(EsGrid *g, const EsList *l, const EsRecord *first) {
                 }
                 if (field >= 0) {
                     es_cell_field(&b, r, field);
-                    g->right[c] |= type->kinds[field] == 'n';
+                    g->right[c] |= type->kinds[field] == 'n' || type->kinds[field] == 'u' || type->kinds[field] == 'e' ||
+                                   type->kinds[field] == 'p';
                 } else {
                     const EsList *cells = ES_FIELD(r, EsList *, type->offsets[1]);
                     es_buf_add(&b, cells->at.t[c]->chars, cells->at.t[c]->len);
                 }
             } else {
                 es_cell_field(&b, r, (int)c);
-                g->right[c] |= type->kinds[c] == 'n';
+                g->right[c] |= type->kinds[c] == 'n' || type->kinds[c] == 'u' || type->kinds[c] == 'e' || type->kinds[c] == 'p';
             }
             es_grid_add(g, &b);
         }
@@ -440,7 +456,10 @@ static EsText *es_list_table(EsList *l) {
             EsValue v;
             switch (l->items) {
             case ES_ITEMS_NUMBER:
-            case ES_ITEMS_DATE: v.n = l->at.n[i]; break;
+            case ES_ITEMS_DATE:
+            case ES_ITEMS_DOLLARS:
+            case ES_ITEMS_EUROS:
+            case ES_ITEMS_POUNDS: v.n = l->at.n[i]; break;
             case ES_ITEMS_YESNO: v.b = l->at.b[i]; break;
             case ES_ITEMS_TEXT: v.t = l->at.t[i]; break;
             case ES_ITEMS_LIST: v.l = l->at.l[i]; break;
@@ -450,7 +469,7 @@ static EsText *es_list_table(EsList *l) {
             es_cell_value(&b, l->items, v);
             es_grid_add(&g, &b);
         }
-        g.right[0] = l->items == ES_ITEMS_NUMBER;
+        g.right[0] = l->items == ES_ITEMS_NUMBER || es_items_money(l->items);
     }
     es_list_release(l);
     return es_grid_text(&g);
@@ -459,7 +478,7 @@ static EsText *es_list_table(EsList *l) {
 /* "M as a table": its keys and values, in order. Consumes M. */
 static EsText *es_map_table(EsMap *m) {
     EsGrid g = es_grid_new(2);
-    g.right[1] = m->values == ES_ITEMS_NUMBER;
+    g.right[1] = m->values == ES_ITEMS_NUMBER || es_items_money(m->values);
     EsBuf b = {NULL, 0, 0};
     for (size_t i = 0; i < m->used; i++) {
         const EsEntry *e = &m->entries[i];

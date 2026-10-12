@@ -170,6 +170,15 @@ static void es_csv_write(int site, EsBuf *b, EsText *path) {
 
 /* A value as a csv field, with dates written like 2026-10-31 (and a time if it has one). */
 static void es_csv_cell(EsBuf *b, char kind, EsValue v) {
+    if (kind == 'u' || kind == 'e' || kind == 'p') { /* "$1200.00": no commas, so the cell needs no quotes */
+        static const char *const signs[] = {"$", "\xE2\x82\xAC", "\xC2\xA3"};
+        long long cents = (long long)v.n, whole = cents < 0 ? -cents : cents;
+        char text[64];
+        int n = snprintf(text, sizeof text, "%s%s%lld.%02lld", cents < 0 ? "-" : "",
+                         signs[kind == 'u' ? 0 : kind == 'e' ? 1 : 2], whole / 100, whole % 100);
+        es_buf_add(b, text, (size_t)n);
+        return;
+    }
     if (kind != 'd') {
         es_csv_value(b, kind, v);
         return;
@@ -272,9 +281,12 @@ static void es_table_cell(const EsCsv *r, long line, const char *field, char kin
         *(EsText **)slot = cell;
         return;
     }
-    const char *what = kind == 'n' ? "a number" : kind == 'b' ? "yes or no" : "a date like 2026-10-31";
+    const char *what = kind == 'n' ? "a number" : kind == 'b' ? "yes or no" : kind == 'd' ? "a date like 2026-10-31"
+                       : kind == 'u' ? "an amount in dollars" : kind == 'e' ? "an amount in euros" : "an amount in pounds";
     bool ok = false;
-    if (kind == 'n') {
+    if (kind == 'u' || kind == 'e' || kind == 'p') {
+        ok = es_parse_money(cell->chars, cell->len, kind == 'u' ? 0 : kind == 'e' ? 1 : 2, (long long *)slot);
+    } else if (kind == 'n') {
         ok = es_parse_number(cell->chars, cell->len, (double *)slot);
     } else if (kind == 'b') {
         bool yes = es_column_is(cell, "yes") || es_column_is(cell, "true");
@@ -369,8 +381,9 @@ static void es_save_field(EsBuf *b, const EsRecord *row, int f) {
     char kind = row->type->kinds[f];
     if (kind == 't') v.t = *(EsText *const *)at;
     if (kind == 'n' || kind == 'd') v.n = *(const double *)at;
+    if (kind == 'u' || kind == 'e' || kind == 'p') v.n = (double)*(const long long *)at;
     if (kind == 'b') v.b = *(const bool *)at;
-    if (kind == 't' || kind == 'n' || kind == 'd' || kind == 'b') es_csv_cell(b, kind, v);
+    if (kind != 'l' && kind != 'r' && kind != 'm') es_csv_cell(b, kind, v);
 }
 
 static void es_save_records(int site, EsList *rows, EsText *path, const EsRecordType *type) {

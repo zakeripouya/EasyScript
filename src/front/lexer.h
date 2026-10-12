@@ -35,6 +35,7 @@ typedef enum {
     TOK_LBRACKET,       // [ inside text: a value worked out and put in the text ("Hello, [name]!")
     TOK_RBRACKET,       // ] ending that value
     TOK_POSSESSIVE,     // 's at the end of a word: "rex's" is the word "rex", then this
+    TOK_MONEY,          // $1,200 / €4.50 / £3: text is the currency's word and the cents ("dollars 120000")
 } TokenKind;
 
 typedef struct {

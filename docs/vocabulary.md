@@ -33,6 +33,7 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | `\n` `\t` `\r` `\"` `\\` | Escapes inside text: new line, tab, back to the line's start, quote, backslash | `"Line one\nLine two"` | Available |
 | `\u{CODE}` / `\uXXXX` | The character with that code, in hex (1 to 10FFFF, not D800 to DFFF) | `"caf\u{e9}"`, `"\u{1F600}"` | Available |
 | `the text below:` + indented lines | Text of several lines, exactly as written (no escapes, no values in brackets), without the indentation they share; blank lines inside are kept, and it ends at the first line that isn't indented more than the sentence | `let page be the text below:` | Available |
+| `put the text below in file F:` / `write the text below in file F:` (or `to file F`) + indented lines | The same text, written to the file: a `put` or `write` sentence with `the text below` in it and a colon at its end | `put the text below in file "spending.csv":` | Available |
 | `yes`, `true` | The yes value | `done is yes` | Available |
 | `no`, `false` | The no value | `ready is false` | Available |
 | `nothing` | What a function gives back when it gives back no value. Otherwise it can only be used where a record can be nothing (see [Records](#records)) | `return` (gives back nothing), `set node's next to nothing` | Available |
@@ -66,11 +67,12 @@ If the left side is `no`, the answer is `no` and the right side isn't worked out
 
 | Pattern | Meaning | Example | Status |
 |---|---|---|---|
+| `say ..., indented` / `say ..., indented by N` | What's said with 2 spaces (or N, a whole number from 0 to 1000) before each of its lines. In a program that makes a name `indented`, `say X, indented` without `by` keeps meaning the pieces X and `indented` | `say student's name, student's score, indented.` | Available |
 | `say A, B, C` | The pieces turned into text and joined, with a space between two pieces unless one of them is empty, the first ends with a space, a new line, `(`, `[` or `$`, or the second starts with a space, a new line or one of `. , ! ? ; : ) ] %`. Works in `say`, `show`, `print`, `display` and `complain`, at the top level only | `say "Hello,", name, "!"` prints `Hello, Ann!` | Available |
 | `"... [VALUE] ..."` | Text with a value in brackets: the value is worked out and put in the text exactly where it is (no spaces added); `"[name]!"` is `"" followed by name followed by "!"` | `say "You have [tasks] tasks."` | Available |
 | `[[` and `]]` in text | A `[` or `]` in the text itself (a single `]` outside a value is an error) | `"[[draft]]"` is `[draft]` | Available |
 
-Pieces are separated by commas at the top level of the sentence. A comma that belongs to a value keeps its meaning: the items of `a list of 1, 2 and 3`, the inputs after `using`, the fields of `a new dog with name "Rex", age 3`, and a comma followed by `or`, `sorted`, `as`, `rounded` or `starting` (`say the value for K in M, or 0` is one piece). The value in brackets can't contain text in quotes (its quote would end the text); give it a name first.
+Pieces are separated by commas at the top level of the sentence. A comma that belongs to a value keeps its meaning: the items of `a list of 1, 2 and 3`, the inputs after `using`, the fields of `a new dog with name "Rex", age 3`, and a comma followed by `or`, `sorted`, `as`, `rounded` or `starting` (`say the value for K in M, or 0` is one piece). The value in brackets can contain text in quotes (`"([note, or "none"])"`) when that text ends, and the `]` comes after it, on the same line.
 
 ### Comparisons
 
@@ -180,6 +182,9 @@ The words that start statements are only special at the start of a sentence, so 
 | `subtract X from NAME` | `NAME` becomes `NAME minus X` | `subtract 1 from count` | Available |
 | `increase NAME by X` | Same as `add X to NAME` | `increase score by 10` | Available |
 | `decrease NAME by X` | Same as `subtract X from NAME` | `decrease lives by 1` | Available |
+| `reduce NAME by X` | Same as `decrease NAME by X` | `reduce price by 5` | Available |
+| `increase NAME by X percent` | `NAME` becomes `NAME times (100 plus X) divided by 100`, as `multiply NAME by (100 plus X) divided by 100` would | `increase rent by 3 percent` | Available |
+| `reduce NAME by X percent` / `decrease NAME by X percent` | `NAME` becomes `NAME times (100 minus X) divided by 100` | `reduce the customer's price by 10 percent` | Available |
 | `multiply NAME by X` | `NAME` becomes `NAME times X` | `multiply price by 2` | Available |
 | `divide NAME by X` | `NAME` becomes `NAME divided by X` | `divide total by 4` | Available |
 
@@ -220,8 +225,10 @@ The words that start statements are only special at the start of a sentence, so 
 | `append X to file F` | Add `X` and a new line to the end of a file | `append "more" to file "notes.txt"` | Available |
 | `read file F and call it NAME` / `read file F and call the answer NAME` | Read a whole file into a variable (without its final new line) | `read file "notes.txt" and call it notes` | Available |
 | `file X exists` / `folder X exists` | A condition: is there a file (a folder)? | `if file "notes.txt" exists:` | Available |
+| `file X doesn't exist` / `file X does not exist` (also `folder`) | The opposite: `not (file X exists)` | `if file "sales.csv" doesn't exist:` | Available |
 | `put X in file F` / `write X in file F` | Like `write X to file F` | `put "hello" in file "notes.txt"` | Available |
 | `add X to the end of file F` | Like `append X to file F` | `add "more" to the end of file "notes.txt"` | Available |
+| `write X in it` / `write X to it` / `put X in it` / `add X to it` / `add X to the end of it` (also `the file` for `it`) | In steps in a row, right after a step that made or wrote to a file: the same sentences about that file. `the file` with no name anywhere else is an error | `make a new file called "groceries.txt", then write "milk" in it, then add "eggs" to it` | Available |
 | `add A and B to the end of file F, one per line` | Each value on a line of its own (`A followed by` a new line `followed by B`, then a new line at the end); one list is its items joined with new lines | `add "eggs" and "bread" to the end of file "groceries.txt", one per line` | Available |
 
 More file and folder sentences are in [the standard library](#the-standard-library).
@@ -322,6 +329,9 @@ All function sentences are **Available**.
 | `NAME X and Y` | Call a function as a sentence | `greet "Paris".` |
 | `NAME with X and Y` | Same (`of` and `using` too, and `to`, `for`, `from` or `in` for a function defined with that word) | `greet with "Paris".`, `add tax to 100.`, `pause for 3.` |
 | `call NAME [with X and Y]` | Same | `call greet with "Paris".` |
+| `to WORDS a KIND WORDS some NAME ...:` | A definition with its inputs in the middle of its first line. `a KIND` (a kind the program has) is an input called `the KIND` inside; `another KIND` is a second one of the same kind, called `the other KIND`; `some NAME` is an input called `the NAME`, with its kind from use (or written after it: `some fee (a number)`). Every other word is fixed. It starts with a word, and has a word between any two inputs | `to give a customer a discount of some percent:`<br>`to introduce a person to another person:` |
+| `WORDS VALUE WORDS VALUE ...` | Call such a definition as a sentence: exactly its words, with a value where each input goes. A value for `some NAME` can be followed by NAME (`of 10 percent` gives 10) | `give ann a discount of 10 percent.`<br>`introduce ann to bob.` |
+| `... every [WORD] ITEM ...` | One input written `every customer` or `every loyal customer`: the sentence is done once for each item of the list named like the item's plural (only those the describing word fits) | `give every loyal customer a discount of 10 percent.` |
 
 Rules:
 
@@ -330,6 +340,7 @@ Rules:
 - **Giving back:** a function with no `give back X` gives back nothing, and can only be called as a sentence of its own. One that gives back a value always gives back the same kind, and stops with an error if it reaches its end without `give back`. `give back` outside a function is an error.
 - **Kinds:** an input's kind comes from how the function uses it and what it's given; what it gives back comes from its `give back`s. When nothing decides a kind, write it (see below).
 - **Names:** a function's name is every word before the word that introduces its inputs (`with`, `of`, `using`, `to`, `for`, `from`, `in`; `for` always ends the name), so `to greet someone:` is a function called `greet someone` with no inputs (`to greet with someone:` gives it one). A one-word name can't be a sentence word (like `say` or `count`), but a name of several words can start with one (`add tax`), and then a sentence starting with it calls the function. Functions and variables share names, so `area` can't be both. Each input needs its own name.
+- **Inputs in the middle:** a first line is read this way only when an input (`a customer`, `another person`, `some percent`) comes before any word that introduces inputs the usual way (`with`, `of`, `to`, ...) and it has no comma, so `to greet with someone:` and `to bark, for a dog:` keep their meaning. A sentence is matched by its fixed words, each the first one after the input before it (outside parentheses). A sentence two definitions fit is an error naming both; so is a fixed word that's a kind (write `a customer` to make it an input), two inputs in a row, or two inputs with one name (write `another customer`).
 - **Checks before running:** calling a function that doesn't exist suggests the closest one; giving it the wrong number of inputs says how many it needs and where it's defined.
 - **Deep recursion** stops with "Definitions are using each other too deeply (more than 10000 inside each other)." instead of crashing.
 
@@ -485,8 +496,11 @@ All **Available**. Each goes through the list once, makes no list it doesn't giv
 | `the top N L` / `the lowest N L` | A new list of the N biggest (or smallest) numbers or dates, biggest (or smallest) first; ties in the order they were in. All of them if there are fewer | `the top 3 scores` |
 | `the top N L by FIELD` / `the lowest N L by FIELD` | The N items with the biggest (smallest) FIELD | `the top 2 orders by amount` |
 | `the N most common L` | A new list of the N items (text or numbers) that come up most, most first; ties in the order they first came up | `the 10 most common words` |
+| `the most common ITEM [in L]` | The one that comes up most: the first of `the 1 most common`, from the list named like ITEM's plural (or L). An empty list is an error | `the most common drink`, `the most common size in sizes` |
 | `the ITEM with the highest FIELD` / `... the lowest FIELD` | The item with the biggest (smallest) FIELD, the first one on a tie; from the list named like ITEM's plural. Also `biggest`, `largest`, `greatest`, `most`, and `smallest`, `fewest`, `least`. A FIELD that's a list counts its items. An empty list is an error | `the customer with the highest total`, `the order with the most items` |
 | `the ITEM in L with the highest FIELD` | The same, with the list named | `the dog in pets with the lowest age` |
+| `the FIELD with the highest total\|average\|median FIELD2 [of L]` / `... with the highest number of L` | The best group: when FIELD is a field of the items (not a list), the FIELD whose group has the biggest total (average, median, number of items). Exactly `the first item of the keys of (the total FIELD2 of L per FIELD, sorted biggest first)` (`lowest` and the others: smallest first). Without `of L`, L is the one list whose items have FIELD (none or several is an error asking for `... of L`) | `the store with the highest total amount`, `the category with the highest number of purchases` |
+| `the top N FIELDs by total\|average\|median FIELD2 [of L]` / `the lowest N ...` / `... by number of L` | The first N groups, the same way | `the top 3 stores by total amount` |
 | `... per FIELD` | After `the total`, `the average`, `the median` or `the number of`: a map from each value of the field to the result for the items with it, in the order each first came up | `the total amount of orders per region` |
 | `... per month` / `per year` / `per day` / `per weekday` | Grouped by the item's date (its one date field, or `per month of FIELD`): months as text like "October 2026", days like "Sunday, October 11, 2026", weekdays like "Sunday", years as numbers | `the number of sales per month` |
 | `M sorted` / `M sorted biggest first` | A map's copy with its entries in the order of their values (numbers, dates or text) | `the total amount of orders per region, sorted biggest first` |
@@ -585,6 +599,9 @@ All record words are **Available**. A record holds named values, its **fields**,
 | `FIELD` (no kind) | The kind is worked out from how the field is used (`a new dog with name "Rex"` makes `name` text). If nothing decides it, it's an error asking for `(KIND)` | `a cat has a name and a favorite toy.` |
 | `FIELD (starting at X)` / `FIELD (KIND, starting at X)` | A field with a starting value (its kind is the value's, unless written) | `an age (starting at 0)`, `some pets (a list of cats, starting at an empty list of cats)` |
 | `some FIELD` | `some` before a field's name is left out, like `a` and `an`: `some drinks` is the field `drinks` | `an order has a customer and some drinks.` |
+| `..., and can be WORD.` / `KIND can be WORD [and can be WORD].` | A yes/no field called WORD that starts as no (the sentence form adds it to a kind defined above). It reads like a describing word: `X is WORD`, `the WORD Ls`, `how many Ls are WORD`, `every WORD ITEM` | `a parcel has a weight and a country, and can be fragile.`<br>`a parcel can be urgent.` |
+| `a new WORD KIND with ...` | A new record with the yes/no field WORD set to yes | `a new fragile parcel with weight 12` |
+| `mark X as WORD` / `mark X as not WORD` | Set the yes/no field WORD of X to yes (or no). The same as `set X's WORD to yes` | `mark box as not fragile.` |
 | `NAME is a kind of thing with:` + indented fields | The same, a field per line (a synonym of `has`) | `a dog is a kind of thing with:` |
 | `NAME, which is KIND.` | A field, one per line (or sentence). KIND is any kind: `a number`, `text`, `yes or no`, a list, or a kind of record | `a name, which is text.`<br>`a start time, which is a number.` |
 | `NAME, which is KIND, starting at X.` | A field with a starting value, used when `new` doesn't give one. X is fixed before the program runs, like a constant: numbers, text, yes or no, constants, fixed lists, or an empty list | `an age, which is a number, starting at 0.` |
@@ -600,6 +617,10 @@ A kind of record is written like any other kind: `(a dog)` for an input, `giving
 | `a new NAME` | A new record whose fields all start at their starting values | `a new chain` |
 | `R's FIELD` | A field of a record. Chains work, and so does `it's` | `rex's name`, `the order's customer's name`, `it's age` |
 | `(X)'s FIELD` | A field of a value in parentheses | `(item 1 of dogs)'s name` |
+| `the FIELDs of L` | A field across a list: a new list with each item's FIELD, in order. FIELDs is the plural of a field's name (one word) that isn't a field itself. The same as `each NAME in L's FIELD` | `the names of the drinks`, `the names of drinks whose size is "small"` |
+| `each ITEM's FIELD` | The same, for the list named like ITEM's plural | `each drink's name` |
+| `R has a FIELD of N` / `R has a FIELD of at least N` (and the other words below) | The field compared with N: `R's FIELD is N`, `... is at least N`. Also after `how many Ls`, `any`, `every` | `how many students have a score of at least 60` |
+| `R has more than N FIELD` (also `at least`, `fewer than`, `less than`, `at most`, `exactly`; `have` too) | Counts a list field: the same as `the number of items in R's FIELD is above N` (and so on). Also after `how many Ls`, `any`, `every` | `if ann has at least 2 orders`, `how many customers have fewer than 2 orders` |
 | `the FIELD of R` | The same as `R's FIELD`, with no parentheses needed. R is a single value, so it chains from the right; it works in `set`, `add ... to` and the other change sentences too. If a function has the field's name, it's an error asking which (`rex's size` or `size with rex`); phrases like `the length of` keep their meaning | `the name of rex`, `the name of item 1 of dogs`, `the name of the owner of rex`, `set the age of rex to 4` |
 | `set R's FIELD to X` | Changes a field | `set rex's age to 4` |
 | `add X to R's FIELD`, `subtract`, `increase`, `decrease`, `multiply`, `divide` | Changes a number field, like a variable (`add X to R's FIELD` adds to the end of a list field that doesn't hold numbers, as for list variables) | `add 1 to rex's age` |
@@ -697,6 +718,7 @@ Number keys are the same key when they're the same to 12 significant digits, so 
 | Pattern | Meaning | Example |
 |---|---|---|
 | `for each K and V in M:` + indented lines | Run the lines once for each entry, in order, with K (and `it`) the key and V its value. Goes through the entries the map had when it started | `for each name and age in ages:` |
+| `for each K and its V in M:` | The same, read as English: the value's name is V. In a program that also writes `its V` elsewhere, the name stays `its V`, as before | `for each class and its average in the average score of students per class:` |
 
 A map needs both names; `for each name in ages:` is an error that suggests `for each name in the keys of ages:`.
 
@@ -715,23 +737,31 @@ All **Available** (English pass part 3). Each is a sentence at the start of a li
 | `X, or D` / `X, or D if there isn't one` | X when it isn't nothing; otherwise D (a single value, only worked out then). X must be something that can be nothing | `the nickname, or "friend" if there isn't one` |
 | `..., starting at S` | See [Looking up and setting](#looking-up-and-setting) | `add 1 to the value for word in counts, starting at 0` |
 
+### One-line choices
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `A if CONDITION, otherwise B` | A value: A when CONDITION is yes, B when it's no (only that one is worked out). Both have the same kind. The comma before `otherwise` makes it a value; without it, a trailing `if` stays the sentence's own condition (`give back X if C`) | `a parcel's care fee is 4 if it's fragile, otherwise 0.` |
+| `X, plus N percent` / `X, minus N percent` | X with N percent of it added (taken away): `X times (100 plus N) divided by 100`. Money is rounded to the cent | `price, minus 10 percent` |
+| `X, plus N if CONDITION` / `X, minus N if CONDITION` | X with N added (or taken away) only when CONDITION is yes; the same as `X plus (N if CONDITION, otherwise 0)`. The comma is required | `its base price, plus 12 if it's abroad, plus 4 if it's fragile` |
+
 ### Describing words (adjectives)
 
 | Pattern | Meaning | Example |
 |---|---|---|
-| `KIND is ADJECTIVE if CONDITION.` | Says when a record (or a value of a kind) is ADJECTIVE; in CONDITION, `it`, `its FIELD` and `their FIELD` are that value. Same as `to is ADJECTIVE, for a KIND: give back CONDITION` | `a customer is loyal if the number of items in their orders is at least 2.` |
+| `KIND is ADJECTIVE if CONDITION.` | Says when a record (or a value of a kind) is ADJECTIVE; in CONDITION, `it`, `they`, `its FIELD` and `their FIELD` are that value (`they` only in these definitions). Same as `to is ADJECTIVE, for a KIND: give back CONDITION` | `a customer is loyal if the number of items in their orders is at least 2.` |
 | `ADJECTIVE KIND is one whose FIELD ... .` / `... is one that ... .` / `... is one where ... .` | The same, said as a filter | `a big order is one whose amount is over 1000.` |
 | `X is ADJECTIVE` / `X is not ADJECTIVE` / `X isn't ADJECTIVE` | Yes or no | `if rex is loyal:` |
 | `the ADJECTIVE Ls` | The items of L it describes (a filter) | `the loyal customers` |
 | `how many L are ADJECTIVE`, `every ADJECTIVE ITEM ...`, `L that are ADJECTIVE` | In questions and filters too | `if every loyal customer's total is above 100` |
 
-An adjective is one word; where it's defined, `X is WORD` means the adjective, not a comparison with a name. Several kinds can define the same word. Using one that no kind defines is "I don't know what "loyal" means for a customer."; using it on another kind is "I know what "best" means for a customer, but not for a product.".
+A field written as yes or no (`can be WORD`, `a fragile (yes or no)`) reads the same way: `X is fragile` is `X's fragile`, and in a definition `it's WORD` means "it is WORD" when WORD is a describing word. An adjective is one word; where it's defined, `X is WORD` means the adjective, not a comparison with a name. Several kinds can define the same word. Using one that no kind defines is "I don't know what "loyal" means for a customer."; using it on another kind is "I know what "best" means for a customer, but not for a product.".
 
 ### Values worked out from a record
 
 | Pattern | Meaning | Example |
 |---|---|---|
-| `KIND's FIELD is VALUE.` | A value every KIND has, worked out from it whenever it's used (`it`, `its`, `their` are the record): `rex's FIELD`, `the FIELD of rex`, `its FIELD`, `whose FIELD`, `the total FIELD of L` all work. Same as `to the FIELD, for a KIND: give back VALUE` | `an order's profit is its amount minus its cost.` |
+| `KIND's FIELD is VALUE.` | A value every KIND has, worked out from it whenever it's used (`it`, `its`, `their` are the record): `rex's FIELD`, `the FIELD of rex`, `its FIELD`, `whose FIELD`, `the total FIELD of L`, `L sorted by FIELD` and `the ITEM with the highest FIELD` all work, as they do for a field (and for a table's `the FIELD of a KIND depends on X:`). Same as `to the FIELD, for a KIND: give back VALUE` | `an order's profit is its amount minus its cost.` |
 | `the NAME is the one with the highest FIELD.` | A named value: wherever `the NAME` is used, it means `the ITEM with the highest FIELD`, ITEM the last word of NAME (and its list the plural, like `for each score:`). Also `lowest`, `most`, `fewest`, ... | `the best customer is the one with the highest profit.` |
 | `the NAME are the ones whose ... .` / `... that ... .` / `... where ... .` | A named list: the items of the list named by NAME's last word that the filter keeps | `the big orders are the ones whose amount is over 1000.` |
 
@@ -757,6 +787,13 @@ Every table must end with an `otherwise` line, so every case has a value; one wi
 | `must be ...` (any comparison after `is`), `must contain X`, `must start with X`, `must end with X`, and each with `not` (`must not be empty`) | What the rule checks, with the value as `it` | `a team's players must not be empty.` |
 
 A rule sees only constants and the value it checks.
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `KIND is text that must ... .` | A kind of text with a rule (the same `must` forms). A field with that name is that kind; it's written `(an email)` and `a list of emails` like other kinds | `an email is text that must contain "@".` |
+| `X as KIND` | X (text) as that kind, checked by its rule there: "An email must contain "@", but this one is "nobody"." | `"bob@example.com" as an email` |
+
+A kind of text works anywhere text does. Text becomes one when it's kept in a field of that kind (checked like a rule) or written `as an email`; anywhere else (an input, a name made with it) plain text is an error suggesting `as an email`.
 
 ### Events
 
@@ -824,6 +861,7 @@ All **Available** (English pass part 4). A question or request means exactly wha
 | Pattern | Meaning | Example |
 |---|---|---|
 | `ask for a number Q and call it NAME` (or `and call the answer NAME`) | Asks Q until the answer is a number (otherwise "Please type a number, like 42." and Q again), and keeps it as a number. With no more input it's a runtime error | `ask for a number "How old are you? " and call it age.` |
+| `ask for an amount Q and call it NAME` / `ask for an amount in euros\|pounds Q ...` | Asks Q until the answer is an amount of money (`$12.50`, `12.50` or `1,200`; otherwise "Please type an amount, like $12.50."), and keeps it as exact money in dollars (or euros, pounds) | `ask for an amount "How much was the bill? " and call it bill.` |
 | `ask yes or no Q and call it NAME` | Asks Q until the answer is yes or no (`yes`, `y`, `no`, `n`, any case; otherwise "Please answer yes or no."), and keeps it as yes/no | `ask yes or no "More? " and call it more.` |
 
 ### Writing numbers for people
@@ -835,6 +873,21 @@ All **Available** (English pass part 4). A question or request means exactly wha
 | `X with commas` | Text: the number with commas between thousands | `1234567 with commas` is `"1,234,567"` |
 
 They bind like `as text` (to the value just before them): `(price times 3) as money`. A constant can't use them.
+
+### Exact money
+
+| Pattern | Meaning | Example |
+|---|---|---|
+| `$N`, `€N`, `£N` (commas between thousands allowed, at most two decimals) / `N dollars`, `N euros`, `N pounds` (also `dollar`, `euro`, `pound`) | An exact amount of money, kept as whole cents (up to 90 trillion). The currency is part of its kind | `let rent be $1,200.`, `let coffee be 4.50 euros.` |
+| `A plus B` / `A minus B` | Two amounts of the same currency: an amount, exactly. An amount and a plain number, or two currencies, is an error saying how to write it | `rent plus $50` |
+| `A times N` / `A divided by N` / `N percent of A` / `half of A` / `twice A` | An amount and a number: an amount, rounded to the cent (half away from zero: $0.05 times 0.5 is $0.03). `easyscript plan` shows each rounding | `rent divided by 3`, `10 percent of $19.99` |
+| `A divided by B` | Two amounts of the same currency: a plain number | `rent divided by $400` is 3 |
+| `A is B`, `A is above B`, ... | Compared exactly, cent by cent | `if total is over $100:` |
+| `say A` / `A as text` / `A as money` / `A with commas` | Its currency's sign, commas between thousands and two decimals | `$1,200.00`, `€4.50`, `-$5.00` |
+| `A as a number` | The amount as a plain number | `$19.99 as a number` is 19.99 |
+| `(dollars)`, `(euros)`, `(pounds)`; `a list of dollars` / `amounts in euros` | The kinds, written after an input or a field (optional: a definition's inputs get money as their kind from its calls, like any kind) | `to add tax to price (dollars):` |
+
+Amounts work in lists, maps and fields, in `the total`, `the average` and `the median` (rounded to the cent), `sorted`, `the biggest of`, `the top N`, and in tables read from csv files: a column the program uses as money (`whose amount is over $200`) reads cells like `$84.20`, `84.20` or `"$1,200"`, and is saved as `$1200.00`. `X as money` on a plain number stays dollars, as before.
 
 ### Values that are always up to date
 

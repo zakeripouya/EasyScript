@@ -36,6 +36,9 @@ static _Noreturn void es_wrong_variant(int site, const EsRecord *r, const EsReco
 
 ES_VARIANT_FIELD(n, double, ES_SAME)
 ES_VARIANT_FIELD(d, double, ES_SAME)
+ES_VARIANT_FIELD(u, long long, ES_SAME)
+ES_VARIANT_FIELD(e, long long, ES_SAME)
+ES_VARIANT_FIELD(p, long long, ES_SAME)
 ES_VARIANT_FIELD(b, bool, ES_SAME)
 ES_VARIANT_FIELD(t, EsText *, es_retain)
 ES_VARIANT_FIELD(l, EsList *, es_list_retain)
@@ -61,6 +64,9 @@ static bool es_record_equal(const EsRecord *a, const EsRecord *b) {
         switch (type->kinds[i]) {
         case 'n':
         case 'd': same = es_close(ES_FIELD(a, double, at), ES_FIELD(b, double, at)); break;
+        case 'u':
+        case 'e':
+        case 'p': same = ES_FIELD(a, long long, at) == ES_FIELD(b, long long, at); break;
         case 'b': same = ES_FIELD(a, bool, at) == ES_FIELD(b, bool, at); break;
         case 't': same = es_text_equal(ES_FIELD(a, EsText *, at), ES_FIELD(b, EsText *, at)); break;
         case 'l': same = es_list_equal(ES_FIELD(a, EsList *, at), ES_FIELD(b, EsList *, at)); break;

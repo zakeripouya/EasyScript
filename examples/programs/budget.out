@@ -1,10 +1,10 @@
 Purchases: 7
 Total: $3,213.60
-rent           2400
-groceries    396.95
-electronics     249
-eating out   167.65
+rent         $2,400.00
+groceries      $396.95
+electronics    $249.00
+eating out     $167.65
 Top store: Landlord
-date        store        category     amount
-2026-09-20  Whole Foods  groceries    312.75
-2026-10-08  Apple        electronics     249
+date        store        category      amount
+2026-09-20  Whole Foods  groceries    $312.75
+2026-10-08  Apple        electronics  $249.00

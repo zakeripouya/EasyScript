@@ -54,7 +54,7 @@ const char *ast_text_op_name(TextOp op) {
     static const char *const names[] = {
         "characters of", "words of", "lines of", "in uppercase", "in lowercase", "without extra spaces",
         "split by", "joined with", "replaced", "position of", "code of", "character with code",
-        "is a letter", "is a digit", "is a space",
+        "is a letter", "is a digit", "is a space", "indented",
     };
     return names[op];
 }
@@ -98,7 +98,15 @@ static void dump_children(const Expr *a, const Expr *b, size_t depth, Dump *d) {
 static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *records) {
     switch (expr->kind) {
     case EXPR_ERROR: return "error";
-    case EXPR_NUMBER: sb_appendf(scratch, "number %s", expr->as.number.text); break;
+    case EXPR_NUMBER:
+        if (expr->as.number.money) {
+            sb_appendf(scratch, "money %s cents in %s", expr->as.number.text,
+                       expr->as.number.money == TYPE_DOLLARS ? "dollars" : expr->as.number.money == TYPE_EUROS ? "euros"
+                                                                                                                : "pounds");
+        } else {
+            sb_appendf(scratch, "number %s", expr->as.number.text);
+        }
+        break;
     case EXPR_TEXT:
         sb_append(scratch, "text ");
         sb_append_quoted(scratch, expr->as.text.value, expr->as.text.len);
@@ -144,6 +152,7 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
                                          : expr->as.convert.target == CONVERT_TO_MONEY      ? "as money"
                                          : expr->as.convert.target == CONVERT_TO_PERCENT    ? "as a percent"
                                          : expr->as.convert.target == CONVERT_TO_TABLE      ? "as a table"
+                                         : expr->as.convert.target == CONVERT_TO_TEXT_KIND  ? "as a kind of text"
                                                                                            : "with commas";
     case EXPR_LIST: return "list of";
     case EXPR_EMPTY_LIST:
@@ -211,7 +220,7 @@ static const char *expr_label(const Expr *expr, StrBuf *scratch, const Records *
     case EXPR_MAP_GET: return expr->as.lookup.fallback ? "value for, or" : "value for";
     case EXPR_MAP_WITHOUT: return "map without";
     case EXPR_DEFAULT: return "or if there isn't one";
-    case EXPR_TABLE: return "depends on";
+    case EXPR_TABLE: return expr->as.table.subject ? "depends on" : "choice";
     }
     return scratch->data;
 }

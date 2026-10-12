@@ -10,7 +10,7 @@ const char *token_kind_name(TokenKind kind) {
         "EOF", "NEWLINE", "INDENT", "DEDENT", "WORD", "NUMBER", "STRING", "ORDINAL",
         "PERIOD", "COMMA", "COLON", "LPAREN", "RPAREN", "PLUS", "MINUS",
         "STAR", "SLASH", "PERCENT", "EQUAL", "LESS", "GREATER",
-        "LESS_EQUAL", "GREATER_EQUAL", "NOT_EQUAL", "EQUAL_EQUAL", "LBRACKET", "RBRACKET", "POSSESSIVE",
+        "LESS_EQUAL", "GREATER_EQUAL", "NOT_EQUAL", "EQUAL_EQUAL", "LBRACKET", "RBRACKET", "POSSESSIVE", "MONEY",
     };
     return names[kind];
 }

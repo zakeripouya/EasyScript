@@ -240,11 +240,8 @@ static const char *change_code(Codegen *g, const Stmt *stmt) {
     }
     if (stmt->as.change.append) {
         sb_appendf(&out, "es_add_%s(es_list_retain(es_p->l), es_value); ", cg_item_suffix(type));
-    } else if (stmt->as.change.op == CHANGE_DIVIDE) {
-        sb_appendf(&out, "es_p->n = es_div(%zu, es_p->n, es_value); ", cg_site(g, stmt->pos));
     } else {
-        static const char *const ops[] = {"+", "-", "*"};
-        sb_appendf(&out, "es_p->n = es_p->n %s es_value; ", ops[stmt->as.change.op]);
+        sb_appendf(&out, "es_p->n = %s; ", cg_changed(g, stmt, type, "es_p->n", "es_value"));
     }
     sb_append(&out, "es_map_release(es_m); }");
     return out.data;

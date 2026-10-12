@@ -269,7 +269,10 @@ TypeVar checker_check_new(Checker *c, const Expr *expr) {
         }
         given[index] = true;
         TypeVar kind = checker_field_kind(c, (Field *)field, field->pos.line);
-        if (!checker_fits(c, kind, value, v->value, v->value->pos.line)) {
+        c->storing_field = true;
+        bool fits = checker_fits(c, kind, value, v->value, v->value->pos.line);
+        c->storing_field = false;
+        if (!fits) {
             diag_error(c->diag, v->value->pos.span, "The field \"%s\" of %s is %s, but this is %s.", field->name.display,
                        checker_type_name(c, type), checker_kind(c, kind), checker_kind(c, value));
         }
@@ -427,8 +430,37 @@ Field *checker_add_column(Checker *c, Stmt *def, Field column) {
 // Every field the rule is about: the field with its name in the kind it
 // names, or in every kind of record. Its condition sees only constants, like
 // a definition's body, with "it" the field's value.
+// "an email is text that must contain "@".": the rule of every field that's an
+// email, and of "as an email". "it" is the text.
+static void check_text_kind(Checker *c, Stmt *stmt) {
+    Type text = stmt->as.rule.text;
+    c->records->texts.items[type_textkind_index(text)].definition = stmt;
+    size_t saved_floor = c->floor;
+    c->floor = c->made.len;
+    Loop it = {true, types_new(c, TYPE_TEXT, stmt->pos.line), false, NO_VARIANT, false};
+    vec_push(c->arena, &c->loops, it);
+    const Expr *condition = stmt->as.rule.condition;
+    c->in_rule = true;
+    checker_require(c, checker_check_expr(c, condition), TYPE_YESNO, condition, "A rule has to be yes or no", NULL);
+    c->in_rule = false;
+    c->loops.len--;
+    c->floor = saved_floor;
+    stmt->as.rule.id = ++c->rules;
+    for (size_t r = 0; r < c->records->len; r++) {
+        Stmt *def = c->records->items[r].definition;
+        for (size_t f = 0; def && f < def->as.record.fields.len; f++) {
+            Field *field = &def->as.record.fields.items[f];
+            if (field->type == text) vec_push(c->arena, &field->rules, stmt);
+        }
+    }
+}
+
 void checker_check_rule(Checker *c, Stmt *stmt) {
     const Name *name = &stmt->as.rule.field;
+    if (stmt->as.rule.text && !c->function && c->blocks == 0) {
+        check_text_kind(c, stmt);
+        return;
+    }
     if (c->function || c->blocks > 0) {
         diag_error(c->diag, stmt->pos.span, "A rule can only be at the top level, not inside %s.",
                    c->function ? "a definition" : "an \"if\" or a loop");

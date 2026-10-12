@@ -76,9 +76,21 @@ void cg_emit_library(Codegen *g, const Expr *expr, StrBuf *out) {
     case LIB_FOLDERS_IN: sb_appendf(out, "es_folder_list(%zu, %s, true)", site, a); break;
     case LIB_FILE_SIZE: sb_appendf(out, "es_file_size(%zu, %s)", site, a); break;
     case LIB_FILE_CHANGED: sb_appendf(out, "es_file_changed(%zu, %s)", site, a); break;
-    case LIB_HALF: sb_appendf(out, "(%s * 0.5)", a); break;
-    case LIB_TWICE: sb_appendf(out, "(%s * 2.0)", a); break;
-    case LIB_PERCENT_OF: sb_appendf(out, "(%s * %s / 100.0)", a, b); break;
+    case LIB_HALF:
+        if (type_is_money(expr->type)) sb_appendf(out, "es_money_divide(%zu, %s, 2.0)", cg_site(g, expr->pos), a);
+        else sb_appendf(out, "(%s * 0.5)", a);
+        break;
+    case LIB_TWICE:
+        if (type_is_money(expr->type)) sb_appendf(out, "es_money_times(%zu, %s, 2.0)", cg_site(g, expr->pos), a);
+        else sb_appendf(out, "(%s * 2.0)", a);
+        break;
+    case LIB_PERCENT_OF:  // money: rounded to the cent
+        if (type_is_money(expr->type)) {
+            cg_plan(g, expr->pos, "a percent of money: whole cents, rounded to the cent (half away from zero).");
+            sb_appendf(out, "es_money_percent(%zu, %s, %s)", cg_site(g, expr->pos), a, b);
+        }
+        else sb_appendf(out, "(%s * %s / 100.0)", a, b);
+        break;
     case LIB_REASON: cg_emit_var(g, out, "0reason", TYPE_TEXT); break;
     case LIB_PERIOD_KEY:
         if (expr->as.library.part == DATE_YEAR) {

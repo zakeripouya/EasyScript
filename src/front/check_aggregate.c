@@ -29,8 +29,9 @@ static bool report_no_plural(Checker *c, const Expr *expr) {
     const Name *item = &expr->as.aggregate.item;
     static const char *const words[] = {"", "any", "every", "no"};
     AggregateKind kind = expr->as.aggregate.kind;
-    const char *phrase = kind == AGG_BEST ? arena_sprintf(c->arena, "the %s with ...", item->display)
-                                          : arena_sprintf(c->arena, "%s %s", words[kind], item->display);
+    const char *phrase = kind == AGG_BEST          ? arena_sprintf(c->arena, "the %s with ...", item->display)
+                         : kind == AGG_MOST_COMMON ? arena_sprintf(c->arena, "the most common %s", item->display)
+                                                   : arena_sprintf(c->arena, "%s %s", words[kind], item->display);
     diag_error(c->diag, item->pos.span, "There's no list called \"%s\" for \"%s\" to look through.", list->display,
                phrase);
     const char *example = "groceries";  // a list the program has, if it has one
@@ -81,16 +82,14 @@ static void check_key(Checker *c, const Expr *expr, TypeVar list, TypeVar item, 
     case AGG_MEDIAN: {
         static const char *const verbs[] = {"add up", "find the average of", "find the middle of"};
         const char *verb = verbs[expr->as.aggregate.kind - AGG_TOTAL];
-        if (own) {
-            checker_require(c, list, type_list_of(TYPE_NUMBER), at, arena_sprintf(c->arena, "I can only %s a list "
-                            "of numbers", verb), NULL);
-        } else {
-            checker_require(c, key, TYPE_NUMBER, at, arena_sprintf(c->arena, "I can only %s numbers", verb), NULL);
-        }
+        // numbers, or amounts of money (a number unless something says it's money)
+        types_defer_one_of(c, at, own ? item : key, own ? list : key, KIND_NUMBER | KIND_MONEY | KIND_NUMBER_FIRST,
+                           own ? arena_sprintf(c->arena, "I can only %s a list of numbers", verb)
+                               : arena_sprintf(c->arena, "I can only %s numbers", verb));
         return;
     }
     case AGG_TOP:
-        types_defer_one_of(c, at, key, own ? list : key, KIND_NUMBER | KIND_DATE,
+        types_defer_one_of(c, at, key, own ? list : key, KIND_NUMBER | KIND_DATE | KIND_MONEY,
                            own ? "The top items are picked from a list of numbers or dates"
                                : "The top items are picked by a number or a date");
         return;
@@ -99,20 +98,21 @@ static void check_key(Checker *c, const Expr *expr, TypeVar list, TypeVar item, 
                            "I can only count how often numbers or text come up");
         return;
     case AGG_BEST:
-        types_defer_one_of(c, at, key, key, KIND_NUMBER | KIND_DATE | KIND_LIST,
+        types_defer_one_of(c, at, key, key, KIND_NUMBER | KIND_DATE | KIND_MONEY | KIND_LIST,
                            "The one picked has to be the highest by a number, a date, or how many items a list has");
         return;
     default: return;
     }
 }
 
-static TypeVar result_of(Checker *c, const Expr *expr, TypeVar item) {
+static TypeVar result_of(Checker *c, const Expr *expr, TypeVar item, TypeVar key) {
     size_t line = expr->pos.line;
-    switch (expr->as.aggregate.kind) {
-    case AGG_COUNT:
+    AggregateKind kind = expr->as.aggregate.kind;
+    switch (kind) {
     case AGG_TOTAL:
     case AGG_AVERAGE:
-    case AGG_MEDIAN: return types_new(c, TYPE_NUMBER, line);
+    case AGG_MEDIAN: return key;  // the same kind as what's added up: numbers, or amounts (rounded to the cent)
+    case AGG_COUNT: return types_new(c, TYPE_NUMBER, line);
     case AGG_ANY:
     case AGG_ALL:
     case AGG_NONE: return types_new(c, TYPE_YESNO, line);
@@ -208,9 +208,46 @@ TypeVar checker_check_aggregate(Checker *c, const Expr *expr) {
     c->loops.len--;
     c->made.len = outer;
     check_key(c, expr, list, item, key);
-    TypeVar result = result_of(c, expr, item);
+    TypeVar result = result_of(c, expr, item, key);
     if (!group) return result;
     types_defer_one_of(c, group, group_var, group_var, KIND_TEXT | KIND_NUMBER,
                        "Things can only be grouped by text or a number");
     return types_new_map(c, group_var, result, expr->pos.line);
+}
+
+// "the store with the highest total amount": the one list whose items have a
+// field called "store" (a table's rows can have any column). Sets the name.
+bool checker_resolve_rows(Checker *c, Expr *expr) {
+    const char *field = expr->as.name + strlen("0rows ");
+    const Symbol *found = NULL;
+    size_t count = 0;
+    for (size_t i = c->floor; i < c->made.len; i++) {
+        Type type = types_of(c, c->made.items[i].var);
+        if (!type_is_list(type) || type_is_list(type_item(type)) || !type_is_record(type_item(type))) continue;
+        const RecordKind *kind = &c->records->items[type_record_index(type_item(type))];
+        bool has = kind->table;
+        for (size_t f = 0; !has && kind->definition && f < kind->definition->as.record.fields.len; f++) {
+            has = strcmp(kind->definition->as.record.fields.items[f].name.text, field) == 0;
+        }
+        if (has && count++ == 0) found = &c->made.items[i];
+    }
+    if (count == 1) {
+        expr->as.name = found->name;
+        expr->display = found->display;
+        return true;
+    }
+    if (count == 0) {
+        diag_error(c->diag, expr->pos.span, "There's no list whose items have a \"%s\" to group by.", expr->display);
+        diag_note(c->diag, "Say which list, like \"the %s with the highest total amount of purchases\".", expr->display);
+        diag_info(c->diag, DIAG_MISSING, "the list to look through", "a list");
+        return false;
+    }
+    diag_error(c->diag, expr->pos.span, "\"%s\" could come from more than one list here.", expr->display);
+    diag_note(c->diag, "Say which list at the end, like \"... of %s\".", found->display);
+    diag_info(c->diag, DIAG_TWO_MEANINGS, "which list to look through", "a list");
+    for (size_t i = c->floor; i < c->made.len; i++) {
+        Type type = types_of(c, c->made.items[i].var);
+        if (type_is_list(type) && type_is_record(type_item(type))) diag_choice(c->diag, "... of %s", c->made.items[i].display);
+    }
+    return false;
 }

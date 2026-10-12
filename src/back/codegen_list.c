@@ -34,6 +34,9 @@ const char *cg_items(Type type) {
     return type_is_list(type) ? "ES_ITEMS_LIST" : type == TYPE_TEXT ? "ES_ITEMS_TEXT"
                                               : type == TYPE_YESNO ? "ES_ITEMS_YESNO"
                                               : type == TYPE_DATE  ? "ES_ITEMS_DATE"
+                                              : type == TYPE_DOLLARS ? "ES_ITEMS_DOLLARS"
+                                              : type == TYPE_EUROS ? "ES_ITEMS_EUROS"
+                                              : type == TYPE_POUNDS ? "ES_ITEMS_POUNDS"
                                                                    : "ES_ITEMS_NUMBER";
 }
 
@@ -55,7 +58,8 @@ static void emit_literal(Codegen *g, const Expr *expr, StrBuf *out) {
     size_t n = expr->as.items.len;
     const char **values = arena_alloc(g->arena, n * sizeof(char *));
     bool opened = cg_ordered(g, expr->as.items.items, n, values, out);
-    sb_appendf(out, "es_list_from(%s, %zu, (%s[]){", items_kind(expr->type), n, cg_ctype(type_item(expr->type)));
+    Type item = type_item(expr->type);  // amounts of money are kept as numbers of cents in a list
+    sb_appendf(out, "es_list_from(%s, %zu, (%s[]){", items_kind(expr->type), n, type_is_money(item) ? "double" : cg_ctype(item));
     for (size_t i = 0; i < n; i++) sb_appendf(out, "%s%s", i ? ", " : "", values[i]);
     sb_append(out, opened ? "}))" : "})");
 }
@@ -230,7 +234,7 @@ static void collect(Codegen *g, const Expr *expr, Names *bound, Codegen *helper)
         return;
     }
     case EXPR_TABLE:
-        collect(g, expr->as.table.subject, bound, helper);
+        if (expr->as.table.subject) collect(g, expr->as.table.subject, bound, helper);
         collect_all(g, expr->as.table.values.items, expr->as.table.values.len, bound, helper);
         collect_all(g, expr->as.table.conditions.items, expr->as.table.conditions.len, bound, helper);
         return;
@@ -301,7 +305,7 @@ static bool calls_function(const Codegen *g, const Expr *expr) {
     case EXPR_EVERY: return calls_function(g, expr->as.every.list) || calls_function(g, expr->as.every.body);
     case EXPR_ONLY: return calls_function(g, expr->as.only.list) || calls_function(g, expr->as.only.condition);
     case EXPR_TABLE:
-        if (calls_function(g, expr->as.table.subject)) return true;
+        if (expr->as.table.subject && calls_function(g, expr->as.table.subject)) return true;
         for (size_t i = 0; i < expr->as.table.values.len; i++) {
             const Expr *condition = expr->as.table.conditions.items[i];
             if (calls_function(g, expr->as.table.values.items[i]) || (condition && calls_function(g, condition))) {

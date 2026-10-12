@@ -21,6 +21,12 @@
 #include <string.h>
 #include "back/codegen_internal.h"
 
+// The runtime's maker of a cell for a kind: es_cell_n, ..., es_cell_u for dollars (kept as whole cents).
+static const char *cell_suffix(Type type) {
+    if (type_is_money(type)) return type == TYPE_DOLLARS ? "u" : type == TYPE_EUROS ? "e" : "p";
+    return cg_value_suffix(type);
+}
+
 // --- Cells ----------------------------------------------------------------------------
 
 static bool among(const char *const *names, size_t len, const char *name) {
@@ -55,7 +61,7 @@ void cg_append_assign(const Codegen *g, StrBuf *out, const char *name, Type type
     if (make && cg_is_cell(g, name)) {
         sb_append(out, "es_record_set(&");
         cg_append_cell(out, name, type);
-        sb_appendf(out, ", es_cell_%s(%s));\n", cg_value_suffix(type), value);
+        sb_appendf(out, ", es_cell_%s(%s));\n", cell_suffix(type), value);
     } else if (type_counted(type)) {
         sb_appendf(out, "%s(&", cg_set(type));
         cg_append_var(g, out, name, type);
@@ -72,7 +78,7 @@ void cg_emit_new_cell(Codegen *g, const char *name, Type type) {
     sb_init(&cell, g->arena);
     cg_append_cell(&cell, name, type);
     cg_indent(g);
-    sb_appendf(&g->body, "if (!%s) %s = es_cell_%s(%s);\n", cell.data, cell.data, cg_value_suffix(type), cg_empty(type));
+    sb_appendf(&g->body, "if (!%s) %s = es_cell_%s(%s);\n", cell.data, cell.data, cell_suffix(type), cg_empty(type));
 }
 
 // --- Kinds ------------------------------------------------------------------------------

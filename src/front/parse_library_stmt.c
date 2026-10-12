@@ -240,6 +240,12 @@ Stmt *parser_parse_put(Parser *p, const Token *verb) {
         return NULL;
     }
     stmt->as.file_write.text = parse_expression(p);
+    if (!p->sentence_failed && parser_at_word(p, 0, "in") &&
+        (parser_at_chain_it_file(p, 1) || parser_at_bare_file(p, 1))) {  // put X in it, put X in the file
+        parser_advance(p);
+        stmt->as.file_write.path = parser_chain_file(p);
+        return stmt;
+    }
     if (p->sentence_failed || !expect(p, "in file", "in file", example)) return NULL;
     stmt->as.file_write.path = parse_expression(p);
     return stmt;

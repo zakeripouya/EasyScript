@@ -1,0 +1,19 @@
+Line 1: Say what a parcel has before what it can be.
+    a parcel can be fragile.
+      ^^^^^^
+Write it like "a parcel has a name." on a line above this one.
+
+Line 3: I expected a describing word here, like "fragile".
+    mark box as.
+             ^^
+Write it like "mark box as fragile" or "mark box as not fragile".
+
+Line 4: Something is missing after "box fragile".
+    mark box fragile.
+         ^^^^^^^^^^^
+Write it like "mark box as fragile".
+
+Line 5: Something is missing after "mark".
+    mark as fragile.
+    ^^^^
+Add a name there, like "total".

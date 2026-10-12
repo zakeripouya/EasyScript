@@ -77,10 +77,23 @@ static Expr *parse_exists(Parser *p) {
     SourcePos start = parser_token_pos(parser_advance(p));
     Expr *path = parse_primary(p);
     if (p->sentence_failed) return parser_error_expr(p);
+    size_t missing = parser_match_words(p, "doesn't exist");
+    if (!missing) missing = parser_match_words(p, "does not exist");
+    if (missing) {  // file F doesn't exist: not "file F exists"
+        Span op_span = parser_consume(p, missing);
+        Expr *exists = new_library(p, folder ? LIB_FOLDER_EXISTS : LIB_FILE_EXISTS, start, op_span, path, NULL);
+        exists->pos = ast_pos_join(start, (SourcePos){op_span, 0, 0, 0});
+        Expr *not = ast_new_expr(p->arena, EXPR_UNARY, exists->pos);
+        not->as.unary.op = UNARY_NOT;
+        not->as.unary.op_span = op_span;
+        not->as.unary.operand = exists;
+        return not;
+    }
     if (!parser_at_word(p, 0, "exists")) {
         const Token *token = parser_peek(p, 0);
         if (parser_error(p, token->span, "I expected \"exists\" here, but found %s.", parser_describe(p, token))) {
-            diag_note(p->diag, "Write it like \"if %s \"notes.txt\" exists:\".", folder ? "folder" : "file");
+            diag_note(p->diag, "Write it like \"if %s \"notes.txt\" exists:\" or \"if %s \"notes.txt\" doesn't exist:\".",
+                      folder ? "folder" : "file", folder ? "folder" : "file");
         }
         return parser_error_expr(p);
     }

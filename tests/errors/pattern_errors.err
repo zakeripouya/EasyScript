@@ -1,0 +1,13 @@
+Line 5: "give a customer a discount of some percent" needs a customer for "customer", but this is text.
+    give "x" a discount of 5 percent.
+         ^^^
+It's defined on line 2: "to give a customer a discount of some percent".
+
+Line 6: "give a customer a discount of some percent" needs a number for "percent", but this is text.
+    give ann a discount of "x" percent.
+                           ^^^
+"percent" is a number because of line 3. An input has one kind of value everywhere; to make it clear, write it in the definition, like "to give a customer a discount of some percent (a number):".
+
+Line 7: I can't multiply text by a number.
+    reduce ann's name by 5 percent.
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
