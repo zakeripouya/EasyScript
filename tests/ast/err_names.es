@@ -9,3 +9,4 @@ say late fees
 to greet who (text):
     say who
 say "end"
+let profit by customer be 1

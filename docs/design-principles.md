@@ -23,7 +23,8 @@ The rules every EasyScript phrasing follows. New syntax follows them, or this pa
 
 - **A function's inputs come after a connector word,** the way English introduces what a verb acts on: `with` (the usual one), `of`, `using`, `to`, `for`, `from` and `in`. `to area with width and height:`, `to add tax to amount:`, `to pause for seconds:`, `to busiest artist from names:`, `to count vowels in word:`.
 - **A call uses the same connector as the definition,** or `with`, `of` and `using`, which work for every function: `add tax to 100`, `pause for 2`, `busiest artist from names`, `area with 3 and 4`. Another connector is an error that names the ones it takes.
-- **Inputs are separated by `and`** (and by commas after `using`). Each input is a single value; anything longer goes in parentheses.
+- **Inputs are separated by `and`** (and by commas after `using`), **or by the word the definition puts between them:** `in`, `to`, `from`, `by` or `at` (`to column of cell in grid:` is called `the column of 7 in 4`; `to range from low to high:` is called `range from 1 to 5`). The definition says which word, so a call never guesses; `and` works too.
+- **In a value, each input is a single value;** anything longer goes in parentheses, because arithmetic after it could belong to the call's result. **In a call sentence**, whose result isn't used, each input is a whole value up to the next `and` (arithmetic and `followed by` included): `report with "bad" and "I expected " followed by word.`
 - **A function kept as a value is called the same way,** with `call`: `call handler with "Ann"`, `call item 1 of steps with 3`. In a value, `handler with "Ann"` works too when it's a name, like any call.
 - **An interface asks for what a value can do, not what it says it is:** a kind fits `something that can speak` when it has the methods, and never has to name the interface. Its ways are written like the first lines of methods, so fitting is comparing the two.
 - **The same shape everywhere:** records take their fields the same way (`a new dog with name "Rex" and age 3`), values of kinds with variants too (`a new circle with radius 3`), and methods put the record first (`rename rex with "Max"`).
@@ -143,7 +144,7 @@ The English pass's plan for new phrases, and the decisions already made about th
 Decided for the English pass ([english-pass.md](english-pass.md)); each breaks some existing programs, so each will be marked in the changelog when it lands.
 
 - **Done (part 1): joining text with `and` was removed.** Pieces of text are joined with commas in `say` (`say "Hello,", name, "!"`), brackets in text, or `followed by`; `"Hello, " and name` is an error showing them.
-- **Inputs will get natural joiners where unambiguous** (part 5): `the column of cell in grid`, `from ... to ...`, besides `and`.
+- **Done (part 5): inputs got natural joiners,** declared by the definition: `the column of cell in grid`, `range from 1 to 5`, besides `and`.
 
 ## Open questions
 

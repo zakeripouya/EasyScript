@@ -86,7 +86,7 @@ Stmt *parser_parse_module_call(Parser *p) {
                       parser_at(p, 1, TOK_PERIOD) || parser_at(p, 1, TOK_NEWLINE) || parser_at(p, 1, TOK_EOF))) {
         // a one-word function of a file this one doesn't see (only "easyscript ast" reads one file)
         KnownName *one = arena_alloc(p->arena, sizeof(KnownName));
-        *one = (KnownName){parser_peek(p, 0)->text, 1, true, 0, false};
+        *one = (KnownName){parser_peek(p, 0)->text, 1, true, 0, false, NULL, 0};
         function = one;
     }
     if (!function) {

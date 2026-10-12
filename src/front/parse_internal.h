@@ -19,6 +19,8 @@ typedef struct {
     unsigned intros;   // the words its definitions introduce inputs with, besides "with", "of"
                        // and "using" (which every call can use): bits of parser_intro_bit
     bool method;       // a function "for" a kind of record ("to bark, for a dog:")
+    const char **joiners;  // a function: per input, the word its definition puts before it ("in"), or NULL
+    size_t joiner_count;
 } KnownName;
 
 // "the best customer is the one with the highest profit": a name for a value,
@@ -46,6 +48,8 @@ typedef struct {
     bool ends_with_name;    // ... or ended with a name or keyword ("add 5 to total")
     Vec(SourcePos) open_ifs; // ifs whose blocks are being parsed, innermost last
     bool as_ends_value;     // in a count loop's header, "as" names the loop variable
+    bool call_sentence;     // the call's inputs are a call sentence's: arithmetic and "followed by" are theirs
+    bool in_items;          // an item of "a list of ..." or a key or value of "a map of ..." (not in parentheses)
     Vec(const char *) functions; // every function's name (pre-scan), for suggestions
     Vec(KnownName) names;        // every function, and every name of several words (pre-scan)
     Vec(KnownName) fields;       // every field name of every record kind (pre-scan)
@@ -345,6 +349,7 @@ bool parser_is_method(const Parser *p, const char *name);
 // The longest known name (or function, if functions_only) starting `ahead`
 // tokens from here, or NULL.
 const KnownName *parser_match_name(const Parser *p, size_t ahead, bool functions_only);
+const char *parser_input_joiner(const Parser *p, size_t ahead);  // "in" between a definition's inputs, or NULL
 bool parser_is_function(const Parser *p, const char *name);
 // A word that can be a name, or start one (not an operator or value word).
 bool parser_is_name_word(const Token *token);

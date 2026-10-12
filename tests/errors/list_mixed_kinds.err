@@ -1,0 +1,8 @@
+Line 12: The items of this list are different kinds, and they all fit more than one kind of thing, so it could be a list of either.
+    let pets be a list of a new dog with name "Rex" and a new cat with name "Tom".
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Start with an empty list of the one you mean, like "an empty list of things that can speak", and add each one to its end.
+
+Line 13: All the items of a list have to be the same kind: the first is a dog, but this is a fish.
+    let tank be a list of a new dog with name "Rex" and a new fish with name "Nemo".
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^

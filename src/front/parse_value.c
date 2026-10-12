@@ -103,8 +103,10 @@ static Expr *parse_text(Parser *p) {
 static Expr *parse_group(Parser *p) {
     const Token *open = parser_advance(p);
     bool as_ends_value = p->as_ends_value, no_call = p->no_call, no_best = p->no_best;  // inside parentheses, "as" converts again
-    p->as_ends_value = p->no_call = p->no_best = false;
+    bool in_items = p->in_items;
+    p->as_ends_value = p->no_call = p->no_best = p->in_items = false;
     Expr *inner = parse_expression(p);
+    p->in_items = in_items;
     p->as_ends_value = as_ends_value;
     p->no_call = no_call;
     p->no_best = no_best;
@@ -158,17 +160,36 @@ static Expr *reject_ambiguous_call(Parser *p, Expr *call) {
     return ast_new_expr(p->arena, EXPR_ERROR, whole);
 }
 
-static bool at_argument_separator(const Parser *p, bool commas) {
+// The word the call's definition puts before input `index` ("in" in "to
+// column of cell in grid:"), or NULL.
+static const char *joiner_before(const Parser *p, const Expr *call, size_t index) {
+    if (!call->as.call.name) return NULL;
+    for (size_t i = 0; i < p->names.len; i++) {
+        const KnownName *known = &p->names.items[i];
+        if (strcmp(known->text, call->as.call.name) != 0) continue;
+        return known->joiners && index < known->joiner_count ? known->joiners[index] : NULL;
+    }
+    return NULL;
+}
+
+static bool at_argument_separator(const Parser *p, const Expr *call, bool commas) {
     if (parser_at_and(p)) return true;
+    const char *joiner = joiner_before(p, call, call->as.call.args.len);
+    if (joiner && parser_at_word(p, 0, joiner)) return true;  // column of cell in grid
     return commas && parser_at(p, 0, TOK_COMMA);
 }
 
+// In a call sentence ("report with "bad" and "I expected " followed by
+// word"), the call's result isn't used, so arithmetic or "followed by" after
+// an input can only be part of it: each input is a whole value up to "and".
 void parser_parse_call_args(Parser *p, Expr *call, bool commas) {
+    bool sentence = p->call_sentence;
+    p->call_sentence = false;
     do {
-        Expr *arg = parse_unary(p);
+        Expr *arg = sentence ? parse_join(p) : parse_unary(p);
         vec_push(p->arena, &call->as.call.args, arg);
         call->pos = ast_pos_join(call->pos, arg->pos);
-    } while (at_argument_separator(p, commas) && parser_advance(p));
+    } while (at_argument_separator(p, call, commas) && parser_advance(p));
 }
 
 Expr *parser_finish_call(Parser *p, Expr *call) {

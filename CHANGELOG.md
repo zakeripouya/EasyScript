@@ -39,6 +39,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 - Examples as tests: `for example, double with 3 is 6.` is checked where it's written (a warning if it isn't right), and `easyscript test FILE` says how many were right.
 - `X as a table` (lists and maps in columns), `L sorted by FIELD` (a field of the items), `add A and B to the end of file F, one per line`, and `what's in file F` / `what's in it`.
 - Examples `groceries.es` and `budget.es` (the plan's multi-step request and the budget session's saved program).
+- English pass part 5: a definition can join two inputs with `in`, `to`, `from`, `by` or `at` (`to column of cell in grid:`, called `the column of 7 in 4`); in a call sentence each input is a whole value (`report with "bad" and "I expected " followed by word.`); `a new ...` values in a list or map need no parentheses (`a list of a new point with x 1 and y 2, a new point with x 3 and y 4`); a list written out with items of different kinds that fit exactly one interface is a list of it; `profit by customer` as a name suggests "customer profits".
 - A sentence EasyScript doesn't understand (with no close statement word) gets the 2 or 3 sentences that share the most words with it.
 
 ### Changed

@@ -182,17 +182,21 @@ bool checker_iface_fits(Checker *c, TypeVar target, TypeVar value, const Expr *e
     return true;  // reported
 }
 
-Type checker_shared_interface(Checker *c, Type a, Type b) {
-    bool kinds = (type_is_record(a) || type_is_sum(a)) && (type_is_record(b) || type_is_sum(b));
-    for (size_t i = 0; kinds && !type_is_maybe(a) && !type_is_maybe(b) && i < c->records->interfaces.len; i++) {
-        const Way *missing;
-        const Function *wrong;
-        if (checker_satisfies(c, a, type_iface(i), &missing, &wrong) &&
-            checker_satisfies(c, b, type_iface(i), &missing, &wrong)) {
-            return type_iface(i);
+// The interfaces every one of `kinds` (records or kinds with variants, none
+// "or nothing") fits: how many, and the first.
+size_t checker_common_interfaces(Checker *c, const Type *kinds, size_t n, Type *first) {
+    size_t count = 0;
+    *first = TYPE_UNKNOWN;
+    for (size_t i = 0; i < c->records->interfaces.len; i++) {
+        bool all = true;
+        for (size_t k = 0; k < n && all; k++) {
+            const Way *missing;
+            const Function *wrong;
+            all = checker_satisfies(c, kinds[k], type_iface(i), &missing, &wrong);
         }
+        if (all && count++ == 0) *first = type_iface(i);
     }
-    return TYPE_UNKNOWN;
+    return count;
 }
 
 // --- Calling a way --------------------------------------------------------------------------

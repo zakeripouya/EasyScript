@@ -112,7 +112,7 @@ bool parser_at_definition(const Parser *p) {
 
 static void add_adjective(Parser *p, const char *word) {
     if (parser_is_adjective(p, word)) return;
-    KnownName adjective = {word, 1, true, 0, true};
+    KnownName adjective = {word, 1, true, 0, true, NULL, 0};
     vec_push(p->arena, &p->adjectives, adjective);
 }
 

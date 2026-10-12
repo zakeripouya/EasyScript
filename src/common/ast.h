@@ -460,6 +460,8 @@ struct Stmt {
                                    // method whose body is one "give back", with "it" its first input
             size_t overload;       // a method sharing its name with another kind's: 1 + its kind's index (checker)
             Vec(Name) params;
+            Vec(const char *) joiners; // per input: the word before it after the first ("in": "to column of cell
+                                       // in grid:"), or NULL ("and", ",")
             Vec(Type) declared;    // per input: the kind written in "(a number)", or TYPE_UNKNOWN
             Type declared_result;  // "giving back a number", or TYPE_UNKNOWN
             Vec(Type) param_types; // filled in by the checker

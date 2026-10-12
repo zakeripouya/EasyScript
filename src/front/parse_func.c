@@ -128,7 +128,7 @@ static bool parse_method_record(Parser *p, Stmt *stmt) {
 
 // [with | using] P [(KIND)] [and | ,] Q [(KIND)] ... [, giving back KIND] up to the colon.
 static bool parse_params(Parser *p, Stmt *stmt) {
-    static const char *const after_param[] = {"and", "giving", NULL};
+    static const char *const after_param[] = {"and", "giving", "in", "to", "from", "by", "at", NULL};
     if (!parse_method_record(p, stmt)) return false;
     bool introduced = at_intro(p, 0) || (!stmt->as.function.method && parser_at_word(p, 0, "for"));
     if (introduced) stmt->as.function.intro = parser_advance(p)->text;
@@ -151,14 +151,20 @@ static bool parse_params(Parser *p, Stmt *stmt) {
     }
     if (introduced && (next->kind == TOK_COLON || parser_at_sentence_end(p))) return report_missing_input(p);
     if (!introduced && parser_at(p, 0, TOK_COMMA) && parser_at_word(p, 1, "giving")) parser_advance(p);  // no inputs
+    const char *joiner = NULL;  // "in" in "to column of cell in grid:"
     while (!parser_at(p, 0, TOK_COLON) && !parser_at_sentence_end(p) && !at_giving_back(p)) {
         Name param = {0};
         Type declared = TYPE_UNKNOWN;
         if (!parser_parse_name(p, &param, after_param)) return false;
         if (parser_at(p, 0, TOK_LPAREN) && !parser_parse_param_kind(p, &declared)) return false;
+        while (stmt->as.function.joiners.len < stmt->as.function.params.len) {
+            vec_push(p->arena, &stmt->as.function.joiners, (const char *)NULL);  // a method's record
+        }
         vec_push(p->arena, &stmt->as.function.params, param);
+        vec_push(p->arena, &stmt->as.function.joiners, joiner);
         vec_push(p->arena, &stmt->as.function.declared, declared);
-        if (!parser_at_word(p, 0, "and") && !parser_at(p, 0, TOK_COMMA)) break;
+        joiner = parser_input_joiner(p, 0);
+        if (!joiner && !parser_at_word(p, 0, "and") && !parser_at(p, 0, TOK_COMMA)) break;
         parser_advance(p);
     }
     if (at_giving_back(p)) {
@@ -299,6 +305,7 @@ Stmt *parse_call_statement(Parser *p, const Token *verb, const KnownName *functi
     call->display = name.display;
     if (parser_is_method(p, name.text) && !parser_at_sentence_end(p)) {  // bark rex / have a birthday for rex
         if (parser_at_call_intro(p, name.text)) parser_advance(p);
+        p->call_sentence = true;
         parser_parse_method_args(p, call);
         stmt->as.call = parser_finish_call(p, call);
         return stmt;
@@ -318,6 +325,7 @@ Stmt *parse_call_statement(Parser *p, const Token *verb, const KnownName *functi
         return NULL;
     }
     if (!parser_at_sentence_end(p)) {
+        p->call_sentence = true;
         parser_parse_call_args(p, call, commas);
         call = parser_finish_call(p, call);
     }

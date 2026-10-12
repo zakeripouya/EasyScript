@@ -72,7 +72,11 @@ static Expr *parse_entry_part(Parser *p) {
         }
         return parser_error_expr(p);
     }
-    return parse_join(p);
+    bool outer = p->in_items;
+    p->in_items = true;
+    Expr *part = parse_join(p);
+    p->in_items = outer;
+    return part;
 }
 
 // map of K to V, K to V and K to V: commas separate entries until the first

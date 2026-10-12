@@ -317,7 +317,11 @@ static Expr *parse_list_item(Parser *p) {
         }
         return parser_error_expr(p);
     }
-    return parse_join(p);
+    bool outer = p->in_items;
+    p->in_items = true;
+    Expr *item = parse_join(p);
+    p->in_items = outer;
+    return item;
 }
 
 // list of A, B and C: commas separate items until the first "and"; after

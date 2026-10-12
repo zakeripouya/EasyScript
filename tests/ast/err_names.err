@@ -32,3 +32,8 @@ Line 9: A kind in parentheses goes after an input, and inputs come after "with".
     to greet who (text):
                  ^
 Write it like "to greet with who (text):".
+
+Line 12: "by" can't be part of a name, because it already means something in EasyScript.
+    let profit by customer be 1
+               ^^
+Try a name without it, like "customer profits".

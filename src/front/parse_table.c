@@ -56,7 +56,7 @@ void parser_find_tables(Parser *p) {
         if (kind) {
             parser_add_field_name(p, name.text, n);  // "the price of latte", "its price"
         } else if (n > 1) {
-            KnownName known = {name.text, n, false, 0, false};  // "the shipping cost", like a "let"
+            KnownName known = {name.text, n, false, 0, false, NULL, 0};  // "the shipping cost", like a "let"
             vec_push(p->arena, &p->names, known);
         }
     }

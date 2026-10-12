@@ -323,7 +323,7 @@ bool checker_satisfies(Checker *c, Type kind, Type iface, const Way **missing, c
 // and that was reported at expr ("A fish can't be used as something that can speak: ...").
 bool checker_iface_fits(Checker *c, TypeVar target, TypeVar value, const Expr *expr);
 // An interface two kinds of record both fit, for suggestions (TYPE_UNKNOWN if none).
-Type checker_shared_interface(Checker *c, Type a, Type b);
+size_t checker_common_interfaces(Checker *c, const Type *kinds, size_t n, Type *first);  // check_iface.c
 // A call of a way on a value of an interface ("speak pet"): true (with *result) if it is one.
 bool checker_dispatch(Checker *c, const Expr *expr, const TypeVar *args, bool as_value, TypeVar *result);
 

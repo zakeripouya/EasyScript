@@ -133,3 +133,23 @@ A running record of the unattended English-pass run (parts 2 to 5, then charts),
 - **Exact money amounts ($19.99 kept exactly) and units of measure: skipped** for this run. Both need a new kind of value through the checker, code generation and runtime (exact decimals, or a unit carried by every number's kind), which is a step on its own. Logged under Open questions.
 - **Guards don't cover their variant:** `when it's a circle whose radius is over 10:` still needs a plain `when it's a circle:` or `otherwise`, so "every variant covered" stays a check the compiler can do.
 
+### Commits (part 4)
+
+- 61e67be questions, requests, steps in a row, tables read from csv files; 5b04399 asking for numbers, money and percents, values kept up to date, `try`, text blocks and guards; 8d896aa examples as tests, the closest sentences, tables shown in columns, the groceries and budget examples. Tag `english-pass-part-4` (8d896aa). Each commit: make test, make test-gcc and make test-debug passed (702/702/701, 0 leaks for the last).
+
+## Part 5: rough spots, audit, beginner docs, benchmarks
+
+### Done (first commit)
+
+- `a new ...` values in a list or a map without parentheses: the next `new` (or the map's next key) ends the one before.
+- In a call sentence, each input is a whole value up to `and` (`report with "bad" and "I expected " followed by word.`): the result isn't used, so arithmetic and `followed by` can only belong to the input. A call inside a value still asks for parentheses.
+- `profit by customer` as a name now suggests "customer profits" (it suggested "profit customer").
+- A list written out with items of different kinds that fit exactly one interface is a list of that interface; fitting several is an error asking for `an empty list of ...`. (The old note "Both can be used as ..." is gone: it can't happen any more.)
+- Natural joiners: a definition can put `in`, `to`, `from`, `by` or `at` between two inputs (`to column of cell in grid:`, `to range from low to high:`), and calls use the same word or `and`.
+
+### Decisions made
+
+- **Joiners are declared by the definition,** never guessed at a call; `and` keeps working. Only words that already end a name (`in`, `to`, `from`, `by`, `at`) can be joiners, so an input's name can't swallow them.
+- **`apply`/`applied` reviewed, no change:** `F applied to every X in L` (a value) and `apply F to every X in L` (a sentence) are the same pair as part 4's `the total amount` / `total the amount`; `each X in L ...` is the beginner form for transforming, and the guide leads with it.
+- **Mixed lists pick the one interface they all fit,** like a field picks the only kind that has it. If a later interface also fits, the list becomes an error asking which: the program's meaning never changes silently.
+

@@ -814,7 +814,8 @@ Give it one, like "to speak, for a fish:".
 | A field of an interface's value | "Something that can speak has no fields, only ways." |
 | A way it doesn't have | "Something that can speak has no way to jump." with the ways it has |
 | A way given the wrong inputs, or used as a value when it gives back nothing | "The way to greet needs text for "name", but this is a number." / "The way to mix takes 2 values after blender, but this gives it 1." / "The way to speak doesn't give back a value, so it can't be used here." |
-| Two kinds in a list written out | "All the items of a list have to be the same kind: ..." with "Both can be used as a speaker. To keep them in one list, start with "an empty list of speakers" and add each one to its end." |
+| Two kinds in a list written out that fit no interface | "All the items of a list have to be the same kind: ..." |
+| Two kinds in a list written out that fit several interfaces | "The items of this list are different kinds, and they all fit more than one kind of thing, so it could be a list of either." with "Start with an empty list of the one you mean, like "an empty list of things that can speak", and add each one to its end." |
 | Definitions | ""speaker" already has a way to speak, on line 5." / "You already defined "speaker" on line 1." / ""dog" is already the name of a kind of record, on line 5." / "Interfaces can only be defined at the top level, not inside an "if" or a loop." ([`iface_definitions.es`](../tests/errors/iface_definitions.es)) |
 
 Mistakes in how a definition is written are parser errors, like "Say what kind of value "name" is, in parentheses after it.", "Each line of an interface is a way, but this starts with "speak"." and "The ways of "speaker" go on the lines below, indented."; the full set is in [`err_iface.err`](../tests/ast/err_iface.err).

@@ -57,7 +57,8 @@ EasyScript is a programming language with English sentence syntax. The compiler 
 - **Reserved words:** these can't start a value or be names: `and or not is isn't equals reaches plus minus times multiplied divided mod followed as using`. The value words `yes no true false nothing it` are literals. Every other word is a name. `length`, `contents` and `file` are only special when followed by `of` / `of file`; the list words are only special in their forms (see "Lists"), so `item`, `first`, `last`, `only`, `every`, `list`, `copy` can still be names.
 - **Prefix forms bind tightly:** `length of X` and `contents of file X` take a single *primary*, so `length of x plus 1` means `(length of x) plus 1`. Postfix conversions wrap the whole form.
 - **Calls:** a call is a name (one word, or the longest known name of several) followed by `of`, `with` or `using` (or `to`/`for`/`from`/`in`, for a function defined with that word), then arguments (`parser_parse_call_args`). Each argument is a *unary* expression.
-  - **Separators:** arguments are separated by `and` (but not `and call`), and also by commas after `using` only, so `if f of x, say y` keeps its comma. The `and`s are taken greedily, and the checker reports a wrong count.
+  - **Separators:** arguments are separated by `and` (but not `and call`), and also by commas after `using` only, so `if f of x, say y` keeps its comma. The `and`s are taken greedily, and the checker reports a wrong count. A definition can put `in`/`to`/`from`/`by`/`at` between two inputs (`Stmt.function.joiners`, `parser_input_joiner`; the pre-scan keeps them in `KnownName.joiners`), and a call can use that word there (`joiner_before` in parse_value.c).
+  - **Call sentences** (`Parser.call_sentence`, set by `parse_call_statement`): each argument is a `parse_join` value, since the result isn't used.
   - **Arithmetic after the arguments** (+ - * / % plus minus times multiplied divided mod followed by) is an ambiguity error that suggests both parenthesized forms, unless the last argument is parenthesized (`fib of (n minus 1) plus 1` adds; `is_parenthesized` looks at the source).
   - **Comparisons and `or` end the call.**
   - **No inputs:** a bare `NAME` is `EXPR_NAME`, and the checker and codegen treat it as a call when it's a function with no parameters (functions and variables share one namespace).
@@ -108,6 +109,11 @@ EasyScript is a programming language with English sentence syntax. The compiler 
   A non-word start gives "A sentence can't start with …".
 - **Leftovers:** forms ending in a name or keyword (`add`, `subtract`, `ask`, `read`, `stop`, `break`, `skip`, `continue`, `move`) report extra words as "I expected the sentence to end after …". Others use the expression leftover reporting. Statements with errors are left out of the returned `Block`.
 - **Quoting in messages:** `parser_quoted` renders text spans as `the text "…"` to avoid nested quotes.
+
+### English pass, part 5 changes
+
+- **`new` in lists and maps:** `Parser.in_items` (set by `parse_list_item`/`parse_entry_part`, cleared in parentheses); `at_next_field` in parse_record.c ends a `new` value's fields before another `new` or, in items, before a non-word.
+- **Mixed lists:** `check_mixed_kinds` (check_list.c) makes a written-out list of different record/variant kinds a list of the one interface they all fit (`checker_common_interfaces`); several is an error.
 
 ### English pass, part 4 additions (parse_question.c, parse_chain.c, parse_table_file.c, check_apply.c, codegen_library.c, runtime/es_totals.h)
 

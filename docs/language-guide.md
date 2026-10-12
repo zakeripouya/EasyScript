@@ -300,7 +300,7 @@ Line 2: "double using 21 plus 1" could mean two things.
 Use parentheses to say which: "(double using 21) plus 1" or "double using (21 plus 1)".
 ```
 
-This is the "no guessing" rule in action. See [`examples/parser/`](../examples/parser/) for more.
+This is the "no guessing" rule in action. A call that's a sentence of its own is different: its result isn't used, so arithmetic or `followed by` after an input can only belong to that input, and needs no parentheses: `report with "bad" and "I expected " followed by word.` See [`examples/parser/`](../examples/parser/) for more.
 
 ---
 
@@ -590,6 +590,17 @@ to add tax to amount:
     give back amount plus amount times tax rate.
 say add tax to 50.
 ``` Giving it the wrong number of inputs is an error that says how many it needs and where it's defined.
+
+Between two inputs, the definition can use `in`, `to`, `from`, `by` or `at` instead of `and`, and calls use the same word (or `and`):
+
+```
+to column of cell in grid:
+    give back cell mod grid.
+to range from low to high:
+    ...
+say the column of 7 in 4.
+say range from 1 to 5.
+```
 
 You don't write down what kind of value each input is: the compiler works it out from how the function uses it and what it's given, and tells you before the program runs if something doesn't fit. When it can't tell, you can say, like `to area with width (a number) and height (a number), giving back a number:`. See [chapter 9](#9-types).
 
@@ -1077,7 +1088,7 @@ Line 10: A new dog needs a value for "age".
                ^^^^^^^^^^^^^^^^^^^^^^^^^
 ```
 
-Fields can come in any order, separated by `and` or commas. A `new` inside another one needs parentheses, so it's clear which record the fields after it belong to: `a new person with name "Ann" and pet (a new dog with name "Rex" and age 3)`.
+Fields can come in any order, separated by `and` or commas. A `new` inside another one needs parentheses, so it's clear which record the fields after it belong to: `a new person with name "Ann" and pet (a new dog with name "Rex" and age 3)`. In a list or a map, the next `new` (or the map's next key) ends the one before, so no parentheses are needed there: `a list of a new point with x 1 and y 2, a new point with x 3 and y 4`.
 
 ### Fields
 
@@ -1706,9 +1717,7 @@ to speak, for a dog, giving back text:
 to speak, for a cat, giving back text:
     give back "Meow.".
 
-let zoo be an empty list of things that can speak.
-add (a new dog with name "Rex") to the end of zoo.
-add (a new cat with name "Tom") to the end of zoo.
+let zoo be a list of a new dog with name "Rex" and a new cat with name "Tom".
 for each animal in zoo:
     say speak animal.
 ```

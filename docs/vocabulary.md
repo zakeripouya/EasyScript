@@ -158,7 +158,7 @@ These take a single value, so `length of name plus 1` means `(length of name) pl
 | `NAME using X, Y` | Same, with the inputs separated by commas (or `and`) | `area using 3, 4` | Available |
 | `NAME` | Call a function that takes no inputs (written like a variable) | `say pi times 2` | Available |
 
-- **Inputs are separated by `and`.** Each input is a single value: a number, text, a name, a negative number, a conversion, another call in parentheses, or anything in parentheses. So `"Hi " and name` as an input needs parentheses: `greet with ("Hi " and name)`. Every `and` straight after an input starts another input, and the checker then says if the count is wrong.
+- **Inputs are separated by `and`.** Each input is a single value: a number, text, a name, a negative number, a conversion, another call in parentheses, or anything in parentheses. So `"Hi " and name` as an input needs parentheses: `greet with ("Hi " and name)`. In a call that's a sentence of its own (`report with "bad" and "I expected " followed by word.`), each input is a whole value up to the next `and`: arithmetic and `followed by` belong to it, since the call's result isn't used. Every `and` straight after an input starts another input, and the checker then says if the count is wrong.
 - **Arithmetic straight after the inputs** could belong to the last input or to the whole result, so `double of 21 plus 1` is an error that asks you to write `(double of 21) plus 1` or `double of (21 plus 1)`. When the last input is already in parentheses it's clear, so `fib of (n minus 1) plus fib of (n minus 2)` adds two calls.
 - Comparisons, `or`, and `and call` end the inputs: `area of 3 and 4 is 12` compares the result with 12.
 
@@ -312,6 +312,7 @@ All function sentences are **Available**.
 |---|---|---|
 | `to NAME:` | Define a function with no inputs. NAME is every word before the colon | `to cheer:`, `to make tea:` |
 | `to NAME with INPUT and INPUT:` | Define a function with inputs (`of`, `using`, `to`, `for`, `from` and `in` work like `with`; commas work like `and`). NAME is every word before them | `to area with width and height:`, `to add tax to amount:`, `to pause for seconds:`, `to busiest artist from names:`, `to count vowels in word:` |
+| `to NAME of INPUT in INPUT:` (also `to`, `from`, `by`, `at` between inputs) | The word between two inputs, instead of `and`; a call can use it (or `and`) there | `to column of cell in grid:` (`the column of 7 in 4`), `to range from low to high:` (`range from 1 to 5`) |
 | `give back X` / `return X` | End the function and hand X back to whoever called it | `give back width times height` |
 | `return` | End the function early, handing back nothing (`give back nothing` is the same) | `return` |
 | `give back X if CONDITION` / `give back X unless CONDITION` | Leave early with X, but only when the condition is yes (`if`) or no (`unless`); otherwise go on to the next sentence. The same as `if CONDITION, give back X` | `give back 0 if scores is empty.`<br>`give back x unless x is below 0.` |
@@ -595,7 +596,7 @@ A kind of record is written like any other kind: `(a dog)` for an input, `giving
 
 | Pattern | Meaning | Example |
 |---|---|---|
-| `a new NAME with FIELD X and FIELD Y` | A new record. Every field needs a value, unless it has a starting value or can be nothing. Fields are separated by `and` or commas; each value is a value up to the next `and` or comma (arithmetic and `followed by` are part of it). A `new` inside another `new` needs parentheses | `a new dog with name "Rex" and age 3` |
+| `a new NAME with FIELD X and FIELD Y` | A new record. Every field needs a value, unless it has a starting value or can be nothing. Fields are separated by `and` or commas; each value is a value up to the next `and` or comma (arithmetic and `followed by` are part of it). A `new` inside another `new` needs parentheses; in a list or a map, the next `new` or key ends it (`a list of a new point with x 1 and y 2, a new point with x 3 and y 4`) | `a new dog with name "Rex" and age 3` |
 | `a new NAME` | A new record whose fields all start at their starting values | `a new chain` |
 | `R's FIELD` | A field of a record. Chains work, and so does `it's` | `rex's name`, `the order's customer's name`, `it's age` |
 | `(X)'s FIELD` | A field of a value in parentheses | `(item 1 of dogs)'s name` |
@@ -913,7 +914,7 @@ All of these are **Available**. An interface says what a value has to be able to
 Rules:
 
 - **Fitting:** a kind fits when it has a method for every way with the same name, the same kinds of input, and the same result (or, for a way that gives back an interface, any kind that fits it). Giving a value of a kind that doesn't fit is a compile error that names the missing way.
-- **Mixed lists:** `an empty list of things that can speak`, then add dogs, cats and birds. A list written out (`a list of rex and tom`) still holds one kind; the error says which interface both fit.
+- **Mixed lists:** a list written out with items of different kinds (`a list of rex and tom`) is a list of the one interface they all fit (here, things that can speak). If they fit none, it's the usual "All the items of a list have to be the same kind" error; if they fit several, an error asks for `an empty list of ...` with the one meant.
 - **Only ways:** a value of an interface has no fields, and only its ways can be called on it. It can be compared (`is`: the same record, or equal values of a kind with variants), printed, kept in lists, maps and fields, and be `or nothing`.
 
 ## Files that use other files

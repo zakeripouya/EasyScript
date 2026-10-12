@@ -51,7 +51,8 @@ static const char *header(Checker *c, const Function *f, size_t marked, Type mar
             sb_appendf(&sb, "%s %s ", first && !def->as.function.can ? "," : "",
                        def->as.function.intro ? def->as.function.intro : "with");
         }
-        if (i > first) sb_append(&sb, " and ");
+        const char *joiner = i < def->as.function.joiners.len ? def->as.function.joiners.items[i] : NULL;
+        if (i > first) sb_appendf(&sb, " %s ", joiner ? joiner : "and");
         sb_append(&sb, def->as.function.params.items[i].display);
         Type kind = i == marked ? mark : def->as.function.declared.items[i];
         if (kind != TYPE_UNKNOWN) sb_appendf(&sb, " (%s)", kind_words(c, kind));
