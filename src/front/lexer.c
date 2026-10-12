@@ -404,7 +404,7 @@ static void report_unexpected(Lexer *lx) {
     } else if (n == 0) {
         diag_error(lx->diag, span, "I don't understand the byte 0x%02X. Is this file saved as UTF-8?", c);
     } else if (c < 0x20 || c == 0x7F) {
-        diag_error(lx->diag, span, "I don't understand the invisible character U+%04X.", c);
+        diag_error(lx->diag, span, "I can't read this hidden control code, U+%04X.", c);
     } else {
         diag_error(lx->diag, span, "I don't understand the character \"%.*s\".", (int)n, s);
         note_for_character(lx, s, n);

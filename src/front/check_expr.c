@@ -225,7 +225,7 @@ static TypeVar check_it(Checker *c, const Expr *expr) {
                            "loop's number or item there. Use the loop's name for it instead.");
     } else if (c->loops.len > 0) {
         diag_note(c->diag, "\"it\" means the number of a counting loop or a \"repeat ... times\" loop, or the item "
-                           "of a \"for each\" loop, but this loop has neither. Use a variable instead.");
+                           "of a \"for each\" loop, but this loop has neither. Use a name instead.");
     } else {
         diag_note(c->diag, "\"it\" only means something inside a loop, where it's the loop's number or item.");
     }
@@ -236,11 +236,11 @@ static void report_unknown_function(Checker *c, const char *name, const char *di
     if (checker_report_hidden(c, name, display, pos)) return;
     const Constant *k = checker_find_constant(c, name);
     if (k) {
-        diag_error(c->diag, pos.span, "\"%s\" is a constant, not a function.", k->display);
+        diag_error(c->diag, pos.span, "\"%s\" is a constant, so it can't take inputs.", k->display);
         diag_note(c->diag, "A constant is a fixed value: use it by its name alone, like \"say %s\".", k->display);
         return;
     }
-    diag_error(c->diag, pos.span, "I don't know a function called \"%s\".", display);
+    diag_error(c->diag, pos.span, "I don't know how to \"%s\".", display);
     size_t limit = strlen(name) <= 3 ? 1 : 2;
     const Function *best = NULL;
     size_t best_distance = limit + 1;
@@ -466,7 +466,7 @@ static TypeVar check_expr(Checker *c, const Expr *expr) {
     case EXPR_BOOLEAN: return types_new(c, TYPE_YESNO, line);
     case EXPR_NOTHING:
         diag_error(c->diag, expr->pos.span, "\"nothing\" can't be used as a value.");
-        diag_note(c->diag, "Use 0, empty text (\"\"), or no instead. Only a function can give back nothing, "
+        diag_note(c->diag, "Use 0, empty text (\"\"), or no instead. Only a definition can give back nothing, "
                            "with \"return\" on its own.");
         return error_var(c);
     case EXPR_IT: return check_it(c, expr);

@@ -23,6 +23,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- **Messages use the plain words of the new [voice guide](docs/voice.md):** no more "variable" ("name") or "function" for `to` definitions ("I don't know how to "aera".", ""give back" only works inside a definition.", "Definitions are using each other too deeply ..."), and seven long messages were split or shortened to read at grade 8 or below. A new audit (`audit/plain-words`) keeps it that way: no banned programmer words outside quotes, and a reading level of grade 8 or below for every tested error.
+
 - **`easyscript run FILE WORDS...` gives the words after the file to the program** (`the words given to the program`), so `easyscript run a.es b.es` no longer says "Give one .es file at a time." (`emit`, `build`, `tokens` and `ast` still do). Generated programs' `main` takes `argc`/`argv` and returns the program's code.
 
 - **Runtime errors from `run`, and from a word past the end of the words given to the program, no longer leak** (LeakSanitizer on Linux found `argv` and a number shown in the message left unreachable).

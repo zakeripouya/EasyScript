@@ -346,7 +346,7 @@ A variable keeps the kind of value it was made with. Storing a different kind in
 Line 2: "total" is a number (made on line 1), but this is text.
     set total to "zero"
                  ^^^^^^
-A variable keeps the kind of value it was made with. To keep text, make a new variable for it.
+A name keeps the kind of value it was made with. To keep text, make a new name for it.
 ```
 
 ### Values that never change

@@ -26,7 +26,7 @@
 // A one-word function name can't be a sentence word; "add tax" can.
 static bool reject_statement_word_name(Parser *p, const Name *name) {
     if (!parser_is_statement_word(name->text)) return false;
-    if (parser_error(p, name->pos.span, "\"%s\" starts sentences in EasyScript, so it can't be the name of a function.",
+    if (parser_error(p, name->pos.span, "\"%s\" starts sentences in EasyScript, so it can't be the name of a definition.",
                      name->text)) {
         diag_note(p->diag, "Add a word to it, like \"%s something\", or pick another name.", name->text);
     }
@@ -206,7 +206,7 @@ Stmt *parse_function(Parser *p, const Token *verb) {
         parser_skip_line_and_block(p);
     } else {
         SourcePos header = stmt->pos;
-        ok = parser_parse_block(p, &stmt->as.function.body, &header, NULL, "this function");
+        ok = parser_parse_block(p, &stmt->as.function.body, &header, NULL, "this definition");
     }
     p->ended_with_block = true;  // set last: statements inside the block reset it
     return ok ? stmt : NULL;

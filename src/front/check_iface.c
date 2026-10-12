@@ -75,7 +75,7 @@ void checker_collect_interfaces(Checker *c, const Block *program) {
 void checker_check_interface(Checker *c, const Stmt *stmt) {
     if (c->function || c->blocks > 0) {
         diag_error(c->diag, stmt->as.iface.name.pos.span, "Interfaces can only be defined at the top level, not inside "
-                   "%s.", c->function ? "a function" : "an \"if\" or a loop");
+                   "%s.", c->function ? "a definition" : "an \"if\" or a loop");
         diag_note(c->diag, "Move it to the start of a line, outside every block.");
         return;
     }

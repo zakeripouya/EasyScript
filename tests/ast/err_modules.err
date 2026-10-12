@@ -36,4 +36,4 @@ Write the name of something helpers.es defines, like "helpers's double with 3".
 Line 9: I don't know a sentence that starts with "helpers's nope".
     helpers's nope there.
               ^^^^
-A sentence can start with something another file defines with "to", like "helpers's greet with "Ann"".
+A sentence can use a name from another file, like "helpers's greet with "Ann"".

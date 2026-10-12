@@ -37,7 +37,7 @@ static void store(Checker *c, const Symbol *symbol, TypeVar value, const Expr *e
     if (checker_fits(c, symbol->var, value, expr, diag_line(c->diag, span.offset))) return;
     diag_error(c->diag, span, "\"%s\" is %s (made on line %zu), but this is %s.", symbol->display,
                checker_kind(c, symbol->var), symbol->line, checker_kind(c, value));
-    diag_note(c->diag, "A variable keeps the kind of value it was made with. To keep %s, make a new variable for it.",
+    diag_note(c->diag, "A name keeps the kind of value it was made with. To keep %s, make a new name for it.",
               checker_kind(c, value));
 }
 
@@ -144,14 +144,14 @@ static void check_return(Checker *c, const Stmt *stmt) {
     TypeVar value = stmt->as.returned ? checker_check_value(c, stmt->as.returned) : 0;
     const Function *f = c->function;
     if (!f && stmt->stop_here) {
-        diag_error(c->diag, stmt->pos.span, "\"stop here\" only works inside a function.");
-        diag_note(c->diag, "It ends the function and goes back to whoever used it. "
+        diag_error(c->diag, stmt->pos.span, "\"stop here\" only works inside a definition.");
+        diag_note(c->diag, "It ends the definition and goes back to whoever used it. "
                            "To end the whole program, write \"stop the program\".");
         return;
     }
     if (!f) {
-        diag_error(c->diag, stmt->pos.span, "\"give back\" only works inside a function.");
-        diag_note(c->diag, "It ends a function and hands a value back to whoever called it. "
+        diag_error(c->diag, stmt->pos.span, "\"give back\" only works inside a definition.");
+        diag_note(c->diag, "It ends a definition and hands a value back to whoever used it. "
                            "To end the whole program, write \"stop the program\".");
         return;
     }
@@ -176,7 +176,7 @@ static void check_return(Checker *c, const Stmt *stmt) {
             diag_note(c->diag, "To give back nothing too, say so in the definition, like \"giving back %s or "
                                "nothing\".", checker_type_name(c, result));
         } else {
-            diag_note(c->diag, "A function gives back the same kind of value every time.");
+            diag_note(c->diag, "A definition gives back the same kind of value every time.");
         }
     }
 }
@@ -229,7 +229,7 @@ static void check_params(Checker *c, const Function *f) {
     for (size_t i = 0; i < stmt->as.function.params.len; i++) {
         const Name *param = &stmt->as.function.params.items[i];
         if (checker_find_made(c, param->text)) {
-            diag_error(c->diag, param->pos.span, "This function already has an input called \"%s\".", param->display);
+            diag_error(c->diag, param->pos.span, "This definition already has an input called \"%s\".", param->display);
             diag_note(c->diag, "Give each input its own name.");
         } else {
             checker_make(c, param, f->params.items[i]);
@@ -242,12 +242,12 @@ static void check_params(Checker *c, const Function *f) {
 static void check_function(Checker *c, const Stmt *stmt) {
     if (c->function || c->blocks > 0) {
         diag_error(c->diag, stmt->as.function.name.pos.span,
-                   "Functions can only be defined at the top level, not inside %s.",
-                   c->function ? "another function" : "an \"if\" or a loop");
+                   "Definitions with \"to\" can only be at the top level, not inside %s.",
+                   c->function ? "another definition" : "an \"if\" or a loop");
         diag_note(c->diag, "Move \"to %s ...:\" to the start of a line, outside every block.",
                   stmt->as.function.name.display);
         if (c->function) {
-            diag_note(c->diag, "To make a function inside another one, write \"let %s be a function taking ...:\" "
+            diag_note(c->diag, "To make one inside another, write \"let %s be a function taking ...:\" "
                                "with its sentences indented below.", stmt->as.function.name.display);
         }
         return;
@@ -539,7 +539,7 @@ static bool reject_duplicate(Checker *c, Stmt *stmt) {
         } else {
             diag_error(c->diag, name->pos.span, "You already defined \"%s\" on line %zu.", existing->display,
                        existing->definition->pos.line);
-            diag_note(c->diag, "Each function needs its own name. Only methods for different kinds of record "
+            diag_note(c->diag, "Each definition needs its own name. Only methods for different kinds of record "
                                "can share one.");
         }
         return true;

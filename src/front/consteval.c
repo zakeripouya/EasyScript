@@ -19,8 +19,8 @@ typedef struct {
 } Eval;
 
 static const char *const fixed_note =
-    "A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made "
-    "above it. If the value is only known while the program runs, use \"let\" instead of \"keep\".";
+    "A constant is fixed before the program starts. It can only use numbers, text, yes or no, and constants made "
+    "above it. If the value is only known later, use \"let\" instead of \"keep\".";
 
 static bool fail(Eval *ev, Span span, const char *hint, const char *fmt, ...) PRINTF_LIKE(4, 5);
 
@@ -549,7 +549,7 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
     case EXPR_LENGTH: return length(ev, expr, out);
     case EXPR_NOTHING: return fail(ev, span, "Use a number, text, or yes or no.", "A constant can't be nothing.");
     case EXPR_CALL:
-        return fail(ev, span, fixed_note, "A constant can't call a function, because functions only run while the "
+        return fail(ev, span, fixed_note, "A constant can't use a definition, because definitions only run while the "
                                           "program runs.");
     case EXPR_IT: return fail(ev, span, fixed_note, "\"it\" changes while the program runs, so a constant can't use it.");
     case EXPR_LIST: return list(ev, expr, out);
@@ -584,8 +584,8 @@ static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
                                           "made while the program runs.");
     case EXPR_FUNCTION_REF:
     case EXPR_LAMBDA:
-        return fail(ev, span, fixed_note, "A constant can't be a function, because functions are kept as values while "
-                                          "the program runs.");
+        return fail(ev, span, fixed_note, "A constant can't hold \"a function taking ...\" or \"the function ...\", "
+                                          "because those are made while the program runs.");
     case EXPR_LIBRARY:
         return fail(ev, span, fixed_note, "A constant can't use \"%s\", because it's worked out while the program runs.",
                     ast_library_op_name(expr->as.library.op));

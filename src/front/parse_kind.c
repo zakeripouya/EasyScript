@@ -173,8 +173,8 @@ static bool parse_or_nothing(Parser *p, Type *type) {
         return true;
     }
     if (type_is_func(*type)) {
-        if (parser_error(p, span, "A function can't be \"or nothing\".")) {
-            diag_note(p->diag, "Keep a function that does nothing instead.");
+        if (parser_error(p, span, "\"a function\" can't be \"or nothing\".")) {
+            diag_note(p->diag, "Keep one that does nothing instead.");
         }
         return false;
     }
@@ -227,7 +227,7 @@ bool parser_parse_kind(Parser *p, bool nothing_ok, Type *type) {
     return report_kind(p,
                        nothing_ok ? "The kinds are \"a number\", \"text\", \"yes or no\", lists like \"a list of "
                                     "numbers\", and maps like \"a map from text to numbers\" (and \"nothing\" for a "
-                                    "function that gives back no value)."
+                                    "definition that gives back no value)."
                                   : "The kinds are \"a number\", \"text\", \"yes or no\", lists like \"a list of "
                                     "numbers\", and maps like \"a map from text to numbers\".",
                        "Say which kind of value: \"a number\", \"text\", \"yes or no\", or a list like \"a list of "

@@ -1,7 +1,7 @@
-Line 5: "n" is a number, not a function, so it can't be called.
+Line 5: "n" is a number, so it can't be called.
     say call n with 3.
         ^
-Only a function can be called. To keep one in a name, write something like "let double be a function taking x that gives back x times 2".
+Only a definition, or a function made with "a function taking ...", can be called. To keep one in a name, write something like "let double be a function taking x that gives back x times 2".
 
 Line 6: "f" takes 1 value, but this gives it 2.
     say call f with 1 and 2.
@@ -21,7 +21,7 @@ It's a function taking text. Call it as a sentence of its own, like "call quiet 
 Line 14: You already made "total" on line 13.
     let clash be a function taking total that gives back total.
                                    ^^^^^
-The function can use "total" as it is. Give its input another name, like "new total".
+It can use "total" as it is. Give its input another name, like "new total".
 
 Line 19: "maybe" was checked, but the function made on line 16 can set "maybe" whenever it's called, so the check doesn't last.
         say maybe plus 1.
@@ -33,17 +33,17 @@ Line 22: "it" doesn't refer to anything here.
                                             ^^
 A function made inside a loop runs later, when it's called, so "it" can't mean the loop's number or item there. Use the loop's name for it instead.
 
-Line 23: A constant can't be a function, because functions are kept as values while the program runs.
+Line 23: A constant can't hold "a function taking ..." or "the function ...", because those are made while the program runs.
     keep fixed as the function double.
                       ^^^^^^^^^^^^^^^
-A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".
+A constant is fixed before the program starts. It can only use numbers, text, yes or no, and constants made above it. If the value is only known later, use "let" instead of "keep".
 
 Line 25: The function made on line 24 gives back a number (since line 24), but this is text.
         give back "no".
                   ^^^^
-A function gives back the same kind of value every time.
+A definition gives back the same kind of value every time.
 
-Line 27: A function can't be made inside "every" or "only".
+Line 27: "a function taking ..." can't be made inside "every" or "only".
     say every word in words followed by call (a function that gives back word).
                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Make it before, like "let check be a function taking x that gives back ...", and use that name inside.
@@ -51,7 +51,7 @@ Make it before, like "let check be a function taking x that gives back ...", and
 Line 36: Several kinds of record have a method called "speak", so I can't tell which one this is.
     let speaker be the function speak.
                        ^^^^^^^^^^^^^^
-Make a function that calls it, like "a function taking pet:" with "speak pet" indented below it; each call picks the method by the kind of record it's given.
+Make one that calls it, like "a function taking pet:" with "speak pet" indented below it; each call picks the method by the kind of record it's given.
 
 Line 38: "pair" takes 2 values, but this gives it 1.
     say call pair with 1.
@@ -63,7 +63,7 @@ Line 39: "answer" doesn't take any values, but this gives it 1.
         ^^^^^^^^^^^^^^^^^^
 It's a function giving back a number.
 
-Line 40: This is a number, not a function, so it can't be called.
+Line 40: This is a number, so it can't be called.
     call 5 with 2.
          ^
-Only a function can be called. To keep one in a name, write something like "let double be a function taking x that gives back x times 2".
+Only a definition, or a function made with "a function taking ...", can be called. To keep one in a name, write something like "let double be a function taking x that gives back x times 2".

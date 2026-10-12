@@ -3,7 +3,7 @@ Line 2: I don't know a sentence that starts with "cat".
       ^^^
 "cat" isn't a kind of record I know. Define it first, like "a cat has a name.", and then what it can do.
 
-Line 4: "say" starts sentences in EasyScript, so it can't be the name of a function.
+Line 4: "say" starts sentences in EasyScript, so it can't be the name of a definition.
     a dog can say:
               ^^^
 Add a word to it, like "say something", or pick another name.

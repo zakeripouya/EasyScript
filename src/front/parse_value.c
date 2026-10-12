@@ -234,7 +234,7 @@ static Expr *parse_field_of(Parser *p, size_t words) {
     if (parser_is_function(p, name.text)) {
         const char *whole = parser_text(p, expr->pos.span), *owner = parser_text(p, record->pos.span);
         if (parser_error(p, expr->pos.span, "\"%s\" could mean two things.", whole)) {
-            diag_note(p->diag, "\"%s\" is a field and a function. For the field, write \"%s's %s\"; for the function, "
+            diag_note(p->diag, "\"%s\" is a field and a definition. For the field, write \"%s's %s\"; for the definition, "
                                "write \"%s with %s\".", name.display, owner, name.display, name.display, owner);
         }
         return parser_error_expr(p);

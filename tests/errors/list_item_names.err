@@ -6,7 +6,7 @@ Give the items a name that isn't taken yet, like "current score".
 Line 7: I don't know anything called "mark".
     say mark
         ^^^^
-"mark" is each item of the loop on line 5, so it only exists inside that loop. To keep one, make a variable before the loop and set it inside.
+"mark" is each item of the loop on line 5, so it only exists inside that loop. To keep one, make a name before the loop and set it inside.
 
 Line 8: You already made "score" on line 1.
     say every score in scores plus 1

@@ -1,4 +1,4 @@
 Line 2: I don't know anything called "someone".
         say "Hello, " followed by someone
                                   ^^^^^^^
-This function is called "greet someone". To make "someone" an input, introduce it with "with": "to greet with someone:".
+This definition is called "greet someone". To make "someone" an input, introduce it with "with": "to greet with someone:".

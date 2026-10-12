@@ -313,7 +313,7 @@ Rules:
 - **Kinds:** an input's kind comes from how the function uses it and what it's given; what it gives back comes from its `give back`s. When nothing decides a kind, write it (see below).
 - **Names:** a function's name is every word before the word that introduces its inputs (`with`, `of`, `using`, `to`, `for`, `from`, `in`; `for` always ends the name), so `to greet someone:` is a function called `greet someone` with no inputs (`to greet with someone:` gives it one). A one-word name can't be a sentence word (like `say` or `count`), but a name of several words can start with one (`add tax`), and then a sentence starting with it calls the function. Functions and variables share names, so `area` can't be both. Each input needs its own name.
 - **Checks before running:** calling a function that doesn't exist suggests the closest one; giving it the wrong number of inputs says how many it needs and where it's defined.
-- **Deep recursion** stops with "Functions are calling each other too deeply (more than 10000 calls inside each other)." instead of crashing.
+- **Deep recursion** stops with "Definitions are using each other too deeply (more than 10000 inside each other)." instead of crashing.
 
 ## Functions as values
 

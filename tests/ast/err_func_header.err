@@ -3,7 +3,7 @@ Line 1: Something is missing after "to".
     ^^
 Add a name there, like "total".
 
-Line 3: "say" starts sentences in EasyScript, so it can't be the name of a function.
+Line 3: "say" starts sentences in EasyScript, so it can't be the name of a definition.
     to say with x:
        ^^^
 Add a word to it, like "say something", or pick another name.
@@ -25,7 +25,7 @@ Line 9: Something is missing after "with".
              ^^^^
 Name the inputs, like "to area with width and height:", or leave out "with".
 
-Line 11: I expected a colon after this function, but found the end of the line.
+Line 11: I expected a colon after this definition, but found the end of the line.
     to greet with someone
                          ^
 Put a colon at the end of the line and the sentences that belong to it on the indented lines below.

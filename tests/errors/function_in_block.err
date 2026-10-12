@@ -1,15 +1,15 @@
-Line 2: Functions can only be defined at the top level, not inside an "if" or a loop.
+Line 2: Definitions with "to" can only be at the top level, not inside an "if" or a loop.
         to inner:
            ^^^^^
 Move "to inner ...:" to the start of a line, outside every block.
 
-Line 5: Functions can only be defined at the top level, not inside an "if" or a loop.
+Line 5: Definitions with "to" can only be at the top level, not inside an "if" or a loop.
         to inner2:
            ^^^^^^
 Move "to inner2 ...:" to the start of a line, outside every block.
 
-Line 8: Functions can only be defined at the top level, not inside another function.
+Line 8: Definitions with "to" can only be at the top level, not inside another definition.
         to inside:
            ^^^^^^
 Move "to inside ...:" to the start of a line, outside every block.
-To make a function inside another one, write "let inside be a function taking ...:" with its sentences indented below.
+To make one inside another, write "let inside be a function taking ...:" with its sentences indented below.

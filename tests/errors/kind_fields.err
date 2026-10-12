@@ -60,9 +60,9 @@ Only a shape can be a circle.
 Line 24: A constant can't be a shape, because those are made while the program runs.
     keep unit as a new point.
                  ^^^^^^^^^^^
-A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".
+A constant is fixed before the program starts. It can only use numbers, text, yes or no, and constants made above it. If the value is only known later, use "let" instead of "keep".
 
 Line 25: A constant can't check which kind a value is, because those values are made while the program runs.
     keep round as s is a circle.
                   ^^^^^^^^^^^^^
-A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".
+A constant is fixed before the program starts. It can only use numbers, text, yes or no, and constants made above it. If the value is only known later, use "let" instead of "keep".

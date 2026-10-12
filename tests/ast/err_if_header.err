@@ -1,7 +1,7 @@
-Line 2: I expected a colon, a comma, or "then" after the condition, but found the end of the line.
+Line 2: I expected ":", "," or "then" after the condition, but found the end of the line.
     if x is 1
              ^
-Write "if x is 5:" with the sentences on indented lines below, or "if x is 5, say "five"" on one line.
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
 
 Line 4: After the colon, start a new line.
     if x is 1: say "same line"

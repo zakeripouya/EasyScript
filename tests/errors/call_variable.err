@@ -1,4 +1,4 @@
-Line 2: "total" is a number, not a function, so it can't be called.
+Line 2: "total" is a number, so it can't be called.
     say total of 3
         ^^^^^
-Only a function can be called. To keep one in a name, write something like "let double be a function taking x that gives back x times 2".
+Only a definition, or a function made with "a function taking ...", can be called. To keep one in a name, write something like "let double be a function taking x that gives back x times 2".

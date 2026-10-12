@@ -82,7 +82,7 @@ TypeVar checker_check_function_ref(Checker *c, const Expr *expr) {
     if (checker_shared_method(c, f->name)) {
         diag_error(c->diag, expr->pos.span, "Several kinds of record have a method called \"%s\", so I can't tell "
                    "which one this is.", f->display);
-        diag_note(c->diag, "Make a function that calls it, like \"a function taking pet:\" with \"%s pet\" indented "
+        diag_note(c->diag, "Make one that calls it, like \"a function taking pet:\" with \"%s pet\" indented "
                            "below it; each call picks the method by the kind of record it's given.", f->display);
         return error_var(c);
     }
@@ -116,12 +116,12 @@ static void make_inputs(Checker *c, const Function *f) {
         const Name *param = &def->as.function.params.items[i];
         const Symbol *existing = checker_find_made(c, param->text);
         if (existing && (size_t)(existing - c->made.items) >= c->lambda->scope) {
-            diag_error(c->diag, param->pos.span, "This function already has an input called \"%s\".", param->display);
+            diag_error(c->diag, param->pos.span, "The input \"%s\" is named twice here.", param->display);
             diag_note(c->diag, "Give each input its own name.");
         } else if (existing) {
             diag_error(c->diag, param->pos.span, "You already made \"%s\" on line %zu.", existing->display,
                        existing->line);
-            diag_note(c->diag, "The function can use \"%s\" as it is. Give its input another name, like \"new %s\".",
+            diag_note(c->diag, "It can use \"%s\" as it is. Give its input another name, like \"new %s\".",
                       existing->display, param->display);
         } else {
             checker_make(c, param, f->params.items[i]);
@@ -135,7 +135,7 @@ TypeVar checker_check_lambda(Checker *c, const Expr *expr) {
     Stmt *def = expr->as.lambda;
     for (size_t i = 0; i < c->loops.len; i++) {
         if (!c->loops.items[i].helper) continue;
-        diag_error(c->diag, expr->pos.span, "A function can't be made inside \"every\" or \"only\".");
+        diag_error(c->diag, expr->pos.span, "\"a function taking ...\" can't be made inside \"every\" or \"only\".");
         diag_note(c->diag, "Make it before, like \"let check be a function taking x that gives back ...\", and use "
                            "that name inside.");
         return error_var(c);
@@ -169,7 +169,7 @@ TypeVar checker_check_lambda(Checker *c, const Expr *expr) {
 
 static const char *callee_label(Checker *c, const Expr *callee) {
     if (callee->kind == EXPR_NAME) return arena_sprintf(c->arena, "\"%s\"", callee->display);
-    return "This function";
+    return "This";
 }
 
 static const char *ordinal(Checker *c, size_t i) {
@@ -180,12 +180,13 @@ static const char *ordinal(Checker *c, size_t i) {
 
 static TypeVar report_not_function(Checker *c, const Expr *callee, TypeVar var) {
     if (callee->kind == EXPR_NAME) {
-        diag_error(c->diag, callee->pos.span, "\"%s\" is %s, not a function, so it can't be called.", callee->display,
+        diag_error(c->diag, callee->pos.span, "\"%s\" is %s, so it can't be called.", callee->display,
                    checker_kind(c, var));
     } else {
-        diag_error(c->diag, callee->pos.span, "This is %s, not a function, so it can't be called.", checker_kind(c, var));
+        diag_error(c->diag, callee->pos.span, "This is %s, so it can't be called.", checker_kind(c, var));
     }
-    diag_note(c->diag, "Only a function can be called. To keep one in a name, write something like \"let double be "
+    diag_note(c->diag, "Only a definition, or a function made with \"a function taking ...\", can be called. To keep one in a "
+                       "name, write something like \"let double be "
                        "a function taking x that gives back x times 2\".");
     return error_var(c);
 }
@@ -229,7 +230,7 @@ static TypeVar finish_value_call(Checker *c, const Expr *expr, TypeVar func, con
     }
     if (as_value && type == TYPE_UNKNOWN) {
         types_defer_one_of(c, expr, result, result, KIND_NUMBER | KIND_TEXT | KIND_YESNO | KIND_LIST | KIND_RECORD |
-                           KIND_MAP | KIND_OTHER | KIND_DATE, "A function called here has to give back a value");
+                           KIND_MAP | KIND_OTHER | KIND_DATE, "What's called here has to give back a value");
     }
     return result;
 }
@@ -278,7 +279,7 @@ void checker_report_undecided_lambdas(Checker *c) {
             if (!ast_type_undecided(c->records, types_of(c, f->params.items[p]))) continue;
             const Name *param = &def->as.function.params.items[p];
             diag_error(c->diag, param->pos.span, "I can't tell what kind of value \"%s\" is.", param->display);
-            diag_note(c->diag, "Nothing in the program decides it. Say which kind where the function is made, like "
+            diag_note(c->diag, "Nothing in the program decides it. Say which kind where it's made, like "
                                "\"%s\".", lambda_header(c, f, p));
             types_require(c, f->params.items[p], TYPE_ERROR, 0);
         }

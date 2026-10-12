@@ -34,8 +34,8 @@ Type checker_const_type(Checker *c, const ConstValue *v) {
 // --- Constants ---------------------------------------------------------------
 
 static const char *const keep_note =
-    "A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made "
-    "above it. If the value is only known while the program runs, use \"let\" instead of \"keep\".";
+    "A constant is fixed before the program starts. It can only use numbers, text, yes or no, and constants made "
+    "above it. If the value is only known later, use \"let\" instead of \"keep\".";
 
 // A name inside a constant's value: only a constant made above it will do.
 static bool lookup_constant(void *context, const Expr *expr, ConstValue *out) {
@@ -57,7 +57,7 @@ static bool lookup_constant(void *context, const Expr *expr, ConstValue *out) {
                    k->definition->pos.line);
         diag_note(c->diag, "A constant can only use constants made above it. Move \"keep %s ...\" higher up.", k->display);
     } else if (checker_find_function(c, name)) {
-        diag_error(c->diag, expr->pos.span, "A constant can't call a function, because functions only run while the "
+        diag_error(c->diag, expr->pos.span, "A constant can't use a definition, because definitions only run while the "
                                             "program runs.");
         diag_note(c->diag, "%s", keep_note);
     } else if (strcmp(name, "pi") == 0 && !checker_find_later(c, name)) {
@@ -65,7 +65,7 @@ static bool lookup_constant(void *context, const Expr *expr, ConstValue *out) {
         out->number = 3.14159265358979323846;
         return true;
     } else if (checker_find_later(c, name)) {
-        diag_error(c->diag, expr->pos.span, "\"%s\" is a variable, so its value isn't known before the program runs.",
+        diag_error(c->diag, expr->pos.span, "\"%s\" is a name that can change, so its value isn't known before the program runs.",
                    checker_find_later(c, name)->display);
         diag_note(c->diag, "%s", keep_note);
     } else {
@@ -77,7 +77,7 @@ static bool lookup_constant(void *context, const Expr *expr, ConstValue *out) {
 void checker_check_constant(Checker *c, const Stmt *stmt) {
     if (c->function || c->blocks > 0) {
         diag_error(c->diag, stmt->as.constant.name.pos.span, "Constants can only be made at the top level, not inside %s.",
-                   c->function ? "a function" : "an \"if\" or a loop");
+                   c->function ? "a definition" : "an \"if\" or a loop");
         diag_note(c->diag, "Move \"keep %s ...\" to the start of a line, outside every block.",
                   stmt->as.constant.name.display);
         return;
@@ -108,7 +108,7 @@ void checker_collect_constants(Checker *c, const Block *program) {
             continue;
         }
         if (function) {
-            diag_error(c->diag, name->pos.span, "\"%s\" is the name of a function, defined on line %zu.", name->display,
+            diag_error(c->diag, name->pos.span, "\"%s\" is already defined with \"to\", on line %zu.", name->display,
                        function->definition->pos.line);
             diag_note(c->diag, "Give the constant a different name.");
             continue;

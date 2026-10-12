@@ -1,7 +1,7 @@
 Line 4: "size of rex" could mean two things.
     say the size of rex.
             ^^^^^^^^^^^
-"size" is a field and a function. For the field, write "rex's size"; for the function, write "size with rex".
+"size" is a field and a definition. For the field, write "rex's size"; for the definition, write "size with rex".
 
 Line 5: Something is missing after "of".
     say the name of.

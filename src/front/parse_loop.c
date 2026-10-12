@@ -71,7 +71,7 @@ static bool parse_loop_name(Parser *p, Stmt *stmt) {
 static bool report_count_as_variable(Parser *p) {
     if (parser_error(p, p->prev_span, "A sentence that starts with \"count\" is a counting loop, like "
                                       "\"count from 1 to 10:\".")) {
-        diag_note(p->diag, "To make a variable called \"count\", write \"let count be ...\".");
+        diag_note(p->diag, "To keep a value called \"count\", write \"let count be ...\".");
     }
     return false;
 }

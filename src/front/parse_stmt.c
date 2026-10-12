@@ -503,7 +503,7 @@ static void report_unknown_start(Parser *p) {
         if (strncmp(f, token->text, token->text_len) == 0 && f[token->text_len] == ' ') longer = f;
     }
     if (longer) {
-        diag_note(p->diag, "The function is called \"%s\": a function's name is every word before \"with\", "
+        diag_note(p->diag, "The definition is called \"%s\": its name is every word before \"with\", "
                            "\"of\", \"using\" or \"to\". To give \"%s\" an input, write \"to %s with %s:\".",
                   longer, written, written, longer + token->text_len + 1);
     } else if (parser_at_word(p, words, "can")) {  // "a cat can purr:" before any cat is defined
@@ -512,7 +512,7 @@ static void report_unknown_start(Parser *p) {
     } else if (closest) {
         diag_note(p->diag, "Did you mean %s?", closest);
     } else if (parser_looks_like_assignment(parser_peek(p, words))) {
-        diag_note(p->diag, "To make a variable, write \"let %s be ...\". To change one, write \"set %s to ...\".",
+        diag_note(p->diag, "To keep a value in a name, write \"let %s be ...\". To change it, write \"set %s to ...\".",
                   written, written);
     } else {
         diag_note(p->diag, "%s", generic);

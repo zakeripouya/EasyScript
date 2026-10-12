@@ -1,4 +1,4 @@
 Line 3: You already defined "greet" on line 1.
     to greet with anyone:
        ^^^^^
-Each function needs its own name. Only methods for different kinds of record can share one.
+Each definition needs its own name. Only methods for different kinds of record can share one.

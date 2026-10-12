@@ -80,7 +80,7 @@ Line 21: I can only join the items of a list, but this is text.
     say word joined with ", "
         ^^^^
 
-Line 22: I can only join the items of a list of numbers, text or yes/no values, but this is a list of lists of numbers.
+Line 22: I can only join numbers, text or yes/no values, but this is a list of lists of numbers.
     say (a list of (a list of 1)) joined with ", "
         ^^^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -102,7 +102,7 @@ Line 29: "and" needs yes or no on both sides, but the left side is a list of num
 Line 30: "scores" is a list of numbers (made on line 1), but this is a list of text.
     set scores to names
                   ^^^^^
-A variable keeps the kind of value it was made with. To keep a list of text, make a new variable for it.
+A name keeps the kind of value it was made with. To keep a list of text, make a new name for it.
 
 Line 31: "grid" is a list of lists of numbers, so it can't hold a list of lists of numbers.
     add grid to the end of grid
@@ -112,7 +112,7 @@ A list holds one kind of value. To keep a list of lists of numbers too, make a s
 Line 33: "total" is a number (made on line 32), but this is a list of numbers.
     set total to scores
                  ^^^^^^
-A variable keeps the kind of value it was made with. To keep a list of numbers, make a new variable for it.
+A name keeps the kind of value it was made with. To keep a list of numbers, make a new name for it.
 
 Line 34: I can only find the length of text or a list, but this is a number.
     say length of 5

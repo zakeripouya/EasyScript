@@ -40,7 +40,7 @@ static void require_function(Checker *c, const Expr *expr, TypeVar f, const Type
     TypeVar expected = types_new_func(c, params, n, result, at->pos.line);
     const char *wanted = checker_kind(c, expected);
     if ((type == TYPE_UNKNOWN || type_is_func(type)) && types_unify(c, f, expected)) return;
-    diag_error(c->diag, at->pos.span, "This has to be %s, but it's %s.", wanted, checker_kind(c, f));
+    diag_error(c->diag, at->pos.span, "This has to be %s. Instead, it's %s.", wanted, checker_kind(c, f));
     diag_note(c->diag, "%s", explanations[expr->as.apply.kind]);
 }
 
@@ -48,7 +48,7 @@ static void require_function(Checker *c, const Expr *expr, TypeVar f, const Type
 static void require_value(Checker *c, const Expr *expr, TypeVar result) {
     types_defer_one_of(c, expr->as.apply.function, result, result,
                        KIND_NUMBER | KIND_TEXT | KIND_YESNO | KIND_LIST | KIND_RECORD | KIND_MAP | KIND_OTHER | KIND_DATE,
-                       "The function has to give back a value");
+                       "What's applied has to give back a value");
 }
 
 TypeVar checker_check_apply(Checker *c, const Expr *expr) {
@@ -77,7 +77,7 @@ TypeVar checker_check_apply(Checker *c, const Expr *expr) {
         TypeVar key = types_new(c, TYPE_UNKNOWN, 0);
         require_function(c, expr, f, &item, 1, key);
         types_defer_one_of(c, expr->as.apply.function, key, key, KIND_NUMBER | KIND_TEXT | KIND_DATE,
-                           "To sort by it, the function has to give back numbers or text");
+                           "To sort by it, it has to give back numbers or text");
         return list;
     }
     }
@@ -102,8 +102,8 @@ void checker_check_replace(Checker *c, const Stmt *stmt) {
     if (types_unify(c, list, value) || types_of(c, value) == TYPE_ERROR) return;
     const char *name = list_expr->kind == EXPR_NAME ? arena_sprintf(c->arena, "\"%s\"", list_expr->display) : "It";
     diag_error(c->diag, stmt->as.list.value->as.apply.function->pos.span,
-               "%s is %s, so the function applied to its items has to give back %s, but this gives back %s.", name,
+               "%s is %s, so what's applied to its items has to give back %s, but this gives back %s.", name,
                checker_kind(c, list), checker_kind(c, item), checker_kind(c, types_item(c, value)));
-    diag_note(c->diag, "To make a new list of what the function gives back, write it like \"double applied to "
+    diag_note(c->diag, "To make a new list of what it gives back, write it like \"double applied to "
                        "every number in scores\" instead.");
 }

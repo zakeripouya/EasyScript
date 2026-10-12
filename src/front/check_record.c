@@ -326,7 +326,7 @@ void checker_check_record(Checker *c, Stmt *stmt) {
     const Name *name = &stmt->as.record.name;
     if (c->function || c->blocks > 0) {
         diag_error(c->diag, name->pos.span, "Kinds of record can only be defined at the top level, not inside %s.",
-                   c->function ? "a function" : "an \"if\" or a loop");
+                   c->function ? "a definition" : "an \"if\" or a loop");
         diag_note(c->diag, stmt->as.record.has ? "Move \"%s has ...\" to the start of a line, outside every block."
                                                : "Move \"%s is a kind of thing with:\" to the start of a line, outside every block.",
                   checker_type_name(c, type_record(stmt->as.record.index)));

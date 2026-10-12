@@ -55,7 +55,7 @@ static bool report_lambda_end(Parser *p) {
                         : parser_error(p, token->span, "I expected \"that gives back\" or a colon here, but found %s.",
                                        parser_describe(p, token));
     if (reported) {
-        diag_note(p->diag, "Write it like \"%s\", or end the line with a colon and write the function's sentences "
+        diag_note(p->diag, "Write it like \"%s\", or end the line with a colon and write its sentences "
                            "on the indented lines below.", lambda_example);
     }
     return false;
@@ -80,7 +80,7 @@ static bool parse_block_body(Parser *p, Stmt *def) {
     }
     if (!parser_at(p, 0, TOK_COLON)) return report_lambda_end(p);
     SourcePos header = def->pos;
-    bool ok = parser_parse_block(p, &def->as.function.body, &header, NULL, "this function");
+    bool ok = parser_parse_block(p, &def->as.function.body, &header, NULL, "\"a function\"");
     def->pos = header;
     p->ended_with_block = true;
     p->block_end = p->pos + 1;

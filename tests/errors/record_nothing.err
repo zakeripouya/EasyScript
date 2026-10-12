@@ -31,7 +31,7 @@ Compare something that can be nothing with it, like "if the node's next is nothi
 Line 20: "first" is a node (made on line 12), but this is a node or nothing.
     set first to later.
                  ^^^^^
-A variable keeps the kind of value it was made with. To keep a node or nothing, make a new variable for it.
+A name keeps the kind of value it was made with. To keep a node or nothing, make a new name for it.
 
 Line 21: The field "value" is a number, but this is nothing.
     set first's value to nothing.

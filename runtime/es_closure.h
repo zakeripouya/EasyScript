@@ -158,8 +158,8 @@ static void es_sort_by_keys(EsList *l, EsList *keys, bool down) {
 /* --- The memory check ------------------------------------------------------------- */
 
 static bool es_report_function_cycle(size_t circled, EsRecord *oldest) {
-    fprintf(stderr, "Memory check: %zu value%s still alive at the end of the program, because a function keeps "
-                    "itself alive through a name it uses:\n", circled, circled == 1 ? " was" : "s were");
+    fprintf(stderr, "Memory check: %zu value%s still alive at the end of the program, because a function made "
+                    "in a value keeps itself alive through a name it uses:\n", circled, circled == 1 ? " was" : "s were");
     size_t shown = 0;
     for (EsRecord *r = oldest; r && shown < 3; r = r->prev) {
         if (r->mark == ES_REACHED || r->type->style == ES_CELL) continue;
@@ -171,8 +171,10 @@ static bool es_report_function_cycle(size_t circled, EsRecord *oldest) {
         shown++;
     }
     if (circled > shown) fprintf(stderr, "    ...and %zu more\n", circled - shown);
-    fputs("A function that uses the name it's kept in (or a record, list or map that holds it) is never freed. "
-          "Define it with \"to\" instead, or set that name to something else before the program ends.\n", stderr);
+    fputs("A function made in a value that uses the name it's kept in (or a record, list or map that holds it) is "
+          "never freed. "
+          "Define it with \"to\" instead, or set that name to something else before the program ends.\n",
+          stderr);
     return true;
 }
 

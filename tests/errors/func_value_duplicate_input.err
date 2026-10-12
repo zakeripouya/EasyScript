@@ -1,0 +1,4 @@
+Line 1: The input "x" is named twice here.
+    let both be a function taking x and x that gives back x.
+                                        ^
+Give each input its own name.

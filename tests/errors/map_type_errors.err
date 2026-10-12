@@ -127,7 +127,7 @@ To put it at the end of the list, write "add ... to the end of the value for ...
 Line 36: "ages" is a map from text to numbers (made on line 2), but this is a map from text to lists of numbers.
     set ages to graph
                 ^^^^^
-A variable keeps the kind of value it was made with. To keep a map from text to lists of numbers, make a new variable for it.
+A name keeps the kind of value it was made with. To keep a map from text to lists of numbers, make a new name for it.
 
 Line 38: "and" needs yes or no on both sides, but the left side is a map from text to numbers.
     say ages and other

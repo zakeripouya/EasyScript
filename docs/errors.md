@@ -236,7 +236,7 @@ Give this loop's number its own name, like "count from 1 to 10 as n".
 **A misspelled function**: [`unknown_function_suggest.es`](../tests/errors/unknown_function_suggest.es)
 
 ```
-Line 3: I don't know a function called "aera".
+Line 3: I don't know how to "aera".
     say aera of 3 and 4
         ^^^^^^^^^^^^^^^
 Did you mean "area"? It's defined on line 1.
@@ -257,7 +257,7 @@ It's defined on line 1: "to area with width and height".
 Line 3: I don't know anything called "total".
         say total
             ^^^^^
-A function only sees its own inputs and the names it makes. To use "total" here, pass it in as an input.
+A definition only sees its own inputs and the names it makes. To use "total" here, pass it in as an input.
 ```
 
 **Changing a constant**: [`const_change.es`](../tests/errors/const_change.es)
@@ -272,10 +272,10 @@ It's kept on line 1. If it needs to change, make it with "let rate be ..." inste
 **A constant that uses a variable**: [`const_uses_variable.es`](../tests/errors/const_uses_variable.es)
 
 ```
-Line 2: "price" is a variable, so its value isn't known before the program runs.
+Line 2: "price" is a name that can change, so its value isn't known before the program runs.
     keep tax as price times 0.2
                 ^^^^^
-A constant is fixed before the program starts, so it can only use numbers, text, yes or no, and constants made above it. If the value is only known while the program runs, use "let" instead of "keep".
+A constant is fixed before the program starts. It can only use numbers, text, yes or no, and constants made above it. If the value is only known later, use "let" instead of "keep".
 ```
 
 The checker also explains `skip this one` outside a loop, `it` outside a counting loop, using a loop's number after the loop ("it only exists inside that loop"), `give back` outside a function, a function defined inside an `if`, a loop, or another function, two functions with the same name, two inputs with the same name, a variable named like a function, and calling a variable. For constants it also explains calls, `it`, file contents and `nothing` in a constant's value, a constant that uses a later constant or itself, constants inside blocks, duplicate constants, names that clash with a constant, and mistakes in the value itself (like dividing by zero), with the same wording as the runtime errors. The full, tested set is in [`tests/errors/`](../tests/errors/).
@@ -420,7 +420,7 @@ To take a character of text, write it with "character", like "character 1 of wor
 | Looking for something other than text in text | "I can only look for text in text, but this is a number." with a hint to use `as text` |
 | `starts with` / `ends with` without text on both sides | ""starts with" needs text on both sides, but this is a number." |
 | A text tool on something that isn't text | "I can only take the words of text, but this is a number." (and likewise for the characters, the lines, uppercase, lowercase, extra spaces, splitting, replacing, the code, and `is a letter` / `is a digit` / `is a space`) |
-| `joined with` on something that isn't a list of numbers, text or yes/no values | "I can only join the items of a list, but this is text." |
+| `joined with` on something that isn't a list of numbers, text or yes/no values | "I can only join the items of a list, but this is text." (or "I can only join numbers, text or yes/no values, but this is a list of lists of numbers.") |
 | Splitting by, joining with, or replacing with something that isn't text | "Text can only be split by text, but this is a number." / "The items can only be joined with text, but this is a number." / "I can only replace text with text, but this is a number." |
 | A character code that isn't a number | "A character code has to be a number, but this is text." |
 | A text tool in a constant | "A constant can't take text apart or look inside it." with a `let` suggestion |
@@ -623,10 +623,10 @@ A function kept as a value has a kind that says what it takes and gives back, so
 **Calling something that isn't a function, or with the wrong inputs**: [`func_value_errors.es`](../tests/errors/func_value_errors.es)
 
 ```
-Line 5: "n" is a number, not a function, so it can't be called.
+Line 5: "n" is a number, so it can't be called.
     say call n with 3.
         ^
-Only a function can be called. To keep one in a name, write something like "let double be a function taking x that gives back x times 2".
+Only a definition, or a function made with "a function taking ...", can be called. To keep one in a name, write something like "let double be a function taking x that gives back x times 2".
 ```
 
 ```
@@ -651,11 +651,11 @@ Keep it in a name of its own first, like "let current maybe be maybe", and check
 | A function that gives back nothing, used as a value | ""quiet" doesn't give back a value, so it can't be used here." / "A function called here has to give back a value, but this is nothing." |
 | An input named like a name around it | "You already made "total" on line 13." with "Give its input another name, like "new total"." |
 | `it` in a function made in a loop | ""it" doesn't refer to anything here." with "A function made inside a loop runs later, when it's called, ..." |
-| A function made inside `every` or `only` | "A function can't be made inside "every" or "only"." |
+| A function made inside `every` or `only` | ""a function taking ..." can't be made inside "every" or "only"." |
 | `the function NAME` for methods several kinds share | "Several kinds of record have a method called "speak", so I can't tell which one this is." |
-| In a constant | "A constant can't be a function, because functions are kept as values while the program runs." |
+| In a constant | "A constant can't hold "a function taking ..." or "the function ...", because those are made while the program runs." |
 | Inputs nothing decides | "I can't tell what kind of value "thing" is." with "Say which kind where the function is made, like "a function taking thing (a number)"." ([`func_value_undecided.es`](../tests/errors/func_value_undecided.es)) |
-| A function inside a function with `to` | "Functions can only be defined at the top level, not inside another function." with "To make a function inside another one, write "let inside be a function taking ...:" ..." |
+| A function inside a function with `to` | "Definitions with "to" can only be at the top level, not inside another definition." with "To make a function inside another one, write "let inside be a function taking ...:" ..." |
 
 **Built-ins given the wrong kind of function**: [`func_builtin_errors.es`](../tests/errors/func_builtin_errors.es)
 
@@ -669,9 +669,9 @@ It's given each item, and the items it gives back yes for are kept.
 | Problem | Message (summary) |
 |---|---|
 | Not a function, or one that takes the wrong inputs | "This has to be a function taking a number, but it's a number." with what the built-in gives it |
-| `apply` with a function that changes the kind | ""scores" is a list of numbers, so the function applied to its items has to give back a number, but this gives back text." with a note suggesting `applied to every` |
-| Sorting by something that isn't a number or text | "To sort by it, the function has to give back numbers or text, but this is a yes/no value." |
-| A function that gives back nothing | "The function has to give back a value, but this is nothing." |
+| `apply` with a function that changes the kind | ""scores" is a list of numbers, so what's applied to its items has to give back a number, but this gives back text." with a note suggesting `applied to every` |
+| Sorting by something that isn't a number or text | "To sort by it, it has to give back numbers or text, but this is a yes/no value." |
+| A function that gives back nothing | "What's applied has to give back a value, but this is nothing." |
 | Not a list | "I can only choose items from a list, but this is a number." / "I can only go through the items of a list, ..." |
 | Combining an empty list without `starting from` (while the program runs) | "There's nothing to combine: the list is empty." with "Say what to start from, like ", starting from 0"." ([`err_combine_empty.es`](../tests/run/err_combine_empty.es)) |
 
@@ -864,12 +864,12 @@ Positions start at 1: the first item is item 1.
 | Problem | Message (summary) |
 |---|---|
 | Dividing or `mod` by zero | "You divided by zero." |
-| A function that keeps calling itself | "Functions are calling each other too deeply (more than 10000 calls inside each other)." with a hint to check that it stops |
+| A function that keeps calling itself | "Definitions are using each other too deeply (more than 10000 inside each other)." with a hint to check that it stops |
 | A count step that's zero or negative | "The step of a count has to be more than zero, but it's -1." with a hint that counting goes up by itself (or down, with `count down`) |
 | `repeat N times` with N that isn't a whole number of zero or more | "The number of times has to be a whole number, but it's 2.5." (or "can't be negative") |
 | `as a number` on text that isn't a number | "I can't turn "12abc" into a number." (or "I can't turn empty text into a number."), with the hint "A number is digits, with a "-" before them if it's negative, a "." for decimals and an "e" for powers of ten, like 42, -7, 3.5 or 1e5." Long text is cut short after 60 characters |
 | A file that can't be read or written | "I couldn't read the file "nope.txt": it doesn't exist." |
-| A function that gives back a value but reaches its end without `give back` | "The function "sign" ended without giving anything back." with a hint |
+| A function that gives back a value but reaches its end without `give back` | ""sign" ended without giving anything back." with a hint |
 | A list item that isn't there | "There's no item 4 in the list: it has 3 items." (or "it's empty"); item 0 adds "Positions start at 1: the first item is item 1." |
 | A position that isn't a whole number | "The position of an item has to be a whole number, but it's 1.5." |
 | The first, last, biggest or smallest item of an empty list | "There's no first item: the list is empty." |

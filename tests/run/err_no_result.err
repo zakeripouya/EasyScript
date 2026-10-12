@@ -1,4 +1,4 @@
-Line 1: The function "sign" ended without giving anything back.
+Line 1: "sign" ended without giving anything back.
     to sign with n, giving back a number:
        ^^^^
 Make sure every way through it ends with "give back ...".

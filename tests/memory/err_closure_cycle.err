@@ -1,3 +1,3 @@
-Memory check: 1 value was still alive at the end of the program, because a function keeps itself alive through a name it uses:
+Memory check: 1 value was still alive at the end of the program, because a function made in a value keeps itself alive through a name it uses:
     the function made on line 2
-A function that uses the name it's kept in (or a record, list or map that holds it) is never freed. Define it with "to" instead, or set that name to something else before the program ends.
+A function made in a value that uses the name it's kept in (or a record, list or map that holds it) is never freed. Define it with "to" instead, or set that name to something else before the program ends.

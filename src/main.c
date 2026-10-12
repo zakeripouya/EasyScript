@@ -199,7 +199,7 @@ static int compile_c(const char *output_path, bool hooks) {
     char *checked[] = {"cc", "-O1", "-fno-omit-frame-pointer", "-fsanitize=address,undefined",
                        "-fno-sanitize-recover=all", temp_c_path, "-o", (char *)output_path, "-lm", hook, NULL};
     if (run_process(env_is_1("ES_SANITIZE") ? checked : plain) != 0) {
-        fprintf(stderr, "The C compiler couldn't build the program. This is a bug in EasyScript; please report it.\n");
+        fprintf(stderr, "I couldn't build the program from the C I made. This is a bug in EasyScript; please report it.\n");
         return 1;
     }
     return 0;

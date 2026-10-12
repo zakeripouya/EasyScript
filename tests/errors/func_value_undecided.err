@@ -1,14 +1,14 @@
 Line 1: I can't tell what kind of value "thing" is.
     let mystery be a function taking thing that gives back 1.
                                      ^^^^^
-Nothing in the program decides it. Say which kind where the function is made, like "a function taking thing (a number)".
+Nothing in the program decides it. Say which kind where it's made, like "a function taking thing (a number)".
 
 Line 2: I can't tell what kind of value "first thing" is.
     let unused be a function taking first thing and second thing:
                                     ^^^^^^^^^^^
-Nothing in the program decides it. Say which kind where the function is made, like "a function taking first thing (a number) and second thing".
+Nothing in the program decides it. Say which kind where it's made, like "a function taking first thing (a number) and second thing".
 
 Line 2: I can't tell what kind of value "second thing" is.
     let unused be a function taking first thing and second thing:
                                                     ^^^^^^^^^^^^
-Nothing in the program decides it. Say which kind where the function is made, like "a function taking first thing and second thing (a number)".
+Nothing in the program decides it. Say which kind where it's made, like "a function taking first thing and second thing (a number)".

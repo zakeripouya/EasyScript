@@ -306,8 +306,8 @@ static bool es_text_same(EsText *a, EsText *b) {
  * caller. */
 static inline EsFrame *es_push(const EsFunction *fn, int call) {
     if (es_depth == ES_MAX_DEPTH) {
-        es_fail(call, "Check that the function stops calling itself at some point.",
-                "Functions are calling each other too deeply (more than %d calls inside each other).", ES_MAX_DEPTH);
+        es_fail(call, "Check that it stops using itself at some point.",
+                "Definitions are using each other too deeply (more than %d inside each other).", ES_MAX_DEPTH);
     }
     EsFrame *frame = &es_stack[es_depth++];
     frame->fn = fn;
@@ -357,7 +357,7 @@ static inline EsArg es_input(int i) {
 /* A function that gives back a value reached its end without "give back". */
 static _Noreturn void es_no_result(int site, const char *name) {
     es_fail(site, "Make sure every way through it ends with \"give back ...\".",
-            "The function \"%s\" ended without giving anything back.", name);
+            "\"%s\" ended without giving anything back.", name);
 }
 
 /* --- Loops ----------------------------------------------------------------- */

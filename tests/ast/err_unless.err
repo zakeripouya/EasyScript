@@ -8,10 +8,10 @@ Line 6: Something is missing after "unless".
     ^^^^^^
 Add a condition that's yes or no, like "unless x is 5:".
 
-Line 8: I expected a colon, a comma, or "then" after the condition, but found the end of the line.
+Line 8: I expected ":", "," or "then" after the condition, but found the end of the line.
     unless ready
                 ^
-Write "unless x is 5:" with the sentences on indented lines below, or "unless x is 5, say "five"" on one line.
+Write "unless x is 5:" and put the sentences on the lines below, indented. For one sentence, write "unless x is 5, say "five"".
 
 Line 11: Something is missing after "unless".
         give back 1 unless.

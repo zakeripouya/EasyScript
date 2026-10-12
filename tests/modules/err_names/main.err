@@ -28,10 +28,10 @@ Line 10 of main.es: "helper" is defined in tools.es, which this file doesn't use
         ^^^^^^^^^^^
 Add "use tools." at the top of this file.
 
-Line 12 of main.es: "double" is the name of a function, defined on line 2 of helpers.es.
+Line 12 of main.es: "double" is already defined with "to", on line 2 of helpers.es.
     let double be 5
         ^^^^^^
-Give the variable a different name.
+Use a different name here.
 
 Line 13 of main.es: "tidy" is private to helpers.es, so only that file can use it.
     say helpers's tidy with 3

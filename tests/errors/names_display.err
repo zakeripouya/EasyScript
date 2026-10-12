@@ -1,7 +1,7 @@
 Line 5: "clientName" is text (made on line 2), but this is a number.
     set clientname to 5
                       ^
-A variable keeps the kind of value it was made with. To keep a number, make a new variable for it.
+A name keeps the kind of value it was made with. To keep a number, make a new name for it.
 
 Line 6: "HOURLY_RATE" is a constant, so it can't change.
     set hourly_rate to 1

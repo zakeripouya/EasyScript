@@ -6,7 +6,7 @@ Each kind of record can have one method called "speak".
 Line 15: You already defined "describe" on line 13.
     to describe with x:
        ^^^^^^^^
-Each function needs its own name. Only methods for different kinds of record can share one.
+Each definition needs its own name. Only methods for different kinds of record can share one.
 
 Line 17: "speak" is a method for a dog and a cat, but this is a fish.
     speak (a new fish with name "Nemo").

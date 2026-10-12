@@ -11,7 +11,7 @@ Write it like "count from 1 to 10:".
 Line 5: A sentence that starts with "count" is a counting loop, like "count from 1 to 10:".
     count is 5
     ^^^^^
-To make a variable called "count", write "let count be ...".
+To keep a value called "count", write "let count be ...".
 
 Line 6: I expected a colon after this loop, but found the end of the line.
     count from 1 to 10

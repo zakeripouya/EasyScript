@@ -93,8 +93,8 @@ Stmt *parser_parse_module_call(Parser *p) {
         const Token *word = parser_peek(p, 0);
         if (parser_error(p, word->span, "I don't know a sentence that starts with \"%s's %s\".", module->text,
                          word->text)) {
-            diag_note(p->diag, "A sentence can start with something another file defines with \"to\", like "
-                               "\"%s's greet with \"Ann\"\".", module->text);
+            diag_note(p->diag, "A sentence can use a name from another file, like \"%s's greet with \"Ann\"\".",
+                      module->text);
         }
         return NULL;
     }

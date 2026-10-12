@@ -131,7 +131,7 @@ static const char *needs_text(TextOp op) {
 
 // "L joined with S": a list of numbers, text or yes/no values, and text between them.
 static TypeVar check_joined(Checker *c, const Expr *expr) {
-    static const char *const message = "I can only join the items of a list of numbers, text or yes/no values";
+    static const char *const message = "I can only join numbers, text or yes/no values";
     const Expr *list = expr->as.text_op.operand;
     TypeVar var = checker_check_expr(c, list);
     TypeVar item = checker_require_list(c, var, list, "I can only join the items of a list");

@@ -185,10 +185,10 @@ Stmt *parse_if(Parser *p, const Token *verb) {
         parser_skip_line_and_block(p);
     } else if (!parser_at(p, 0, TOK_COLON)) {
         const Token *token = parser_peek(p, 0);
-        if (parser_error(p, token->span, "I expected a colon, a comma, or \"then\" after the condition, but found %s.",
+        if (parser_error(p, token->span, "I expected \":\", \",\" or \"then\" after the condition, but found %s.",
                          parser_describe(p, token))) {
-            diag_note(p->diag, "Write \"%s x is 5:\" with the sentences on indented lines below, "
-                               "or \"%s x is 5, say \"five\"\" on one line.", verb->text, verb->text);
+            diag_note(p->diag, "Write \"%s x is 5:\" and put the sentences on the lines below, indented. For one "
+                               "sentence, write \"%s x is 5, say \"five\"\".", verb->text, verb->text);
         }
         parser_skip_line_and_block(p);
         ok = false;

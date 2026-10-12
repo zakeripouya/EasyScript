@@ -633,6 +633,7 @@ check_no_underscore_suggestions() {
 check_no_underscore_suggestions
 audit "audit/every-phrase-documented" vocab_coverage.py
 audit "audit/includes" includes.py
+audit "audit/plain-words" plain_words.py
 
 # --- Summary ----------------------------------------------------------------
 

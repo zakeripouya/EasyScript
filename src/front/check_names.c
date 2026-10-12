@@ -67,14 +67,14 @@ bool checker_clashes(Checker *c, const Name *name) {
     if (k) {
         diag_error(c->diag, name->pos.span, "\"%s\" is a constant, made on %s.", name->display,
                    checker_where(c, k->definition->pos));
-        diag_note(c->diag, "Give the variable a different name.");
+        diag_note(c->diag, "Use a different name here.");
         return true;
     }
     const Function *f = checker_find_function(c, name->text);
     if (!f) return false;
-    diag_error(c->diag, name->pos.span, "\"%s\" is the name of a function, defined on %s.", name->display,
+    diag_error(c->diag, name->pos.span, "\"%s\" is already defined with \"to\", on %s.", name->display,
                checker_where(c, f->definition->pos));
-    diag_note(c->diag, "Give the variable a different name.");
+    diag_note(c->diag, "Use a different name here.");
     return true;
 }
 
@@ -138,17 +138,17 @@ void checker_report_unknown(Checker *c, const char *name, const char *display, S
     if (ends_function_name) {  // "to greet someone:" is a function called "greet someone"
         const char *display_fn = c->function->display;
         size_t keep = strlen(display_fn) - len - 1;
-        diag_note(c->diag, "This function is called \"%s\". To make \"%s\" an input, introduce it with \"with\": "
+        diag_note(c->diag, "This definition is called \"%s\". To make \"%s\" an input, introduce it with \"with\": "
                            "\"to %.*s with %s:\".", display_fn, display, (int)keep, display_fn, display);
     } else if (outside) {
-        diag_note(c->diag, "A function only sees its own inputs and the names it makes. To use \"%s\" here, "
+        diag_note(c->diag, "A definition only sees its own inputs and the names it makes. To use \"%s\" here, "
                            "pass it in as an input.", display);
     } else if (ended && ended->loop_item) {
         diag_note(c->diag, "\"%s\" is each item of the loop on line %zu, so it only exists inside that loop. "
-                           "To keep one, make a variable before the loop and set it inside.", ended->display, ended->line);
+                           "To keep one, make a name before the loop and set it inside.", ended->display, ended->line);
     } else if (ended && ended->loop_number) {
         diag_note(c->diag, "\"%s\" is the number of the loop on line %zu, so it only exists inside that loop. "
-                           "To keep it, make a variable before the loop and set it inside.", ended->display, ended->line);
+                           "To keep it, make a name before the loop and set it inside.", ended->display, ended->line);
     } else if (ended) {
         diag_note(c->diag, "You made \"%s\" inside %s on line %zu, so it only exists inside that block. "
                            "To use it afterwards, make it before %s.", ended->display, ended->where, ended->line, ended->where);

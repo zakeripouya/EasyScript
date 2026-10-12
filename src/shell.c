@@ -45,7 +45,7 @@ typedef struct {
 
 static void print_banner(void) {
     printf("EasyScript interactive shell. Type a sentence, like: say \"hello\"\n");
-    printf("End a line with \":\" to start a block (an if, a loop, or a function); a blank line ends it.\n");
+    printf("End a line with \":\" to start a block (an if, a loop, or a definition); a blank line ends it.\n");
     printf("Lines with errors aren't kept. Type exit to leave.\n");
 }
 

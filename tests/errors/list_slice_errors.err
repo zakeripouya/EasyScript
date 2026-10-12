@@ -22,4 +22,4 @@ Line 6: I can only take items from a list, but this is a number.
 Line 8: "words" is a list of numbers (made on line 7), but this is a list of text.
     set words to a list of "x"
                    ^^^^^^^^^^^
-A variable keeps the kind of value it was made with. To keep a list of text, make a new variable for it.
+A name keeps the kind of value it was made with. To keep a list of text, make a new name for it.

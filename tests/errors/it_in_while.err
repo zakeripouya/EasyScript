@@ -1,4 +1,4 @@
 Line 2: "it" doesn't refer to anything here.
         say it
             ^^
-"it" means the number of a counting loop or a "repeat ... times" loop, or the item of a "for each" loop, but this loop has neither. Use a variable instead.
+"it" means the number of a counting loop or a "repeat ... times" loop, or the item of a "for each" loop, but this loop has neither. Use a name instead.

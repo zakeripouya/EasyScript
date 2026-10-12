@@ -8,7 +8,7 @@ Line 4: Constants can only be made at the top level, not inside an "if" or a loo
              ^^
 Move "keep b1 ..." to the start of a line, outside every block.
 
-Line 6: Constants can only be made at the top level, not inside a function.
+Line 6: Constants can only be made at the top level, not inside a definition.
         keep c1 as 3
              ^^
 Move "keep c1 ..." to the start of a line, outside every block.
