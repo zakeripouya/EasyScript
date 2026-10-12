@@ -550,4 +550,12 @@ Expr *parser_parse_add_if(Parser *p, Expr *value);              // ", plus 12 if
 bool parser_parse_can_be_field(Parser *p, Field *field);         // "can be fragile" in a "has" sentence
 Expr *parse_or_condition(Parser *p);                             // a value up to a comma: "or" and below
 
+// --- The best group (parse_best_group.c) ---------------------------------------------------
+
+const char *parser_singular_of(Arena *arena, const char *plural);  // "purchases" -> "purchase", or NULL
+bool parser_at_best_group(const Parser *p);    // the store with the highest total amount
+Expr *parser_parse_best_group(Parser *p);
+bool parser_at_top_group(const Parser *p);     // the top 3 stores by total amount
+Expr *parser_parse_top_group(Parser *p);
+
 #endif

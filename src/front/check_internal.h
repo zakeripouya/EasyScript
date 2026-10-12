@@ -309,6 +309,7 @@ void checker_write_lambdas(Checker *c);  // the kinds of their inputs, results a
 // check_apply.c: built-ins that take a function
 TypeVar checker_check_apply(Checker *c, const Expr *expr);  // EXPR_APPLY
 TypeVar checker_check_aggregate(Checker *c, const Expr *expr);  // check_aggregate.c: EXPR_AGGREGATE
+bool checker_resolve_rows(Checker *c, Expr *expr);  // check_aggregate.c: the list "0rows FIELD" means
 TypeVar checker_check_default(Checker *c, const Expr *expr);    // check_narrow.c: X, or D
 TypeVar checker_check_table(Checker *c, const Expr *expr);      // check_narrow.c: a "depends on" table
 void checker_check_replace(Checker *c, const Stmt *stmt);   // apply F to every X in L, keep only ..., sort L by F

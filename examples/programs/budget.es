@@ -15,6 +15,5 @@ a purchase is big if its amount is over 200.
 say "Purchases: [how many purchases there are]".
 say "Total: [the total amount of purchases as money]".
 show the total amount of purchases per category, sorted biggest first, as a table.
-let totals per store be the total amount of purchases per store, sorted biggest first.
-say "Top store:", the first item of the keys of totals per store.
+say "Top store:", the store with the highest total amount.
 show the big purchases whose category isn't "rent", sorted by amount biggest first, as a table.

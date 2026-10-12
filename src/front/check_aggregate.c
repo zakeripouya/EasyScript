@@ -214,3 +214,40 @@ TypeVar checker_check_aggregate(Checker *c, const Expr *expr) {
                        "Things can only be grouped by text or a number");
     return types_new_map(c, group_var, result, expr->pos.line);
 }
+
+// "the store with the highest total amount": the one list whose items have a
+// field called "store" (a table's rows can have any column). Sets the name.
+bool checker_resolve_rows(Checker *c, Expr *expr) {
+    const char *field = expr->as.name + strlen("0rows ");
+    const Symbol *found = NULL;
+    size_t count = 0;
+    for (size_t i = c->floor; i < c->made.len; i++) {
+        Type type = types_of(c, c->made.items[i].var);
+        if (!type_is_list(type) || type_is_list(type_item(type)) || !type_is_record(type_item(type))) continue;
+        const RecordKind *kind = &c->records->items[type_record_index(type_item(type))];
+        bool has = kind->table;
+        for (size_t f = 0; !has && kind->definition && f < kind->definition->as.record.fields.len; f++) {
+            has = strcmp(kind->definition->as.record.fields.items[f].name.text, field) == 0;
+        }
+        if (has && count++ == 0) found = &c->made.items[i];
+    }
+    if (count == 1) {
+        expr->as.name = found->name;
+        expr->display = found->display;
+        return true;
+    }
+    if (count == 0) {
+        diag_error(c->diag, expr->pos.span, "There's no list whose items have a \"%s\" to group by.", expr->display);
+        diag_note(c->diag, "Say which list, like \"the %s with the highest total amount of purchases\".", expr->display);
+        diag_info(c->diag, DIAG_MISSING, "the list to look through", "a list");
+        return false;
+    }
+    diag_error(c->diag, expr->pos.span, "\"%s\" could come from more than one list here.", expr->display);
+    diag_note(c->diag, "Say which list at the end, like \"... of %s\".", found->display);
+    diag_info(c->diag, DIAG_TWO_MEANINGS, "which list to look through", "a list");
+    for (size_t i = c->floor; i < c->made.len; i++) {
+        Type type = types_of(c, c->made.items[i].var);
+        if (type_is_list(type) && type_is_record(type_item(type))) diag_choice(c->diag, "... of %s", c->made.items[i].display);
+    }
+    return false;
+}

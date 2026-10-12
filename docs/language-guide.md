@@ -2230,6 +2230,8 @@ say the total amount of orders per region.           # "east" is 140 and "west" 
 say the number of orders per region.                 # "east" is 2 and "west" is 1
 say the order with the highest amount's customer.    # Bo
 say the top 2 orders by amount.
+say the region with the highest total amount.        # west
+say the top 2 regions by number of orders.
 if every order's amount is above 10, say "All above 10.".
 say how many orders whose amount is over 50 there are.
 ```
@@ -2250,6 +2252,7 @@ Each phrase is one pass over the list, written here with the loops it stands for
 - `the top N L` keeps the N biggest seen so far (in a small heap, so it never sorts the whole list) and gives them back biggest first; `the lowest N` the same for the smallest. Ties keep the item that came first.
 - `the N most common L` counts each item in a map, then takes the N biggest counts.
 - `the ITEM with the highest FIELD` keeps the best item seen so far; the first one wins a tie. An empty list is an error.
+- `the region with the highest total amount`, where `region` is a field of the items, is the first key of `the total amount of orders per region, sorted biggest first`; `the top 2 regions by total amount` the first 2 keys. The list is the one whose items have a `region` (say `... of orders` when there's more than one).
 - `... per FIELD` keeps a map from each group to its running result.
 - A filter in the list (`the orders whose amount is over 50`) is tested in the same pass, unless its test calls a definition (then the filter keeps its own pass, so calls happen in order).
 

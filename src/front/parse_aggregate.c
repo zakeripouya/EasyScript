@@ -515,6 +515,8 @@ Expr *parser_parse_aggregate_word(Parser *p) {
     }
     Expr *total = parse_totals(p);
     if (total) return total;
+    if (parser_at_top_group(p)) return parser_parse_top_group(p);    // the top 3 stores by total amount
+    if (parser_at_best_group(p)) return parser_parse_best_group(p);  // the store with the highest total amount
     if (at_top(p)) return parse_top(p);
     if (parser_at_most_common(p)) return parser_parse_most_common(p);
     if ((words = best_item_words(p)) > 0) return parse_best(p, words);

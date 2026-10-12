@@ -516,6 +516,7 @@ static TypeVar check_bare_name(Checker *c, const Expr *expr);
 
 // A bare name: a variable, a constant, or a function that takes no values.
 static TypeVar check_name(Checker *c, const Expr *expr) {
+    if (strncmp(expr->as.name, "0rows ", 6) == 0 && !checker_resolve_rows(c, (Expr *)expr)) return error_var(c);
     NameContext saved;
     if (!checker_enter_names(c, expr, expr->as.name, &saved)) return error_var(c);
     TypeVar result = check_bare_name(c, expr);

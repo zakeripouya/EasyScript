@@ -1,0 +1,4 @@
+Line 5: "store" could come from more than one list here.
+    say the store with the highest total amount.
+            ^^^^^
+Say which list at the end, like "... of purchases".
