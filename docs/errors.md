@@ -1055,6 +1055,19 @@ It can ask questions in the terminal, like "ask "What's your name?" and call it 
 
 The same for email ("EasyScript can't send email yet."; an address outside quotes is "An email address goes in quotes, like "team@ourcompany.com"."), the internet ("EasyScript can't use the internet yet.") and Excel files ("EasyScript can't read Excel files yet." with "Save the sheet as a csv file in Excel ("Save As", then "CSV"), and read that."). A workbook read as a table while the program runs, whatever its name, stops the program with "EasyScript can't read Excel files yet, and book.dat is one, not a csv file." ([`err_table_excel.es`](../tests/run/err_table_excel.es)).
 
+### Words from other tools
+
+People bring words from spreadsheets and other languages. The errors stay, with a note giving the EasyScript words ([`err_other_tools.es`](../tests/ast/err_other_tools.es), [proposal 0019](proposals/0019-errors-for-other-languages-words.md)):
+
+```
+Line 1: I don't understand "(" here.
+    let total be SUM(hours).
+                    ^
+EasyScript doesn't use "SUM(...)". Write "the total of ..." instead.
+```
+
+The same for `AVERAGE(...)`, `COUNT(...)`, `ROUND(...)`, `IF(...)` and other formulas, `20%` ("For a percent, write "20 percent"."), `^` and `**` ("For a power, write "x to the power of 2"."), `&` for joining text, `... for each employee` ("To work it out for each employee, write "per employee" there."), `repeat:`, `loop:` and `keep asking until ...` ("To do something again and again, write "forever:" or "keep doing this until ...:", ..."), and `ask me how many ...` ("I expected the question in quotes here, but found "me".").
+
 ### Talking to it, part 4
 
 ```

@@ -320,6 +320,7 @@ void parser_report_leftover(Parser *p) {
         return;
     }
     if (!parser_error(p, token->span, "I don't understand %s here.", parser_describe(p, token))) return;
+    if (parser_note_brackets(p) || parser_note_grouping(p)) return;  // "SUM(hours)", "... for each employee"
     const char *name = close_known_name(p, token);
     if (name) {
         diag_note(p->diag, "Did you mean \"%s\"?", name);

@@ -260,6 +260,15 @@ static Stmt *parse_ask(Parser *p, const Token *verb, const StmtForm *form) {
         }
     }
     if (!n && (n = parser_match_words(p, "yes or no"))) stmt->as.ask.kind = TYPE_YESNO;
+    static const char *const people[] = {"me", "user", "them", "him", "her", "for"};
+    for (size_t i = 0; !n && i < sizeof people / sizeof people[0]; i++) {  // "ask me how many ...", "ask the user for ..."
+        if (!parser_at_word(p, 0, people[i]) || parser_at_word(p, 1, "and") || parser_at(p, 1, TOK_NEWLINE)) continue;
+        const Token *word = parser_peek(p, 0);
+        if (parser_error(p, word->span, "I expected the question in quotes here, but found %s.", parser_describe(p, word))) {
+            diag_note(p->diag, "Write it like \"ask \"How many people?\" and call the answer people\".");
+        }
+        return NULL;
+    }
     parser_consume(p, n + (n && parser_at(p, n, TOK_COMMA)));
     stmt->as.ask.prompt = parse_expression(p);
     if (p->sentence_failed || !expect_call_phrase(p, "and call answer", "and call the answer", form->example)) return NULL;
@@ -327,6 +336,7 @@ static Stmt *parse_call_form(Parser *p, const Token *verb, const StmtForm *form)
 static Stmt *parse_keep_form(Parser *p, const Token *verb, const StmtForm *form) {
     (void)form;
     if (parser_at_keep_only(p)) return parser_parse_keep_only(p, verb);
+    if (!parser_at_word(p, 0, "doing") && parser_reject_keep_loop(p, verb)) return NULL;  // keep asking until ...
     return parser_at_word(p, 0, "doing") ? parse_loop(p, verb) : parse_constant(p, verb);
 }
 

@@ -56,7 +56,7 @@ Sentences start with a word like "let", "set", "say" or "ask".
 Line 12: I don't know a sentence that starts with "loop".
     loop over scores
     ^^^^
-Did you mean "stop"?
+To go through a list, write "for each item in scores:", with the sentences indented below.
 
 Line 13: I don't know a sentence that starts with "duplicate".
     duplicate the file "a.txt"

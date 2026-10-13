@@ -16,13 +16,22 @@ static Expr *expected_value(Parser *p) {
     // A ":" or "," straight after an operator ("if x plus:") also means the value is missing.
     bool ends_here = parser_at_sentence_end(p) || token->kind == TOK_COLON || token->kind == TOK_COMMA;
     if (ends_here || (token->kind == TOK_RPAREN && after_open_paren)) {
+        bool percent = p->pos > 0 && p->tokens[p->pos - 1].kind == TOK_PERCENT;  // "let tip be 20%"
         if (parser_error(p, p->prev_span, "Something is missing after %s.", parser_quoted(p, p->prev_span))) {
-            diag_note(p->diag, "Add a value there, like a number, some text in quotes, or a name.");
+            if (percent) {
+                diag_note(p->diag, "\"%%\" means the remainder after dividing. For a percent, write \"20 percent\".");
+            } else {
+                diag_note(p->diag, "Add a value there, like a number, some text in quotes, or a name.");
+            }
         }
     } else if (token->kind == TOK_RPAREN) {
         parser_report_leftover(p);
     } else if (parser_error(p, token->span, "I expected a value here, but found %s.", parser_describe(p, token))) {
-        diag_note(p->diag, "A value is a number, some text in quotes, yes or no, nothing, or a name.");
+        if (token->kind == TOK_STAR && p->pos > 0 && p->tokens[p->pos - 1].kind == TOK_STAR) {  // x ** 2
+            diag_note(p->diag, "For a power, write \"x to the power of 2\".");
+        } else {
+            diag_note(p->diag, "A value is a number, some text in quotes, yes or no, nothing, or a name.");
+        }
     }
     return parser_error_expr(p);
 }

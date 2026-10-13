@@ -136,7 +136,7 @@ bool parser_cant_do_yet(Parser *p) {
 // A note for a sentence starting with "open", "load", "import" or "get":
 // the sentence that reads the file. Gives back whether it gave one.
 bool parser_note_opening(Parser *p) {
-    static const char *const opens[] = {"open", "load", "import", "get"};
+    static const char *const opens[] = {"open", "load", "import", "get", "loop"};
     if (!ONE_OF(parser_peek(p, 0), opens)) return false;
     size_t n = sentence_length(p);
     const Token *file = find(p, n, text_ends, ".csv");
@@ -144,6 +144,16 @@ bool parser_note_opening(Parser *p) {
     if (file) {
         diag_note(p->diag, "To read a table, write \"read the table in \"%s\" and call it %s\".", file->text,
                   parser_table_name(p, file));
+        return true;
+    }
+    if (is(parser_peek(p, 0), "loop")) {  // loop: / loop over scores
+        const Token *list = parser_peek(p, 2);
+        if ((is(parser_peek(p, 1), "over") || is(parser_peek(p, 1), "through")) && list->kind == TOK_WORD) {
+            diag_note(p->diag, "To go through a list, write \"for each item in %s:\", with the sentences indented below.",
+                      list->text);
+        } else {
+            parser_note_again(p);
+        }
         return true;
     }
     for (size_t i = 0; i < n; i++) {
@@ -171,4 +181,66 @@ const char *parser_table_name(Parser *p, const Token *file) {
         name[i] = c == '_' || c == '-' ? ' ' : (char)(c | (c >= 'A' && c <= 'Z' ? 0x20 : 0));
     }
     return name;
+}
+
+// --- Words from other tools --------------------------------------------------------------
+
+void parser_note_again(Parser *p) {
+    diag_note(p->diag, "To do something again and again, write \"forever:\" or \"keep doing this until ...:\", with the "
+                       "sentences indented below.");
+}
+
+// "SUM(hours)", "round(x, 2)": a word with brackets straight after it, where
+// a value ends. A note with the EasyScript words for it.
+bool parser_note_brackets(Parser *p) {
+    static const char *const formulas[][2] = {
+        {"sum", "the total of ..."}, {"average", "the average of ..."}, {"avg", "the average of ..."},
+        {"mean", "the average of ..."}, {"median", "the median of ..."}, {"count", "how many ... there are"},
+        {"countif", "how many ... are ..."}, {"sumif", "the total of the ... whose ..."}, {"max", "the biggest of ..."},
+        {"min", "the smallest of ..."}, {"round", "... rounded to 2 decimal places"}, {"if", "A if C, otherwise B"},
+        {"vlookup", "the value for K in M"}, {"xlookup", "the value for K in M"}, {"len", "the number of items in ..."}};
+    const Token *open = parser_peek(p, 0), *before = p->pos > 0 ? &p->tokens[p->pos - 1] : NULL;
+    if (open->kind != TOK_LPAREN || !before || before->kind != TOK_WORD ||
+        before->span.offset + before->span.length != open->span.offset) {
+        return false;
+    }
+    const char *written = parser_text(p, before->span);
+    for (size_t i = 0; i < sizeof formulas / sizeof formulas[0]; i++) {
+        if (strcmp(before->text, formulas[i][0]) != 0) continue;
+        diag_note(p->diag, "EasyScript doesn't use \"%s(...)\". Write \"%s\" instead.", written, formulas[i][1]);
+        return true;
+    }
+    diag_note(p->diag, "To use a definition, write \"%s with x\" (or \"%s of x\"), without brackets.", written, written);
+    return true;
+}
+
+// "the total hours for each employee", "... by student", "... grouped by
+// day": where a value ends. A note showing "per".
+bool parser_note_grouping(Parser *p) {
+    size_t at = 0;
+    if (is(parser_peek(p, 0), "for") && (is(parser_peek(p, 1), "each") || is(parser_peek(p, 1), "every"))) at = 2;
+    if (is(parser_peek(p, 0), "grouped") && is(parser_peek(p, 1), "by")) at = 2;
+    if (is(parser_peek(p, 0), "by")) at = 1;
+    const Token *group = parser_peek(p, at);
+    if (!at || group->kind != TOK_WORD) return false;
+    diag_note(p->diag, "To work it out for each %s, write \"per %s\" there.", group->text, group->text);
+    return true;
+}
+
+// "keep asking until ...": a "keep" sentence that isn't "keep doing this
+// until", "keep only" or a constant ("keep NAME as V"). Gives back whether
+// it was reported.
+bool parser_reject_keep_loop(Parser *p, const Token *verb) {
+    size_t n = sentence_length(p);
+    bool again = false;  // "keep asking", "keep going until ...": not "keep rate 0.2" (a constant missing its "as")
+    for (size_t i = 0; i < n; i++) {
+        if (is(parser_peek(p, i), "as") || is(parser_peek(p, i), "at")) return false;
+        again = again || is(parser_peek(p, i), "until") || is(parser_peek(p, i), "while");
+    }
+    const Token *next = parser_peek(p, 0);
+    if (next->kind != TOK_WORD) return false;
+    if (!again && !(next->text_len > 3 && strcmp(next->text + next->text_len - 3, "ing") == 0)) return false;
+    Span span = {verb->span.offset, next->span.offset + next->span.length - verb->span.offset};
+    if (parser_error(p, span, "I don't know a sentence that starts with \"keep %s\".", next->text)) parser_note_again(p);
+    return true;
 }

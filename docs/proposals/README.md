@@ -38,3 +38,4 @@ A doubt that comes up while building goes back into the proposal, not into the p
 - [0017: an answer used as a number is asked for as a number](0017-answers-used-as-numbers.md) (Built)
 - [0018: errors for file names without quotes and for opening a table](0018-file-names-and-opening-tables.md) (Built)
 - [0021: "EasyScript can't do that yet" for email, web pages, the internet and Excel files](0021-cant-do-yet.md) (Built)
+- [0019: errors that answer words from spreadsheets and other languages](0019-errors-for-other-languages-words.md) (Built)

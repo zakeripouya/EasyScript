@@ -1,0 +1,74 @@
+Line 3: I don't understand the character "^".
+    let area be side ^ 2.
+                     ^
+For a power, write "x to the power of 2".
+
+Line 5: I don't understand the character "&".
+    say "Total: " & total.
+                  ^
+To put text together, write "say "Total:", total" or use "followed by".
+
+Line 1: I don't understand "(" here.
+    let total be SUM(hours).
+                    ^
+EasyScript doesn't use "SUM(...)". Write "the total of ..." instead.
+
+Line 2: Something is missing after "%".
+    let tip be 20%
+                 ^
+"%" means the remainder after dividing. For a percent, write "20 percent".
+
+Line 3: I don't understand "2" here.
+    let area be side ^ 2.
+                       ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I expected a value here, but found "*".
+    let area be side ** 2.
+                      ^
+For a power, write "x to the power of 2".
+
+Line 5: I don't understand "total" here.
+    say "Total: " & total.
+                    ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 6: I don't understand "(" here.
+    let x be round(total, 2).
+                  ^
+EasyScript doesn't use "round(...)". Write "... rounded to 2 decimal places" instead.
+
+Line 7: I don't understand "for" here.
+    say the total hours of timesheet for each employee.
+                                     ^^^
+To work it out for each employee, write "per employee" there.
+
+Line 8: I don't understand "score" here.
+    say the average score by student.
+                    ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 9: Something is missing after "repeat".
+    repeat:
+    ^^^^^^
+Say how many times, like "repeat 3 times:". To do something again and again, write "forever:" or "keep doing this until ...:", with the sentences indented below.
+
+Line 11: I don't know a sentence that starts with "loop".
+    loop:
+    ^^^^
+To do something again and again, write "forever:" or "keep doing this until ...:", with the sentences indented below.
+
+Line 13: I don't know a sentence that starts with "keep asking".
+    keep asking until the guess is right.
+    ^^^^^^^^^^^
+To do something again and again, write "forever:" or "keep doing this until ...:", with the sentences indented below.
+
+Line 14: I expected the question in quotes here, but found "me".
+    please ask me how many gloves we have.
+               ^^
+Write it like "ask "How many people?" and call the answer people".
+
+Line 15: I expected the question in quotes here, but found "user".
+    ask the user for their name.
+            ^^^^
+Write it like "ask "How many people?" and call the answer people".

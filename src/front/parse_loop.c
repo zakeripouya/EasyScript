@@ -166,6 +166,13 @@ static bool parse_header(Parser *p, Stmt *stmt, const Token *verb) {
             parser_advance(p);
             return parse_condition(p, stmt);
         }
+        if (parser_at(p, 0, TOK_COLON) || parser_at_sentence_end(p)) {  // repeat:
+            if (parser_error(p, verb->span, "Something is missing after \"repeat\".")) {
+                diag_note(p->diag, "Say how many times, like \"repeat 3 times:\". To do something again and again, write "
+                                   "\"forever:\" or \"keep doing this until ...:\", with the sentences indented below.");
+            }
+            return false;
+        }
         stmt->as.loop.kind = LOOP_TIMES;
         return parse_times(p, stmt, "repeat 3 times:");
     }

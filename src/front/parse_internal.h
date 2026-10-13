@@ -156,6 +156,10 @@ Expr *parser_error_expr(Parser *p);
 bool parser_is_unquoted(const Parser *p, const Token *token);  // "grades.csv" written without quotes
 bool parser_cant_do_yet(Parser *p);          // email, web pages, the internet, Excel files: said plainly
 bool parser_note_opening(Parser *p);         // "open "grades.csv"": the sentence that reads it
+void parser_note_again(Parser *p);           // "forever:" / "keep doing this until ...:"
+bool parser_note_brackets(Parser *p);        // "SUM(hours)": the EasyScript words
+bool parser_note_grouping(Parser *p);        // "... for each employee": "per employee"
+bool parser_reject_keep_loop(Parser *p, const Token *verb);  // "keep asking until ..." 
 const char *parser_table_name(Parser *p, const Token *file);  // "best_months.csv" -> "best months"
 // The source text of a span (arena copy).
 const char *parser_text(const Parser *p, Span span);

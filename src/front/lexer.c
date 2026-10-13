@@ -249,6 +249,10 @@ static void note_for_character(Lexer *lx, const char *s, size_t n) {
         diag_note(lx->diag, "That's a curly apostrophe. Use a straight one (') instead.");
     } else if (is_curly_quote(s, n, 0x9C) || is_curly_quote(s, n, 0x9D)) {
         diag_note(lx->diag, "That's a curly quote. Use straight double quotes (\") around text.");
+    } else if (n == 1 && s[0] == '^') {
+        diag_note(lx->diag, "For a power, write \"x to the power of 2\".");
+    } else if (n == 1 && s[0] == '&') {
+        diag_note(lx->diag, "To put text together, write \"say \"Total:\", total\" or use \"followed by\".");
     } else if (n == 1 && s[0] == '_') {
         diag_note(lx->diag, "A word has to start with a letter.");
     } else if (n > 1) {
