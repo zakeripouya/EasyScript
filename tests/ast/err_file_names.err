@@ -1,0 +1,29 @@
+Line 1: A file's name goes in quotes, like "grades.csv".
+    Read file grades.csv.
+              ^^^^^^^^^^
+To read a table, write "read the table in "grades.csv" and call it grades".
+
+Line 2: A file's name goes in quotes, like "best_months.csv".
+    read best_months.csv and call it data
+         ^^^^^^^^^^^^^^^
+To read a table, write "read the table in "best_months.csv" and call it best months".
+
+Line 6: A file's name goes in quotes, like "listings.xlsx".
+    open listings.xlsx
+         ^^^^^^^^^^^^^
+EasyScript can't read Excel files yet. Save the sheet as a csv file in Excel ("Save As", then "CSV"), and read that.
+
+Line 3: I don't know a sentence that starts with "open".
+    open the file "guests.csv".
+    ^^^^
+To read a table, write "read the table in "guests.csv" and call it guests".
+
+Line 4: I expected "file" or "the table in" here, but found the text "orders.csv".
+    read "orders.csv"
+         ^^^^^^^^^^^^
+To read a table, write "read the table in "orders.csv" and call it orders".
+
+Line 5: I don't know a sentence that starts with "load".
+    load "notes.txt"
+    ^^^^
+To read a file, write "read file "notes.txt" and call it notes".

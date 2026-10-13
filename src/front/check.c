@@ -379,6 +379,10 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
         checker_require(c, checker_check_expr(c, stmt->as.read_file.path), TYPE_TEXT, stmt->as.read_file.path,
                         "The name of a file has to be text", NULL);
         make_text(c, &stmt->as.read_file.name);
+        if (stmt->as.read_file.path->kind == EXPR_TEXT && stmt->as.read_file.path->as.text.len > 4 &&
+            strcmp(stmt->as.read_file.path->as.text.value + stmt->as.read_file.path->as.text.len - 4, ".csv") == 0) {
+            vec_push(c->arena, &c->csv_texts, stmt);  // going through its rows is "read the table in"
+        }
         break;
     case STMT_STOP: checker_check_stop(c, stmt); break;
     case STMT_IF: check_if(c, stmt); break;

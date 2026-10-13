@@ -1,0 +1,4 @@
+let page [8:1]
+  text "https://example.com" [8:13]
+say [9:1]
+  name page [9:5]

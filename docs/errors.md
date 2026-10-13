@@ -1031,6 +1031,30 @@ Positions start at 1: the first item is item 1.
 
 Parts of an expression are worked out left to right, so when two parts would both fail, the error is always about the first one. The tested messages are the `err_*.err` files in [`tests/run/`](../tests/run/).
 
+### Files, and what EasyScript can't do yet
+
+**A file's name without quotes**: [`err_file_names.es`](../tests/ast/err_file_names.es). One error for the whole name; the rest of the line is read as if it had its quotes.
+
+```
+Line 1: A file's name goes in quotes, like "grades.csv".
+    Read file grades.csv.
+              ^^^^^^^^^^
+To read a table, write "read the table in "grades.csv" and call it grades".
+```
+
+Also: `read "orders.csv"` ("I expected "file" or "the table in" here, but found the text "orders.csv"." with the same note), `open the file "guests.csv".` (the table sentence as its note), and a csv file read as text and then gone through with `for each` (""grades" is the text of a file. To go through its rows, write "read the table in "grades.csv" and call it grades".", [`csv_read_as_text.es`](../tests/errors/csv_read_as_text.es)).
+
+**Something EasyScript can't do yet**: [`err_cant_do.es`](../tests/ast/err_cant_do.es)
+
+```
+Line 4: EasyScript can't make web pages yet.
+    make a web page where guests can sign up.
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+It can ask questions in the terminal, like "ask "What's your name?" and call it name".
+```
+
+The same for email ("EasyScript can't send email yet."; an address outside quotes is "An email address goes in quotes, like "team@ourcompany.com"."), the internet ("EasyScript can't use the internet yet.") and Excel files ("EasyScript can't read Excel files yet." with "Save the sheet as a csv file in Excel ("Save As", then "CSV"), and read that."). A workbook read as a table while the program runs, whatever its name, stops the program with "EasyScript can't read Excel files yet, and book.dat is one, not a csv file." ([`err_table_excel.es`](../tests/run/err_table_excel.es)).
+
 ### Talking to it, part 4
 
 ```

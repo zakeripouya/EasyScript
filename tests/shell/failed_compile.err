@@ -1,7 +1,6 @@
-Line 2: I don't know a sentence that starts with "csv".
+Line 2: A file's name goes in quotes, like "sales.csv".
     read the table in sales.csv and call it purchases.
-                            ^^^
-Sentences like these work: "read the table in "sales.csv" and call it sales", "read file "notes.txt" and call it notes" or "ask "What's your name?" and call the answer name".
+                      ^^^^^^^^^
 Line 2: I don't know anything called "purchases".
     say the total amount of purchases.
                             ^^^^^^^^^

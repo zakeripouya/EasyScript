@@ -1,0 +1,4 @@
+Line 3: A "for each" loop needs a list to go through, but this is text.
+    for each row in grades:
+                    ^^^^^^
+"grades" is the text of a file. To go through its rows, write "read the table in "grades.csv" and call it grades".

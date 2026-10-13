@@ -280,6 +280,17 @@ static Stmt *parse_read(Parser *p, const Token *verb, const StmtForm *form) {
     static const char *const file[] = {"file", NULL};
     if (parser_match_words(p, "table in")) return parser_parse_read_table(p, verb);  // read the table in "x.csv"
     Stmt *stmt = parser_new_stmt(p, STMT_READ_FILE, verb);
+    const Token *named = parser_peek(p, 0);
+    size_t len = named->text_len;
+    if (named->kind == TOK_STRING && len > 4 && (strcmp(named->text + len - 4, ".csv") == 0 ||
+                                                 strcmp(named->text + len - 4, ".tsv") == 0)) {  // read "sales.csv"
+        if (parser_error(p, named->span, "I expected \"file\" or \"the table in\" here, but found %s.",
+                         parser_describe(p, named))) {
+            diag_note(p->diag, "To read a table, write \"read the table in \"%s\" and call it %s\".", named->text,
+                      parser_table_name(p, named));
+        }
+        return NULL;
+    }
     if (!parser_expect_word(p, file, form->example)) return NULL;
     stmt->as.read_file.path = parse_expression(p);
     if (p->sentence_failed || !expect_call_phrase(p, "and call it", "and call it", form->example)) return NULL;
@@ -495,6 +506,7 @@ Stmt *parse_statement(Parser *p) {
         parser_skip_step_words(p);  // "first, ...", "after that, ..."
     }
     const Token *verb = parser_peek(p, 0);
+    if (parser_cant_do_yet(p)) return NULL;  // "send an email to ...", "make a web page"
     if (parser_at_record_definition(p)) return parse_record(p);
     if (parser_at_has_definition(p)) return parser_parse_has(p);
     if (parser_at_can_be(p)) return parser_parse_can_be(p);  // a parcel can be fragile.

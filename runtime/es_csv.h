@@ -359,6 +359,10 @@ static EsList *es_read_table(int site, EsText *path, const EsRecordType *type) {
     EsText *text = es_table_read.text = es_read_file(site, es_retain(path));
     EsCsv *r = &es_table_read.csv;
     *r = (EsCsv){site, slash ? slash + 1 : path->chars, text->chars, text->len, 0, 1, {NULL, 0, 0}};
+    if (text->len >= 4 && memcmp(text->chars, "PK\003\004", 4) == 0) { /* a workbook (a zip file), not a csv file */
+        es_fail(site, "Save the sheet as a csv file in Excel (\"Save As\", then \"CSV\"), and read that.",
+                "EasyScript can't read Excel files yet, and %s is one, not a csv file.", r->name);
+    }
     EsList *header = es_table_read.header = es_list_new(ES_ITEMS_TEXT, 0);
     EsList *fields = es_table_read.fields = es_list_new(ES_ITEMS_TEXT, 0);
     long line;

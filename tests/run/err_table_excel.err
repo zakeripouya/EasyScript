@@ -1,0 +1,4 @@
+Line 3: EasyScript can't read Excel files yet, and book.dat is one, not a csv file.
+    read the table in "book.dat" and call it rows.
+                      ^^^^^^^^^^
+Save the sheet as a csv file in Excel ("Save As", then "CSV"), and read that.

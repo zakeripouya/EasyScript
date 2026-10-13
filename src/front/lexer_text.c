@@ -264,3 +264,95 @@ bool lexer_text_block(Lexer *lx) {
     lx->pos = last;
     return true;
 }
+
+// --- Names written without quotes ---------------------------------------------------------
+
+static bool word_char(char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+}
+
+static bool starts_with_word(const Lexer *lx, size_t at, const char *word) {
+    for (size_t i = 0; word[i]; i++) {
+        char c = lexer_peek(lx, at + i);
+        if ((c | 0x20) != word[i] && c != word[i]) return false;
+    }
+    return true;
+}
+
+// The text it would be in quotes, as a STRING token (the parser keeps quiet
+// about the rest of the line: this error explains it).
+static void emit_unquoted(Lexer *lx, size_t start, size_t end) {
+    char *text = arena_alloc(lx->arena, end - start + 1);
+    memcpy(text, lx->src + start, end - start);
+    lexer_emit_content(lx, TOK_STRING, start, end, text, end - start);
+}
+
+// "grades.csv" -> "grades": the name a table read from it would get.
+static const char *table_name(Lexer *lx, size_t start, size_t dot) {
+    if (!((lx->src[start] | 0x20) >= 'a' && (lx->src[start] | 0x20) <= 'z')) return "rows";
+    char *name = arena_alloc(lx->arena, dot - start + 1);
+    for (size_t i = start; i < dot; i++) name[i - start] = lx->src[i] == '_' ? ' ' : (char)(lx->src[i] | 0x20);
+    return name;
+}
+
+// A file's name, an email address or a web address written without quotes
+// ("grades.csv", "team@shop.com", "https://shop.com"): one error, and the
+// text it would be in quotes. Gives back whether it was one.
+bool lexer_unquoted(Lexer *lx) {
+    static const char *const endings[] = {"csv", "tsv", "txt", "svg", "xlsx", "xls", "json", "md", "html", "es", "pdf"};
+    size_t start = lx->pos, i = start;
+    if (starts_with_word(lx, start, "http://") || starts_with_word(lx, start, "https://")) {
+        while (i < lx->len && lx->src[i] != ' ' && lx->src[i] != '\t' && lx->src[i] != '\n' && lx->src[i] != '\r' &&
+               lx->src[i] != '"') {
+            i++;
+        }
+        while (i > start && (lx->src[i - 1] == '.' || lx->src[i - 1] == ',' || lx->src[i - 1] == '!' ||
+                             lx->src[i - 1] == '?' || lx->src[i - 1] == ')' || lx->src[i - 1] == ':')) {
+            i--;
+        }
+        diag_error(lx->diag, lexer_span(start, i), "EasyScript can't use the internet yet.");
+        diag_note(lx->diag, "It can read files on this computer, like \"read the table in \"data.csv\" and call it data\".");
+        emit_unquoted(lx, start, i);
+        lx->pos = i;
+        return true;
+    }
+    while (word_char(lexer_peek(lx, i))) i++;
+    size_t name_end = i;
+    if (lexer_peek(lx, i) == '@' && word_char(lexer_peek(lx, i + 1))) {  // team@ourcompany.com
+        i++;
+        while (word_char(lexer_peek(lx, i)) || lexer_peek(lx, i) == '-' ||
+               (lexer_peek(lx, i) == '.' && word_char(lexer_peek(lx, i + 1)))) {
+            i++;
+        }
+        diag_error(lx->diag, lexer_span(start, i), "An email address goes in quotes, like \"%.*s\".", (int)(i - start),
+                   lx->src + start);
+        diag_note(lx->diag, "EasyScript can't send email yet, but it can keep an address as text.");
+        emit_unquoted(lx, start, i);
+        lx->pos = i;
+        return true;
+    }
+    if (lexer_peek(lx, i) != '.' || !word_char(lexer_peek(lx, i + 1))) return false;
+    size_t ending = i + 1, end = ending;
+    while (word_char(lexer_peek(lx, end))) end++;
+    if (lexer_peek(lx, end) == '\'') return false;
+    for (size_t k = 0; k < sizeof endings / sizeof endings[0]; k++) {
+        size_t n = strlen(endings[k]);
+        if (end - ending != n || !starts_with_word(lx, ending, endings[k])) continue;
+        int shown = (int)(end - start);
+        diag_error(lx->diag, lexer_span(start, end), "A file's name goes in quotes, like \"%.*s\".", shown, lx->src + start);
+        size_t had = lx->tokens.len;  // "read the table in grades.csv": the quotes are all that's missing
+        bool reading = had >= 3 && strcmp(lx->tokens.items[had - 3].text, "read") == 0 &&
+                       strcmp(lx->tokens.items[had - 2].text, "table") == 0 && strcmp(lx->tokens.items[had - 1].text, "in") == 0;
+        if (k <= 1 && !reading) {
+            diag_note(lx->diag, "To read a table, write \"read the table in \"%.*s\" and call it %s\".", shown,
+                      lx->src + start, table_name(lx, start, name_end));
+        } else if (k == 4 || k == 5) {
+            diag_note(lx->diag, "EasyScript can't read Excel files yet. Save the sheet as a csv file in Excel (\"Save As\", "
+                                "then \"CSV\"), and read that.");
+        }
+        emit_unquoted(lx, start, end);
+        lx->pos = end;
+        return true;
+    }
+    return false;
+}

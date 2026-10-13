@@ -1,0 +1,34 @@
+Line 2: An email address goes in quotes, like "team@ourcompany.com".
+    email the list to team@ourcompany.com.
+                      ^^^^^^^^^^^^^^^^^^^
+EasyScript can't send email yet, but it can keep an address as text.
+
+Line 5: EasyScript can't use the internet yet.
+    look up the status at https://track.example.com/?id=5.
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+It can read files on this computer, like "read the table in "data.csv" and call it data".
+
+Line 1: EasyScript can't send email yet.
+    send the report to "team@shop.com".
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+It can write the text into a file for you to send, like "write report in file "report.txt"".
+
+Line 3: EasyScript can't send email yet.
+    every monday at 9am email "bookings.csv" to "team@ourcompany.com"
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+It can write the text into a file for you to send, like "write report in file "report.txt"".
+
+Line 4: EasyScript can't make web pages yet.
+    make a web page where guests can sign up.
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+It can ask questions in the terminal, like "ask "What's your name?" and call it name".
+
+Line 6: EasyScript can't use the internet yet.
+    get the page at "https://example.com".
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+It can read files on this computer, like "read the table in "data.csv" and call it data".
+
+Line 7: EasyScript can't read Excel files yet.
+    read the table in "listings.xlsx" and call it listings.
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Save the sheet as a csv file in Excel ("Save As", then "CSV"), and read that.

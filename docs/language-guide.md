@@ -2473,6 +2473,8 @@ save the sales whose region is "East" as "east.csv".
 
 A table's rows are records whose fields are the columns the program uses: `amount` is a number because the program adds it up, `region` is text.
 
+A file's name goes in quotes (`"sales.csv"`); written without them, it's an error that shows the sentence with quotes. EasyScript reads csv files; it can't read Excel files yet, so save the sheet as a csv file first ("Save As", then "CSV"). It can't send email, make web pages or use the internet yet either, and says so when a program asks.
+
 When the program's use only says "a number or an amount" (a total, an average, arithmetic, a chart), the file decides, before the program runs. A column whose values are amounts in one currency (`$1200`, `€4.50`, `12 dollars`; plain numbers can be among them) holds amounts, and a column of plain numbers holds numbers. EasyScript looks at the file named in quotes in the folder the program runs in or, if it isn't there yet, at the text the program writes into it (`put the text below in file "sales.csv":`). Reading the same file twice uses each column the same way. A blank cell in a column of numbers or amounts counts as 0. A file that doesn't fit how the program uses a column (amounts where the program uses a number, amounts in two currencies, words where it needs numbers) is an error before the program runs:
 
 ```

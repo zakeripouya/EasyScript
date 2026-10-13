@@ -184,9 +184,31 @@ const Phrase *parser_match_phrase(Parser *p, const Phrase *table, size_t n, size
 
 // --- Errors ----------------------------------------------------------------
 
+// A STRING the lexer made from a name written without quotes ("grades.csv"):
+// its source is exactly its text, with no quote before it.
+bool parser_is_unquoted(const Parser *p, const Token *token) {
+    return token->kind == TOK_STRING && token->span.length > 0 && token->span.length == token->text_len &&
+           p->source[token->span.offset] != '"' && memcmp(p->source + token->span.offset, token->text, token->text_len) == 0;
+}
+
+// The lexer already explained this line: a name on it was written without quotes.
+static bool line_has_unquoted(const Parser *p) {
+    size_t here = p->pos < p->count ? p->pos : p->count - 1;
+    size_t line = p->tokens[here].line;
+    unsigned file = p->tokens[here].file;
+    for (size_t i = here + 1; i-- > 0 && p->tokens[i].line == line && p->tokens[i].file == file;) {
+        if (parser_is_unquoted(p, &p->tokens[i])) return true;
+    }
+    for (size_t i = here; i < p->count && p->tokens[i].line == line && p->tokens[i].file == file; i++) {
+        if (parser_is_unquoted(p, &p->tokens[i])) return true;
+    }
+    return false;
+}
+
 bool parser_error(Parser *p, Span span, const char *fmt, ...) {
     if (p->sentence_failed) return false;
     p->sentence_failed = true;
+    if (line_has_unquoted(p)) return false;
     va_list args;
     va_start(args, fmt);
     const char *message = arena_vsprintf(p->arena, fmt, args);

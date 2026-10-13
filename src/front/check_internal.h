@@ -200,7 +200,8 @@ typedef struct {
     Vec(struct ModuleUse) module_uses;  // names used from other files, renamed once the program is checked
     Vec(ChartValues) charts;          // every chart sentence, for its currency
     Vec(TableFile *) table_files;     // the files tables are read from, named in quotes
-    Vec(AskAnswer) asks;              // plain "ask" sentences: the answer's kind comes from its use (text if nothing decides)
+    Vec(AskAnswer) asks;
+    Vec(const struct Stmt *) csv_texts;  // "read file "x.csv" and call it NAME": a csv file read as text              // plain "ask" sentences: the answer's kind comes from its use (text if nothing decides)
 } Checker;
 
 // A name in a value that means another file's function or constant.

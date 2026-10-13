@@ -204,7 +204,8 @@ void parser_report_unknown_start(Parser *p) {
     for (size_t i = 0; words == 1 && i < sizeof greetings / sizeof greetings[0]; i++) {
         greeting = greeting || strcmp(token->text, greetings[i]) == 0;
     }
-    if (greeting) {  // "Hello!", "Thank you very much."
+    if (parser_note_opening(p)) {  // "open "grades.csv""
+    } else if (greeting) {  // "Hello!", "Thank you very much."
         diag_note(p->diag, "Every sentence is something for the program to do, so leave out greetings and thanks.");
     } else if (longer) {
         diag_note(p->diag, "The definition is called \"%s\": its name is every word before \"with\", "

@@ -199,7 +199,17 @@ TypeVar checker_check_each(Checker *c, const Stmt *stmt, TypeVar *value) {
                            "\"for each name in the keys of ages:\".");
         return error_var(c);
     }
-    return checker_require_list(c, var, list, "A \"for each\" loop needs a list to go through");
+    bool text = types_of(c, var) == TYPE_TEXT;
+    TypeVar item = checker_require_list(c, var, list, "A \"for each\" loop needs a list to go through");
+    for (size_t i = 0; text && list->kind == EXPR_NAME && i < c->csv_texts.len; i++) {  // read file "x.csv" ...
+        const Stmt *read = c->csv_texts.items[i];
+        if (strcmp(read->as.read_file.name.text, list->as.name) != 0) continue;
+        diag_note(c->diag, "\"%s\" is the text of a file. To go through its rows, write \"read the table in \"%s\" and "
+                           "call it %s\".", list->display ? list->display : list->as.name,
+                  read->as.read_file.path->as.text.value, read->as.read_file.name.display);
+        break;
+    }
+    return item;
 }
 
 void checker_check_remove_key(Checker *c, const Stmt *stmt) {

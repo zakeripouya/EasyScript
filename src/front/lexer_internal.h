@@ -37,6 +37,7 @@ bool lexer_at_line_end(const Lexer *lx, size_t offset);     // a newline, a CR b
 Span lexer_span(size_t start, size_t end);
 size_t lexer_utf8_len(const char *s, size_t avail);         // the UTF-8 sequence's length, or 0 if invalid
 void lexer_emit_content(Lexer *lx, TokenKind kind, size_t start, size_t end, const char *text, size_t text_len);
+bool lexer_unquoted(Lexer *lx);  // "grades.csv", "team@shop.com", "https://..." written without quotes
 void lexer_token(Lexer *lx);                                // one token at lx->pos
 void lexer_skip_to_line_end(Lexer *lx);
 void lexer_string(Lexer *lx);                               // lexer_text.c: text in quotes, at its quote

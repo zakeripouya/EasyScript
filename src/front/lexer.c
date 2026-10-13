@@ -162,6 +162,7 @@ static void lex_plain_word(Lexer *lx, size_t start) {
 // An apostrophe belongs to a word only between letters: isn't, rock'n'roll.
 // A word ending in 's is the word and then a possessive: "rex's" is "rex", 's.
 static void lex_word(Lexer *lx) {
+    if (lexer_unquoted(lx)) return;  // grades.csv: a file's name written without quotes
     size_t start = lx->pos;
     while (is_word_char(lexer_peek(lx, lx->pos)) ||
            (lexer_peek(lx, lx->pos) == '\'' && is_alpha(lexer_peek(lx, lx->pos + 1)))) {

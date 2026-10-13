@@ -153,6 +153,10 @@ bool parser_error(Parser *p, Span span, const char *fmt, ...) PRINTF_LIKE(3, 4);
 // An EXPR_ERROR node at the next token.
 Expr *parser_error_expr(Parser *p);
 
+bool parser_is_unquoted(const Parser *p, const Token *token);  // "grades.csv" written without quotes
+bool parser_cant_do_yet(Parser *p);          // email, web pages, the internet, Excel files: said plainly
+bool parser_note_opening(Parser *p);         // "open "grades.csv"": the sentence that reads it
+const char *parser_table_name(Parser *p, const Token *file);  // "best_months.csv" -> "best months"
 // The source text of a span (arena copy).
 const char *parser_text(const Parser *p, Span span);
 
