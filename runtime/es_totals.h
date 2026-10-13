@@ -325,6 +325,11 @@ static void es_cell_value(EsBuf *b, EsItems kind, EsValue v) {
 static void es_cell_field(EsBuf *b, const EsRecord *r, int i) {
     size_t at = r->type->offsets[i];
     EsValue v;
+    char kind = r->type->kinds[i];
+    if ((kind == 'n' && es_is_blank_n(ES_FIELD(r, double, at))) ||
+        ((kind == 'u' || kind == 'e' || kind == 'p') && ES_FIELD(r, long long, at) == ES_BLANK_CENTS)) {
+        return;  /* a table's blank cell stays blank */
+    }
     switch (r->type->kinds[i]) {
     case 'n': v.n = ES_FIELD(r, double, at); es_cell_value(b, ES_ITEMS_NUMBER, v); break;
     case 'd': v.n = ES_FIELD(r, double, at); es_cell_value(b, ES_ITEMS_DATE, v); break;

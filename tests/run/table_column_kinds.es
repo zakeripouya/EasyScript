@@ -1,5 +1,5 @@
 note: Plain numbers stay numbers, the currency's word works as well as its sign,
-note: and a blank cell in a column of amounts is $0.00.
+note: and a blank cell in a column of amounts is nothing: totals and averages skip it.
 put the text below in file "scores.csv":
     name,score
     Ana,72

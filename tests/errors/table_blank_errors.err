@@ -1,0 +1,13 @@
+Line 8: This is an amount in dollars, so it's never nothing.
+        say row's tip plus $1, or $0.
+            ^^^^^^^^^^^^^^^^^
+", or" gives another value when there isn't one. Leave it out here.
+
+Line 9: This gives text when the cell is blank, but the column holds an amount in dollars.
+        say row's tip, or "none".
+                          ^^^^^^
+The value after ", or" has to be the same kind as the one it stands in for.
+
+Line 10: Only a column of numbers or amounts has blank cells that are nothing, but this is text.
+        say row's day, or "someday".
+            ^^^^^^^^^

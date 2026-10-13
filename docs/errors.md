@@ -1081,6 +1081,15 @@ To round the whole value, write "4.8 / 20, rounded to 2 decimal places". To roun
 
 ### Tables' columns
 
+**A blank cell used as a value**: [`err_table_blank.es`](../tests/run/err_table_blank.es), [proposal 0024](proposals/0024-blank-cells.md)
+
+```
+Line 10: "tip" is blank here: its cell in the table is empty.
+        say row's day, row's tip plus $1.
+                       ^^^^^^^^^
+To use $0 when it's blank, write ", or $0" after it, like "its tip, or $0".
+```
+
 **A column's kind stated twice**: [`table_stated_twice.es`](../tests/errors/table_stated_twice.es), [proposal 0023](proposals/0023-column-kinds.md). ""amount" is said to be a number here, but it's used as an amount in dollars." A stated kind that the file doesn't fit is the error from [proposal 0014](proposals/0014-file-decides-column-kind.md) ([`table_stated_kind_errors.es`](../tests/errors/table_stated_kind_errors.es)), and a kind EasyScript doesn't know is "I expected "in dollars", "in euros", "in pounds" or "as a number" here, ...".
 
 ### Talking to it, part 4

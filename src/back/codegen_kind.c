@@ -176,6 +176,15 @@ void cg_emit_match(Codegen *g, const Stmt *stmt) {
 // otherwise D, worked out only then.
 void cg_emit_default(Codegen *g, const Expr *expr, StrBuf *out) {
     const Expr *value = expr->as.lookup.map;
+    if (cg_table_cell(g, value)) {  // "its amount, or 0": D when the cell is blank
+        g->raw_cell = value;
+        const char *v = cg_operand(g, value, false);
+        g->raw_cell = NULL;
+        const char *d = cg_operand(g, expr->as.lookup.fallback, false);
+        size_t t = cg_new_temp(g, value->type);
+        sb_appendf(out, "(es_blank_key((double)(es_t%zu = %s)) ? %s : es_t%zu)", t, v, d, t);
+        return;
+    }
     const char *v = cg_operand(g, value, false);
     const char *d = cg_operand(g, expr->as.lookup.fallback, false);
     size_t t = cg_new_temp(g, value->type);

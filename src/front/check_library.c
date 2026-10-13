@@ -335,6 +335,10 @@ static void check_chart(Checker *c, const Stmt *stmt) {
     if (type == TYPE_ERROR || (title && types_of(c, title_var) != TYPE_TEXT)) return;
     bool list = type_is_list(type), map = type_is_map(type);
     Type key = map ? types_of(c, types_key(c, var)) : TYPE_UNKNOWN;
+    if (map && key == TYPE_UNKNOWN) {  // "per category" where nothing else says: text, as a table's column would end up
+        types_require(c, types_key(c, var), TYPE_TEXT, stmt->pos.line);
+        key = TYPE_TEXT;
+    }
     TypeVar item = list || map ? types_item(c, var) : 0;
     Type item_type = item ? types_of(c, item) : TYPE_UNKNOWN;
     bool waits = item && item_type == TYPE_UNKNOWN;  // "the total amount per month": numbers, unless they're amounts

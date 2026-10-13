@@ -106,6 +106,7 @@ static TypeVar field_of(Checker *c, const Expr *expr, TypeVar base, Type type) {
         return error_var(c);
     }
     ((Expr *)expr)->as.field.index = index;
+    ((Expr *)expr)->as.field.table = kind->table;
     return checker_field_kind(c, (Field *)field, expr->pos.line);
 }
 

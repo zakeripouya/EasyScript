@@ -170,6 +170,9 @@ static void es_csv_write(int site, EsBuf *b, EsText *path) {
 
 /* A value as a csv field, with dates written like 2026-10-31 (and a time if it has one). */
 static void es_csv_cell(EsBuf *b, char kind, EsValue v) {
+    if ((kind == 'n' && es_is_blank_n(v.n)) || ((kind == 'u' || kind == 'e' || kind == 'p') && v.n == (double)ES_BLANK_CENTS)) {
+        return; /* a table's blank cell is saved blank */
+    }
     if (kind == 'u' || kind == 'e' || kind == 'p') { /* "$1200.00": no commas, so the cell needs no quotes */
         static const char *const signs[] = {"$", "\xE2\x82\xAC", "\xC2\xA3"};
         long long cents = (long long)v.n, whole = cents < 0 ? -cents : cents;
@@ -297,8 +300,9 @@ static const char *es_cell_holds(const EsText *cell) {
 
 /* A cell read as its field's kind: 't' text, 'n' a number, 'b' yes or no, 'd' a
  * date (2026-10-31, maybe with a time, 2026-10-31 14:05), 'u' 'e' 'p' an
- * amount. A blank cell is 0 in a column of numbers or amounts, as in a
- * spreadsheet. Takes the cell. */
+ * amount. A blank cell in a column of numbers or amounts is nothing (the
+ * blank marks in es_runtime.h), as a spreadsheet leaves it out of totals.
+ * Takes the cell. */
 static void es_table_cell(const EsCsv *r, long line, const char *field, char kind, EsText *cell, char *slot) {
     if (kind == 't') {
         *(EsText **)slot = cell;
@@ -306,9 +310,9 @@ static void es_table_cell(const EsCsv *r, long line, const char *field, char kin
     }
     size_t blank = 0;
     while (blank < cell->len && cell->chars[blank] == ' ') blank++;
-    if (blank == cell->len && (kind == 'n' || kind == 'u' || kind == 'e' || kind == 'p')) {
-        if (kind == 'n') *(double *)slot = 0;
-        if (kind != 'n') *(long long *)slot = 0;
+    if (blank == cell->len && (kind == 'n' || kind == 'u' || kind == 'e' || kind == 'p')) { /* nothing: skipped by totals */
+        if (kind == 'n') *(double *)slot = es_blank_number();
+        if (kind != 'n') *(long long *)slot = ES_BLANK_CENTS;
         es_release(cell);
         return;
     }

@@ -21,7 +21,7 @@ A table's columns are fields whose kinds come from how the program uses them. So
   - anything else (text): it's left alone, so it's a number as before, and the next check reports it.
 - **Use and file disagree:** when the program uses a column as a number or an amount and the file holds something else (amounts where it uses a number, text where it uses a number, euros where it uses dollars), it's an error before the program runs, naming the column, the line of the file and both kinds. Plain numbers in a column of amounts are fine (`1200` is `$1,200.00`).
 - **Two reads of the same file** (the same name in quotes) use each column the same way: their kinds are one kind, so the second read in a chain is money when the first one's use or the file says so.
-- **When the file is read** (while the program runs), the kinds are already fixed. Each cell is read as its column's kind; a blank cell in a column of numbers or amounts is 0 (`$0.00`), as in a spreadsheet; a cell that doesn't fit stops the program with a message naming both kinds (`In bank.csv, line 2, "amount" is "$1200", an amount in dollars, but the program uses it as a number.`). That happens when the compiler couldn't look (the name isn't written out, the file wasn't there and the program doesn't write it, or the file changed after `easyscript build`).
+- **When the file is read** (while the program runs), the kinds are already fixed. Each cell is read as its column's kind; a blank cell in a column of numbers or amounts was 0 (`$0.00`; now nothing, [proposal 0024](0024-blank-cells.md)); a cell that doesn't fit stops the program with a message naming both kinds (`In bank.csv, line 2, "amount" is "$1200", an amount in dollars, but the program uses it as a number.`). That happens when the compiler couldn't look (the name isn't written out, the file wasn't there and the program doesn't write it, or the file changed after `easyscript build`).
 
 What it means in core-language terms: nothing new; the column's kind is written down as if the program had said `(dollars)` for it.
 
@@ -63,4 +63,4 @@ The second read used to fail on `$1200`; now both reads' `amount` are the file's
 ## Open questions
 
 - A column the program only prints, compares or sorts stays text, as before: judging it from the file would change what existing programs print (`"96.40"` would print `96.4`) and how they sort. Suggested: judge those too, at the next point where changing meanings is allowed (before the freeze), since sorting `1200, 249, 96.40` as text is rarely what anyone wants.
-- Blank cells as nothing (`an amount or nothing`) once amounts can be nothing.
+- Blank cells as nothing: decided and built in the v0.2 prep ([proposal 0024](0024-blank-cells.md)). Writing a column's kind down: [proposal 0023](0023-column-kinds.md).

@@ -45,7 +45,16 @@ static const char *key_code(Codegen *helper, const Question *q) {
     const Expr *key = q->expr->as.aggregate.key;
     if (!key) return item_read(helper, q, false);
     if (type_is_list(key->type)) return arena_sprintf(helper->arena, "es_list_length(%s)", cg_list_operand(helper, key));
-    return cg_operand(helper, key, false);
+    if (cg_table_cell(helper, key)) helper->raw_cell = key;  // a blank cell is skipped (or sorted last), not an error
+    const char *code = cg_operand(helper, key, false);
+    helper->raw_cell = NULL;
+    return code;
+}
+
+// A table's column of numbers or amounts: blank cells are left out, as a
+// spreadsheet's SUM, AVERAGE and MEDIAN do ("sorted by" keeps them, last).
+static bool skips_blanks(Codegen *helper, const Question *q) {
+    return q->expr->as.aggregate.key && cg_table_cell(helper, q->expr->as.aggregate.key);
 }
 
 // The group's key as the map takes it: (EsValue){.t = ...} or {.n = ...}.
@@ -105,10 +114,12 @@ static void emit_start(Codegen *g, const Question *q, StrBuf *out) {
 // What's done with each item that passes the filters.
 static void emit_step(Codegen *helper, const Question *q, StrBuf *out) {
     const char *test = q->expr->as.aggregate.condition ? cg_operand(helper, q->expr->as.aggregate.condition, false) : NULL;
+    bool blanks = q->kind != AGG_COUNT && skips_blanks(helper, q);
     if (q->expr->as.aggregate.group) {
         const char *key = q->kind == AGG_COUNT ? "1" : key_code(helper, q);
-        const char *group = group_code(helper, q);
         sb_appendf(out, "        double es_k = %s;\n", key);
+        if (blanks) sb_append(out, "        if (es_blank_key(es_k)) continue;\n");
+        const char *group = group_code(helper, q);
         if (q->kind == AGG_MEDIAN) {
             sb_appendf(out, "        bool es_added;\n        EsValue *es_v = es_map_slot(es_result, %s, &es_added);\n", group);
             sb_append(out, "        if (es_added) es_v->l = es_list_new(ES_ITEMS_NUMBER, 0);\n");
@@ -129,15 +140,28 @@ static void emit_step(Codegen *helper, const Question *q, StrBuf *out) {
     case AGG_ANY: sb_appendf(out, "        if (%s) {\n            es_result = true;\n            break;\n        }\n", test); break;
     case AGG_ALL: sb_appendf(out, "        if (!(%s)) {\n            es_result = false;\n            break;\n        }\n", test); break;
     case AGG_NONE: sb_appendf(out, "        if (%s) {\n            es_result = false;\n            break;\n        }\n", test); break;
-    case AGG_TOTAL: sb_appendf(out, "        es_result += %s;\n", key_code(helper, q)); break;
-    case AGG_AVERAGE: sb_appendf(out, "        es_total += %s;\n        es_count += 1;\n", key_code(helper, q)); break;
-    case AGG_MEDIAN: sb_appendf(out, "        es_push_n(es_keys, %s);\n", key_code(helper, q)); break;
+    case AGG_TOTAL:
+    case AGG_AVERAGE:
+    case AGG_MEDIAN:
+        if (blanks) {
+            sb_appendf(out, "        double es_k = %s;\n        if (es_blank_key(es_k)) continue;\n", key_code(helper, q));
+        }
+        if (q->kind == AGG_TOTAL) sb_appendf(out, "        es_result += %s;\n", blanks ? "es_k" : key_code(helper, q));
+        if (q->kind == AGG_AVERAGE) {
+            sb_appendf(out, "        es_total += %s;\n        es_count += 1;\n", blanks ? "es_k" : key_code(helper, q));
+        }
+        if (q->kind == AGG_MEDIAN) sb_appendf(out, "        es_push_n(es_keys, %s);\n", blanks ? "es_k" : key_code(helper, q));
+        break;
     case AGG_TOP:
         if (!q->expr->as.aggregate.count) {
             const char *item = arena_sprintf(helper->arena, "es_items->at.%s[es_i]", q->suffix);
             if (type_counted(q->item)) item = arena_sprintf(helper->arena, "%s(%s)", cg_retain(q->item), item);  // kept too
-            sb_appendf(out, "        es_push_n(es_keys, %s);\n        es_push_%s(es_kept, %s);\n", key_code(helper, q),
-                       q->suffix, item);
+            const char *key = key_code(helper, q);
+            if (blanks) key = arena_sprintf(helper->arena, "es_blank_or_nan(%s)", key);  // sorted last
+            sb_appendf(out, "        es_push_n(es_keys, %s);\n        es_push_%s(es_kept, %s);\n", key, q->suffix, item);
+        } else if (blanks) {
+            sb_appendf(out, "        double es_k = %s;\n        if (!es_blank_key(es_k)) es_top_offer(&es_top, es_k, es_i);\n",
+                       key_code(helper, q));
         } else {
             sb_appendf(out, "        es_top_offer(&es_top, %s, es_i);\n", key_code(helper, q));
         }
@@ -148,6 +172,7 @@ static void emit_step(Codegen *helper, const Question *q, StrBuf *out) {
         break;
     case AGG_BEST:
         sb_appendf(out, "        double es_k = %s;\n", key_code(helper, q));
+        if (blanks) sb_append(out, "        if (es_blank_key(es_k)) continue;\n");
         sb_appendf(out, "        if (es_best == SIZE_MAX || es_k %s es_key || (isnan(es_key) && !isnan(es_k))) {\n",
                    q->expr->as.aggregate.lowest ? "<" : ">");
         sb_append(out, "            es_best = es_i;\n            es_key = es_k;\n        }\n");

@@ -4,7 +4,10 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
-### Changed (v0.2 prep: from the simulated testers)
+### Changed (v0.2 prep: from the simulated testers and the shell-and-money review)
+
+- **Breaking:** a blank cell in a table's column of numbers or amounts is nothing, not 0. The total, the average, the median, the top N, the highest, `per` groups and charts leave it out, as a spreadsheet does (the average of $5, a blank and $2.50 is $3.75, not $2.50); `how many` counts rows; showing a row or a table and saving the table leave the cell blank; using it as a value (in arithmetic, a comparison or a change) stops the program with "... is blank here: its cell in the table is empty." and how to write `, or $0`. `its amount, or $0` and `if its amount is nothing` work on such a column ([proposal 0024](docs/proposals/0024-blank-cells.md)). Changed: `tests/run/table_column_kinds.out`.
+- A chart of `the total amount of purchases per category` works when nothing else in the program says what kind `category` is (it was "A chart needs a list of numbers or amounts, or a map to them, but this is a map."): the keys are text, as the column would end up.
 
 - **Breaking:** `A plus B rounded ...` (any arithmetic whose right side is `X rounded`, `rounded up`, `rounded down` or `rounded to N decimal places`, without brackets) is an error showing both readings: `A plus B, rounded ...` rounds the whole value, `A plus (B rounded ...)` only B. It used to round only B, which made a simulated tester's mortgage calculator print the wrong payment ([proposal 0022](docs/proposals/0022-rounding-after-arithmetic.md)).
 

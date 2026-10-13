@@ -174,6 +174,7 @@ struct Expr {
             size_t index;  // filled in by the checker: its place in the definition
             size_t variant;  // filled in by the checker for a kind with variants: the variant it's checked
                              // to be (Records.variants)
+            bool table;      // filled in by the checker: a column of a table read from a file (its cells can be blank)
         } field;
         struct {
             Type type;               // the record kind, or the kind with variants

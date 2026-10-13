@@ -104,6 +104,7 @@ typedef struct {
     PlanPool *plan;              // what each high-level form became ("easyscript plan"), or NULL
     StmtList events;             // main()'s events, run by a loop at its end (codegen_event.c)
     StmtList inlining;           // definitions being written in place (cg_emit_inline), innermost last
+    const Expr *raw_cell;        // a table's cell read as it is, blank or not (a total skips blanks itself)
 } Codegen;
 
 // Adds a line to the plan (when there is one): what the form at pos became.
@@ -191,6 +192,7 @@ void cg_emit_fixed_list(Codegen *g, const char *name, const ConstValue *v, StrBu
 
 // codegen_record.c
 char cg_field_kind(Type type);  // how a field's kind is written in an EsRecordType: 'n', 'b', 't', 'l', 'r', 'm'
+bool cg_table_cell(const Codegen *g, const Expr *expr);  // a table's column of numbers or amounts
 void cg_emit_records(Codegen *g, StrBuf *out);                // every kind's struct, description and maker
 void cg_emit_new(Codegen *g, const Expr *expr, StrBuf *out);    // EXPR_NEW
 void cg_emit_field(Codegen *g, const Expr *expr, StrBuf *out);  // EXPR_FIELD

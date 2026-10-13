@@ -22,6 +22,59 @@ static EsText es_lit_minus_infinity = ES_STATIC_TEXT("-infinity");
 static EsText es_lit_yes = ES_STATIC_TEXT("yes");
 static EsText es_lit_no = ES_STATIC_TEXT("no");
 
+/* A blank cell in a table's column of numbers or amounts: nothing. A number
+ * keeps it as a "not a number" with its own bits (nothing the program works
+ * out makes these bits: reading the cell checks first), an amount as
+ * LLONG_MIN cents (amounts stay below 2^53). Totals, averages, medians, the
+ * top N and the highest skip it; a key of either kind seen as a double is
+ * blank when es_blank_key says so. */
+#define ES_BLANK_BITS 0x7FF8000000B1A4C5ULL
+#define ES_BLANK_CENTS LLONG_MIN
+
+static double es_blank_number(void) {
+    uint64_t bits = ES_BLANK_BITS;
+    double x;
+    memcpy(&x, &bits, sizeof x);
+    return x;
+}
+
+static bool es_is_blank_n(double x) {
+    uint64_t bits;
+    memcpy(&bits, &x, sizeof bits);
+    return bits == ES_BLANK_BITS;
+}
+
+static bool es_blank_key(double x) {
+    return es_is_blank_n(x) || x == (double)ES_BLANK_CENTS;
+}
+
+/* A key to sort by: a blank cell is "not a number", which sorts last. */
+static double es_blank_or_nan(double x) {
+    return es_blank_key(x) ? NAN : x;
+}
+
+/* Reading a blank cell as a value: an error, with how to give it one. */
+static _Noreturn void es_blank_cell(int site, const char *field, const char *zero) {
+    static char hint[200];
+    snprintf(hint, sizeof hint, "To use %s when it's blank, write \", or %s\" after it, like \"its %s, or %s\".", zero, zero,
+             field, zero);
+    es_fail(site, hint, "\"%s\" is blank here: its cell in the table is empty.", field);
+}
+
+/* A table's cell read as a number or an amount ('u', 'e', 'p'): the value,
+ * unless it's blank. */
+static double es_unblank_n(int site, double x, const char *field) {
+    if (es_is_blank_n(x)) es_blank_cell(site, field, "0");
+    return x;
+}
+
+static long long es_unblank_c(int site, long long cents, const char *field, char currency) {
+    if (cents == ES_BLANK_CENTS) {
+        es_blank_cell(site, field, currency == 'u' ? "$0" : currency == 'e' ? "\xE2\x82\xAC" "0" : "\xC2\xA3" "0");
+    }
+    return cents;
+}
+
 /* Whole numbers up to 2^53 (where a double still holds every whole number)
  * print exactly, without decimals or an exponent. */
 #define ES_EXACT_WHOLE 9007199254740992.0

@@ -138,10 +138,31 @@ static bool is_plain_variable(const Codegen *g, const Expr *expr) {
 
 // R's NAME: "((es_R0 *)es_vr0_rex)->f1" for a variable (retained if it's
 // counted), otherwise es_field_n(R, offsetof(es_R0, f1)), which releases R.
+// A field of a table's row whose column holds numbers or amounts: its cell
+// can be blank (es_runtime.h), so reading it checks.
+bool cg_table_cell(const Codegen *g, const Expr *expr) {
+    if (expr->kind != EXPR_FIELD || !type_is_record(expr->as.field.record->type) || type_is_maybe(expr->as.field.record->type)) {
+        return false;
+    }
+    const RecordKind *kind = &g->records->items[type_record_index(expr->as.field.record->type)];
+    return kind->table && (expr->type == TYPE_NUMBER || type_is_money(expr->type));
+}
+
 void cg_emit_field(Codegen *g, const Expr *expr, StrBuf *out) {
     const Expr *record = expr->as.field.record;
     if (type_is_sum(record->type)) {
         cg_emit_variant_field(g, expr, out);
+        return;
+    }
+    if (cg_table_cell(g, expr) && g->raw_cell != expr) {  // a blank cell can't be used as a value
+        g->raw_cell = expr;
+        sb_appendf(out, "es_unblank_%c(%zu, ", expr->type == TYPE_NUMBER ? 'n' : 'c', cg_site(g, expr->pos));
+        cg_emit_field(g, expr, out);
+        sb_append(out, ", ");
+        cg_append_c_string(out, expr->as.field.name.display, strlen(expr->as.field.name.display));
+        if (expr->type != TYPE_NUMBER) sb_appendf(out, ", '%c'", cg_kind_letter(expr->type));
+        sb_append_char(out, ')');
+        g->raw_cell = NULL;
         return;
     }
     size_t kind = type_record_index(record->type), index = expr->as.field.index;
@@ -189,6 +210,13 @@ const char *cg_field_stmt(Codegen *g, const Stmt *stmt) {
         sb_appendf(&out, "%s = %s; ", slot, cg_follow_rules(g, def, code, stmt->pos));
     } else if (stmt->as.change.append) {
         sb_appendf(&out, "es_add_%s(es_list_retain(%s), %s); ", cg_item_suffix(type), slot, code);
+    } else if (cg_table_cell(g, field)) {  // a blank cell can't be added to
+        size_t site = cg_site(g, field->pos);
+        const char *now = type == TYPE_NUMBER
+                              ? arena_sprintf(g->arena, "es_unblank_n(%zu, %s, \"%s\")", site, slot, field->as.field.name.text)
+                              : arena_sprintf(g->arena, "es_unblank_c(%zu, %s, \"%s\", '%c')", site, slot,
+                                              field->as.field.name.text, cg_kind_letter(type));
+        sb_appendf(&out, "%s = %s; ", slot, cg_changed(g, stmt, type, now, code));
     } else {
         sb_appendf(&out, "%s = %s; ", slot, cg_changed(g, stmt, type, slot, code));
     }

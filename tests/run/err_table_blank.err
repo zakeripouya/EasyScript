@@ -1,0 +1,4 @@
+Line 10: "tip" is blank here: its cell in the table is empty.
+        say row's day, row's tip plus $1.
+                       ^^^^^^^^^
+To use $0 when it's blank, write ", or $0" after it, like "its tip, or $0".

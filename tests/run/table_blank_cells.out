@@ -1,0 +1,35 @@
+Total: $1,383.70
+Average: $461.23
+Median: $96.40
+Count total: 7
+Average count: 2.333333333
+How many: 4
+"Housing" is $1,200.00 and "Food" is $183.70
+"Housing" is 1, "Health" is 2 and "Food" is 4
+Rent
+Top: Rent
+Top: Groceries
+Sorted: Groceries
+Sorted: Groceries
+Sorted: Rent
+Sorted: Pharmacy
+Rent $1,200.00
+  has an amount
+Groceries $96.40
+  no count
+  has an amount
+Pharmacy $0.00
+Groceries $87.30
+  has an amount
+date        description  category     amount  count
+2026-08-01  Rent         Housing   $1,200.00      1
+2026-08-04  Groceries    Food         $96.40       
+2026-09-22  Pharmacy     Health                   2
+2026-09-28  Groceries    Food         $87.30      4
+a purchase with date "2026-08-04", description "Groceries", category "Food", amount $96.40 and count ""
+date,description,category,amount,count
+2026-08-01,Rent,Housing,$1200.00,1
+2026-08-04,Groceries,Food,$96.40,
+2026-09-22,Pharmacy,Health,,2
+2026-09-28,Groceries,Food,$87.30,4
+Chart saved: yes

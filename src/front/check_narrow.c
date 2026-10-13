@@ -191,6 +191,14 @@ bool checker_fits(Checker *c, TypeVar target, TypeVar value, const Expr *expr, s
     return types_unify(c, target, value);
 }
 
+// A table's cell asked about as something that can be nothing ("its amount,
+// or 0", "if its amount is nothing"): a blank cell in a column of numbers or
+// amounts.
+static void blank_column(Checker *c, const Expr *cell, TypeVar var) {
+    types_defer_one_of(c, cell, var, var, KIND_NUMBER | KIND_MONEY | KIND_NUMBER_FIRST,
+                       "Only a column of numbers or amounts has blank cells that are nothing");
+}
+
 bool checker_check_nothing_test(Checker *c, const Expr *expr, TypeVar *result) {
     if (expr->kind != EXPR_BINARY || (expr->as.binary.op != BINARY_EQUAL && expr->as.binary.op != BINARY_NOT_EQUAL)) {
         return false;
@@ -210,7 +218,9 @@ bool checker_check_nothing_test(Checker *c, const Expr *expr, TypeVar *result) {
     TypeVar var = checker_check_value(c, other);
     c->unnarrowed = saved;
     Type type = types_of(c, var);
-    if (type == TYPE_UNKNOWN) {
+    if (other->kind == EXPR_FIELD && other->as.field.table) {  // a table's cell: blank is nothing
+        blank_column(c, other, var);
+    } else if (type == TYPE_UNKNOWN) {
         types_require(c, var, TYPE_MAYBE, expr->pos.line);
     } else if ((type_is_record(type) || type_is_sum(type)) && !type_is_maybe(type)) {
         const char *path = path_of(c, other, true);
@@ -249,6 +259,16 @@ TypeVar checker_check_default(Checker *c, const Expr *expr) {
     TypeVar var = checker_check_value(c, value);
     c->unnarrowed = saved;
     Type type = types_of(c, var);
+    if (value->kind == EXPR_FIELD && value->as.field.table) {  // "its amount, or 0": a blank cell gives the default
+        blank_column(c, value, var);
+        TypeVar other = checker_check_value(c, fallback);
+        if (!types_unify(c, var, other)) {
+            diag_error(c->diag, fallback->pos.span, "This gives %s when the cell is blank, but the column holds %s.",
+                       checker_kind(c, other), checker_kind(c, var));
+            diag_note(c->diag, "The value after \", or\" has to be the same kind as the one it stands in for.");
+        }
+        return var;
+    }
     if (type != TYPE_ERROR && type != TYPE_UNKNOWN && type != TYPE_MAYBE && !type_is_maybe(type)) {
         diag_error(c->diag, value->pos.span, "This is %s, so it's never nothing.", checker_kind(c, var));
         diag_note(c->diag, "\", or\" gives another value when there isn't one. Leave it out here.");

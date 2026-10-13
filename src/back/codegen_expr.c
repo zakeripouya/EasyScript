@@ -237,6 +237,13 @@ static void emit_compare(Codegen *g, const Expr *expr, StrBuf *out) {
     BinaryOp op = expr->as.binary.op;
     Type type = expr->as.binary.left->type;
     const Expr *left = expr->as.binary.left, *right = expr->as.binary.right;
+    const Expr *cell = left->kind == EXPR_NOTHING ? right : left;
+    if ((left->kind == EXPR_NOTHING || right->kind == EXPR_NOTHING) && cg_table_cell(g, cell)) {  // a table's blank cell
+        g->raw_cell = cell;
+        sb_appendf(out, "%ses_blank_key((double)%s)", op == BINARY_NOT_EQUAL ? "!" : "", cg_operand(g, cell, false));
+        g->raw_cell = NULL;
+        return;
+    }
     if (left->kind == EXPR_NOTHING || right->kind == EXPR_NOTHING) {  // "x is nothing"
         sb_appendf(out, "%ses_is_nothing(%s)", op == BINARY_NOT_EQUAL ? "!" : "",
                    cg_operand(g, left->kind == EXPR_NOTHING ? right : left, false));

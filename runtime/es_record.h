@@ -126,6 +126,12 @@ static void es_box_render(EsBuf *b, const EsRecord *r, bool quoted) {
 static void es_field_render(EsBuf *b, const EsRecord *r, int i, int depth) {
     const EsRecordType *type = r->type;
     size_t at = type->offsets[i];
+    char kind = type->kinds[i];
+    bool cents = kind == 'u' || kind == 'e' || kind == 'p';
+    if ((kind == 'n' && es_is_blank_n(ES_FIELD(r, double, at))) || (cents && ES_FIELD(r, long long, at) == ES_BLANK_CENTS)) {
+        es_buf_add_text(b, "\"\"");  /* a table's blank cell, shown like any other blank cell */
+        return;
+    }
     switch (type->kinds[i]) {
     case 'n': {
         EsText *t = es_number_text(ES_FIELD(r, double, at));
