@@ -123,5 +123,8 @@ The same 120 third tries, run again with the compiler after A4 (no new tries wer
 |---|---|---|
 | Master (`cd03c6a`) | 0 | 440 |
 | After A4 | 6 | 376 |
+| After the whole v0.2 prep | 3 | 386 |
 
 The six that ran: the savings calculator and the budget check of the person who had never coded, both density calculators of the teenager and the non-native speaker, and both mortgage calculators of the person who had never coded and the teenager. Five did what was asked; the teenager's mortgage calculator is the (d) case above. (The budget check printed 12.5 months where the task wanted 13; that's the program's own arithmetic, `5000 divided by savings`, not a misreading.) None of them would have run without "an answer used as a number is asked for as a number". The rest still stop at things A4 didn't change, mostly whole programs written as letters or in Python, and unquoted words inside sentences.
+
+After the whole v0.2 prep (A5, and the fixes the cookbook led to), three of the six no longer run, on purpose: the density calculators and the teenager's mortgage calculator round after a division without a comma, which is now the "could mean two things" error that shows both readings (the mortgage one was the wrong answer above). The count of errors went up a little because programs now get further before stopping: for example, the column `plus ones` is known now, so a program that used it reaches its next mistake.

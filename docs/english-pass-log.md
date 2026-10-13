@@ -397,3 +397,68 @@ On the `v0.2-prep` branch (from master at `cd03c6a`, after the shell-and-money f
 - Every recipe runs in `make test` (in an empty folder with its sector's csv files, with the memory check), and `docs/cookbook-pages-match` (`tests/tools/cookbook_sync.py`) checks that each page shows the program, data and output the test runs; `make bless` rewrites the outputs. Linked from the README and from "Your first programs".
 - **Decided:** recipes that ask questions show the output as it really is (the typed answers don't appear), with the answers listed above it; programs with no money in them take plain numbers and show them `as money`.
 - Writing them found the problems fixed in the commit before (column names of several words, money in tables, `its` twice, money in constants) and five more logged under Still open in english-pass.md (`sorted by` a text column, `the most common FIELD of L`, `a KIND's FIELD depends on X:`, describing words of several words, a field across a list in a table program).
+
+### Part C: release prep for v0.2.0
+
+1. **License:** `LICENSE` is the Apache License 2.0 text, followed by a runtime exception modeled on Swift's (programs compiled with EasyScript, including `runtime/*.h` and `lib/*.es` built into them, belong to their authors and don't carry the license or notice); `NOTICE` holds the copyright (Pouya Zakeri). README has a License section; CONTRIBUTING says contributions are inbound = outbound and pull requests aren't accepted yet.
+2. **Editions** ([proposal 0025](proposals/0025-editions.md)): `this program uses EasyScript 2026.` as an optional first line of a file; without it, the current edition (2026); an unknown edition, or the line elsewhere, is an error. The promise is in design-principles.md ("Editions") and the guide. No second edition.
+3. **Starter templates:** `easyscript new NAME [--template blank|report|quiz|game|tool]`, `easyscript new --list`; `templates/*.es` are built into the compiler and each one runs in `make test`.
+4. **Install:** `make install` / `make uninstall` with `PREFIX` (and `DESTDIR`), [install.md](install.md) (macOS, Linux, checking, uninstalling, Windows through WSL), and a draft Homebrew formula in `packaging/homebrew/easyscript.rb` (not published).
+5. **Speed checks:** `make bench-check` (`benchmarks/check.sh`): `make bench`, then fail if any EasyScript time is more than 20% (and 0.02 s) slower than performance.md's latest results; in CONTRIBUTING's checklist.
+6. **Version:** `easyscript --version` prints `EasyScript 0.2.0 (the 2026 edition)`; CHANGELOG's Unreleased became 0.2.0 (2026-10-13) with a summary; the roadmap marks Phase 2 complete, with the grammar frozen per edition from here. No tag.
+
+### Decisions made in this run
+
+- **The simulated testers ran blind:** separate `claude -p` sessions outside the repository with no tools; a first run with subagents was thrown away because they load CLAUDE.md.
+- **An answer's kind comes from its use** (proposal 0017), rather than an error that names `ask for a number`: the program already says what it wants by using the answer as a number.
+- **`a plus b rounded` became an error** (proposal 0022): the one silent wrong answer found. Other describing words after arithmetic are left for a decision.
+- **Blank cells hold a mark, not "or nothing"** (proposal 0024): the column keeps its kind, so programs keep compiling and don't depend on the file they were checked with; a blank used as a value stops the program with the `, or $0` fix.
+- **`read file "x.xlsx"` keeps working** (it reads any file as text); only `read the table in` an Excel file is the "can't do yet" error, and a workbook found when reading a table stops the program.
+- **Programs that read a table wait for the file on arithmetic**, as programs with money did, since a file can hold money.
+- **`keep fee as $5` is an error** rather than built: money in constants needs constants, fixed lists and maps to know money; logged.
+- **The full checks ran on each commit's own tree** (`git archive`), up to three at once, after the commit was made from a tree that passed `make test`; the counts are in the table below.
+
+### Needs a decision
+
+1. **Tag v0.2.0 before or after the first non-coder test?** The roadmap still lists the test; the simulated testers stand in for it only roughly (they never saw the docs).
+2. **A blank cell in a filter's comparison** (`the purchases whose amount is over 100` where one amount is blank) stops the program. A spreadsheet's COUNTIF would skip it. Suggested: a blank fails every comparison in a filter.
+3. **`X for each FIELD` as a synonym of `per`** (48 of 120 attempts grouped this way). It needs an exception to "one meaning per word" for `for each`.
+4. **Other describing words after arithmetic** (`a plus b as text`, `in uppercase`): make them errors with both readings too, before the freeze, or leave them?
+5. **Money in constants** (`keep fee as $5`): build it, or keep the error?
+6. **`NAME is VALUE` to make a name** (`Total is 0.`, 16+ attempts): the long-open question, now with evidence.
+7. **The Homebrew formula's home** (a tap repository) and its URL: the draft assumes `github.com/zakeripouya/EasyScript` and the tag `v0.2.0`.
+8. **A remote branch `origin/v0.2-prep` already existed** at master's commit when this run started (created by a push from outside this session); nothing was pushed from here.
+
+### Changed expected files (all read before they were rewritten)
+
+`tests/tokens/err_characters.out`, `.err`; `tests/errors/type_variable_keeps_kind.err`; `tests/shell/failed_compile.err`; `tests/ast/err_stmt_unknown.err`; `tests/run/table_column_kinds.es` (a comment) and `.out`; `examples/programs/guessing_game.es` (same output) and `hello.es` (the edition line, same output). `make bless` was never run.
+
+### Tests per commit
+
+Each commit was checked on its own tree (`git archive` of the commit, in a copy): `make test`, `make test-gcc` and `make test-debug` (with the leak sweep) on macOS, then `make test-debug` (LeakSanitizer and UBSan) and `make CC=gcc test` on Linux (GCC 16 in Docker, aarch64). Every check passed; `make test-debug` runs one test fewer by design (the strict-C check).
+
+| Commit | What | test | test-gcc | test-debug (macOS) | Linux test-debug | Linux CC=gcc test |
+|---|---|---|---|---|---|---|
+| cd03c6a | master before the run (A1 to A3 add only files under docs/simulated-testers) | 778 | 778 | 777, 0 of 890 leaking | 777 | 778 |
+| 06d13d4 | "!" ends a sentence, "please" after step words | 780 | 780 | 779, 0 of 893 leaking | 779 | 780 |
+| 6bf8180 | an answer used as a number | 782 | 782 | 781, 0 of 896 leaking | 781 | 782 |
+| 9770ffd | file names without quotes, can't do yet | 787 | 787 | 786, 0 of 902 leaking | 786 | 787 |
+| b4a2a57 | other tools' words | 789 | 789 | 788, 0 of 905 leaking | 788 | 789 |
+| 3f91d73 | rounding words | 792 | 792 | 791, 0 of 910 leaking | 791 | 792 |
+| fc0c9f1 | "a plus b rounded" | 794 | 794 | 793, 0 of 913 leaking | 793 | 794 |
+| 3a8e929 | column kinds | 798 | 798 | 797, 0 of 918 leaking | 797 | 798 |
+| 2f7fdee | blank cells | 801 | 801 | 800, 0 of 922 leaking | 800 | 801 |
+| 2320620 | what the cookbook ran into | 804 | 804 | 803, 0 of 927 leaking | 803 | 804 |
+| aac27b3 | the cookbook | 835 | 835 | 834, 0 of 927 leaking | 834 | 835 |
+| 0d0b217 | license | 835 | 835 | 834, 0 of 927 leaking | 834 | 835 |
+| 78dfced | editions | 838 | 838 | 837, 0 of 933 leaking | 837 | 838 |
+| d749184 | templates, --version | 852 | 852 | 851, 0 of 933 leaking | 851 | 852 |
+| 9b25433 | make install | 853 | 853 | 852, 0 of 933 leaking | 852 | 853 |
+| 2c9ef6b | make bench-check | 854 | 854 | 853, 0 of 933 leaking | 853 | 854 |
+| d871b84 | 0.2.0 | 854 | 854 | 853, 0 of 933 leaking | 853 | 854 |
+
+The last commit (this log and the benchmarks) is checked the same way.
+
+### Benchmarks
+
+`make bench` on a quiet machine (Apple M4, best of 3), 2026-10-13: every benchmark the same as recorded or faster (fib 0.24 s, sort 0.06 s, words 0.10 s, pipeline 0.13 s and 35 MB, sales 0.03 s), and `make bench-check` passes against the previous results. Every high-level form is within the 20% rule (the largest ratios: `is big` 1.05, `sorted by value` 1.03). performance.md has a new Latest results table and a 0.2.0 history row; the README's table matches.
