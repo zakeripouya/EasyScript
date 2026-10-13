@@ -1,0 +1,8 @@
+Line 1: An answer to a question is text, a number, an amount or yes or no, but "items" is a list of numbers.
+    ask "Items? " and call it items.
+                              ^^^^^
+Ask for each part on its own, then make a list of numbers from the answers.
+
+Line 5: I can only put text in uppercase, but this is a number.
+    say word in uppercase.
+        ^^^^

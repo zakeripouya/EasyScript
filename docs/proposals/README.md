@@ -35,3 +35,4 @@ A doubt that comes up while building goes back into the proposal, not into the p
 - [0014: the file decides a column's kind](0014-file-decides-column-kind.md) (Built)
 - [0015: how many Ls are there?](0015-how-many-are-there.md) (Built)
 - [0016: "!" ends a sentence, and "please" after a step word](0016-exclamation-and-polite-steps.md) (Built)
+- [0017: an answer used as a number is asked for as a number](0017-answers-used-as-numbers.md) (Built)

@@ -247,7 +247,7 @@ static bool expect_call_phrase(Parser *p, const char *phrase, const char *writte
 
 static Stmt *parse_ask(Parser *p, const Token *verb, const StmtForm *form) {
     Stmt *stmt = parser_new_stmt(p, STMT_ASK, verb);
-    stmt->as.ask.kind = TYPE_TEXT;
+    stmt->as.ask.kind = TYPE_UNKNOWN;  // a plain "ask": the checker decides from how the answer is used
     size_t n = parser_match_words(p, "for number");  // ask for a number "How old are you?"
     if (n) stmt->as.ask.kind = TYPE_NUMBER;
     if (!n && (n = parser_match_words(p, "for amount"))) {  // ask for an amount [in euros]: money

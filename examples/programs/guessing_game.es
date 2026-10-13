@@ -5,8 +5,7 @@ let tries be 0
 let found be no
 say "I'm thinking of a number between 1 and 100."
 repeat until found or tries reaches most tries:
-    ask "Your guess? " and call the answer reply
-    let guess be reply as a number
+    ask "Your guess? " and call the answer guess
     add 1 to tries
     if guess is secret:
         set found to yes

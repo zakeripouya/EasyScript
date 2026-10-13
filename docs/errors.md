@@ -325,6 +325,15 @@ Line 4: "halve" needs a number for "x", but this is text.
 "x" is a number because of line 2. An input has one kind of value everywhere; to make it clear, write it in the definition, like "to halve with x (a number):".
 ```
 
+**An answer that can't be typed in**: [`ask_kind_errors.es`](../tests/errors/ask_kind_errors.es). An answer is asked for as the kind the program uses it as, but only text, a number, an amount or yes or no can be typed.
+
+```
+Line 1: An answer to a question is text, a number, an amount or yes or no, but "items" is a list of numbers.
+    ask "Items? " and call it items.
+                              ^^^^^
+Ask for each part on its own, then make a list of numbers from the answers.
+```
+
 **A kind nothing decides**: [`type_undecided_result.es`](../tests/errors/type_undecided_result.es)
 
 ```

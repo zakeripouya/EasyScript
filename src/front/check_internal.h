@@ -72,6 +72,12 @@ typedef struct {
     TypeVar var;
 } TypedExpr;
 
+// A plain "ask" and the kind of its answer.
+typedef struct {
+    Stmt *ask;
+    TypeVar var;
+} AskAnswer;
+
 // A kind in the program to fill in at the end (a variable's, for a sentence that sets it).
 typedef struct {
     Type *slot;
@@ -194,6 +200,7 @@ typedef struct {
     Vec(struct ModuleUse) module_uses;  // names used from other files, renamed once the program is checked
     Vec(ChartValues) charts;          // every chart sentence, for its currency
     Vec(TableFile *) table_files;     // the files tables are read from, named in quotes
+    Vec(AskAnswer) asks;              // plain "ask" sentences: the answer's kind comes from its use (text if nothing decides)
 } Checker;
 
 // A name in a value that means another file's function or constant.

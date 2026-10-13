@@ -110,11 +110,11 @@ say "Score:", score.
 
 ### Asking a question
 
-`ask` shows a question and waits for an answer. `ask for a number` keeps asking until the answer is a number.
+`ask` shows a question and waits for an answer. When the program uses the answer as a number (here, `age plus 10`), `ask` keeps asking until the answer is a number. (`ask for a number` says so out loud, and `ask yes or no` and `ask for an amount` work the same way.)
 
 ```
 ask "What's your name? " and call it name.
-ask for a number "How old are you? " and call it age.
+ask "How old are you? " and call it age.
 say "Hi, [name]! In ten years you'll be [age plus 10].".
 ```
 
@@ -2596,7 +2596,7 @@ A chart is saved as an SVG picture, which any browser shows. Charts take a list 
 ### What each one means exactly
 
 - `for example, C.` is `C` checked where it's written: a warning if it's no, nothing if it's yes.
-- `ask for a number Q and call it age` asks Q until the answer reads as a number, then keeps that number. `ask yes or no` is the same with `yes`/`y`/`no`/`n`.
+- `ask for a number Q and call it age` asks Q until the answer reads as a number, then keeps that number. `ask yes or no` is the same with `yes`/`y`/`no`/`n`. A plain `ask Q and call it age` does the same when the program uses `age` as a number (or as yes or no, or an amount); when nothing uses it that way, the answer is text.
 - `X as money` is a dollar sign, X rounded to two decimals, with commas between thousands. `X as a percent` is X times 100 (up to 10 digits) followed by `%`.
 - `the total is always E` makes `total` mean E wherever it's read.
 - `try to S. if that fails, F` checks S's files first and runs S, or else F with `the reason`.

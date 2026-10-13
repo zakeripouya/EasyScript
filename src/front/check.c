@@ -359,7 +359,15 @@ static void check_stmt(Checker *c, const Stmt *stmt) {
         break;
     case STMT_ASK:
         checker_check_expr(c, stmt->as.ask.prompt);
-        checker_make_or_store(c, &stmt->as.ask.answer, types_new(c, stmt->as.ask.kind, stmt->pos.line));
+        if (stmt->as.ask.kind == TYPE_UNKNOWN) {  // a plain "ask": asked for as the kind its answer is used as
+            Stmt *ask = (Stmt *)stmt;
+            TypeVar answer = types_new(c, TYPE_UNKNOWN, stmt->pos.line);
+            checker_make_or_store(c, &ask->as.ask.answer, answer);
+            vec_push(c->arena, &c->slots, ((TypedSlot){&ask->as.ask.kind, answer}));
+            vec_push(c->arena, &c->asks, ((AskAnswer){ask, answer}));
+        } else {
+            checker_make_or_store(c, &stmt->as.ask.answer, types_new(c, stmt->as.ask.kind, stmt->pos.line));
+        }
         break;
     case STMT_WRITE_FILE:
     case STMT_APPEND_FILE:
@@ -506,6 +514,27 @@ static void collect_functions(Checker *c, const Block *program) {
     mark_shared_methods(c);
 }
 
+// The kind each plain "ask" asks for: what its answer is used as (a number,
+// an amount, yes or no), or text when nothing decides. Other kinds can't be
+// typed in.
+static void settle_answers(Checker *c) {
+    for (size_t i = 0; i < c->asks.len; i++) {
+        Stmt *ask = c->asks.items[i].ask;
+        TypeVar var = c->asks.items[i].var;
+        Type kind = types_of(c, var);
+        if (kind == TYPE_UNKNOWN) {
+            types_require(c, var, TYPE_TEXT, ask->pos.line);
+        } else if (kind != TYPE_TEXT && kind != TYPE_NUMBER && kind != TYPE_YESNO && kind != TYPE_ERROR &&
+                   !type_is_money(kind) && !type_is_textkind(kind)) {
+            diag_error(c->diag, ask->as.ask.answer.pos.span,
+                       "An answer to a question is text, a number, an amount or yes or no, but \"%s\" is %s.",
+                       ask->as.ask.answer.display, checker_kind(c, var));
+            diag_note(c->diag, "Ask for each part on its own, then make %s from the answers.", checker_kind(c, var));
+            diag_info(c->diag, DIAG_WRONG_KIND, NULL, "text, a number, an amount or yes or no");
+        }
+    }
+}
+
 void check_program(Arena *arena, Diag *diag, Program *whole) {
     const Block *program = &whole->body;
     Checker c = {0};
@@ -541,6 +570,7 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
             if (types_of(&c, column) == TYPE_UNKNOWN) types_require(&c, column, TYPE_TEXT, def->pos.line);
         }
     }
+    settle_answers(&c);  // a plain "ask" whose answer nothing decided is text
     checker_check_columns(&c);
     checker_finish_charts(&c);
     types_finish(&c, first_error);

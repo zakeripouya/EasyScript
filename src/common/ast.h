@@ -442,7 +442,8 @@ struct Stmt {
         struct {
             Expr *prompt;
             Name answer;
-            Type kind;  // TYPE_TEXT, or TYPE_NUMBER ("ask for a number") / TYPE_YESNO ("ask yes or no"): asked again until it fits
+            Type kind;  // TYPE_NUMBER ("ask for a number"), TYPE_YESNO ("ask yes or no"), money ("ask for an amount"): asked
+                        // again until it fits; a plain "ask" is TYPE_UNKNOWN until the checker gives it its answer's kind
         } ask;
         struct {
             Expr *text;

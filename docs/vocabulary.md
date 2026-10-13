@@ -215,7 +215,7 @@ The words that start statements are only special at the start of a sentence, so 
 | `show X` | Synonym of `say` | `show total` | Available |
 | `display X` | Synonym of `say` | `display total` | Available |
 | `write X` | Synonym of `say` (unless followed by `to file`; see [Files](#files)) | `write "done"` | Available |
-| `ask X and call the answer NAME` / `ask X and call it NAME` | Print a question, then read a line of text typed by the user into `NAME` (empty text if there's no more input). Makes `NAME` if it doesn't exist yet | `ask "What's your name? " and call the answer name` | Available |
+| `ask X and call the answer NAME` / `ask X and call it NAME` | Print a question, then read a line typed by the user into `NAME` (empty text if there's no more input). Makes `NAME` if it doesn't exist yet. The answer is text, unless the program uses `NAME` as a number, an amount or yes or no: then it asks again until the answer is one, like `ask for a number` | `ask "What's your name? " and call the answer name` | Available |
 
 ### Files
 
