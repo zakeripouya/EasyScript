@@ -1,0 +1,14 @@
+Line 1: I don't know EasyScript 2031. This version of EasyScript knows the 2026 edition.
+    This Program Uses easyscript 2031.
+                                 ^^^^
+Write "this program uses EasyScript 2026." or leave the line out.
+
+Line 3: The edition goes on the first line of the program.
+    this program uses EasyScript 2026.
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Move "this program uses EasyScript 2026." to the top of the file.
+
+Line 4: Something is missing after "EasyScript".
+    this program uses EasyScript.
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Say which edition, like "this program uses EasyScript 2026."

@@ -1,4 +1,5 @@
-// Sentences about files that use other files (modules):
+// Sentences about files that use other files (modules), and the edition a
+// file is written for ("this program uses EasyScript 2026."):
 //
 //   use helpers.                    (also "use the helpers file.")
 //   privately to tidy with text:    (only this file can use it)
@@ -10,7 +11,12 @@
 // "helpers's double" isn't read as a field of something called helpers.
 
 #include <string.h>
+#include "common/version.h"
 #include "front/parse_internal.h"
+
+#define EDITION_TEXT ES_STRINGIFY(EASYSCRIPT_EDITION)
+#define ES_STRINGIFY(x) ES_STRINGIFY2(x)
+#define ES_STRINGIFY2(x) #x
 
 static bool word_is(const Parser *p, size_t i, const char *word) {
     return i < p->count && p->tokens[i].kind == TOK_WORD && strcmp(p->tokens[i].text, word) == 0;
@@ -157,4 +163,42 @@ Stmt *parser_parse_privately(Parser *p, const Token *verb) {
     }
     if (stmt) stmt->pos = ast_pos_join(parser_token_pos(verb), stmt->pos);
     return stmt;
+}
+
+// --- Editions ----------------------------------------------------------------------------
+
+bool parser_at_edition(const Parser *p) {
+    return parser_match_words(p, "this program uses easyscript") > 0;
+}
+
+// "this program uses EasyScript 2026.": only as a file's first sentence, and
+// only an edition this compiler knows. It makes nothing.
+void parser_parse_edition(Parser *p) {
+    static const char *const line = "this program uses EasyScript " EDITION_TEXT ".";
+    const Token *first = parser_peek(p, 0);
+    bool first_sentence = p->pos == 0 || p->tokens[p->pos - 1].file != first->file;
+    Span words = parser_consume(p, 4);
+    const Token *year = parser_peek(p, 0);
+    if (year->kind != TOK_NUMBER) {
+        if (parser_error(p, words, "Something is missing after \"EasyScript\".")) {
+            diag_note(p->diag, "Say which edition, like \"%s\"", line);
+            diag_info(p->diag, DIAG_MISSING, "the edition", "a number");
+        }
+        return;
+    }
+    parser_advance(p);
+    Span whole = {first->span.offset, year->span.offset + year->span.length - first->span.offset};
+    if (!first_sentence) {
+        if (parser_error(p, whole, "The edition goes on the first line of the program.")) {
+            diag_note(p->diag, "Move \"%s\" to the top of the file.", line);
+            diag_info(p->diag, DIAG_NOT_ALLOWED, NULL, NULL);
+        }
+    } else if (strcmp(year->text, EDITION_TEXT) != 0) {
+        if (parser_error(p, year->span, "I don't know EasyScript %s. This version of EasyScript knows the %s edition.",
+                         year->text, EDITION_TEXT)) {
+            diag_note(p->diag, "Write \"%s\" or leave the line out.", line);
+            diag_info(p->diag, DIAG_UNKNOWN, NULL, NULL);
+            diag_choice(p->diag, "%s", EDITION_TEXT);
+        }
+    }
 }

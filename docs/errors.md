@@ -94,6 +94,17 @@ Line 2: I don't know a sentence that starts with "sya".
 Did you mean "say"?
 ```
 
+**An edition EasyScript doesn't know**: [`err_edition.es`](../tests/ast/err_edition.es)
+
+```
+Line 1: I don't know EasyScript 2031. This version of EasyScript knows the 2026 edition.
+    This Program Uses easyscript 2031.
+                                 ^^^^
+Write "this program uses EasyScript 2026." or leave the line out.
+```
+
+The line anywhere but a file's first line is "The edition goes on the first line of the program."
+
 **A greeting or a thank-you**: [`tests/ast/err_polite.es`](../tests/ast/err_polite.es). Every sentence has to be something to do.
 
 ```

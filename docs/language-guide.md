@@ -63,6 +63,17 @@ and run it:
 
 `easyscript build hello.es -o hello` makes a program you can run on its own (`./hello`). Running `./easyscript` with nothing after it starts the interactive shell, where you can type sentences and see the results straight away; end a line with `:` to type a block, and finish the block with a blank line. A line with a mistake, or one that stops with an error while it runs, isn't kept: the next line works as if it had never been typed. If a new line makes a line from before stop with an error, the error says "This line worked before. The new line changes how it works." Two more commands show what the compiler sees: `easyscript tokens` (the words and symbols) and `easyscript ast` (the meaning, as a tree).
 
+### Editions
+
+A program can start with a line saying which edition of EasyScript it's written for:
+
+```
+this program uses EasyScript 2026.
+say "Hello, world!".
+```
+
+The line is optional: without it, a program uses the current edition (2026, the only one so far). It's a promise about the future. From v0.2.0 on, the language's wording is frozen for each edition: a later edition can change what a sentence means, but only for programs that ask for it on their first line, so a program written today keeps its meaning. An edition EasyScript doesn't know is an error ("I don't know EasyScript 2031. This version of EasyScript knows the 2026 edition."), and the line has to be the first one in its file.
+
 ---
 
 ## Your first programs

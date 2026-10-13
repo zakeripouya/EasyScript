@@ -43,3 +43,4 @@ A doubt that comes up while building goes back into the proposal, not into the p
 - [0022: rounding after arithmetic says which part it rounds](0022-rounding-after-arithmetic.md) (Built)
 - [0023: a table's column kinds, written down](0023-column-kinds.md) (Built)
 - [0024: a blank cell is nothing](0024-blank-cells.md) (Built)
+- [0025: editions](0025-editions.md) (Built)

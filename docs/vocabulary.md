@@ -14,6 +14,7 @@ In patterns, `NAME` is a name you choose, `X` and `Y` are any values or expressi
 | Word / symbol | Meaning | Example | Status |
 |---|---|---|---|
 | `.` or new line | Ends a sentence | `say "hi".` | Available |
+| `this program uses EasyScript 2026.` | An optional first line: the edition the program is written for (2026, the only one so far). Anywhere but a file's first line, or an edition EasyScript doesn't know, is an error | `this program uses EasyScript 2026.` | Available |
 | `,`, `then` or `and` at the end of a line | The sentence carries on to the next line (whose indentation doesn't matter) | `let colors be a list of "red",`<br>`    "green" and "blue".` | Available |
 | `SENTENCE and SENTENCE` / `... and then SENTENCE` | Two sentences, one after the other. `and` starts a new sentence when a sentence word (`say`, `add`, `stop`, ...) follows it and then something that starts a value (`and stop` and `and skip` need nothing after them); a function's name after `and` is a value, so use `and then` to call it as a sentence. Block sentences (`if`, loops) can't follow `and` | `add 5 to total and say total.`<br>`if done, say "bye" and stop the loop.`<br>`greet with "Ann" and then greet with "Bo".` | Available |
 | `:` + indented lines | Opens a block of sentences | `if x is 1:`<br>`    say "one".` | Available |

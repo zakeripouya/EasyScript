@@ -500,6 +500,10 @@ Stmt *parse_statement(Parser *p) {
     p->ended_with_block = false;
     p->block_end = 0;
     p->ends_with_name = false;
+    if (parser_at_edition(p)) {  // this program uses EasyScript 2026.
+        parser_parse_edition(p);
+        return NULL;
+    }
     if (parser_at_word(p, 0, "please")) {
         parser_advance(p);
         if (parser_at(p, 0, TOK_COMMA)) parser_advance(p);  // "please, then say ..."

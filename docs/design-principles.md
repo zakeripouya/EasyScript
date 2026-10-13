@@ -152,6 +152,12 @@ Each exception exists because following the rule would cost more than it gives. 
 
 The English pass's plan for new phrases, and the decisions already made about them, are in [english-pass.md](english-pass.md#decided-2026-10-11).
 
+## Editions
+
+A program can say which edition of EasyScript it's written for, on its first line: `this program uses EasyScript 2026.` Without the line, a program uses the current edition, 2026, the only one so far. An edition this compiler doesn't know is an error that names the ones it does.
+
+**The promise, from v0.2.0 on:** the core grammar is frozen per edition. A later edition can change what a wording means, but only for programs that ask for that edition with their first line; a program written for an earlier edition keeps its meaning in every later version of EasyScript. Within an edition, only additions are made: new phrases and synonyms that were errors before, so no program that worked changes what it does. Fixes that make a program that silently did the wrong thing into an error (like `a plus b rounded`, [proposal 0022](proposals/0022-rounding-after-arithmetic.md)) are allowed, and are marked in the changelog. See [proposal 0025](proposals/0025-editions.md).
+
 ## Planned changes
 
 Decided for the English pass ([english-pass.md](english-pass.md)); each breaks some existing programs, so each will be marked in the changelog when it lands.
