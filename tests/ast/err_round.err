@@ -1,0 +1,9 @@
+Line 2: Something is missing after "round".
+    round.
+    ^^^^^
+Write it like "round price to 2 decimal places".
+
+Line 3: I expected "decimal places" here, but found ".".
+    round x to 2.
+                ^
+Write it like "round price to 2 decimal places".

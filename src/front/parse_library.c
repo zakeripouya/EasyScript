@@ -191,6 +191,8 @@ static Expr *rounded_to(Parser *p, Expr *expr, Span start) {
     if (p->sentence_failed) return parser_error_expr(p);
     size_t n = parser_match_words(p, "decimal places");
     if (!n) n = parser_match_words(p, "decimal place");
+    if (!n) n = parser_match_words(p, "decimals");  // "rounded to 2 decimals"
+    if (!n) n = parser_match_words(p, "decimal");
     if (!n) {
         const Token *token = parser_peek(p, 0);
         if (parser_error(p, token->span, "I expected \"decimal places\" here, but found %s.", parser_describe(p, token))) {

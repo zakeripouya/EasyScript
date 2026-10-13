@@ -77,6 +77,7 @@ static Stmt *parse_chart(Parser *p, const Token *verb, bool saving) {
 
 bool parser_at_library_sentence(const Parser *p) {
     if (parser_at_system_sentence(p)) return true;  // run, complain
+    if (parser_at_word(p, 0, "round") && !parser_is_function(p, "round")) return true;  // round price to 2 decimal places
     static const char *const starts[] = {
         "make new file", "make new folder", "make folder", "make bar chart", "make line chart", "make pie chart", "rename file", "rename folder", "copy file",
         "move file", "move folder", "delete file", "delete folder", "clear screen", "read csv file",
@@ -151,11 +152,62 @@ static Stmt *parse_read_csv(Parser *p, const Token *verb) {
     return parser_parse_name(p, &stmt->as.library.name, NULL) ? stmt : NULL;
 }
 
+// round X [up | down | to N decimal places]: "set X to X rounded ...", for a
+// name or a field.
+static Stmt *parse_round(Parser *p, const Token *verb) {
+    static const char *const example = "round price to 2 decimal places";
+    static const char *const after[] = {"up", "down", "to", NULL};
+    if (parser_at_sentence_end(p)) {
+        if (parser_error(p, verb->span, "Something is missing after \"round\".")) {
+            diag_note(p->diag, "Write it like \"%s\".", example);
+        }
+        return NULL;
+    }
+    Stmt *stmt = parser_new_stmt(p, STMT_SET, verb);
+    if (!parser_parse_target(p, &stmt->as.assign.name, &stmt->as.assign.field, after)) return NULL;
+    Expr *value;
+    if (stmt->as.assign.field) {
+        value = arena_alloc(p->arena, sizeof *value);
+        *value = *stmt->as.assign.field;
+    } else {
+        value = ast_new_expr(p->arena, EXPR_NAME, stmt->as.assign.name.pos);
+        value->as.name = stmt->as.assign.name.text;
+        value->display = stmt->as.assign.name.display;
+    }
+    Expr *rounded = ast_new_expr(p->arena, EXPR_LIBRARY, value->pos);
+    rounded->as.library.op = LIB_ROUNDED;
+    rounded->as.library.a = value;
+    rounded->as.library.op_span = verb->span;
+    if (parser_at_word(p, 0, "up") || parser_at_word(p, 0, "down")) {
+        rounded->as.library.op = parser_at_word(p, 0, "up") ? LIB_ROUNDED_UP : LIB_ROUNDED_DOWN;
+        rounded->as.library.op_span = parser_advance(p)->span;
+    } else if (parser_at_word(p, 0, "to")) {
+        parser_advance(p);
+        rounded->as.library.op = LIB_ROUNDED_PLACES;
+        rounded->as.library.b = parse_primary(p);
+        if (p->sentence_failed) return NULL;
+        size_t n = 0;
+        static const char *const places[] = {"decimal places", "decimal place", "decimals", "decimal"};
+        for (size_t i = 0; i < 4 && !n; i++) n = parser_match_words(p, places[i]);
+        if (!n) {
+            const Token *token = parser_peek(p, 0);
+            if (parser_error(p, token->span, "I expected \"decimal places\" here, but found %s.", parser_describe(p, token))) {
+                diag_note(p->diag, "Write it like \"%s\".", example);
+            }
+            return NULL;
+        }
+        rounded->as.library.op_span = parser_consume(p, n);
+    }
+    stmt->as.assign.value = rounded;
+    return stmt;
+}
+
 Stmt *parser_parse_library_sentence(Parser *p) {
     if (parser_at_system_sentence(p)) return parser_parse_system_sentence(p);
     const Token *verb = parser_advance(p);
     p->ends_with_name = false;
     const char *word = verb->text;
+    if (strcmp(word, "round") == 0) return parse_round(p, verb);
     if (strcmp(word, "make") == 0) return at_chart(p) ? parse_chart(p, verb, false) : parse_make(p, verb);
     if (strcmp(word, "rename") == 0) return parse_two_paths(p, verb, DO_RENAME);
     if (strcmp(word, "copy") == 0) return parse_two_paths(p, verb, DO_COPY);

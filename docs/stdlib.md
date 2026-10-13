@@ -14,6 +14,7 @@ The library is written in C inside the runtime (`runtime/es_math.h`, `es_time.h`
 | `X rounded` | a number | `2.5 rounded` is 3, `-2.5 rounded` is -3 | To the nearest whole number; a half goes away from zero |
 | `X rounded up` / `X rounded down` | a number | `2.1 rounded up` is 3, `-2.1 rounded up` is -2 | The next whole number up (or down), or X itself if it's whole |
 | `X rounded to N decimal places` (or `1 decimal place`) | a number | `pi rounded to 2 decimal places` is 3.14 | Like `rounded`, at the Nth decimal place; N is a whole number from 0 to 15. `1.005 rounded to 2 decimal places` is 1.01 |
+| `round X [up \| down] [to N decimal places]` | (a sentence) | `round density to 2 decimal places.` | `set X to X rounded ...` for a name or a field; `decimals` works like `decimal places` here too |
 | `the bigger of X and Y` / `the smaller of X and Y` | a number | `the bigger of 3 and 4` is 4 | `if X is at least Y, X, otherwise Y` |
 | `pi` | a number | `pi times 2 times radius` | 3.141592653589793. A constant can use it: `keep turn at pi times 2` |
 
