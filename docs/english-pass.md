@@ -740,6 +740,11 @@ Left out of the English pass, each with its reason (details under [Still open](#
 - [ ] **Other describing words after arithmetic** (v0.2 prep, [proposal 0022](proposals/0022-rounding-after-arithmetic.md)): `a plus b rounded` is now an error showing both readings, because it silently rounded only b. `a plus b as text`, `a plus b in uppercase` and the other describing words have the same shape; they weren't changed (rarely wrong in a way that runs, and changing them would turn working programs into errors). Suggested: review them together before the freeze.
 - [ ] **`NAME is VALUE` to make a name** (v0.2 prep): 16+ attempts wrote `Total is 0.` or `score = 0`; the same open question as `the name is "Ada"` above, now with evidence.
 - [ ] **A field across a list in a program that reads a table** (v0.2 prep): `the descriptions of the purchases` reads as a column called "descriptions", because in such a program any word can be a column. Suggested: try the plural's singular as a column first (the same rule as `field_plural_at`) when the plural isn't itself a column of the file.
+- [ ] **Money in constants** (v0.2 prep): `keep fee as $5` kept the number of cents; it's an error now ("A constant can't be an amount of money yet."). Suggested: let fixed values, lists and maps hold amounts, as `let` does.
+- [ ] **`sorted by` a text column** (v0.2 prep, found writing the cookbook): `the tasks sorted by name` is "The top items are picked by a number or a date". Suggested: sort text the way `sort L` does.
+- [ ] **`the most common FIELD of L`** (v0.2 prep): `the most common item of orders` counts whole rows; `the item with the highest number of orders` works. Suggested: read `the most common FIELD of L` as the field's most common value when L's items have that field.
+- [ ] **`a KIND's FIELD depends on X:`** (v0.2 prep): only `the FIELD of a KIND depends on X:` is accepted. Suggested: accept both, as `KIND's FIELD is ...` already is.
+- [ ] **Describing words of several words** (`a product is running low if ...`): only one word works. Suggested: allow them when the words aren't a known name.
 - [ ] **Who are the first 3 to 5 non-coder testers?** Aim for variety and no programmers: someone who has never coded, a teacher, a spreadsheet-heavy office or finance worker, a teenager, a non-native English speaker.
 
 ## Update log

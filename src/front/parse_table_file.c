@@ -5,6 +5,7 @@
 // checks each of them is a column of the file. In a program that reads a
 // table, a word where a field goes can be a column even if no kind names it.
 
+#include <stdio.h>
 #include <string.h>
 #include "front/parse_internal.h"
 
@@ -86,6 +87,53 @@ static const char *written_to(const Parser *p, const char *name) {
     return NULL;
 }
 
+// The file's header line: the file named `name` in the folder the program
+// runs in, or else the text the program writes into it (`written`). The
+// arena's copy, or NULL.
+static const char *header_line(Parser *p, const char *name, const char *written) {
+    FILE *file = fopen(name, "rb");
+    StrBuf line;
+    sb_init(&line, p->arena);
+    if (file) {
+        for (int c; (c = fgetc(file)) != EOF && c != '\n' && line.len < 4096;) sb_append_char(&line, (char)c);
+        fclose(file);
+        return line.data;
+    }
+    if (!written) return NULL;
+    for (const char *c = written; *c && *c != '\n'; c++) sb_append_char(&line, *c);
+    return line.data;
+}
+
+// The file's columns are field names the program can use: "its weight kg",
+// "its plus ones" (names of several words, like "a box has a weight kg"),
+// and "per day" for a column called "day" (a field wins over "per day" of a
+// date, as for any field).
+static void add_column_names(Parser *p, const char *header) {
+    for (const char *c = header; c && *c;) {
+        StrBuf name;
+        sb_init(&name, p->arena);
+        bool quoted = *c == '"';
+        if (quoted) c++;
+        size_t words = 0;
+        bool in_word = false;
+        for (; *c && (quoted ? *c != '"' : *c != ',') && *c != '\r'; c++) {
+            char ch = *c == '_' ? ' ' : (char)(*c >= 'A' && *c <= 'Z' ? *c + 32 : *c);
+            if (ch == ' ') {
+                in_word = false;
+                continue;
+            }
+            if (!in_word && name.len) sb_append_char(&name, ' ');
+            if (!in_word) words++;
+            in_word = true;
+            sb_append_char(&name, ch);
+        }
+        if (quoted && *c == '"') c++;
+        while (*c && *c != ',') c++;
+        if (*c == ',') c++;
+        if (words > 0) parser_add_field_name(p, name.data, words);  // a column called "day" is the field, not "per day" of a date
+    }
+}
+
 void parser_find_table_files(Parser *p) {
     for (size_t i = 0; i < p->count; i++) {
         if (!at_read_table(p, i)) continue;
@@ -100,6 +148,7 @@ void parser_find_table_files(Parser *p) {
             kind.written = written_to(p, file->text);
             kind.file_offset = file->span.offset;
             kind.file_length = file->span.length;
+            add_column_names(p, header_line(p, file->text, kind.written));
         }
         size_t called = 0;  // "... and call it purchases": a kind called "purchase" (maybe after ", with ...")
         for (size_t j = i + 4; !called && j < p->count && p->tokens[j].kind != TOK_PERIOD && p->tokens[j].kind != TOK_NEWLINE; j++) {
@@ -122,6 +171,7 @@ void parser_find_table_files(Parser *p) {
         kind.definition = definition;
         vec_push(p->arena, p->records, kind);
         vec_push(p->arena, &p->tables, index);
+        p->records->money = true;  // its file can hold amounts, so arithmetic on its columns waits for the file's say
     }
 }
 

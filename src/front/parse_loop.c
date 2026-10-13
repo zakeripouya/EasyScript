@@ -45,12 +45,17 @@ static Expr *count_value(Parser *p) {
 static bool its_is_dropped(const Parser *p) {
     if (!parser_at_word(p, 0, "its") || !parser_is_name_word(parser_peek(p, 1))) return false;
     const char *next = parser_peek(p, 1)->text;
-    size_t uses = 0;
+    size_t uses = 0;  // "its V" anywhere but another "for each K and its V" header
     for (size_t i = 0; i + 1 < p->count; i++) {
         const Token *a = &p->tokens[i], *b = &p->tokens[i + 1];
-        uses += a->kind == TOK_WORD && b->kind == TOK_WORD && strcmp(a->text, "its") == 0 && strcmp(b->text, next) == 0;
+        if (a->kind != TOK_WORD || b->kind != TOK_WORD || strcmp(a->text, "its") != 0 || strcmp(b->text, next) != 0) continue;
+        bool header = false;
+        for (size_t j = i; j-- > 0 && p->tokens[j].line == a->line && !header;) {
+            header = j + 1 < p->count && strcmp(p->tokens[j].text, "for") == 0 && strcmp(p->tokens[j + 1].text, "each") == 0;
+        }
+        uses += !(header && i > 0 && strcmp(p->tokens[i - 1].text, "and") == 0);
     }
-    return uses == 1;
+    return uses == 0;
 }
 
 static bool parse_range(Parser *p, Stmt *stmt, const char *example) {

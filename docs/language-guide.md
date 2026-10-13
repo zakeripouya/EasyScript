@@ -2473,7 +2473,7 @@ say how many sales whose amount is over 100.
 save the sales whose region is "East" as "east.csv".
 ```
 
-A table's rows are records whose fields are the columns the program uses: `amount` is a number because the program adds it up, `region` is text.
+A table's rows are records whose fields are the columns the program uses: `amount` is a number because the program adds it up, `region` is text. A column's name can have several words, like `weight kg` or `plus ones`: write it as it is in the header (`its weight kg`, `the total plus ones of guests`).
 
 A file's name goes in quotes (`"sales.csv"`); written without them, it's an error that shows the sentence with quotes. EasyScript reads csv files; it can't read Excel files yet, so save the sheet as a csv file first ("Save As", then "CSV"). It can't send email, make web pages or use the internet yet either, and says so when a program asks.
 

@@ -1092,6 +1092,15 @@ To use $0 when it's blank, write ", or $0" after it, like "its tip, or $0".
 
 **A column's kind stated twice**: [`table_stated_twice.es`](../tests/errors/table_stated_twice.es), [proposal 0023](proposals/0023-column-kinds.md). ""amount" is said to be a number here, but it's used as an amount in dollars." A stated kind that the file doesn't fit is the error from [proposal 0014](proposals/0014-file-decides-column-kind.md) ([`table_stated_kind_errors.es`](../tests/errors/table_stated_kind_errors.es)), and a kind EasyScript doesn't know is "I expected "in dollars", "in euros", "in pounds" or "as a number" here, ...".
 
+**Money in a constant**: [`const_money.es`](../tests/errors/const_money.es). A constant can't hold an amount of money yet.
+
+```
+Line 1: A constant can't be an amount of money yet.
+    keep fee as $5.
+                ^^
+Use let instead of keep, like "let fee be $5".
+```
+
 ### Talking to it, part 4
 
 ```

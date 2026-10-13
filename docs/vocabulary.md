@@ -938,7 +938,7 @@ All **Available** (after the English pass), drawn by [`lib/charts.es`](../lib/ch
 | `read the table in F, with C in dollars` (or `in euros`, `in pounds`, `as a number`), more joined with `and`: `..., with amount in dollars and quantity as a number` (before or after `and call it NAME`) | Says a column's kind, instead of leaving it to the program's use and the file: the program doesn't depend on what the file holds when it's checked. A file that doesn't fit is the usual error naming the column, the line and both kinds | `read the table in "bank.csv", with amount in dollars, and call it purchases.` |
 | `save X as F` (or `as csv file F`) | Saves a list of maps or records (a table's rows with all their columns), or a map (a `key` and a `value` column), as a csv file | `save it as "best months.csv"` |
 
-In a program that reads a table, a word where a field goes can be one of its columns even if no kind of record has that field.
+In a program that reads a table, a word where a field goes can be one of its columns even if no kind of record has that field. A column whose name has several words (`weight kg`, `plus ones`, `due date`) is a field of several words when the file is named in quotes: EasyScript reads its header line (from the program's folder, or the text the program writes into it), so `its weight kg` and `sorted by due date` work.
 
 ## Kinds with variants
 

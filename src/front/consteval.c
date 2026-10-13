@@ -553,7 +553,12 @@ static bool length(Eval *ev, const Expr *expr, ConstValue *out) {
 static bool eval(Eval *ev, const Expr *expr, ConstValue *out) {
     Span span = expr->pos.span;
     switch (expr->kind) {
-    case EXPR_NUMBER: *out = number(strtod(expr->as.number.text, NULL)); return true;
+    case EXPR_NUMBER:
+        if (expr->as.number.money) {  // kept as cents: a fixed value doesn't know money yet
+            return fail(ev, span, "Use let instead of keep, like \"let fee be $5\".", "A constant can't be an amount of money yet.");
+        }
+        *out = number(strtod(expr->as.number.text, NULL));
+        return true;
     case EXPR_TEXT: *out = text(expr->as.text.value, expr->as.text.len); return true;
     case EXPR_BOOLEAN: *out = yesno(expr->as.boolean); return true;
     case EXPR_NAME: return ev->lookup(ev->context, expr, out);

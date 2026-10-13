@@ -4,6 +4,13 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Fixed (v0.2 prep: found while writing the cookbook)
+
+- A table's columns whose names have several words, or an EasyScript word, work as fields: `its weight kg`, `the total plus ones of guests`, `per booked by`, `sorted by due date`. EasyScript reads the header line of the file named in quotes (in the program's folder, or the text the program writes into it). A column called `day`, `month`, `year` or `weekday` is that column in `per day`, as any field would be.
+- `a sale's money is its price times its quantity` with prices like `$12.50` in the file: in a program that reads a table, arithmetic on its columns waits for the file to say whether they're money (it made `price` a number first, then stopped at `$12.50`).
+- Two loops `for each X and its total in ...` in one program: `its` is dropped in both (it was dropped only when `its total` appeared once).
+- **Breaking:** `keep fee as $5` is an error, "A constant can't be an amount of money yet." with a note to use `let`. It used to keep the number of cents (500) as a plain number.
+
 ### Changed (v0.2 prep: from the simulated testers and the shell-and-money review)
 
 - **Breaking:** a blank cell in a table's column of numbers or amounts is nothing, not 0. The total, the average, the median, the top N, the highest, `per` groups and charts leave it out, as a spreadsheet does (the average of $5, a blank and $2.50 is $3.75, not $2.50); `how many` counts rows; showing a row or a table and saving the table leave the cell blank; using it as a value (in arithmetic, a comparison or a change) stops the program with "... is blank here: its cell in the table is empty." and how to write `, or $0`. `its amount, or $0` and `if its amount is nothing` work on such a column ([proposal 0024](docs/proposals/0024-blank-cells.md)). Changed: `tests/run/table_column_kinds.out`.

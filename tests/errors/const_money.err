@@ -1,0 +1,4 @@
+Line 1: A constant can't be an amount of money yet.
+    keep fee as $5.
+                ^^
+Use let instead of keep, like "let fee be $5".
