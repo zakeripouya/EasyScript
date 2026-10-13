@@ -4,6 +4,20 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-13
+
+EasyScript 0.2.0 finishes Phase 2. Programs are written as plain English and checked before they run:
+
+- **The English pass:** questions and totals (`how many orders are big`, `the average score of grades per student`, `the top 3 products by quantity`), choices without `if` (defaults, describing words, tables, rules, events), steps in a row (`read the table in "sales.csv", then total the amount per month, then ...`), requests and questions (`what is the total?`), and errors with the closest sentences that work.
+- **Reads like text:** definitions with inputs in the middle (`give every loyal customer a discount of 10 percent`), yes/no fields as describing words, one-line choices, the best group, a field across a list, files in steps in a row, and kinds of text with a rule.
+- **Money:** exact amounts (`$1,200`, `€4.50`) that add without rounding errors, in tables read from csv files too, with a column's kind written down or judged from the file, and blank cells left out of totals.
+- **Charts:** bar, line and pie charts saved as SVG, drawn by a module written in EasyScript.
+- **The cookbook:** 30 short programs for real jobs, each checked by `make test`; and starter templates (`easyscript new`).
+- **Editions:** `this program uses EasyScript 2026.` From this version on, the core grammar is frozen per edition: a later edition can change wording only for programs that ask for it, and within an edition only additions are made.
+- **Before release:** simulated testers (120 attempts by people who had never seen EasyScript) found what people naturally write; the most common gaps are fixed. The Apache 2.0 license with a runtime exception, `make install`, `easyscript --version` and `make bench-check`.
+
+Everything below, down to 0.1.0, is in this release.
+
 ### Fixed (v0.2 prep: found while writing the cookbook)
 
 - A table's columns whose names have several words, or an EasyScript word, work as fields: `its weight kg`, `the total plus ones of guests`, `per booked by`, `sorted by due date`. EasyScript reads the header line of the file named in quotes (in the program's folder, or the text the program writes into it). A column called `day`, `month`, `year` or `weekday` is that column in `per day`, as any field would be.
