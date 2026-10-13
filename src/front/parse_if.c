@@ -188,8 +188,12 @@ Stmt *parse_if(Parser *p, const Token *verb) {
         const Token *token = parser_peek(p, 0);
         if (parser_error(p, token->span, "I expected \":\", \",\" or \"then\" after the condition, but found %s.",
                          parser_describe(p, token))) {
-            diag_note(p->diag, "Write \"%s x is 5:\" and put the sentences on the lines below, indented. For one "
-                               "sentence, write \"%s x is 5, say \"five\"\".", verb->text, verb->text);
+            if (token->kind == TOK_PERIOD && token->text[0] == '!' && !parser_at(p, 1, TOK_NEWLINE)) {
+                diag_note(p->diag, "\"!\" ends a sentence. To check that two things are different, write \"!=\".");
+            } else {
+                diag_note(p->diag, "Write \"%s x is 5:\" and put the sentences on the lines below, indented. For one "
+                                   "sentence, write \"%s x is 5, say \"five\"\".", verb->text, verb->text);
+            }
         }
         parser_skip_line_and_block(p);
         ok = false;

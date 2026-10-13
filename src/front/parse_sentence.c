@@ -180,6 +180,12 @@ void parser_report_unknown_start(Parser *p) {
     Span span = {token->span.offset, parser_peek(p, words - 1)->span.offset + parser_peek(p, words - 1)->span.length -
                                          token->span.offset};
     const char *written = parser_text(p, span);
+    if (words == 1 && strcmp(token->text, "please") == 0) {  // "then please." with nothing after it
+        if (parser_error(p, span, "Something is missing after \"%s\".", written)) {
+            diag_note(p->diag, "Write a sentence after it, like \"please say \"hello\"\".");
+        }
+        return;
+    }
     if (!parser_error(p, span, "I don't know a sentence that starts with \"%s\".", written)) return;
     // Statement words and the program's function names, as suggestions.
     size_t forms = parser_form_count(), n = forms + 1 + p->functions.len;
@@ -193,7 +199,14 @@ void parser_report_unknown_start(Parser *p) {
         const char *f = p->functions.items[i];
         if (strncmp(f, token->text, token->text_len) == 0 && f[token->text_len] == ' ') longer = f;
     }
-    if (longer) {
+    static const char *const greetings[] = {"hello", "hi", "dear", "thanks", "thank", "goodbye", "bye", "regards"};
+    bool greeting = false;
+    for (size_t i = 0; words == 1 && i < sizeof greetings / sizeof greetings[0]; i++) {
+        greeting = greeting || strcmp(token->text, greetings[i]) == 0;
+    }
+    if (greeting) {  // "Hello!", "Thank you very much."
+        diag_note(p->diag, "Every sentence is something for the program to do, so leave out greetings and thanks.");
+    } else if (longer) {
         diag_note(p->diag, "The definition is called \"%s\": its name is every word before \"with\", "
                            "\"of\", \"using\" or \"to\". To give \"%s\" an input, write \"to %s with %s:\".",
                   longer, written, written, longer + token->text_len + 1);

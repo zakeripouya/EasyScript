@@ -266,9 +266,6 @@ static void report_unexpected(Lexer *lx) {
         diag_error(lx->diag, span, "I don't understand this apostrophe.");
         diag_note(lx->diag, "An apostrophe can only go inside a word, like isn't or rex's. "
                             "Text goes in double quotes, like \"hello\".");
-    } else if (c == '!') {
-        diag_error(lx->diag, span, "I don't understand \"!\".");
-        diag_note(lx->diag, "To check that two things are different, write \"!=\".");
     } else if (n == 0) {
         diag_error(lx->diag, span, "I don't understand the byte 0x%02X. Is this file saved as UTF-8?", c);
     } else if (c < 0x20 || c == 0x7F) {
@@ -291,7 +288,8 @@ static TokenKind two_char_symbol(char a, char b) {
 static TokenKind one_char_symbol(char c) {
     switch (c) {
     case '.':
-    case '?': return TOK_PERIOD;  // "what is total?": a question ends a sentence too
+    case '?':                     // "what is total?": a question ends a sentence too
+    case '!': return TOK_PERIOD;  // "Thank you!", and so does "!" ("!=" is read first)
     case ',': return TOK_COMMA;
     case ':': return TOK_COLON;
     case '(': return TOK_LPAREN;

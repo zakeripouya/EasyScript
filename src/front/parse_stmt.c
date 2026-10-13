@@ -12,6 +12,7 @@
 //   loops, stop the loop, skip this one   (parse_loop.c)
 //   add E to the end of L, remove, insert, set item N of L to E, sort  (parse_list.c)
 
+#include <stdint.h>
 #include <string.h>
 #include "front/parse.h"
 #include "front/parse_internal.h"
@@ -480,6 +481,7 @@ Stmt *parse_statement(Parser *p) {
     p->ends_with_name = false;
     if (parser_at_word(p, 0, "please")) {
         parser_advance(p);
+        if (parser_at(p, 0, TOK_COMMA)) parser_advance(p);  // "please, then say ..."
         if (parser_at_sentence_end(p)) {
             if (parser_error(p, p->prev_span, "Something is missing after \"please\".")) {
                 diag_note(p->diag, "Write a sentence after it, like \"please say \"hello\"\".");
@@ -487,8 +489,11 @@ Stmt *parse_statement(Parser *p) {
             return NULL;
         }
     }
-    parser_skip_polite(p);  // "can you show me the total?", "let's say hello"
-    parser_skip_step_words(p);  // "first, ...", "after that, ..."
+    for (size_t before = SIZE_MAX; before != p->pos;) {  // "then please ...", "please, first ..."
+        before = p->pos;
+        parser_skip_polite(p);      // "can you show me the total?", "let's say hello"
+        parser_skip_step_words(p);  // "first, ...", "after that, ..."
+    }
     const Token *verb = parser_peek(p, 0);
     if (parser_at_record_definition(p)) return parse_record(p);
     if (parser_at_has_definition(p)) return parser_parse_has(p);

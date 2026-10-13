@@ -49,6 +49,7 @@ void parser_skip_polite(Parser *p) {
             size_t n = parser_match_words(p, openers[i]);
             if (n && !ends_at(p, n)) {
                 parser_consume(p, n);
+                if (parser_at(p, 0, TOK_COMMA) && !ends_at(p, 1)) parser_advance(p);  // "please, ..."
                 again = true;
             }
         }

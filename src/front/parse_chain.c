@@ -139,7 +139,12 @@ void parser_skip_step_words(Parser *p) {
         size_t n = parser_match_words(p, words[i]);
         if (!n || parser_is_function(p, words[i])) continue;
         const Token *after = parser_peek(p, n + (parser_at(p, n, TOK_COMMA) ? 1 : 0));
-        if (after->kind != TOK_WORD || !parser_is_statement_word(after->text)) continue;
+        static const char *const polite[] = {"can", "could", "would", "i", "i'd"};  // "then can you ..."
+        bool asking = false;
+        for (size_t k = 0; after->kind == TOK_WORD && k < sizeof polite / sizeof polite[0]; k++) {
+            asking = asking || strcmp(after->text, polite[k]) == 0;
+        }
+        if (after->kind != TOK_WORD || (!parser_is_statement_word(after->text) && !asking)) continue;
         parser_consume(p, n + (parser_at(p, n, TOK_COMMA) ? 1 : 0));
         return;
     }

@@ -1,0 +1,19 @@
+Line 1: I don't know a sentence that starts with "Hello".
+    Hello! Please say "hi".
+    ^^^^^
+Every sentence is something for the program to do, so leave out greetings and thanks.
+
+Line 2: I don't know a sentence that starts with "Thank".
+    Thank you very much!
+    ^^^^^
+Every sentence is something for the program to do, so leave out greetings and thanks.
+
+Line 3: Something is missing after "please".
+    then please.
+         ^^^^^^
+Write a sentence after it, like "please say "hello"".
+
+Line 4: I expected ":", "," or "then" after the condition, but found "!".
+    if x ! y:
+         ^
+"!" ends a sentence. To check that two things are different, write "!=".

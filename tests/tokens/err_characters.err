@@ -2,11 +2,6 @@ Line 1: I don't understand the character "@".
     say 5 @ 3.
           ^
 
-Line 2: I don't understand "!".
-    if x ! y:
-         ^
-To check that two things are different, write "!=".
-
 Line 3: I don't understand this apostrophe.
     say guests' list.
               ^

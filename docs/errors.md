@@ -72,7 +72,6 @@ The lexer also explains:
 |---|---|
 | Text with no closing quote | "This text is missing its closing quote." |
 | Unknown escape such as `\q` | "I don't know the escape "\q"." and lists the valid escapes |
-| A lone `!` | "I don't understand "!"." and suggests `!=` |
 | An ordinal with the wrong ending (`2th`) | ""2th" isn't how that ordinal is written." and suggests `2nd` |
 | An apostrophe outside a word | explains that apostrophes go inside words and text goes in quotes |
 | Curly quotes pasted from a word processor | "That's a curly quote. Use straight double quotes (") around text." |
@@ -94,6 +93,17 @@ Line 2: I don't know a sentence that starts with "sya".
     ^^^
 Did you mean "say"?
 ```
+
+**A greeting or a thank-you**: [`tests/ast/err_polite.es`](../tests/ast/err_polite.es). Every sentence has to be something to do.
+
+```
+Line 2: I don't know a sentence that starts with "Thank".
+    Thank you very much!
+    ^^^^^
+Every sentence is something for the program to do, so leave out greetings and thanks.
+```
+
+`!` ends a sentence like `.`, so `if x ! y:` stops at the `!`: "I expected ":", "," or "then" after the condition, but found "!"." with ""!" ends a sentence. To check that two things are different, write "!="."
 
 **A filler word used as a name**: [`err_filler_name.es`](../examples/parser/err_filler_name.es). The compiler remembers where it dropped `a`, `an`, or `the`, so it can explain what happened instead of complaining about the next word.
 

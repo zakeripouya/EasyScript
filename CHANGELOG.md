@@ -4,6 +4,12 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Added (v0.2 prep: from the simulated testers)
+
+- `!` ends a sentence, like `.` and `?` (`say "Well done!"!`); `!=` still means "is not". Before, a lone `!` was an error ([proposal 0016](docs/proposals/0016-exclamation-and-polite-steps.md)).
+- Polite words and step words in either order: `then please ask ...`, `please, first say ...`, `next, can you say ...`. Before, `Then please ...` was "I don't know a sentence that starts with "please". Did you mean "please"?".
+- A sentence that starts with a greeting or a thank-you (`Hello!`, `Thank you very much.`) gets the note "Every sentence is something for the program to do, so leave out greetings and thanks."
+
 ### Fixed (shell and money fixes)
 
 - `how many purchases are there?` and `how many purchases are there` (also `is there`) mean `how many purchases there are`, unless the program makes a name or a describing word called `there`, which keeps its meaning ([proposal 0015](docs/proposals/0015-how-many-are-there.md)). Before, it was "I don't know what "there" means for a purchase."

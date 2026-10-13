@@ -826,6 +826,7 @@ All **Available** (English pass part 4). A question or request means exactly wha
 | Pattern | Means | Example |
 |---|---|---|
 | `...?` | A `?` ends a sentence, like `.` | `say total?` |
+| `...!` | A `!` ends a sentence, like `.` (it doesn't make a question; `!=` still means "is not") | `say "Well done!"!` |
 | `what is X?` / `what's X?` / `what are X?` / `X?` | `say X` | `what is the total?` |
 | `is X ...?` (any comparison after `is`, or a describing word) | `say X is ...` | `is total above 100?`, `is rex big?` |
 | `how many ...?` | `say how many ...` | `how many orders are big?` |
@@ -838,7 +839,7 @@ All **Available** (English pass part 4). A question or request means exactly wha
 
 ### Polite words
 
-`I want to`, `I'd like to`, `I would like to`, `let's`, `can you`, `could you`, `would you` and `please` before a sentence are left out: `can you show me the total?` is `show the total`.
+`I want to`, `I'd like to`, `I would like to`, `let's`, `can you`, `could you`, `would you` and `please` (with or without a comma after it) before a sentence are left out: `can you show me the total?` is `show the total`. They can come before or after the step words (`first`, `next`, `then`, `after that`, `finally`): `then please ask ...`, `please, first say ...`, `next, can you say ...`.
 
 ### Steps in a row
 

@@ -34,3 +34,4 @@ A doubt that comes up while building goes back into the proposal, not into the p
 - [0013: for each K and its V](0013-each-and-its.md) (Built)
 - [0014: the file decides a column's kind](0014-file-decides-column-kind.md) (Built)
 - [0015: how many Ls are there?](0015-how-many-are-there.md) (Built)
+- [0016: "!" ends a sentence, and "please" after a step word](0016-exclamation-and-polite-steps.md) (Built)

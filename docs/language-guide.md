@@ -2449,7 +2449,7 @@ show me the total.
 can you show me the big orders?
 ```
 
-A `?` ends a sentence like a period. `show me`, `give me`, `tell me` and `list` mean `say`, and polite words before a sentence (`please`, `can you`, `I want to`, `let's`, ...) are left out. Questions that start with `who`, `where`, `when` or `why` aren't understood yet, and EasyScript says so.
+A `?` ends a sentence like a period, and so does `!` (`say "Well done!"!`; `!` doesn't make a question). `show me`, `give me`, `tell me` and `list` mean `say`, and polite words before a sentence (`please`, `can you`, `I want to`, `let's`, ...) are left out, before or after a step word (`then please ask ...`). A sentence that only greets or thanks (`Thank you!`) is an error: every sentence is something to do. Questions that start with `who`, `where`, `when` or `why` aren't understood yet, and EasyScript says so.
 
 ### Steps in a row
 

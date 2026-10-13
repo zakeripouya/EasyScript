@@ -1,0 +1,4 @@
+say [1:15]
+  text "hi" [1:19]
+say [6:1]
+  text "bye" [6:5]

@@ -5,6 +5,7 @@ PERIOD        1:10    .
 NEWLINE       1:11
 WORD          2:1     if
 WORD          2:4     x
+PERIOD        2:6     !
 WORD          2:8     y
 COLON         2:9     :
 NEWLINE       2:10

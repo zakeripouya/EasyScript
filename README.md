@@ -62,7 +62,7 @@ Hello, Ada!
 
 | Piece | What you can do |
 |---|---|
-| Sentences | End with a period or a new line; a line ending with a comma, `then` or `and` goes on to the next line |
+| Sentences | End with a period, `?`, `!` or a new line; a line ending with a comma, `then` or `and` goes on to the next line |
 | Variables | `let total be 0`, `set`/`change ... to`, and `add 5 to total`, `subtract`, `increase`/`decrease`/`multiply`/`divide ... by` |
 | Names | A word (`total`, `clientName`) or several (`let late fee be 25`, `keep hourly rate as 150`, `to add tax to amount:`), recognized everywhere once made; matched without caring about capitals |
 | Constants | `keep tax rate as 0.2`, fixed lists (`keep weekdays as a list of "Mon", "Tue" and "Wed"`) and fixed maps (`keep prices as a map of "coffee" to 3, "tea" to 2`): worked out by the compiler, usable everywhere (including inside functions), and never changed |
@@ -87,7 +87,7 @@ Hello, Ada!
 | Types | Every value is a number, text, yes/no, a list of one kind, a record, a value of a kind with variants, or a map (and anything but a list or map can be "or nothing", checked before use) with one kind of key and value, worked out by the compiler (no annotations needed); kind mistakes are caught before the program runs; optional kinds in definitions: `to area with width (a number) and height (a number), giving back a number:`, `(a list of numbers)`, `(a map from text to numbers)` |
 | System tools | `the words given to the program` (`easyscript run greet.es Ada` or `./greet Ada`), `word 1 given to the program`, `the text sent to the program` and `the lines sent to the program` (piped input), `the setting called "HOME"` (text or nothing), `run "git" with "status" and call the result r` with `r's output`, `r's error output`, `r's exit code` and `if r worked:` (never through a shell), `complain "..."` (the error output), `stop the program, saying it failed` and `stop the program with code 3` ([stdlib.md](docs/stdlib.md#system-tools)) |
 | Keyboard | `wait for a key and call it key` and `the key being pressed` (or nothing), a key at a time without Enter, with plain names (`"up"`, `"enter"`, `"escape"`, `"a"`); the terminal is always put back, even after Ctrl+C; macOS and Linux. Snake example ([chapter](docs/language-guide.md#20-the-keyboard)) |
-| Other | `stop the program`; any sentence can start with `please` |
+| Other | `stop the program`; any sentence can start with `please` (also after `then`, `first`, `next`) |
 | Memory | Nothing to manage: text, lists, records and maps are freed as soon as nothing uses them, so loops that make them run in flat memory ([how](docs/memory.md)) |
 | Friendly errors | Compile errors show the line, the source, carets, and a suggestion ("Did you mean "total"? You made it on line 1."). Kind mistakes are compile errors too ("I can't add text to a number."). Runtime errors show the line with carets too, and the chain of function calls that led there, with the values they were given ("while working out "average" (count was 0)", "called from line 8: ...") |
 | Tools | `run`, `build`, `emit`, `tokens`, `ast`, `errors`, `plan` (what each list question became), and an interactive shell. Generated programs are self-contained C. |
