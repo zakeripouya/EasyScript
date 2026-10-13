@@ -205,4 +205,4 @@ Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) explains how to bu
 
 ## License
 
-License: TBD. No license has been chosen yet. Until one is, all rights are reserved by the author.
+EasyScript is licensed under the [Apache License 2.0](LICENSE), copyright Pouya Zakeri (see [NOTICE](NOTICE)), with a runtime exception modeled on Swift's: **programs you compile with EasyScript are yours.** The parts of EasyScript built into them (the runtime in `runtime/*.h` and library files like `lib/charts.es`) don't make them carry this license or its notice, and you can share them under any terms you like.

@@ -1,0 +1,8 @@
+EasyScript
+Copyright 2026 Pouya Zakeri
+
+This product is licensed under the Apache License, Version 2.0, with the
+Runtime Library Exception at the end of the LICENSE file: programs compiled
+with EasyScript, including the parts of its runtime (runtime/*.h, lib/*.es)
+built into them, belong to their authors and don't need to carry the
+license or this notice.

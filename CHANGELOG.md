@@ -18,6 +18,10 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 - **Breaking:** `A plus B rounded ...` (any arithmetic whose right side is `X rounded`, `rounded up`, `rounded down` or `rounded to N decimal places`, without brackets) is an error showing both readings: `A plus B, rounded ...` rounds the whole value, `A plus (B rounded ...)` only B. It used to round only B, which made a simulated tester's mortgage calculator print the wrong payment ([proposal 0022](docs/proposals/0022-rounding-after-arithmetic.md)).
 
+### Added (v0.2 prep: release)
+
+- A license: the Apache License 2.0 (`LICENSE`, `NOTICE`), with a runtime exception modeled on Swift's: programs compiled with EasyScript, including the parts of the runtime built into them, belong to their authors and don't need to carry the license or notice. CONTRIBUTING.md: contributions are under the same license; pull requests aren't accepted yet, issues and ideas are welcome.
+
 ### Added (v0.2 prep: from the simulated testers)
 
 - The cookbook, `docs/cookbook/`: 30 short programs for real jobs in 12 kinds of work (teaching, a shop, a café, office admin, finance, healthcare admin, real estate, shipping, events, a household budget, hobbies, a science lab), each a page with the task, the program, its data and its exact output. `make test` runs every recipe and checks that its page shows the files it runs (`docs/cookbook-pages-match`); `make bless` rewrites their outputs.

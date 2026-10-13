@@ -137,3 +137,9 @@ Rules:
 ## Reporting problems
 
 Open an issue with the `.es` file, the command you ran, what you expected, and what happened.
+
+## Pull requests and the license
+
+**Pull requests aren't accepted yet,** while the language settles toward v0.2.0. Issues, ideas and examples of what you tried to write are very welcome: open an issue.
+
+When pull requests open, contributions are accepted under the same license as the project (inbound = outbound): by contributing, you agree that your contribution is licensed under the [Apache License 2.0](LICENSE) with the runtime exception at its end, like the rest of EasyScript.
