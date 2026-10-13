@@ -23,8 +23,12 @@
  * and sets two environment variables:
  *   ES_SKIP_OUTPUT=N  don't print the first N bytes (shown on earlier runs)
  *   ES_ANSWERS=path   answers to earlier "ask"s, one per line, used before
- *                     reading the keyboard; new answers are added to it */
+ *                     reading the keyboard; new answers are added to it
+ *   ES_NEW_FROM_LINE=N  the line just typed starts at line N: an error in an
+ *                     earlier line (which worked before) says the new line
+ *                     changed it */
 static size_t es_skip_output;
+static int es_new_from_line; /* ES_NEW_FROM_LINE: where the line just typed starts (0: not the shell) */
 static FILE *es_answers;
 static bool es_answers_used_up;
 
@@ -110,6 +114,8 @@ static void es_init(const EsSite *sites, const char *const *source, int source_l
 #ifdef ES_HOOKS
     const char *skip = getenv("ES_SKIP_OUTPUT");
     if (skip) es_skip_output = (size_t)strtoull(skip, NULL, 10);
+    const char *from = getenv("ES_NEW_FROM_LINE");
+    if (from) es_new_from_line = (int)strtol(from, NULL, 10);
     const char *answers = getenv("ES_ANSWERS");
     if (answers) {
         es_answers = fopen(answers, "a+");
@@ -367,6 +373,10 @@ static _Noreturn void es_fail(int site, const char *hint, const char *fmt, ...) 
     es_show_source(&es_site_table[site]);
     if (hint) fprintf(stderr, "%s\n", hint);
     es_show_calls();
+    const EsSite *at = &es_site_table[site];
+    if (at->line < es_new_from_line && !es_files[at->file].name) {  /* the shell: a line kept before */
+        fputs("This line worked before. The new line changes how it works.\n", stderr);
+    }
     exit(1);
 }
 

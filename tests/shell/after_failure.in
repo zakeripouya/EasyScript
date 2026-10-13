@@ -1,0 +1,14 @@
+let total be 10.
+say "Total:", total.
+say total divided by 0.
+add 5 to total.
+say "Total:", total.
+put the text below in file "bank.csv":
+    date,store,amount
+    2026-08-01,Landlord,$1200
+    2026-08-04,Kroger,$96.40
+
+read the table in "bank.csv" and call it purchases.
+say the total amont of purchases.
+say the total amount of purchases.
+exit

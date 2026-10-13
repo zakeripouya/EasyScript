@@ -1,0 +1,7 @@
+Line 2: I couldn't read the file "missing.csv": it doesn't exist.
+    read the table in "missing.csv" and call it purchases.
+                      ^^^^^^^^^^^^^
+Line 3: I don't know anything called "purchases".
+    say the total amount of purchases.
+                            ^^^^^^^^^
+Did you mean "purchase"? You made it on line 2.

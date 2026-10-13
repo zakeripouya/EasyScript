@@ -1,0 +1,6 @@
+say "start".
+read the table in sales.csv and call it purchases.
+say the total amount of purchases.
+say how many purchases there are.
+say "still here".
+exit

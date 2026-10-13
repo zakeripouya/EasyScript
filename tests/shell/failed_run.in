@@ -1,0 +1,6 @@
+say "start".
+read the table in "missing.csv" and call it purchases.
+let purchase be 3.
+say the total amount of purchases.
+say purchase.
+exit
