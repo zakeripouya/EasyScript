@@ -148,6 +148,15 @@ typedef struct {
     size_t variant;  // checked to be this variant ("if s is a circle"), or NO_VARIANT
 } Narrowing;
 
+// A chart's values ("save a bar chart of X as F"): which currency, if any,
+// is decided once every kind is known.
+typedef struct {
+    Expr *currency;  // the text handed to lib/charts.es: "", "dollars", "euros" or "pounds"
+    TypeVar item;    // the kind of X's items (a list's, or a map's values)
+} ChartValues;
+
+typedef struct TableFile TableFile;  // check_table_file.c: a table's file, looked at before the program runs
+
 typedef struct {
     Arena *arena;
     Diag *diag;
@@ -183,6 +192,8 @@ typedef struct {
     unsigned main_file;               // the file that's run: the last one
     unsigned only_file;               // "helpers's double": names are looked up only in this file (1 + its index), or 0
     Vec(struct ModuleUse) module_uses;  // names used from other files, renamed once the program is checked
+    Vec(ChartValues) charts;          // every chart sentence, for its currency
+    Vec(TableFile *) table_files;     // the files tables are read from, named in quotes
 } Checker;
 
 // A name in a value that means another file's function or constant.
@@ -203,6 +214,7 @@ void checker_make_or_store(Checker *c, const Name *name, TypeVar value);
 // check_library.c: the standard library
 TypeVar checker_check_library(Checker *c, const Expr *expr);  // EXPR_LIBRARY
 void checker_check_library_stmt(Checker *c, const Stmt *stmt);  // STMT_LIBRARY
+void checker_finish_charts(Checker *c);  // check_library.c: each chart's currency, once kinds are known
 TypeVar checker_check_system(Checker *c, const Expr *expr);      // check_system.c: LIB_PROGRAM_WORDS and later
 void checker_check_system_stmt(Checker *c, const Stmt *stmt);    // DO_COMPLAIN, DO_RUN, DO_WAIT_KEY
 void checker_check_stop(Checker *c, const Stmt *stmt);           // STMT_STOP
@@ -252,6 +264,10 @@ size_t types_line(Checker *c, TypeVar var);  // where its kind was decided
 void types_defer(Checker *c, DeferKind kind, const Expr *expr, TypeVar left, TypeVar right, TypeVar result);
 // `var` must turn out to have one of the `allowed` kinds; otherwise reports
 // "<message>, but this is <the kind of shown>." at expr.
+bool types_number_first(Checker *c, TypeVar var);  // check_types.c: it becomes a number if nothing decides it
+void types_settle(Checker *c);  // check_types.c: settles what can be settled now
+void checker_judge_columns(Checker *c);  // check_table_file.c: tables' columns from their files, before the defaults
+void checker_check_columns(Checker *c);  // check_table_file.c: columns used as numbers or amounts, against their files
 void types_default_numbers(Checker *c);  // check_types.c: KIND_NUMBER_FIRST kinds nothing decided become numbers
 void types_defer_one_of(Checker *c, const Expr *expr, TypeVar var, TypeVar shown, unsigned allowed,
                         const char *message);

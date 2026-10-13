@@ -1,0 +1,4 @@
+Line 5: I don't know what "big" means for a purchase.
+    say how many purchases are big?
+                               ^^^
+Say what it means, like "a purchase is big if ...".

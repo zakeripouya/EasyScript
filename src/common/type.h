@@ -114,6 +114,9 @@ typedef struct {
     const char *plural;   // matched: "dogs", "boxes", "berries"
     Stmt *definition;     // STMT_RECORD (the first one, if it's defined twice)
     bool table;           // a row of "read the table in F": its fields are the columns the program uses
+    const char *file;     // a table read from a file named in quotes: the name ("bank.csv"), else NULL
+    const char *written;  // the first text the program writes into a file of that name, or NULL
+    size_t file_offset, file_length;  // where the read names the file
 } RecordKind;
 
 // One variant of a kind with variants ("a circle with a radius (a number)"

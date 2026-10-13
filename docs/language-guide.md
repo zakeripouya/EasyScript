@@ -61,7 +61,7 @@ and run it:
 ./easyscript run hello.es
 ```
 
-`easyscript build hello.es -o hello` makes a program you can run on its own (`./hello`). Running `./easyscript` with nothing after it starts the interactive shell, where you can type sentences and see the results straight away; end a line with `:` to type a block, and finish the block with a blank line. Two more commands show what the compiler sees: `easyscript tokens` (the words and symbols) and `easyscript ast` (the meaning, as a tree).
+`easyscript build hello.es -o hello` makes a program you can run on its own (`./hello`). Running `./easyscript` with nothing after it starts the interactive shell, where you can type sentences and see the results straight away; end a line with `:` to type a block, and finish the block with a blank line. A line with a mistake, or one that stops with an error while it runs, isn't kept: the next line works as if it had never been typed. If a new line makes a line from before stop with an error, the error says "This line worked before. The new line changes how it works." Two more commands show what the compiler sees: `easyscript tokens` (the words and symbols) and `easyscript ast` (the meaning, as a tree).
 
 ---
 
@@ -2267,7 +2267,7 @@ say how many orders whose amount is over 50 there are.
 
 Each phrase is one pass over the list, written here with the loops it stands for (`it` is the item):
 
-- `how many L are ...` starts a count at 0 and adds 1 for each item that passes. `how many L there are` is the number of items.
+- `how many L are ...` starts a count at 0 and adds 1 for each item that passes. `how many L there are` is the number of items, and so is `how many L are there` (the question: `how many orders are there?`), unless the program makes a name or a describing word called `there`.
 - `any ITEM ...` is no until an item passes, then yes, and stops. `every ITEM ...` is yes until an item fails, then no, and stops. `no ITEM ...` is yes until an item passes, then no, and stops.
 - `the total of L` starts at 0 and adds each item (or each item's field). `the average` is that total divided by the number of items, an error for an empty list. `the median` keeps the numbers, sorts them, and takes the middle one (or halfway between the two middle ones).
 - `the top N L` keeps the N biggest seen so far (in a small heap, so it never sorts the whole list) and gives them back biggest first; `the lowest N` the same for the smallest. Ties keep the item that came first.
@@ -2471,7 +2471,15 @@ say how many sales whose amount is over 100.
 save the sales whose region is "East" as "east.csv".
 ```
 
-A table's rows are records whose fields are the columns the program uses: `amount` is a number because the program adds it up, `region` is text. The program checks the file when it reads it: a column that isn't there stops it with "sales.csv has no column called "amout". Did you mean "amount"?", and so does a value of the wrong kind. Saved rows keep every column of the file, with any changes the program made.
+A table's rows are records whose fields are the columns the program uses: `amount` is a number because the program adds it up, `region` is text.
+
+When the program's use only says "a number or an amount" (a total, an average, arithmetic, a chart), the file decides, before the program runs. A column whose values are amounts in one currency (`$1200`, `€4.50`, `12 dollars`; plain numbers can be among them) holds amounts, and a column of plain numbers holds numbers. EasyScript looks at the file named in quotes in the folder the program runs in or, if it isn't there yet, at the text the program writes into it (`put the text below in file "sales.csv":`). Reading the same file twice uses each column the same way. A blank cell in a column of numbers or amounts counts as 0. A file that doesn't fit how the program uses a column (amounts where the program uses a number, amounts in two currencies, words where it needs numbers) is an error before the program runs:
+
+```
+Line 9: In bank.csv, line 2, "amount" is "$1200", an amount in dollars, but the program uses it as a number.
+```
+
+A column the program only shows, compares or sorts is text, as before. The program checks the file again when it reads it (the file may have changed, or EasyScript may not have been able to look at it first): a column that isn't there stops it with "sales.csv has no column called "amout". Did you mean "amount"?", and so does a value of the wrong kind. Saved rows keep every column of the file, with any changes the program made.
 
 ### Asking for numbers and yes or no
 
@@ -2583,7 +2591,7 @@ save a pie chart of sales as "share.svg".
 make a line chart of a list of 3, 7, 2 and 9 called "trend.svg".
 ```
 
-A chart is saved as an SVG picture, which any browser shows. Charts take a list of numbers or a map to numbers (like `the total amount of sales per month`), with the map's keys as labels. In steps in a row, `make a bar chart of it called "best months.svg"` draws what the step before gave. Charts are drawn by a module written in EasyScript itself ([`lib/charts.es`](../lib/charts.es)).
+A chart is saved as an SVG picture, which any browser shows. Charts take a list of numbers or amounts, or a map to them (like `the total amount of sales per month`), with the map's keys as labels. A chart of amounts writes its values as money (`$1,296.40`, `€2.50`); one value can't mix currencies (a list or map holds amounts of one currency). In steps in a row, `make a bar chart of it called "best months.svg"` draws what the step before gave. Charts are drawn by a module written in EasyScript itself ([`lib/charts.es`](../lib/charts.es)).
 
 ### What each one means exactly
 
@@ -2595,5 +2603,5 @@ A chart is saved as an SVG picture, which any browser shows. Charts take a list 
 - `what is X?` and `X?` are `say X`; `is X above 100?` is `say X is above 100`; `which customer has the highest total?` is `say the customer with the highest total`.
 - `S1, then S2` is S1, then (if S2 says "it") a hidden name for what S1 gave, then S2 with "it" meaning that name.
 - `total the amount per month` is `let (a hidden name) be the total amount of it per month`.
-- `read the table in F` reads the csv file, makes a record for each row with the columns the program uses, and keeps them in a list.
+- `read the table in F` reads the csv file, makes a record for each row with the columns the program uses, and keeps them in a list. A column used only as "a number or an amount" gets the kind the file's cells have, decided before the program runs, as if the program had written it down.
 

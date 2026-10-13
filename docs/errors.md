@@ -1004,7 +1004,9 @@ Positions start at 1: the first item is item 1.
 | The one with the highest (or lowest) of an empty list | "There's nothing to choose from: the list is empty." with the hint "Check that the list isn't empty first, like "if dogs is not empty:"." |
 | The top N with N not whole or below 0 | "How many to take has to be a whole number, 0 or more, but it's 1.5." |
 | A table's column that isn't in the file | "sales.csv has no column called "amout"." with "Did you mean "amount"?" when one is close |
-| A table's value of the wrong kind | "In sales.csv, line 3, "amount" is "lots", which isn't a number." (or "yes or no", or "a date like 2026-10-31") |
+| A table's value of the wrong kind | "In sales.csv, line 3, "amount" is "lots", which isn't a number." (or "yes or no", or "a date like 2026-10-31"); when the value is a number or an amount of another kind, "In bank.csv, line 2, "amount" is "$1200", an amount in dollars, but the program uses it as a number." Before the program runs, when EasyScript can look at the file, the same message comes with a note: "Line 14 uses "amount" as a number." |
+| A column of amounts in two currencies (before the program runs) | "In trip.csv, "cost" has amounts in two currencies: line 2 is "$300" and line 4 is "€45"." with "Write every amount in it in one currency." |
+| Two reads of one file using a column differently (before the program runs) | "This reads bank.csv again, but uses "amount" as an amount in dollars. Line 13 reads it too, and uses it as a number." with "Use each column the same way every time the file is read." |
 | An event's "every N seconds" with N 0 or less | "How often has to be more than 0 seconds, but it's 0." |
 | A field given a value its rule doesn't allow | "An age must be between 0 and 150, but this one is 230." / "A person's email must contain "@", but this one is "bob.example.com"." / for other kinds, "..., but this one doesn't follow it." |
 
@@ -1081,13 +1083,20 @@ Line 12 (a warning): This example isn't right.
 It's 8 here.
 ```
 
-A chart of something that isn't numbers:
+A chart of something that isn't numbers or amounts. The note names a value the program has that a chart can show, or says what a chart needs when there's none:
 
 ```
-Line 3: A chart needs a list of numbers or a map to numbers, but this is a list of text.
+Line 5: A chart needs a list of numbers or amounts, or a map to them, but this is a list of text.
+    save a bar chart of months as "months.svg".
+                        ^^^^^^
+Try a chart of "spending", which is a map from text to amounts in dollars.
+```
+
+```
+Line 3: A chart needs a list of numbers or amounts, or a map to them, but this is a list of text.
     save a pie chart of names as "b.svg".
                         ^^^^^
-Write it like "save a bar chart of the total amount of sales per month as "sales.svg"".
+A chart shows numbers or amounts, like "a list of 3, 5 and 2" or "the total price of orders per day".
 ```
 
 While the program runs, `ask for a number` with no more answers stops with:

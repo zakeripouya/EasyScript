@@ -14,3 +14,10 @@ save a bar chart of (an empty list of numbers) as "empty.svg".
 say the contents of file "empty.svg".
 let scores be a list of 1, 2 and 3.
 make a bar chart of scores called "scores.svg", then show me what's in it.
+let spent be a map of "August 2026" to $1,296.40, "September 2026" to $312.75 and "October 2026" to -$249.
+save a bar chart of spent as "spent.svg", titled "Spending".
+say the contents of file "spent.svg".
+make a line chart of a map of 2025 to £3 and 2026 to £1,000.10 called "pounds.svg".
+say the contents of file "pounds.svg".
+save a pie chart of a list of €5, €2.50 and €0 as "euros.svg".
+say the contents of file "euros.svg".

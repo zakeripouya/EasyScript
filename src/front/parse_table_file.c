@@ -70,6 +70,22 @@ static const char *row_kind_name(Parser *p, const char *table) {
     return row;
 }
 
+// The first text the program writes into the file `name` ("put the text
+// below in file "bank.csv":", "write "a,b" to file "bank.csv"."), or NULL.
+static const char *written_to(const Parser *p, const char *name) {
+    for (size_t i = 0; i + 4 < p->count; i++) {
+        const Token *t = &p->tokens[i];
+        if (t->kind != TOK_WORD || (strcmp(t->text, "put") != 0 && strcmp(t->text, "write") != 0)) continue;
+        if (t[1].kind != TOK_STRING || t[2].kind != TOK_WORD || t[3].kind != TOK_WORD || t[4].kind != TOK_STRING) continue;
+        if (strcmp(t[2].text, "in") != 0 && strcmp(t[2].text, "to") != 0) continue;
+        if (strcmp(t[3].text, "file") == 0 && strcmp(t[4].text, name) == 0 &&
+            (i + 5 >= p->count || t[5].kind != TOK_LBRACKET)) {
+            return t[1].text;
+        }
+    }
+    return NULL;
+}
+
 void parser_find_table_files(Parser *p) {
     for (size_t i = 0; i < p->count; i++) {
         if (!at_read_table(p, i)) continue;
@@ -77,8 +93,14 @@ void parser_find_table_files(Parser *p) {
         const char *shown = file->kind == TOK_STRING ? file->text : "the table";
         size_t index = p->records->len;
         RecordKind kind = {arena_sprintf(p->arena, "0row%zu", index), arena_sprintf(p->arena, "row of %s", shown), NULL,
-                           NULL, true};
+                           NULL, true, NULL, NULL, 0, 0};
         kind.plural = arena_sprintf(p->arena, "rows of %s", shown);
+        if (file->kind == TOK_STRING && (i + 4 >= p->count || p->tokens[i + 4].kind != TOK_LBRACKET)) {
+            kind.file = file->text;  // the checker looks at it (or at what the program writes into it)
+            kind.written = written_to(p, file->text);
+            kind.file_offset = file->span.offset;
+            kind.file_length = file->span.length;
+        }
         size_t called = table_name_at(p, i + 4);  // "... and call it purchases": a kind called "purchase"
         const char *row = called ? row_kind_name(p, p->tokens[called].text) : NULL;
         if (row) {

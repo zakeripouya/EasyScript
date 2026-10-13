@@ -1,5 +1,6 @@
 note: The program a budget session in the notebook would save (from the
-note: English pass plan). The first run writes an example spending.csv.
+note: English pass plan). The first run writes an example spending.csv; the
+note: last line draws the spending per category as a bar chart of amounts.
 if file "spending.csv" doesn't exist:
     put the text below in file "spending.csv":
         date,store,category,amount
@@ -18,3 +19,4 @@ say "Total: [the total amount of purchases]".
 show the total amount of purchases per category, sorted biggest first, as a table.
 say "Top store:", the store with the highest total amount.
 show the big purchases whose category isn't "rent", sorted by amount biggest first, as a table.
+save a bar chart of the total amount of purchases per category as "spending.svg".

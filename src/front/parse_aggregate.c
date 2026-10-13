@@ -139,7 +139,10 @@ static Expr *parse_how_many(Parser *p) {
         return count;
     }
     if (at_singular_test(p) || parser_at_item_test(p, 0)) {
+        size_t test = p->pos;
+        bool there = (parser_at_word(p, 0, "are") || parser_at_word(p, 0, "is")) && parser_at_word(p, 1, "there");
         count->as.aggregate.condition = parser_parse_item_test(p, example);
+        count->as.aggregate.there = there && p->pos == test + 2;  // "how many purchases are there"
         return finish(count, count->as.aggregate.condition);
     }
     if (list->kind == EXPR_ONLY) return finish(count, list);  // how many dogs whose age is over 3
@@ -292,6 +295,9 @@ static Expr *parse_totals(Parser *p) {
     for (size_t i = 0; i < COUNT(totals) && !number; i++) {
         if (strcmp(word, totals[i].word) != 0) continue;
         size_t field = parser_field_words(p, 1);
+        if (!field && parser_is_name_word(parser_peek(p, 1)) && parser_at_word(p, 2, "of")) {
+            field = 1;  // "the total amount of purchases" with no "amount" known: the checker says what's wrong
+        }
         if (!parser_at_word(p, 1 + field, "of") && !parser_at_word(p, 1, "of")) return NULL;
         if (!parser_at_word(p, 1 + field, "of")) field = 0;
         if (is_function_word(p, 0, totals[i].example)) return p->sentence_failed ? parser_error_expr(p) : NULL;

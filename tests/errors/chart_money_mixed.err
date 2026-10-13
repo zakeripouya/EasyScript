@@ -1,0 +1,7 @@
+Line 1: All the values of a map have to be the same kind: the first is an amount in dollars, but this is an amount in euros.
+    save a bar chart of a map of "rent" to $1,200 and "hotel" to €300 as "trip.svg".
+                                                                 ^^^^
+
+Line 2: All the items of a list have to be the same kind: the first is an amount in pounds, but this is an amount in dollars.
+    save a pie chart of a list of £5 and $3 as "mixed.svg".
+                                         ^^

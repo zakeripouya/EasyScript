@@ -32,3 +32,5 @@ A doubt that comes up while building goes back into the proposal, not into the p
 - [0011: put the text below in a file](0011-text-below-in-files.md) (Built)
 - [0012: say X, indented](0012-indented.md) (Built)
 - [0013: for each K and its V](0013-each-and-its.md) (Built)
+- [0014: the file decides a column's kind](0014-file-decides-column-kind.md) (Built)
+- [0015: how many Ls are there?](0015-how-many-are-there.md) (Built)

@@ -225,6 +225,8 @@ struct Expr {
             bool lowest;       // AGG_TOP: "the lowest 3"; AGG_BEST: "with the lowest"
             Name item;         // "any score", "the customer with ...": the item's name as written
             bool implied;      // the list is the one named like the item's plural ("scores")
+            bool there;        // AGG_COUNT: written "how many L are there": every item, unless the program
+                               // gives "there" a meaning (a name, a describing word), decided by the checker
         } aggregate;
     } as;
 };

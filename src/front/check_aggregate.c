@@ -178,8 +178,22 @@ static bool find_date_field(Checker *c, const Expr *group, TypeVar item) {
     return false;
 }
 
+// "how many purchases are there": "it is there", where nothing in the program
+// is called "there" (a describing word called "there" is a different test).
+static bool means_every_item(Checker *c, const Expr *expr) {
+    const Expr *test = expr->as.aggregate.condition;
+    if (!expr->as.aggregate.there || !test || test->kind != EXPR_BINARY || test->as.binary.op != BINARY_EQUAL) {
+        return false;
+    }
+    const Expr *right = test->as.binary.right;
+    if (right->kind != EXPR_NAME || right->module || strcmp(right->as.name, "there") != 0) return false;
+    return !checker_find_made(c, "there") && !checker_find_later(c, "there") && !checker_find_constant(c, "there") &&
+           !checker_find_function(c, "there");
+}
+
 TypeVar checker_check_aggregate(Checker *c, const Expr *expr) {
     if (expr->as.aggregate.implied && report_no_plural(c, expr)) return error_var(c);
+    if (means_every_item(c, expr)) ((Expr *)expr)->as.aggregate.condition = NULL;  // "how many purchases are there"
     const Expr *count = expr->as.aggregate.count;
     if (count) {
         checker_require(c, checker_check_expr(c, count), TYPE_NUMBER, count, "How many to take has to be a number",

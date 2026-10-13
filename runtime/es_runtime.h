@@ -295,11 +295,22 @@ static inline double es_money_ratio(int site, long long a, long long b) {
     return (double)a / (double)b;
 }
 
-/* "$1,200.50", "1200.5", "-€3": an amount typed or read from a file, in its
- * currency (0 dollars, 1 euros, 2 pounds): its own sign or none, commas
- * between thousands, at most two decimals. */
+/* Whether s (n bytes) is `word`, capitals or not. */
+static bool es_word_is(const char *s, size_t n, const char *word) {
+    if (n != strlen(word)) return false;
+    for (size_t i = 0; i < n; i++) {
+        if ((s[i] | 0x20) != word[i]) return false;
+    }
+    return true;
+}
+
+/* "$1,200.50", "1200.5", "-€3", "12 dollars": an amount typed or read from a
+ * file, in its currency (0 dollars, 1 euros, 2 pounds): its own sign or
+ * none, commas between thousands, at most two decimals, and maybe the
+ * currency's word after it. */
 static bool es_parse_money(const char *s, size_t len, int currency, long long *cents) {
     static const char *const signs[] = {"$", "\xE2\x82\xAC", "\xC2\xA3"};
+    static const char *const words[][2] = {{"dollars", "dollar"}, {"euros", "euro"}, {"pounds", "pound"}};
     const char *end = s + len;
     while (s < end && *s == ' ') s++;
     while (end > s && end[-1] == ' ') end--;
@@ -314,6 +325,12 @@ static bool es_parse_money(const char *s, size_t len, int currency, long long *c
     }
     if (s < end && *s == '.') {
         for (s++; s < end && *s >= '0' && *s <= '9' && decimals < 2; s++, decimals++) part = part * 10 + (*s - '0');
+    }
+    const char *word = s;
+    while (word < end && *word == ' ') word++;
+    if (word > s && (es_word_is(word, (size_t)(end - word), words[currency][0]) ||
+                     es_word_is(word, (size_t)(end - word), words[currency][1]))) {
+        s = end;
     }
     if (s != end || digits == 0) return false;
     double value = whole * 100 + (decimals == 1 ? part * 10 : part);

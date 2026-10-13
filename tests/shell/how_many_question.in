@@ -1,0 +1,5 @@
+let purchases be a list of "rent", "food" and "phone".
+how many purchases are there?
+how many purchases is there?
+say "There are", how many purchases are there, "purchases.".
+exit

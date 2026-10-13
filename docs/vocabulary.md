@@ -485,6 +485,7 @@ All **Available**. Each goes through the list once, makes no list it doesn't giv
 |---|---|---|
 | `how many L are COMPARISON X` / `how many L is ...` / `how many of L are ...` | How many items pass the test (also `are empty`, `start with`, `end with`, `contain`, `don't contain`, ...) | `how many scores are above 70` |
 | `how many L there are` / `how many L there is` | How many items | `how many guests there are` |
+| `how many L are there` / `how many L is there` | The same, the way a question asks it (`how many guests are there?`). A name, constant or definition called `there`, or a describing word `there`, keeps its meaning (then it's a test) | `how many guests are there` |
 | `how many L whose FIELD ...` / `how many L where C` | How many items the filter keeps | `how many orders whose amount is over 50` |
 | `the number of L` | How many items (`the number of items in L` too) | `the number of orders` |
 | `any ITEM TEST` / `every ITEM TEST` / `no ITEM TEST` | Yes if some, every, or no item passes, going through the list named like ITEM's plural; stops as soon as the answer is known. An empty list makes `every` and `no` yes and `any` no | `if any score is above 90:`, `if every order's amount is above 0:` |
@@ -924,7 +925,7 @@ All **Available** (after the English pass), drawn by [`lib/charts.es`](../lib/ch
 
 | Pattern | Meaning | Example |
 |---|---|---|
-| `save a bar chart of X as F` / `save a line chart of X as F` / `save a pie chart of X as F` | Writes an SVG picture of X into the file F. X is a list of numbers, or a map from text or numbers to numbers | `save a bar chart of the total amount of sales per month as "sales.svg"` |
+| `save a bar chart of X as F` / `save a line chart of X as F` / `save a pie chart of X as F` | Writes an SVG picture of X into the file F. X is a list of numbers or amounts, or a map from text or numbers to them; amounts are written as money (`$1,296.40`) | `save a bar chart of the total amount of sales per month as "sales.svg"` |
 | `make a bar chart of X called F` (also `line`, `pie`) | The same; in steps in a row, `it` afterwards is the file | `make a bar chart of it called "best months.svg"` |
 | `..., titled T` | A title at the top of the chart | `save a pie chart of votes as "votes.svg", titled "Votes"` |
 
@@ -932,7 +933,7 @@ All **Available** (after the English pass), drawn by [`lib/charts.es`](../lib/ch
 
 | Pattern | Meaning | Example |
 |---|---|---|
-| `read the table in F [and call it NAME]` / `..., called NAME` | The rows of the csv file F, as records of a kind made for it ("a row of sales.csv"). Their fields are the columns the program uses (`its amount`, `the total amount of sales`, `per region`), each the kind its use needs (a number, text, yes/no, or a date like 2026-10-31); other columns are kept as they are. Reading checks every column used is in the file ("sales.csv has no column called "amout". Did you mean "amount"?") and that each value is the right kind. `per month` uses the column called `date` | `read the table in "sales.csv" and call it sales.` |
+| `read the table in F [and call it NAME]` / `..., called NAME` | The rows of the csv file F, as records of a kind made for it ("a row of sales.csv"). Their fields are the columns the program uses (`its amount`, `the total amount of sales`, `per region`), each the kind its use needs (a number, text, yes/no, or a date like 2026-10-31); when the use only needs a number or an amount (a total, arithmetic, a chart), the file named in quotes decides before the program runs (amounts in one currency like `$1200` or `12 dollars`, or plain numbers), looking at the file in the program's folder or at the text the program writes into it; two reads of one file use each column the same way; a blank cell in a column of numbers or amounts is 0; other columns are kept as they are. Reading checks every column used is in the file ("sales.csv has no column called "amout". Did you mean "amount"?") and that each value is the right kind. `per month` uses the column called `date` | `read the table in "sales.csv" and call it sales.` |
 | `save X as F` (or `as csv file F`) | Saves a list of maps or records (a table's rows with all their columns), or a map (a `key` and a `value` column), as a csv file | `save it as "best months.csv"` |
 
 In a program that reads a table, a word where a field goes can be one of its columns even if no kind of record has that field.

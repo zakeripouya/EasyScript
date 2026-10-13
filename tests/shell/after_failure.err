@@ -1,0 +1,8 @@
+Line 3: You divided by zero.
+    say total divided by 0.
+        ^^^^^^^^^^^^^^^^^^
+Line 9: bank.csv has no column called "amont".
+    read the table in "bank.csv" and call it purchases.
+                      ^^^^^^^^^^
+Did you mean "amount"?
+This line worked before. The new line changes how it works.

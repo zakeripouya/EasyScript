@@ -286,11 +286,42 @@ static Expr *hidden_name(Checker *c, const char *name, SourcePos pos, TypeVar va
     return expr;
 }
 
-// "save a bar chart of X as F [, titled T]": X is a list of numbers (labelled
-// 1, 2, 3, ...) or a map from text or numbers to numbers. Checks the call of
-// lib/charts.es that draws it ("numbers chart", "text map chart" or "number
-// map chart"), with X and T in hidden names; codegen writes what it gives
-// back into F.
+// A list of numbers or amounts, or a map from text or numbers to them: what a chart can show.
+static bool chartable(Checker *c, Type type) {
+    if (!type_is_list(type) && !type_is_map(type)) return false;
+    Type item = type_is_list(type) ? type_item(type) : ast_map_value(c->records, type);
+    if (type_is_map(type) && ast_map_key(c->records, type) != TYPE_TEXT && ast_map_key(c->records, type) != TYPE_NUMBER) {
+        return false;
+    }
+    return item == TYPE_NUMBER || type_is_money(item);
+}
+
+// What a chart can't show: the message, and a note with a name the program
+// has that it could show (the latest one made), or what it needs.
+static void report_unchartable(Checker *c, const Expr *values, TypeVar var) {
+    diag_error(c->diag, values->pos.span, "A chart needs a list of numbers or amounts, or a map to them, but this is %s.",
+               checker_kind(c, var));
+    const Symbol *best = NULL;
+    for (size_t i = c->made.len; i-- > c->floor && !best;) {
+        const Symbol *s = &c->made.items[i];
+        bool same = values->kind == EXPR_NAME && strcmp(values->as.name, s->name) == 0;
+        if (s->name[0] != '0' && !same && chartable(c, types_of(c, s->var))) best = s;
+    }
+    if (best) {
+        diag_note(c->diag, "Try a chart of \"%s\", which is %s.", best->display, checker_kind(c, best->var));
+    } else {
+        diag_note(c->diag, "A chart shows numbers or amounts, like \"a list of 3, 5 and 2\" or \"the total price of "
+                           "orders per day\".");
+    }
+    diag_info(c->diag, DIAG_WRONG_KIND, NULL, "a list of numbers or amounts, or a map to them");
+}
+
+// "save a bar chart of X as F [, titled T]": X is a list of numbers or
+// amounts (labelled 1, 2, 3, ...), or a map from text or numbers to them.
+// Checks the call of lib/charts.es that draws it ("numbers chart", "text map
+// chart" or "number map chart"), with X as plain numbers and T in hidden
+// names, and the currency's name (filled in by checker_finish_charts);
+// codegen writes what it gives back into F.
 static void check_chart(Checker *c, const Stmt *stmt) {
     Stmt *s = (Stmt *)stmt;
     const Expr *values = stmt->as.library.a, *title = stmt->as.library.parts.items[0];
@@ -299,29 +330,30 @@ static void check_chart(Checker *c, const Stmt *stmt) {
                     "The name of a file has to be text", NULL);
     TypeVar title_var = title ? checker_check_expr(c, title) : 0;
     if (title) checker_require(c, title_var, TYPE_TEXT, title, "A chart's title has to be text", NULL);
-    Type shape = types_of(c, var);  // "the total amount per month": numbers, as nothing said they're money
-    if ((type_is_list(shape) || type_is_map(shape)) && types_of(c, types_item(c, var)) == TYPE_UNKNOWN) {
-        types_require(c, types_item(c, var), TYPE_NUMBER, stmt->pos.line);
-    }
     Type type = types_of(c, var);
     if (type == TYPE_ERROR || (title && types_of(c, title_var) != TYPE_TEXT)) return;
-    Type key = type_is_map(type) ? ast_map_key(c->records, type) : TYPE_UNKNOWN;
-    const char *function = type == type_list_of(TYPE_NUMBER) ? "numbers chart"
-                           : !type_is_map(type) || ast_map_value(c->records, type) != TYPE_NUMBER ? NULL
-                           : key == TYPE_TEXT ? "text map chart"
-                           : key == TYPE_NUMBER ? "number map chart" : NULL;
-    if (!function) {
-        diag_error(c->diag, values->pos.span, "A chart needs a list of numbers or a map to numbers, but this is %s.", checker_kind(c, var));
-        diag_note(c->diag, "Write it like \"save a bar chart of the total amount of sales per month as \"sales.svg\"\".");
-        diag_info(c->diag, DIAG_WRONG_KIND, NULL, "a list of numbers or a map to numbers");
+    bool list = type_is_list(type), map = type_is_map(type);
+    Type key = map ? types_of(c, types_key(c, var)) : TYPE_UNKNOWN;
+    TypeVar item = list || map ? types_item(c, var) : 0;
+    Type item_type = item ? types_of(c, item) : TYPE_UNKNOWN;
+    bool waits = item && item_type == TYPE_UNKNOWN;  // "the total amount per month": numbers, unless they're amounts
+    if (!(list || (map && (key == TYPE_TEXT || key == TYPE_NUMBER))) ||
+        (!waits && item_type != TYPE_NUMBER && !type_is_money(item_type))) {
+        report_unchartable(c, values, var);
         return;
     }
+    if (waits) {
+        types_defer_one_of(c, values, item, var, KIND_NUMBER | KIND_MONEY | KIND_NUMBER_FIRST,
+                           "A chart needs a list of numbers or amounts, or a map to them");
+    }
+    const char *function = list ? "numbers chart" : key == TYPE_TEXT ? "text map chart" : "number map chart";
+    Type shown_type = list ? type_list_of(TYPE_NUMBER) : ast_map_type(c->arena, c->records, key, TYPE_NUMBER);
     const char *name = stmt->as.library.name.text;
     Expr *call = ast_new_expr(c->arena, EXPR_CALL, stmt->pos);
     call->as.call.name = function;
     call->display = function;
     call->module = "0charts";
-    vec_push(c->arena, &call->as.call.args, hidden_name(c, name, values->pos, var));
+    vec_push(c->arena, &call->as.call.args, hidden_name(c, name, values->pos, types_new(c, shown_type, stmt->pos.line)));
     static const char *const kinds[] = {"bar", "line", "pie"};
     Expr *kind = ast_new_expr(c->arena, EXPR_TEXT, stmt->pos);
     kind->as.text.value = kinds[(int)stmt->as.library.scale];
@@ -331,8 +363,25 @@ static void check_chart(Checker *c, const Stmt *stmt) {
     shown->as.text.value = "";
     if (title) shown = hidden_name(c, arena_sprintf(c->arena, "%st", name), title->pos, title_var);
     vec_push(c->arena, &call->as.call.args, shown);
+    Expr *currency = ast_new_expr(c->arena, EXPR_TEXT, stmt->pos);
+    currency->as.text.value = "";
+    vec_push(c->arena, &call->as.call.args, currency);
+    ChartValues chart = {currency, item};
+    vec_push(c->arena, &c->charts, chart);
     checker_check_expr(c, call);
     vec_push(c->arena, &s->as.library.parts, call);
+}
+
+// Each chart's currency, now that every kind is known: the module writes its
+// values as amounts in it.
+void checker_finish_charts(Checker *c) {
+    for (size_t i = 0; i < c->charts.len; i++) {
+        Type item = types_of(c, c->charts.items[i].item);
+        Expr *currency = c->charts.items[i].currency;
+        currency->as.text.value = item == TYPE_DOLLARS ? "dollars" : item == TYPE_EUROS ? "euros"
+                                  : item == TYPE_POUNDS ? "pounds" : "";
+        currency->as.text.len = strlen(currency->as.text.value);
+    }
 }
 
 // --- try to ... -------------------------------------------------------------------------

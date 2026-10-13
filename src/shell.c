@@ -183,6 +183,7 @@ static int run_session(Shell *sh, size_t first_line, size_t *printed) {
         setenv("ES_SKIP_OUTPUT", arena_sprintf(sh->arena, "%zu", sh->shown), 1);
         setenv("ES_ANSWERS", sh->answers_path, 1);
         setenv("ES_WARN_FROM_LINE", arena_sprintf(sh->arena, "%zu", first_line), 1);  // earlier lines were shown
+        setenv("ES_NEW_FROM_LINE", arena_sprintf(sh->arena, "%zu", first_line), 1);   // an error before it: say why
         setenv("ES_MODULE_DIR", ".", 1);  // "use helpers." reads helpers.es from the folder the shell started in
         char *argv[] = {sh->self, "run", (char *)sh->session_path, NULL};
         execvp(argv[0], argv);
