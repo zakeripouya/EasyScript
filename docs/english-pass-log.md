@@ -238,6 +238,19 @@ Every line of the "Start here" examples, read aloud as someone who has never wri
 | ask_name, tip_calculator | `ask "What's your name? " ...` | The space before the closing quote matters, and only a programmer would know | Add the space after a question mark automatically (Still open: it changes what programs print) |
 | first_program | `let name be "Ada".` | "let ... be" is how maths talks | `the name is "Ada".` (Still open: it clashes with comparisons and with `the NAME is the one ...`) |
 
+**From the simulated testers** (v0.2 prep, [report](simulated-testers/report.md)): what people who had never seen EasyScript wrote, by how many of the 120 attempts wrote it.
+
+| Attempts | What they wrote | Why it trips | Suggested wording |
+|---|---|---|---|
+| 58 | `read grades.csv`, `Open file guests.csv.` | A file's name without quotes is three words and a period | One error: `A file's name goes in quotes, like "grades.csv".` |
+| 58 | `open` / `load` / `import` / `read "x.csv"` | Nobody guesses `read the table in` | The errors show `read the table in "x.csv" and call it x` |
+| 48 | `total hours for each employee`, `average score by student` | `per` is the only grouping word | The errors show `per`; `for each X` after a value is an open question |
+| 31 | `ask "Bill?" and call it bill` then `bill times 0.2` | An answer is always text | An answer used as a number is asked for as a number |
+| 22 | `rounded to 2 decimals`, `round x to 2 decimal places` | Only `rounded to 2 decimal places` exists | `decimals` as a synonym; the sentence `round X to N decimal places` |
+| 22 | `Thank you!` | `!` was an error suggesting `!=` | `!` ends a sentence |
+| 16 | `Then please ask ...` | `please` was skipped only first | `please` after a step word is skipped too |
+| 16+ | `Total is 0.`, `score = 0` | `let ... be` | Already an open question (`the name is "Ada"`) |
+
 Fixed since the first list: `write "milk" in it`, `add ... to it, one per line`, `the store with the highest total amount`, `if file ... doesn't exist`, `its base price, plus 12 if it's abroad, plus 4 if it's fragile`, `can be fragile` / `a new fragile parcel`, `the name of the student with the highest score`, `how many students have a score of at least 60`, `the total bill of orders` (a field renamed), `the total cost of its drinks, minus its discount percent`, `the most common name`, money that prints as money (`bill plus tip`), `if service was good` (a name of several words), `the customer with the highest total profit`, `to greet some name:`, `say the number.`, field kinds left out where they're worked out from use, the csv rows as a text block (`put the text below in file "spending.csv":`), `"([parcel's note, or "no note"])"` (quotes inside brackets), `"Best customer: [best] ([the total profit of the orders whose customer is best] profit)"`, `say student's name, student's score, indented.`, `for each class and its average in ...`.
 
 ## Reads like text
@@ -344,3 +357,17 @@ On the `shell-and-money-fixes` branch (from master after `fix-linux-sanitizers`)
 - **The "big" message:** `how many purchases are big?` still says "I don't know what "big" means for a purchase." (`errors/how_many_unknown_word`).
 - **Changed expected files:** none. New: `tests/run/how_many_there`, `tests/run/how_many_there_meanings` (a describing word `there` wins), `tests/run/how_many_there_name` (a name `there` keeps its meaning), `tests/errors/how_many_unknown_word`, `tests/shell/how_many_question`.
 - **Tests:** `make test` 778, `make test-gcc` 778, `make test-debug` 777 with 0 of 890 processes leaking (macOS); Linux (GCC 16 in Docker, aarch64): `make CC=gcc test` 778, `make test-debug` 777.
+
+## v0.2 prep
+
+On the `v0.2-prep` branch (from master at `cd03c6a`, after the shell-and-money fixes), 2026-10-12, an unattended run: simulated testers (part A), the cookbook (part B) and release prep for v0.2.0 (part C). `make bless` was never run: every new or changed expected file was written from a run checked by hand, and each is listed below.
+
+**Baseline** (master `cd03c6a`): `make test` 778.
+
+### Part A: simulated testers
+
+- **A1, the grid** ([plan.md](simulated-testers/plan.md)): 12 sectors, 2 tasks each (a report from a csv given in the task, and an interactive or rules task), 5 kinds of people, every task tried by all five: 120 attempts. 4 tasks ask for what EasyScript can't do yet (email, an Excel file, the internet, a web page).
+- **A2, the attempts** ([attempts/](simulated-testers/attempts/)): written by agents that never saw EasyScript, run with the master compiler, up to 3 tries each with only the error messages as feedback.
+  - **Decided:** the agents run as separate `claude -p` sessions in an empty folder outside the repository, with no tools. A first run used subagents started inside the repository; they load CLAUDE.md (the whole grammar) automatically, and their programs used exact EasyScript phrases. That run was thrown away.
+  - **Decided:** one agent per sector (10 attempts), so what an agent learns from errors stays within a sector; a program that runs isn't retried, even if its output is wrong.
+- **A3, the report** ([report.md](simulated-testers/report.md)): **0 (a), 0 (b), 120 (c), 0 (d).** No program ran within 3 tries, for every kind of person. Errors fell from 1,259 (first tries) to 475 (second) and 440 (third): the messages help once, then stop. None of the 20 "can't do yet" attempts got an error saying EasyScript can't do it. The top phrasings are added to [Still not English](#still-not-english).
