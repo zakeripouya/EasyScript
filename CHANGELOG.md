@@ -4,6 +4,10 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Changed (v0.2 prep: from the simulated testers)
+
+- **Breaking:** `A plus B rounded ...` (any arithmetic whose right side is `X rounded`, `rounded up`, `rounded down` or `rounded to N decimal places`, without brackets) is an error showing both readings: `A plus B, rounded ...` rounds the whole value, `A plus (B rounded ...)` only B. It used to round only B, which made a simulated tester's mortgage calculator print the wrong payment ([proposal 0022](docs/proposals/0022-rounding-after-arithmetic.md)).
+
 ### Added (v0.2 prep: from the simulated testers)
 
 - `!` ends a sentence, like `.` and `?` (`say "Well done!"!`); `!=` still means "is not". Before, a lone `!` was an error ([proposal 0016](docs/proposals/0016-exclamation-and-polite-steps.md)).

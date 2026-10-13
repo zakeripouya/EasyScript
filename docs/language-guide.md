@@ -2044,7 +2044,7 @@ say pi rounded to 2 decimal places.      # 3.14
 say the bigger of 3 and 4.               # 4
 ```
 
-`rounded to 2 decimals` means the same as `rounded to 2 decimal places`. To round a name in place, say so: `round density to 2 decimal places.` (also `round total.`, `round x up.`, `round x down.`), which is `set density to density rounded to 2 decimal places`.
+`rounded to 2 decimals` means the same as `rounded to 2 decimal places`. After arithmetic, a comma rounds the whole value: `say 4.8 divided by 20, rounded to 2 decimals.` Without the comma (`4.8 divided by 20 rounded to 2 decimals`) it could mean rounding only the 20, so EasyScript asks which; brackets round only what's inside them. To round a name in place, say so: `round density to 2 decimal places.` (also `round total.`, `round x up.`, `round x down.`), which is `set density to density rounded to 2 decimal places`.
 
 `the square root of` a number below zero, a number below zero to a power that isn't whole, and 0 to a power below zero are errors while the program runs. `pi` is a name the program can still make for itself.
 

@@ -1008,7 +1008,7 @@ All of these are **Available**, without `use`. Each is described with its exact 
 | `the square root of X` | a number | `the square root of 16` |
 | `X to the power of Y` | a number | `2 to the power of 10` |
 | `the absolute value of X` | a number | `the absolute value of -3` |
-| `X rounded`, `X rounded up`, `X rounded down` | a number | `2.5 rounded` |
+| `X rounded`, `X rounded up`, `X rounded down` | a number. After arithmetic, say which part: `a / b, rounded` rounds the whole value, `a / (b rounded)` only b; `a / b rounded` is an error showing both | `2.5 rounded` |
 | `X rounded to N decimal places` (`1 decimal place`, or `N decimals` / `1 decimal`) | a number | `price rounded to 2 decimal places`, `price rounded to 2 decimals` |
 | `round X.`, `round X up.`, `round X down.`, `round X to N decimal places.` (or `decimals`) | (a sentence) `set X to X rounded ...`; X is a name or a field, and `round` is the program's own definition if it has one | `round density to 2 decimal places.` |
 | `the bigger of X and Y`, `the smaller of X and Y` | a number | `the bigger of 3 and 4` |

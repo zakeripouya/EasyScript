@@ -220,6 +220,31 @@ static Expr *new_list_op(Parser *p, ListOp op, Span op_span, Expr *operand) {
     return expr;
 }
 
+static Span span_from(Span start, Span end) {
+    return (Span){start.offset, end.offset + end.length - start.offset};
+}
+
+// "a divided by b rounded to 2 decimal places": English reads the rounding
+// as the whole value's, the grammar as b's. Both are written out instead.
+static bool reject_rounded_right(Parser *p, const Expr *left, Span op_span, const Expr *right) {
+    if (right->kind != EXPR_LIBRARY || right->as.library.op < LIB_ROUNDED || right->as.library.op > LIB_ROUNDED_PLACES) {
+        return false;
+    }
+    Span r = right->pos.span;
+    if (r.length >= 2 && p->source[r.offset] == '(' && p->source[r.offset + r.length - 1] == ')') return false;
+    Span whole = span_from(left->pos.span, r), operand = span_from(left->pos.span, right->as.library.a->pos.span);
+    Span rounding = span_from(right->as.library.op_span, r);
+    if (parser_error(p, whole, "\"%s\" could mean two things.", parser_text(p, whole))) {
+        diag_note(p->diag, "To round the whole value, write \"%s, %s\". To round only the last part, write \"%s (%s)\".",
+                  parser_text(p, operand), parser_text(p, rounding), parser_text(p, span_from(left->pos.span, op_span)),
+                  parser_text(p, r));
+        diag_info(p->diag, DIAG_TWO_MEANINGS, NULL, NULL);
+        diag_choice(p->diag, "%s, %s", parser_text(p, operand), parser_text(p, rounding));
+        diag_choice(p->diag, "%s (%s)", parser_text(p, span_from(left->pos.span, op_span)), parser_text(p, r));
+    }
+    return true;
+}
+
 // operand (op operand)*, left to right.
 static Expr *parse_left_assoc(Parser *p, const Phrase *ops, size_t n, ParseFn operand) {
     Expr *left = operand(p);
@@ -229,6 +254,9 @@ static Expr *parse_left_assoc(Parser *p, const Phrase *ops, size_t n, ParseFn op
         if (!op) return left;
         Span op_span = parser_consume(p, len);
         Expr *right = operand(p);
+        if (ops != join_ops && !p->sentence_failed && reject_rounded_right(p, left, op_span, right)) {
+            return parser_error_expr(p);
+        }
         left = new_binary(p, (BinaryOp)op->value, op_span, left, right);
     }
 }

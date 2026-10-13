@@ -1,0 +1,14 @@
+Line 4: "loan * r / (1 - (1 + r) to the power of -n) rounded to 2 decimal places" could mean two things.
+    let payment be loan * r / (1 - (1 + r) to the power of -n) rounded to 2 decimal places.
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To round the whole value, write "loan * r / (1 - (1 + r) to the power of -n), rounded to 2 decimal places". To round only the last part, write "loan * r / ((1 - (1 + r) to the power of -n) rounded to 2 decimal places)".
+
+Line 5: "4.8 / 20 rounded to 2 decimal places" could mean two things.
+    let density be 4.8 / 20 rounded to 2 decimal places.
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To round the whole value, write "4.8 / 20, rounded to 2 decimal places". To round only the last part, write "4.8 / (20 rounded to 2 decimal places)".
+
+Line 6: "3 plus 2.5 rounded" could mean two things.
+    let x be 3 plus 2.5 rounded.
+             ^^^^^^^^^^^^^^^^^^
+To round the whole value, write "3 plus 2.5, rounded". To round only the last part, write "3 plus (2.5 rounded)".

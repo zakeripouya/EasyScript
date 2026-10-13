@@ -1068,6 +1068,17 @@ EasyScript doesn't use "SUM(...)". Write "the total of ..." instead.
 
 The same for `AVERAGE(...)`, `COUNT(...)`, `ROUND(...)`, `IF(...)` and other formulas, `20%` ("For a percent, write "20 percent"."), `^` and `**` ("For a power, write "x to the power of 2"."), `&` for joining text, `... for each employee` ("To work it out for each employee, write "per employee" there."), `repeat:`, `loop:` and `keep asking until ...` ("To do something again and again, write "forever:" or "keep doing this until ...:", ..."), and `ask me how many ...` ("I expected the question in quotes here, but found "me".").
 
+### Rounding after arithmetic
+
+**Which part is rounded**: [`err_rounded_two_meanings.es`](../tests/ast/err_rounded_two_meanings.es), [proposal 0022](proposals/0022-rounding-after-arithmetic.md)
+
+```
+Line 5: "4.8 / 20 rounded to 2 decimal places" could mean two things.
+    let density be 4.8 / 20 rounded to 2 decimal places.
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To round the whole value, write "4.8 / 20, rounded to 2 decimal places". To round only the last part, write "4.8 / (20 rounded to 2 decimal places)".
+```
+
 ### Talking to it, part 4
 
 ```

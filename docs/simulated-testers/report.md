@@ -6,7 +6,27 @@
 
 ## (d) Ran, but did something other than what was meant
 
-**None**, because nothing ran. That isn't evidence that such cases don't exist: an attempt has to get past every error before it can do the wrong thing. The nearest thing found: `read the table in "listings.xlsx"` reads the workbook's bytes as if they were a csv file, so it stops with "listings.xlsx has no column called "price"." (or, for a workbook whose first line happens to look like a header, shows rows of unreadable bytes). It never says that the file is an Excel file. That's fixed in A4 (see the log).
+**None during the run**, because nothing ran: an attempt has to get past every error before it can do the wrong thing. The nearest thing: `read the table in "listings.xlsx"` reads the workbook's bytes as if they were a csv file, so it stops with "listings.xlsx has no column called "price"." (or, for a workbook whose first line happens to look like a header, shows rows of unreadable bytes), and never says that it's an Excel file. Fixed in A4 ([proposal 0021](../proposals/0021-cant-do-yet.md)).
+
+**One found afterwards.** Rerunning every third try with the A4 changes (see "After the fixes" below), six programs ran, and one of them gave a wrong answer without any error:
+
+```
+ask "price?" and call the answer price
+ask "deposit?" and call the answer deposit
+ask "rate?" and call the answer rate
+ask "years?" and call the answer years
+let loan be price minus deposit
+let r be rate / 100 / 12
+let n be years * 12
+let payment be loan * r / (1 - (1 + r) to the power of -n) rounded to 2 decimal places
+say loan
+say payment
+say payment * n
+```
+
+- **Meant:** the monthly payment, rounded to cents: 1804.04 (with 350000, 70000, 6% and 25 years).
+- **Happened:** 1794.87. `rounded to 2 decimal places` rounded only the bracketed part (0.776... became 0.78), because a describing word after a value applies to that value.
+- **Fixed** ([proposal 0022](../proposals/0022-rounding-after-arithmetic.md)): arithmetic whose right side is `... rounded ...` without brackets is now an error showing both readings (`..., rounded to 2 decimal places` for the whole value, or brackets for the part). The density calculator `mass / volume rounded to 2 decimal places` had the same shape and was right only because the volume was a whole number.
 
 ## The counts
 
@@ -94,3 +114,14 @@ Close behind: `Thank you very much!` ("I don't understand "!"." / "To check that
 - **Discovery is the problem, not the grammar's size.** Each kind of person reached for the same handful of things (reading a file, a total per group, using an answer as a number), and EasyScript has all of them, under words nobody guessed (`read the table in`, `per`, `ask for a number`). The fix is in the messages: an error should show the sentence that does what the person was trying to do.
 - **Three changes cover most of it:** answers used as numbers, file names and opening files, and grouping. What was built from this report is in the log's v0.2 prep section (A4).
 - **The first non-coder test still matters.** Agents imitating people are a rough stand-in: real people read the docs, copy examples and ask for help. This run is about what someone types before any of that.
+
+## After the fixes
+
+The same 120 third tries, run again with the compiler after A4 (no new tries were written):
+
+| | Ran | Errors |
+|---|---|---|
+| Master (`cd03c6a`) | 0 | 440 |
+| After A4 | 6 | 376 |
+
+The six that ran: the savings calculator and the budget check of the person who had never coded, both density calculators of the teenager and the non-native speaker, and both mortgage calculators of the person who had never coded and the teenager. Five did what was asked; the teenager's mortgage calculator is the (d) case above. (The budget check printed 12.5 months where the task wanted 13; that's the program's own arithmetic, `5000 divided by savings`, not a misreading.) None of them would have run without "an answer used as a number is asked for as a number". The rest still stop at things A4 didn't change, mostly whole programs written as letters or in Python, and unquoted words inside sentences.
