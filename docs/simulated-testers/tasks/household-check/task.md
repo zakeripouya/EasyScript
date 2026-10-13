@@ -1,0 +1,1 @@
+At the start of each month I want to check our budget. Ask for our income for the month and then each regular bill: rent, utilities, insurance and phone. Show what's left after the bills. If what's left is less than $500, warn us. Then ask how much we want to save each month and tell us how many months it takes to reach a $5,000 emergency fund.

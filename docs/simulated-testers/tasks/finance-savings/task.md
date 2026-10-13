@@ -1,0 +1,1 @@
+I want a savings calculator. Ask how much money I start with, how much I add every year, and the yearly interest rate in percent. Then show my balance at the end of each year for 5 years (interest is added at the end of each year, after that year's deposit), rounded to cents.

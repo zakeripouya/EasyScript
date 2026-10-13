@@ -1,0 +1,1 @@
+Our class measured how fast water cools. The readings are in readings.csv (below), in degrees Celsius. For each group, show the average temperature and the biggest drop between two readings in a row. Also show every reading in Fahrenheit (F = C × 9 / 5 + 32) and save a line chart of group A's temperatures as cooling.svg.

@@ -1,0 +1,13 @@
+date,weekday,clinic,status
+2026-10-05,Monday,North,kept
+2026-10-05,Monday,North,missed
+2026-10-05,Monday,South,kept
+2026-10-06,Tuesday,North,kept
+2026-10-06,Tuesday,South,missed
+2026-10-06,Tuesday,South,missed
+2026-10-07,Wednesday,North,cancelled
+2026-10-07,Wednesday,South,kept
+2026-10-08,Thursday,North,kept
+2026-10-08,Thursday,North,kept
+2026-10-08,Thursday,North,missed
+2026-10-09,Friday,South,kept

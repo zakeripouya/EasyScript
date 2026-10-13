@@ -1,0 +1,1 @@
+I have my class's test results in a file called grades.csv (below). I want to see each student's average score, find out who has the best average, count how many test results were below 50, and save a bar chart of the averages as averages.svg.

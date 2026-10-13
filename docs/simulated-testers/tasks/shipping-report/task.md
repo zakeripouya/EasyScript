@@ -1,0 +1,1 @@
+Our shipments are in shipments.csv (below). Show how many shipments went to each country, the average weight, the heaviest shipment, and list the shipments that took more than 5 days from shipped to delivered.

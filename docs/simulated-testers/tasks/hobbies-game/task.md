@@ -1,0 +1,1 @@
+Make a number guessing game: the computer picks a random whole number from 1 to 10, then keeps asking me to guess. After each wrong guess it says "Too high" or "Too low". When I get it right, it says "You got it in N guesses!"

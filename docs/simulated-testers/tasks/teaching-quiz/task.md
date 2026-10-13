@@ -1,0 +1,1 @@
+I want a little quiz for my class about capital cities. Ask 5 questions one at a time (France, Japan, Kenya, Canada, Brazil), tell the student if each answer is right or wrong (and the right answer if wrong), and at the end say their score out of 5. If they got 4 or more, also say "Well done!". Capitals should count as right whatever capital letters the student uses.

@@ -1,0 +1,1 @@
+Our board game nights are recorded in games.csv (below). Who has won the most games? What's the average winning score for each game? And show the top 3 winning scores with who got them and in which game.

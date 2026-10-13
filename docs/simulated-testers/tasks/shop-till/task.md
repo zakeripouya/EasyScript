@@ -1,0 +1,1 @@
+I want a simple till for my shop counter. Prices: coffee beans $12.50, mug $8, filter papers $3.20. Keep asking for an item and how many, until I type "done". Then show the total. If the total is over $50, take 10% off and show the discounted total. If I type an item that isn't on the list, say so and ask again.

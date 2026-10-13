@@ -1,0 +1,1 @@
+I want a mortgage calculator for clients. Ask for the house price, the deposit, the yearly interest rate in percent, and the number of years. Show the loan amount and the monthly payment (standard formula: payment = loan × r / (1 − (1 + r)^(−n)), where r is the monthly rate and n the number of months), rounded to cents, and the total paid over the whole loan.

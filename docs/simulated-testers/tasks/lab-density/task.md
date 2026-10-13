@@ -1,0 +1,1 @@
+For our density lab: ask for an object's name, its mass in grams and its volume in cubic centimeters. Work out its density (mass divided by volume), rounded to 2 decimal places, and say whether it floats or sinks in water (it floats if the density is less than 1). Then ask if there's another object; stop when the answer is no.

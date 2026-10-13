@@ -1,0 +1,1 @@
+Our household spending is in spending.csv (below), and our monthly budget is: groceries $400, eating out $150, transport $120, fun $100. For each month, show how much we spent in each category, and say which categories went over budget that month and by how much. Also save a bar chart of the total spent per month as months.svg.

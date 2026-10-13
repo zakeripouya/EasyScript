@@ -1,0 +1,1 @@
+I want a bill splitter for my café's tables. Ask for the bill amount, how many people, and how the service was (good, okay or bad). The tip is 20% for good, 15% for okay and 10% for bad. Show the tip, the total with tip, and how much each person pays, in dollars and cents.

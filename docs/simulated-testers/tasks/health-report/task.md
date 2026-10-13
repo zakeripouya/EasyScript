@@ -1,0 +1,1 @@
+Our clinic's appointments are in appointments.csv (below). For each clinic, show how many appointments were missed, and what percent of its appointments were missed. Also show which day of the week had the most appointments.

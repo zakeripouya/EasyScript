@@ -1,0 +1,8 @@
+mug
+3
+coffee beans
+2
+teapot
+filter papers
+5
+done

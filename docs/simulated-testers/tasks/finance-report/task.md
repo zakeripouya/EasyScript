@@ -1,0 +1,1 @@
+My bank export is in bank.csv (below). Show how much I spent in each category, how much per month, my single biggest expense, and save a pie chart of spending per category as categories.svg. One row has no amount yet (the bank hasn't filled it in); it should just be left out.

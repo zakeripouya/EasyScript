@@ -1,0 +1,1 @@
+The guest list for our event is in guests.csv (below). Show how many people said yes, the total headcount (people who said yes plus their plus-ones), how many of each meal we need for the people coming (plus-ones eat the same meal as their guest), and save a pie chart of the meals as meals.svg.
