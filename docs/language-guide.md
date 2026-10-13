@@ -69,7 +69,7 @@ and run it:
 
 **Status: Available**
 
-This chapter is for you if you have never written a program. Each part is a short program you can copy into a file and run. Later chapters go into each idea in more depth.
+This chapter is for you if you have never written a program. Each part is a short program you can copy into a file and run. Later chapters go into each idea in more depth. When you'd rather start from something close to your own job, the [cookbook](cookbook/README.md) has 30 short programs for real tasks (grades, sales, a bill, a budget, a quiz), each with its data and what it shows.
 
 ### Saying something
 

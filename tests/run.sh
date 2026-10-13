@@ -275,6 +275,29 @@ for src in "$ROOT"/examples/*.es; do
     not_ok "examples/$(basename "$src")" "examples must live in examples/programs/, examples/lexer/ or examples/parser/"
 done
 
+# The cookbook (docs/cookbook/SECTOR/NAME.es, .out, optional .in): each recipe
+# runs in an empty folder holding its sector's csv files, like an example.
+for src in "$ROOT"/docs/cookbook/*/*.es; do
+    [ -e "$src" ] || continue
+    name="cookbook/$(basename "$(dirname "$src")")/$(basename "$src" .es)"
+    input="${src%.es}.in"
+    [ -f "$input" ] || input=/dev/null
+    fresh_dir
+    for data in "$(dirname "$src")"/*.csv; do [ -e "$data" ] && cp "$data" "$WORK/cwd/"; done
+    (cd "$WORK/cwd" && ES_DEBUG_MEMORY=1 "$ES" run "$src") <"$input" >"$WORK/stdout" 2>"$WORK/stderr"
+    status=$?
+    if [ $status -ne 0 ]; then
+        not_ok "$name" "exit status $status
+$(cat "$WORK/stderr")"
+    elif ! out=$(diff -u "${src%.es}.out" "$WORK/stdout"); then
+        not_ok "$name" "$out"
+    elif [ -s "$WORK/stderr" ]; then
+        not_ok "$name" "$(cat "$WORK/stderr")"
+    else
+        ok "$name"
+    fi
+done
+
 # --- Memory -------------------------------------------------------------------
 #
 
@@ -590,7 +613,7 @@ else
     strict_failed=""
     for src in "$ROOT"/tests/run/*.es "$ROOT"/tests/memory/*.es "$ROOT"/examples/programs/*.es \
         "$ROOT"/tests/modules/*/main.es "$ROOT"/examples/programs/*/main.es "$ROOT"/examples/programs/snake/play.es \
-        "$ROOT"/benchmarks/*/*.es; do
+        "$ROOT"/benchmarks/*/*.es "$ROOT"/docs/cookbook/*/*.es; do
         [ -e "$src" ] || continue
         "$ES" emit "$src" >"$WORK/strict.c" 2>/dev/null || continue
         if ! out=$("$STRICT_CC" -std=c11 -Wall -Wextra -Wpedantic -Werror -O2 -c "$WORK/strict.c" \
@@ -697,6 +720,7 @@ check_no_underscore_suggestions() {
 }
 check_no_underscore_suggestions
 audit "audit/every-phrase-documented" vocab_coverage.py
+audit "docs/cookbook-pages-match" cookbook_sync.py
 audit "audit/includes" includes.py
 audit "audit/plain-words" plain_words.py
 

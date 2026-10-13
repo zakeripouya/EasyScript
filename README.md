@@ -187,6 +187,7 @@ The **front end** (lexer, parser, checker) understands EasyScript and reports er
 ## Documentation
 
 - [Language guide](docs/language-guide.md): learn EasyScript from zero, chapter by chapter
+- [Cookbook](docs/cookbook/README.md): 30 short programs for real jobs (a class's grades, a shop's sales, a café's bill, a budget, a quiz, ...), each with its data and exact output, all checked by `make test`
 - [Vocabulary](docs/vocabulary.md): every keyword, sentence pattern, and synonym, with its status
 - [Errors](docs/errors.md): what error messages look like and why
 - [Design principles](docs/design-principles.md): the rules every phrasing follows, and the known exceptions

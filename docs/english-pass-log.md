@@ -390,3 +390,10 @@ On the `v0.2-prep` branch (from master at `cd03c6a`, after the shell-and-money f
   - **Not built, as decided:** `how many X are left`, judging shown-or-sorted columns from the file.
   - **Changed expected files:** `tests/run/table_column_kinds.out` (and the comment in its `.es`): the average of $5, a blank, $2.50 and a blank is $3.75, not $1.88, and the blanks print as `""`.
 - **Found while writing the cookbook (part B), fixed in their own commit:** columns of several words (`weight kg`, `plus ones`, `due date`) and a column called `day` with `per day` (the header line is read before parsing); `sorted by` a field of several words; arithmetic on a table's columns waits for the file in every program that reads a table; two `for each X and its total` loops; `keep fee as $5` kept 500 as a number, now an error (money in constants is in Later).
+
+### Part B: the cookbook
+
+- `docs/cookbook/`: a README and a folder per sector, **30 recipes** (2 or 3 per sector), each a page with a plain title, the task, the program, its data and its exact output, and an "Under the hood" note where it helps. Written in the most natural current wording (curated, not copied from the testers).
+- Every recipe runs in `make test` (in an empty folder with its sector's csv files, with the memory check), and `docs/cookbook-pages-match` (`tests/tools/cookbook_sync.py`) checks that each page shows the program, data and output the test runs; `make bless` rewrites the outputs. Linked from the README and from "Your first programs".
+- **Decided:** recipes that ask questions show the output as it really is (the typed answers don't appear), with the answers listed above it; programs with no money in them take plain numbers and show them `as money`.
+- Writing them found the problems fixed in the commit before (column names of several words, money in tables, `its` twice, money in constants) and five more logged under Still open in english-pass.md (`sorted by` a text column, `the most common FIELD of L`, `a KIND's FIELD depends on X:`, describing words of several words, a field across a list in a table program).

@@ -20,6 +20,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added (v0.2 prep: from the simulated testers)
 
+- The cookbook, `docs/cookbook/`: 30 short programs for real jobs in 12 kinds of work (teaching, a shop, a café, office admin, finance, healthcare admin, real estate, shipping, events, a household budget, hobbies, a science lab), each a page with the task, the program, its data and its exact output. `make test` runs every recipe and checks that its page shows the files it runs (`docs/cookbook-pages-match`); `make bless` rewrites their outputs.
+
 - A table's column kinds can be written down: `read the table in "bank.csv", with amount in dollars and quantity as a number, and call it purchases.` (also `in euros`, `in pounds`). A stated kind wins over what the file looks like; a file that doesn't fit is the error naming the column, the line and both kinds ([proposal 0023](docs/proposals/0023-column-kinds.md)). Plain numbers in a column of amounts (`1200` among `$` amounts) are that currency, when the program is checked and when the file is read (tested now).
 
 - `!` ends a sentence, like `.` and `?` (`say "Well done!"!`); `!=` still means "is not". Before, a lone `!` was an error ([proposal 0016](docs/proposals/0016-exclamation-and-polite-steps.md)).

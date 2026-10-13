@@ -91,6 +91,8 @@ Expected-output files must match **byte for byte**. When you change a message on
 
 Never bless just to make the suite go green. A blessed regression becomes the new "expected" output and stops being caught. Unit tests (`tests/unit`) have no golden files and aren't affected.
 
+- `docs/cookbook/SECTOR/NAME.es` plus `NAME.out` (and `NAME.in` for typed answers): a cookbook recipe, run like an example in an empty folder holding that sector's csv files. Its page `NAME.md` must show the program, the csv files it reads and the output exactly (`tests/tools/cookbook_sync.py`), and the sector's `README.md` must list it.
+
 ## Language rules
 
 - **New syntax follows [docs/design-principles.md](docs/design-principles.md),** or is added to its "Known exceptions" with the reason, in the same change. Unsure? Add it to "Open questions" there instead.

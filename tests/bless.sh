@@ -151,15 +151,33 @@ bless_dump plan "$ROOT/tests/plan" out
 bless_run "$ROOT/examples/programs"
 bless_dump tokens "$ROOT/examples/lexer" tokens
 bless_dump ast "$ROOT/examples/parser" ast
+# The cookbook: like examples, run in a folder holding the sector's csv files.
+# Its pages (NAME.md) show the output too, so update them after (make test's
+# docs/cookbook-pages-match says which).
+for src in "$ROOT"/docs/cookbook/*/*.es; do
+    [ -e "$src" ] || continue
+    input="${src%.es}.in"
+    [ -f "$input" ] || input=/dev/null
+    rm -rf "$WORK/cwd"
+    mkdir "$WORK/cwd"
+    for data in "$(dirname "$src")"/*.csv; do [ -e "$data" ] && cp "$data" "$WORK/cwd/"; done
+    if (cd "$WORK/cwd" && ES_DEBUG_MEMORY=1 "$ES" run "$src") <"$input" >"$WORK/stdout" 2>"$WORK/stderr" &&
+        [ ! -s "$WORK/stderr" ]; then
+        cp "$WORK/stdout" "${src%.es}.out"
+    else
+        warn "${src#$ROOT/}" "a recipe has to run without errors:
+$(sed 's/^/    /' "$WORK/stderr")"
+    fi
+done
 
 cd "$ROOT"
 echo "Golden files changed (review with git diff before committing):"
-changed=$(git ls-files --modified --deleted -- tests examples | grep -E '\.(out|err|tokens|ast)$' | sort -u)
+changed=$(git ls-files --modified --deleted -- tests examples docs/cookbook | grep -E '\.(out|err|tokens|ast)$' | sort -u)
 if [ -n "$changed" ]; then
     # shellcheck disable=SC2086
     git --no-pager diff --stat -- $changed
 fi
-untracked=$(git ls-files --others --exclude-standard -- tests examples | grep -E '\.(out|err|tokens|ast)$')
+untracked=$(git ls-files --others --exclude-standard -- tests examples docs/cookbook | grep -E '\.(out|err|tokens|ast)$')
 if [ -n "$untracked" ]; then
     echo "New files:"
     echo "$untracked" | sed 's/^/    /'
