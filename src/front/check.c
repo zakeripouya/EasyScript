@@ -530,7 +530,9 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
             if (kind_pass == (int)pass && checker_check_module_stmt(&c, stmt)) check_stmt(&c, stmt);
         }
     }
-    types_default_numbers(&c);  // "the total amount of sales": a number, unless it's money
+    types_settle(&c);
+    checker_judge_columns(&c);  // "the total amount of sales": amounts, if the file says so
+    types_default_numbers(&c);  // otherwise a number
     for (size_t r = 0; r < c.records->len; r++) {  // a table's columns that nothing decided are text, as in the file
         if (!c.records->items[r].table) continue;
         Stmt *def = c.records->items[r].definition;
@@ -539,6 +541,7 @@ void check_program(Arena *arena, Diag *diag, Program *whole) {
             if (types_of(&c, column) == TYPE_UNKNOWN) types_require(&c, column, TYPE_TEXT, def->pos.line);
         }
     }
+    checker_check_columns(&c);
     checker_finish_charts(&c);
     types_finish(&c, first_error);
     diag_sort(diag, first_error);

@@ -1,0 +1,11 @@
+put the text below in file "bank.csv":
+    date,store,category,amount
+    2026-08-01,Landlord,rent,$1200
+    2026-08-04,Kroger,groceries,$96.40
+    2026-09-20,Whole Foods,groceries,$312.75
+    2026-10-08,Apple,electronics,$249
+
+read the table in "bank.csv" and call it purchases.
+say the total amount of purchases.
+say the average amount of purchases per category.
+exit

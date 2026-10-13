@@ -1,0 +1,4 @@
+Line 7: In trip.csv, "cost" has amounts in two currencies: line 2 is "$300" and line 4 is "€45".
+    read the table in "trip.csv" and call it costs.
+                      ^^^^^^^^^^
+Write every amount in it in one currency.

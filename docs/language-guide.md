@@ -2471,7 +2471,15 @@ say how many sales whose amount is over 100.
 save the sales whose region is "East" as "east.csv".
 ```
 
-A table's rows are records whose fields are the columns the program uses: `amount` is a number because the program adds it up, `region` is text. The program checks the file when it reads it: a column that isn't there stops it with "sales.csv has no column called "amout". Did you mean "amount"?", and so does a value of the wrong kind. Saved rows keep every column of the file, with any changes the program made.
+A table's rows are records whose fields are the columns the program uses: `amount` is a number because the program adds it up, `region` is text.
+
+When the program's use only says "a number or an amount" (a total, an average, arithmetic, a chart), the file decides, before the program runs. A column whose values are amounts in one currency (`$1200`, `€4.50`, `12 dollars`; plain numbers can be among them) holds amounts, and a column of plain numbers holds numbers. EasyScript looks at the file named in quotes in the folder the program runs in or, if it isn't there yet, at the text the program writes into it (`put the text below in file "sales.csv":`). Reading the same file twice uses each column the same way. A blank cell in a column of numbers or amounts counts as 0. A file that doesn't fit how the program uses a column (amounts where the program uses a number, amounts in two currencies, words where it needs numbers) is an error before the program runs:
+
+```
+Line 9: In bank.csv, line 2, "amount" is "$1200", an amount in dollars, but the program uses it as a number.
+```
+
+A column the program only shows, compares or sorts is text, as before. The program checks the file again when it reads it (the file may have changed, or EasyScript may not have been able to look at it first): a column that isn't there stops it with "sales.csv has no column called "amout". Did you mean "amount"?", and so does a value of the wrong kind. Saved rows keep every column of the file, with any changes the program made.
 
 ### Asking for numbers and yes or no
 
@@ -2595,5 +2603,5 @@ A chart is saved as an SVG picture, which any browser shows. Charts take a list 
 - `what is X?` and `X?` are `say X`; `is X above 100?` is `say X is above 100`; `which customer has the highest total?` is `say the customer with the highest total`.
 - `S1, then S2` is S1, then (if S2 says "it") a hidden name for what S1 gave, then S2 with "it" meaning that name.
 - `total the amount per month` is `let (a hidden name) be the total amount of it per month`.
-- `read the table in F` reads the csv file, makes a record for each row with the columns the program uses, and keeps them in a list.
+- `read the table in F` reads the csv file, makes a record for each row with the columns the program uses, and keeps them in a list. A column used only as "a number or an amount" gets the kind the file's cells have, decided before the program runs, as if the program had written it down.
 

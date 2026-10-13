@@ -274,11 +274,42 @@ static _Noreturn void es_no_column(int site, const EsCsv *r, const EsList *heade
     es_fail(site, hint, "%s has no column called \"%s\".", r->name, field);
 }
 
+/* What a cell that doesn't fit its column holds instead, if it's a number or
+ * an amount ("an amount in euros"), or NULL. */
+static const char *es_cell_holds(const EsText *cell) {
+    static const char *const amounts[] = {"an amount in dollars", "an amount in euros", "an amount in pounds"};
+    static const char *const signs[] = {"$", "\xE2\x82\xAC", "\xC2\xA3"};
+    static const char *const words[][2] = {{"dollars", "dollar"}, {"euros", "euro"}, {"pounds", "pound"}};
+    long long cents;
+    double number;
+    size_t end = cell->len;
+    while (end > 0 && cell->chars[end - 1] == ' ') end--;
+    for (int k = 0; k < 3; k++) {  /* written with its sign or its word */
+        bool marked = strstr(cell->chars, signs[k]) != NULL;
+        for (int w = 0; w < 2 && !marked; w++) {
+            size_t n = strlen(words[k][w]);
+            marked = end >= n && es_word_is(cell->chars + end - n, n, words[k][w]);
+        }
+        if (marked && es_parse_money(cell->chars, cell->len, k, &cents)) return amounts[k];
+    }
+    return es_parse_number(cell->chars, cell->len, &number) ? "a number" : NULL;
+}
+
 /* A cell read as its field's kind: 't' text, 'n' a number, 'b' yes or no, 'd' a
- * date (2026-10-31, maybe with a time, 2026-10-31 14:05). Takes the cell. */
+ * date (2026-10-31, maybe with a time, 2026-10-31 14:05), 'u' 'e' 'p' an
+ * amount. A blank cell is 0 in a column of numbers or amounts, as in a
+ * spreadsheet. Takes the cell. */
 static void es_table_cell(const EsCsv *r, long line, const char *field, char kind, EsText *cell, char *slot) {
     if (kind == 't') {
         *(EsText **)slot = cell;
+        return;
+    }
+    size_t blank = 0;
+    while (blank < cell->len && cell->chars[blank] == ' ') blank++;
+    if (blank == cell->len && (kind == 'n' || kind == 'u' || kind == 'e' || kind == 'p')) {
+        if (kind == 'n') *(double *)slot = 0;
+        if (kind != 'n') *(long long *)slot = 0;
+        es_release(cell);
         return;
     }
     const char *what = kind == 'n' ? "a number" : kind == 'b' ? "yes or no" : kind == 'd' ? "a date like 2026-10-31"
@@ -301,6 +332,11 @@ static void es_table_cell(const EsCsv *r, long line, const char *field, char kin
     if (ok) {
         es_release(cell);
         return;
+    }
+    const char *holds = kind == 'n' || kind == 'u' || kind == 'e' || kind == 'p' ? es_cell_holds(cell) : NULL;
+    if (holds) {
+        es_fail(r->site, NULL, "In %s, line %ld, \"%s\" is \"%.*s\", %s, but the program uses it as %s.", r->name, line,
+                field, (int)cell->len, cell->chars, holds, what);
     }
     es_fail(r->site, NULL, "In %s, line %ld, \"%s\" is \"%.*s\", which isn't %s.", r->name, line, field, (int)cell->len,
             cell->chars, what);

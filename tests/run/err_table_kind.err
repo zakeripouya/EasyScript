@@ -1,0 +1,3 @@
+Line 11: In bank.csv, line 2, "amount" is "$1200", an amount in dollars, but the program uses it as a number.
+    read the table in name and call it purchases.
+                      ^^^^

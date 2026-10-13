@@ -277,6 +277,23 @@ void types_defer_one_of(Checker *c, const Expr *expr, TypeVar var, TypeVar shown
 
 static void settle_all(Checker *c);
 
+void types_settle(Checker *c) {
+    settle_all(c);
+}
+
+// Whether something waiting would make `var` a number if nothing decides it
+// ("the total of x", arithmetic that could be money, a chart).
+bool types_number_first(Checker *c, TypeVar var) {
+    TypeVar at = root(c, var);
+    for (size_t i = 0; i < c->deferred.len; i++) {
+        const Deferred *d = &c->deferred.items[i];
+        if (d->done) continue;
+        if (d->kind == DEFER_ONE_OF && (d->allowed & KIND_NUMBER_FIRST) && root(c, d->left) == at) return true;
+        if (d->kind == DEFER_ARITH && (root(c, d->left) == at || root(c, d->right) == at)) return true;
+    }
+    return false;
+}
+
 void types_default_numbers(Checker *c) {
     settle_all(c);
     for (size_t i = 0; i < c->deferred.len; i++) {

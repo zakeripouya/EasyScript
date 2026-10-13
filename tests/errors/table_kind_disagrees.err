@@ -1,0 +1,14 @@
+Line 13: In bank.csv, line 2, "amount" is "$1200", an amount in dollars, but the program uses it as a number.
+    read the table in "bank.csv" and call it purchases.
+                      ^^^^^^^^^^
+Line 14 uses "amount" as a number.
+
+Line 15: In notes.csv, line 3, "hours" is "sick", which isn't a number.
+    read the table in "notes.csv" and call it notes.
+                      ^^^^^^^^^^^
+Line 16 uses "hours" as a number.
+
+Line 17: This reads bank.csv again, but uses "amount" as an amount in dollars. Line 13 reads it too, and uses it as a number.
+    read the table in "bank.csv" and call it others.
+                      ^^^^^^^^^^
+Use each column the same way every time the file is read.

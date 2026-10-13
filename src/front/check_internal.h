@@ -155,6 +155,8 @@ typedef struct {
     TypeVar item;    // the kind of X's items (a list's, or a map's values)
 } ChartValues;
 
+typedef struct TableFile TableFile;  // check_table_file.c: a table's file, looked at before the program runs
+
 typedef struct {
     Arena *arena;
     Diag *diag;
@@ -191,6 +193,7 @@ typedef struct {
     unsigned only_file;               // "helpers's double": names are looked up only in this file (1 + its index), or 0
     Vec(struct ModuleUse) module_uses;  // names used from other files, renamed once the program is checked
     Vec(ChartValues) charts;          // every chart sentence, for its currency
+    Vec(TableFile *) table_files;     // the files tables are read from, named in quotes
 } Checker;
 
 // A name in a value that means another file's function or constant.
@@ -261,6 +264,10 @@ size_t types_line(Checker *c, TypeVar var);  // where its kind was decided
 void types_defer(Checker *c, DeferKind kind, const Expr *expr, TypeVar left, TypeVar right, TypeVar result);
 // `var` must turn out to have one of the `allowed` kinds; otherwise reports
 // "<message>, but this is <the kind of shown>." at expr.
+bool types_number_first(Checker *c, TypeVar var);  // check_types.c: it becomes a number if nothing decides it
+void types_settle(Checker *c);  // check_types.c: settles what can be settled now
+void checker_judge_columns(Checker *c);  // check_table_file.c: tables' columns from their files, before the defaults
+void checker_check_columns(Checker *c);  // check_table_file.c: columns used as numbers or amounts, against their files
 void types_default_numbers(Checker *c);  // check_types.c: KIND_NUMBER_FIRST kinds nothing decided become numbers
 void types_defer_one_of(Checker *c, const Expr *expr, TypeVar var, TypeVar shown, unsigned allowed,
                         const char *message);
