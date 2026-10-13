@@ -153,7 +153,7 @@ It builds on the interactive shell, which reruns the whole session for each entr
 
 **Status: Planned,** before the first public release.
 
-- **Installing:** an install script, `easyscript --version`, and a Homebrew tap
+- **Installing:** [docs/install.md](install.md) with `make install` (`PREFIX` too) and `make uninstall`, `easyscript --version`, and a draft Homebrew formula (`packaging/homebrew/easyscript.rb`, published once v0.2.0 is tagged): done in the v0.2 prep, except publishing the formula
 - [x] **A license:** the Apache License 2.0 with a runtime exception (compiled programs belong to their authors), v0.2 prep
 - **Windows:** documented through WSL now; then a native port of `src/main.c` and `src/shell.c` (processes and temp directories) and of the runtime's keyboard and `run` (`runtime/es_keys.h`, `es_system.h`: the console's key-at-a-time mode, and starting programs without `fork`), checked by CI on `windows-latest`
 

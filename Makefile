@@ -113,9 +113,20 @@ bless: all
 bench: all
 	sh benchmarks/run.sh
 
+# make install [PREFIX=/usr/local]: copies easyscript to PREFIX/bin (DESTDIR
+# is put in front, for packaging). It carries its runtime, library and
+# templates inside it; programs are built with the system's cc.
+PREFIX ?= /usr/local
+install: easyscript
+	mkdir -p "$(DESTDIR)$(PREFIX)/bin"
+	cp easyscript "$(DESTDIR)$(PREFIX)/bin/easyscript"
+
+uninstall:
+	rm -f "$(DESTDIR)$(PREFIX)/bin/easyscript"
+
 clean:
 	rm -rf build easyscript
 
 -include $(shell find build -name '*.d' 2>/dev/null)
 
-.PHONY: all debug test test-debug test-gcc bless bench clean
+.PHONY: all debug test test-debug test-gcc bless bench clean install uninstall

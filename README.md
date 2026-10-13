@@ -140,7 +140,7 @@ Details: [docs/roadmap.md](docs/roadmap.md). The **English pass** (plain-English
 
 ## Getting started
 
-You need a C compiler (`cc`: Clang or GCC), `make`, and a POSIX system (macOS or Linux; on Windows, use WSL).
+You need a C compiler (`cc`: Clang or GCC), `make`, and a POSIX system (macOS or Linux; on Windows, use WSL). [docs/install.md](docs/install.md) has the details, including `make install` (to `/usr/local/bin`, or `PREFIX=...`) and uninstalling.
 
 ```bash
 git clone https://github.com/zakeripouya/EasyScript.git
@@ -189,6 +189,7 @@ The **front end** (lexer, parser, checker) understands EasyScript and reports er
 
 ## Documentation
 
+- [Installing](docs/install.md): macOS, Linux and Windows (through WSL)
 - [Language guide](docs/language-guide.md): learn EasyScript from zero, chapter by chapter
 - [Cookbook](docs/cookbook/README.md): 30 short programs for real jobs (a class's grades, a shop's sales, a café's bill, a budget, a quiz, ...), each with its data and exact output, all checked by `make test`
 - [Vocabulary](docs/vocabulary.md): every keyword, sentence pattern, and synonym, with its status

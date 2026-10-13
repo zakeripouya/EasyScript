@@ -510,6 +510,25 @@ else
     not_ok "cli/version" "$("$ES" --version 2>&1)"
 fi
 
+# "make install PREFIX=..." copies the compiler there and "make uninstall"
+# takes it away. Only checked when ./easyscript is up to date, so it doesn't
+# start a build of its own (make test-gcc and test-debug test other builds).
+if (cd "$ROOT" && make -q easyscript 2>/dev/null); then
+    fresh_dir
+    prefix="$WORK/cwd/a prefix"
+    if ! out=$(cd "$ROOT" && make -s install PREFIX="$prefix" 2>&1); then
+        not_ok "cli/make-install" "$out"
+    elif [ "$("$prefix/bin/easyscript" --version 2>&1)" != "EasyScript 0.2.0 (the 2026 edition)" ]; then
+        not_ok "cli/make-install" "the installed easyscript: $("$prefix/bin/easyscript" --version 2>&1)"
+    elif ! out=$(cd "$ROOT" && make -s uninstall PREFIX="$prefix" 2>&1) || [ -e "$prefix/bin/easyscript" ]; then
+        not_ok "cli/make-install" "uninstall: $out"
+    else
+        ok "cli/make-install"
+    fi
+else
+    echo "SKIP cli/make-install (./easyscript isn't up to date)"
+fi
+
 # "new NAME [--template T]" makes NAME/main.es from the template, exactly;
 # "new --list" lists them; an existing folder is left alone.
 fresh_dir

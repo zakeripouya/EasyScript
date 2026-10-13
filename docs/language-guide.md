@@ -41,7 +41,7 @@ The full list of words and patterns is in the [vocabulary](vocabulary.md).
 
 **Status: Available**
 
-Build the compiler (you need `cc`, `make`, and macOS or Linux):
+Build the compiler (you need `cc`, `make`, and macOS or Linux; [install.md](install.md) has the details, `make install`, and Windows through WSL):
 
 ```bash
 git clone https://github.com/zakeripouya/EasyScript.git
