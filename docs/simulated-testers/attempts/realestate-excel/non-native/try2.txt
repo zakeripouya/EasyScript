@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after the text "listings.xlsx".
+    Read file "listings.xlsx".
+              ^^^^^^^^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 2: Something is missing after "neighborhood calculate average price".
+    For each neighborhood calculate average price.
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 3: Something is missing after "neighborhood find cheapest house".
+    For each neighborhood find cheapest house.
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Write it like "for each n from 1 to 10:".
+--- files made ---

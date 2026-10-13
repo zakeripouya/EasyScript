@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I expected a field after "per" here, but found "employee".
+    let totals be SUM of hours per employee
+                                   ^^^^^^^^
+Write it like "the total amount of orders per region".
+
+Line 6: I don't understand "in" here.
+    let grand_total be SUM of hours in timesheet
+                                    ^^
+Did you mean "is"?
+--- files made ---

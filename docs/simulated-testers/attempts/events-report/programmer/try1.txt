@@ -1,0 +1,132 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 7: I don't understand the character "{".
+    meals = {}
+            ^
+
+Line 7: I don't understand the character "}".
+    meals = {}
+             ^
+
+Line 9: I don't understand the character "[".
+        people = 1 + int(g["plus ones"])
+                          ^
+
+Line 9: I don't understand the character "]".
+        people = 1 + int(g["plus ones"])
+                                      ^
+
+Line 11: I don't understand the character "[".
+        meals[g.meal] = meals.get(g.meal, 0) + people
+             ^
+
+Line 11: I don't understand the character "]".
+        meals[g.meal] = meals.get(g.meal, 0) + people
+                    ^
+
+Line 1: I don't know a sentence that starts with "guests".
+    guests = read_csv("guests.csv")
+    ^^^^^^
+To keep a value in a name, write "let guests be ...". To change it, write "set guests to ...".
+
+Line 2: I don't know a sentence that starts with "coming".
+    coming = guests.filter(g => g.rsvp == "yes")
+    ^^^^^^
+To keep a value in a name, write "let coming be ...". To change it, write "set coming to ...".
+
+Line 2: I don't know a sentence that starts with "filter".
+    coming = guests.filter(g => g.rsvp == "yes")
+                    ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 2: I don't know a sentence that starts with "rsvp".
+    coming = guests.filter(g => g.rsvp == "yes")
+                                  ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 4: This "(" is never closed.
+    print("Yes RSVPs:", coming.length)
+         ^
+Add a ")" where the group ends, on the same line.
+
+Line 4: I don't know a sentence that starts with "length".
+    print("Yes RSVPs:", coming.length)
+                               ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 6: I don't know a sentence that starts with "headcount".
+    headcount = 0
+    ^^^^^^^^^
+To keep a value in a name, write "let headcount be ...". To change it, write "set headcount to ...".
+
+Line 7: I don't know a sentence that starts with "meals".
+    meals = {}
+    ^^^^^
+To keep a value in a name, write "let meals be ...". To change it, write "set meals to ...".
+
+Line 8: I expected "each" here, but found "g".
+    for g in coming:
+        ^
+Write it like "for each n from 1 to 10:".
+
+Line 9: I don't know a sentence that starts with "people".
+        people = 1 + int(g["plus ones"])
+        ^^^^^^
+To keep a value in a name, write "let people be ...". To change it, write "set people to ...".
+
+Line 10: I don't know a sentence that starts with "headcount".
+        headcount += people
+        ^^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 11: I don't know a sentence that starts with "meals".
+        meals[g.meal] = meals.get(g.meal, 0) + people
+        ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 11: I don't know a sentence that starts with "meal".
+        meals[g.meal] = meals.get(g.meal, 0) + people
+                ^^^^
+Did you mean "tell" or "read"?
+
+Line 11: I don't know a sentence that starts with "get".
+        meals[g.meal] = meals.get(g.meal, 0) + people
+                              ^^^
+Did you mean "let" or "set"?
+
+Line 11: I don't know a sentence that starts with "meal".
+        meals[g.meal] = meals.get(g.meal, 0) + people
+                                    ^^^^
+Did you mean "tell" or "read"?
+
+Line 13: This "(" is never closed.
+    print("Total headcount:", headcount)
+         ^
+Add a ")" where the group ends, on the same line.
+
+Line 14: I expected "each" here, but found "meal".
+    for meal, count in meals:
+        ^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 15: This "(" is never closed.
+        print(meal + ":", count)
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 17: I don't know a sentence that starts with "chart".
+    chart = pie_chart(meals, title="Meals")
+    ^^^^^
+To keep a value in a name, write "let chart be ...". To change it, write "set chart to ...".
+
+Line 18: I don't know a sentence that starts with "chart".
+    chart.save("meals.svg")
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 18: Something is missing after ")".
+    chart.save("meals.svg")
+                          ^
+Write it like "save rows as csv file "out.csv"".
+--- files made ---

@@ -1,0 +1,43 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "sales".
+    Read file sales.csv.
+              ^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "csv".
+    Read file sales.csv.
+                    ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I expected "each" here, but found "every".
+    For every line, multiply quantity with price, this is money.
+        ^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 3: I expected a test like "are above 50" after "all money", but found ".".
+    Show total of all money.
+                           ^
+Write it like "all money are at least 50".
+
+Line 4: I don't know a sentence that starts with "Find".
+    Find product what sold most units and show it.
+    ^^^^
+Did you mean "sine"?
+
+Line 5: I don't understand "for" here.
+    Show money for each month.
+               ^^^
+Did you mean "or"?
+
+Line 6: I expected "called" here, but found "for".
+    Make bar chart of money for each month and save in months.svg.
+                            ^^^
+Write it like "make a bar chart of sales called "sales.svg"".
+
+Line 6: I don't know a sentence that starts with "svg".
+    Make bar chart of money for each month and save in months.svg.
+                                                              ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

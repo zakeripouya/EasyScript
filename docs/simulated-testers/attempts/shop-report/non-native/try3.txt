@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: "with" can't be part of a name, because it already means something in EasyScript.
+        Multiply quantity with price, this is money.
+                          ^^^^
+Try a name without it, like "quantity price".
+
+Line 5: I expected a field after "most" here, but found "units".
+    Show product with most units.
+                           ^^^^^
+Write it like "the dog with the highest age".
+
+Line 6: I don't know a sentence that starts with "Total".
+    Total the money per month.
+    ^^^^^
+Sentences like these work: "total the amount per month", "what is the total?" or "let total be 0".
+
+Line 7: I expected "called" here, but found "per".
+    Make a bar chart of money per month called "months.svg".
+                              ^^^
+Write it like "make a bar chart of sales called "sales.svg"".
+--- files made ---

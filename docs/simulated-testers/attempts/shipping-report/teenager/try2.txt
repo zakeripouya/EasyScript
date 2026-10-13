@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't understand "by" here.
+    say count of s by country
+                   ^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: I don't understand "weight" here.
+    say average weight kg of s
+                ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't understand "weight" here.
+    say max weight kg of s
+            ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

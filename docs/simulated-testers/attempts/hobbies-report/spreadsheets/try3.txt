@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't understand "per" here.
+    Count the rows per winner, show top 1
+                   ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: I don't know a sentence that starts with "Average".
+    Average the score per game
+    ^^^^^^^
+Sentences like these work: "total the amount per month" or "for each score in scores:".
+
+Line 4: I don't understand "," here.
+    Sort games by score, largest first, show top 3 with winner, game and score
+                       ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

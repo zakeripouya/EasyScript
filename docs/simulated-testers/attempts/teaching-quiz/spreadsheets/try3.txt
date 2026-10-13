@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: A one-line "if" can't have an "otherwise".
+    Otherwise:
+    ^^^^^^^^^
+Write the "if" with a colon and its sentences on indented lines below it; then the "otherwise" can follow.
+
+Line 10: A one-line "if" can't have an "otherwise".
+    Otherwise:
+    ^^^^^^^^^
+Write the "if" with a colon and its sentences on indented lines below it; then the "otherwise" can follow.
+
+Line 15: A one-line "if" can't have an "otherwise".
+    Otherwise:
+    ^^^^^^^^^
+Write the "if" with a colon and its sentences on indented lines below it; then the "otherwise" can follow.
+
+Line 20: A one-line "if" can't have an "otherwise".
+    Otherwise:
+    ^^^^^^^^^
+Write the "if" with a colon and its sentences on indented lines below it; then the "otherwise" can follow.
+
+Line 25: A one-line "if" can't have an "otherwise".
+    Otherwise:
+    ^^^^^^^^^
+Write the "if" with a colon and its sentences on indented lines below it; then the "otherwise" can follow.
+--- files made ---

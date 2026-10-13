@@ -1,0 +1,47 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't understand the character "@".
+    Send email to team@ourcompany.com
+                      ^
+
+Line 1: Nothing is indented under this event.
+    Every Monday at 9:00 AM:
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+Put the sentences that belong to it on the next lines, indented (4 spaces is usual).
+
+Line 2: I don't know a sentence that starts with "Open".
+    Open bookings.csv
+    ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 2: I don't know a sentence that starts with "csv".
+    Open bookings.csv
+                  ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 3: I don't know a sentence that starts with "Send".
+    Send email to team@ourcompany.com
+    ^^^^
+Did you mean "set" or "read"?
+
+Line 3: I don't know a sentence that starts with "com".
+    Send email to team@ourcompany.com
+                                  ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 4: I don't know a sentence that starts with "Subject".
+    Subject: "Room bookings this week"
+    ^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "Body".
+    Body: all rows from bookings.csv (columns room, day, time, booked by)
+    ^^^^
+Sentences like these work: "subtract 5 from total", "count from 1 to 10:" or "go from 0 to 100 in steps of 10:".
+
+Line 5: I don't know a sentence that starts with "csv".
+    Body: all rows from bookings.csv (columns room, day, time, booked by)
+                                 ^^^
+Sentences like these work: "increase total by 5", "decrease total by 5" or "reduce price by 10 percent".
+--- files made ---

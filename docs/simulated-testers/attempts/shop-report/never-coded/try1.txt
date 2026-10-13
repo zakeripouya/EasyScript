@@ -1,0 +1,53 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 11: I don't understand "!".
+    Thank you very much!
+                       ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hello".
+    Hello, could you please open the file sales.csv? It has my shop's sales in it.
+    ^^^^^
+Did you mean "tell"?
+
+Line 1: I don't know a sentence that starts with "It".
+    Hello, could you please open the file sales.csv? It has my shop's sales in it.
+                                                     ^^
+Did you mean "if"?
+
+Line 3: I don't know a sentence that starts with "please".
+    First, please tell me the total amount of money we took. For each row, that is the quantity times the price, all added together.
+           ^^^^^^
+Did you mean "please"?
+
+Line 3: I expected "from" here, but found ",".
+    First, please tell me the total amount of money we took. For each row, that is the quantity times the price, all added together.
+                                                                         ^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "please".
+    Next, please tell me which product sold the most units in total.
+          ^^^^^^
+Did you mean "please"?
+
+Line 7: I don't know a sentence that starts with "Then".
+    Then I would like to see how much money we took in each month.
+    ^^^^
+Sentences like these work: "go from 0 to 100 in steps of 10:", "apply double to every number in scores" or "read the table in "sales.csv" and call it sales".
+
+Line 9: I don't know a sentence that starts with "please".
+    Finally, please make a bar chart showing the money for each month and save it as months.svg.
+             ^^^^^^
+Did you mean "please"?
+
+Line 9: I don't know a sentence that starts with "svg".
+    Finally, please make a bar chart showing the money for each month and save it as months.svg.
+                                                                                            ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 11: I don't know a sentence that starts with "Thank".
+    Thank you very much!
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

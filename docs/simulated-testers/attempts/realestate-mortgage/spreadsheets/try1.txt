@@ -1,0 +1,79 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 8: I don't understand the character "^".
+    Payment = ROUND(Loan * MonthlyRate / (1 - (1 + MonthlyRate)^(-Months)), 2)
+                                                               ^
+
+Line 10: I don't understand the character "&".
+    Show "Loan amount: " & Loan
+                         ^
+
+Line 11: I don't understand the character "&".
+    Show "Monthly payment: " & Payment
+                             ^
+
+Line 12: I don't understand the character "&".
+    Show "Total paid: " & Total
+                        ^
+
+Line 1: I expected "and call the answer" here, but found "price".
+    Ask for Price
+            ^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 2: I expected "and call the answer" here, but found "deposit".
+    Ask for Deposit
+            ^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 3: I expected "and call the answer" here, but found "rate".
+    Ask for Rate
+            ^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 4: I expected "and call the answer" here, but found "years".
+    Ask for Years
+            ^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 5: I don't know a sentence that starts with "Loan".
+    Loan = Price - Deposit
+    ^^^^
+To keep a value in a name, write "let Loan be ...". To change it, write "set Loan to ...".
+
+Line 6: I don't know a sentence that starts with "MonthlyRate".
+    MonthlyRate = Rate / 100 / 12
+    ^^^^^^^^^^^
+To keep a value in a name, write "let MonthlyRate be ...". To change it, write "set MonthlyRate to ...".
+
+Line 7: I don't know a sentence that starts with "Months".
+    Months = Years * 12
+    ^^^^^^
+To keep a value in a name, write "let Months be ...". To change it, write "set Months to ...".
+
+Line 8: I don't know a sentence that starts with "Payment".
+    Payment = ROUND(Loan * MonthlyRate / (1 - (1 + MonthlyRate)^(-Months)), 2)
+    ^^^^^^^
+To keep a value in a name, write "let Payment be ...". To change it, write "set Payment to ...".
+
+Line 9: I don't know a sentence that starts with "Total".
+    Total = Payment * Months
+    ^^^^^
+To keep a value in a name, write "let Total be ...". To change it, write "set Total to ...".
+
+Line 10: I don't understand "loan" here.
+    Show "Loan amount: " & Loan
+                           ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 11: I don't understand "payment" here.
+    Show "Monthly payment: " & Payment
+                               ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 12: I don't understand "total" here.
+    Show "Total paid: " & Total
+                          ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

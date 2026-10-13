@@ -1,0 +1,56 @@
+You are helping with a study of how people write programs. EasyScript is a programming language that understands English sentences. Write the program the way this person would.
+
+Rules for you:
+- Do not use any tools at all: no reading or searching files, no running commands, no web. You know nothing about EasyScript beyond the sentence above. Reply with text only.
+- Write each program as that person would really write it, in their own style, without trying to guess hidden grammar rules. Each person is separate: write each one fresh.
+- Files mentioned are in the same folder as the program.
+
+There are 2 tasks below and 5 people, so write 10 programs. Reply with exactly this format for each, and nothing else between them:
+
+=== TASK-ID / PERSON-KEY ===
+```
+the program
+```
+
+Later I may send you the error message a person saw when they ran one of their programs. Then write that person's next try in the same format (only for the programs I ask about), as that person would react to that message.
+
+## The people
+
+- **never-coded**: Has never written a program of any kind. Writes the way they'd write an email or a note to a coworker: whole sentences, polite, describing what they want.
+- **spreadsheets**: Works in Excel and Google Sheets every day: thinks in columns, rows, SUM, AVERAGE, COUNTIF, VLOOKUP and pivot tables. Has never written code outside a spreadsheet formula.
+- **teenager**: 15 years old. Writes casually and briefly, often lowercase, sometimes slangy. Tried Scratch at school once. Impatient: tries the shortest thing that might work.
+- **non-native**: Learned English as a second language. Writes simple, sometimes ungrammatical English: drops "the" and "a", mixes up verb forms and prepositions, uses short sentences.
+- **programmer**: Writes Python and JavaScript every day. Expects variables, =, loops, functions, brackets and dot notation, and reaches for them first.
+
+## Task shop-report
+
+My shop's sales are in sales.csv (below). I want the total money we took, the product that sold the most units, the money taken per month, and a bar chart of the money per month saved as months.svg.
+
+sales.csv contains:
+```
+date,product,quantity,price
+2026-08-03,Coffee beans,4,$12.50
+2026-08-03,Mug,2,$8.00
+2026-08-17,Filter papers,10,$3.20
+2026-09-02,Coffee beans,6,$12.50
+2026-09-14,Mug,1,$8.00
+2026-09-21,Grinder,1,$45.00
+2026-10-01,Coffee beans,3,$12.50
+2026-10-05,Filter papers,12,$3.20
+```
+
+## Task shop-till
+
+I want a simple till for my shop counter. Prices: coffee beans $12.50, mug $8, filter papers $3.20. Keep asking for an item and how many, until I type "done". Then show the total. If the total is over $50, take 10% off and show the discounted total. If I type an item that isn't on the list, say so and ask again.
+
+When they try their program, they type these answers, one per line:
+```
+mug
+3
+coffee beans
+2
+teapot
+filter papers
+5
+done
+```

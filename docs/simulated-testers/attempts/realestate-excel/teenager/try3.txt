@@ -1,0 +1,12 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I can only find the average of a list, but this is text.
+    say average of houses
+                   ^^^^^^
+
+Line 3: I don't know how to "cheapest".
+    say cheapest of houses
+        ^^^^^^^^^^^^^^^^^^
+Define it first, like "to cheapest with someone:" with its sentences indented below.
+--- files made ---

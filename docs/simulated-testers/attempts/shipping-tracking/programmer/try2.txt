@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't understand "list" here.
+    let delivered be a new list
+                           ^^^^
+Did you mean "is"?
+
+Line 5: I don't understand the text "https://track.example-carrier.com/?id=" here.
+        let page be fetch "https://track.example-carrier.com/?id=" + num
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

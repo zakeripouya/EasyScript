@@ -1,0 +1,75 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't understand the character "{".
+    while true {
+               ^
+
+Line 6: I don't understand the character "{".
+        if guess > secret {
+                          ^
+
+Line 8: I don't understand the character "}".
+        } else if guess < secret {
+        ^
+
+Line 8: I don't understand the character "{".
+        } else if guess < secret {
+                                 ^
+
+Line 10: I don't understand the character "}".
+        } else {
+        ^
+
+Line 10: I don't understand the character "{".
+        } else {
+               ^
+
+Line 13: I don't understand the character "}".
+        }
+        ^
+
+Line 14: I don't understand the character "}".
+    }
+    ^
+
+Line 1: I don't know a sentence that starts with "secret".
+    secret = random(1, 10)
+    ^^^^^^
+To keep a value in a name, write "let secret be ...". To change it, write "set secret to ...".
+
+Line 2: A sentence that starts with "count" is a counting loop, like "count from 1 to 10:".
+    count = 0
+    ^^^^^
+To keep a value called "count", write "let count be ...".
+
+Line 3: I expected a colon after this loop, but found the end of the line.
+    while true {
+                ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 4: I don't know a sentence that starts with "guess".
+        guess = int(input("Guess: "))
+        ^^^^^
+To keep a value in a name, write "let guess be ...". To change it, write "set guess to ...".
+
+Line 5: A sentence that starts with "count" is a counting loop, like "count from 1 to 10:".
+        count = count + 1
+        ^^^^^
+To keep a value called "count", write "let count be ...".
+
+Line 6: I expected ":", "," or "then" after the condition, but found the end of the line.
+        if guess > secret {
+                           ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 8: I expected a colon after this "otherwise if", but found the end of the line.
+        } else if guess < secret {
+                                  ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 10: I expected a colon after this "otherwise", but found the end of the line.
+        } else {
+                ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+--- files made ---

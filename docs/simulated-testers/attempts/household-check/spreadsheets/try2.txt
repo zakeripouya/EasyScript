@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I don't understand "(" here.
+    Let bills be SUM(rent, utilities, insurance, phone).
+                    ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 11: I don't understand "(" here.
+    Let months be ROUNDUP(5000 / savings, 0).
+                         ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

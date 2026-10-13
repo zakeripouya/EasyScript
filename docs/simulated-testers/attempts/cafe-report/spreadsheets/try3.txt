@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: I don't understand "for" here.
+    Show SUM of price for each day.
+                      ^^^
+Did you mean "or"?
+
+Line 7: I don't understand "of" here.
+    Show the item with the highest count of orders.
+                                         ^^
+Did you mean "or"?
+
+Line 13: I don't understand "of" here.
+    Show the day with the highest count of orders.
+                                        ^^
+Did you mean "or"?
+--- files made ---

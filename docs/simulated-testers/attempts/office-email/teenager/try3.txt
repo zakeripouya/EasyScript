@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't know a sentence that starts with "email".
+        email "bookings.csv" to "team@ourcompany.com" subject "Room bookings this week"
+        ^^^^^
+Sentences like these work: "set total to 10", "change total to 10" or "add 5 to total".
+--- files made ---

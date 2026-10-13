@@ -1,0 +1,67 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 12: I don't understand the character "[".
+        print(row["winner"], row["game"], row["score"])
+                 ^
+
+Line 12: I don't understand the character "]".
+        print(row["winner"], row["game"], row["score"])
+                          ^
+
+Line 12: I don't understand the character "[".
+        print(row["winner"], row["game"], row["score"])
+                                ^
+
+Line 12: I don't understand the character "]".
+        print(row["winner"], row["game"], row["score"])
+                                       ^
+
+Line 12: I don't understand the character "[".
+        print(row["winner"], row["game"], row["score"])
+                                             ^
+
+Line 12: I don't understand the character "]".
+        print(row["winner"], row["game"], row["score"])
+                                                     ^
+
+Line 1: I don't understand "(" here.
+    let games be read("games.csv")
+                     ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: I don't understand "(" here.
+    let wins be count(games, "winner")
+                     ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: This "(" is never closed.
+    print("Most wins:", max(wins))
+         ^
+Add a ")" where the group ends, on the same line.
+
+Line 6: I expected a colon after this loop, but found "(".
+    for each game in unique(games, "game"):
+                           ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 7: I don't understand "(" here.
+        let rows be filter(games, "game", game)
+                          ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: This "(" is never closed.
+        print(game, average(rows, "score"))
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 10: I don't understand "(" here.
+    let top3 be first(3, sort(games, "score", descending))
+                     ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 12: This "(" is never closed.
+        print(row["winner"], row["game"], row["score"])
+             ^
+Add a ")" where the group ends, on the same line.
+--- files made ---

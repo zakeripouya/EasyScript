@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I can't subtract text from text.
+    let left be income - rent - utilities - insurance - phone
+                ^^^^^^^^^^^^^
+
+Line 6: I can't subtract text from a number.
+    let left be income - rent - utilities - insurance - phone
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 6: I can't subtract text from a number.
+    let left be income - rent - utilities - insurance - phone
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 6: I can't subtract text from a number.
+    let left be income - rent - utilities - insurance - phone
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 10: I can't divide a number by text.
+    show 5000 / save
+         ^^^^^^^^^^^
+--- files made ---

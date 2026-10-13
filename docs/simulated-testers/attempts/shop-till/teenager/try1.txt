@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "prices".
+    prices: coffee beans 12.50, mug 8, filter papers 3.20
+    ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 2: "and" can't be part of a name, because it already means something in EasyScript.
+    keep asking item and how many till "done"
+                     ^^^
+Try a name without it, like "asking item how many till".
+
+Line 3: I expected ":", "," or "then" after the condition, but found "not".
+    if item not on list say nope and ask again
+            ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 5: I expected ":", "," or "then" after the condition, but found "over".
+    if total over 50 take 10% off and show it
+             ^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

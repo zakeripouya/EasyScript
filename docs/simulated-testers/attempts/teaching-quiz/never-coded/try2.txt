@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 28: I don't understand "score" here.
+    say "Your score is " score " out of 5."
+                         ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

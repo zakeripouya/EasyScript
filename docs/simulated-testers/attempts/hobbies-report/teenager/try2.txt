@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "file" here, but found "games".
+    read games.csv
+         ^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "csv".
+    read games.csv
+               ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I don't understand "won" here.
+    say who won most
+            ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: I don't understand "score" here.
+    say average score per game
+                ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

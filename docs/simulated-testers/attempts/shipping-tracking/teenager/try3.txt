@@ -1,0 +1,17 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: A "for each" loop needs a list to go through, but this is text.
+    for each line in t:
+                     ^
+
+Line 3: I can't add an unknown kind of value to text.
+        let p be "https://track.example-carrier.com/?id=" plus line
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 4: I don't know anything called "delivered".
+        if p is delivered, say line
+                ^^^^^^^^^
+Make it first, like "let delivered be 0".
+--- files made ---

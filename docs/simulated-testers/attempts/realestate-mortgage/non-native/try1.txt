@@ -1,0 +1,58 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "and call the answer" here, but found "house".
+    Ask user house price.
+             ^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 2: I expected "and call the answer" here, but found "deposit".
+    Ask user deposit.
+             ^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 3: I expected "and call the answer" here, but found "interest".
+    Ask user interest rate for year in percent.
+             ^^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 4: I expected "and call the answer" here, but found "number".
+    Ask user number of year.
+             ^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 5: I don't know a sentence that starts with "Loan".
+    Loan is price minus deposit.
+    ^^^^
+To keep a value in a name, write "let Loan be ...". To change it, write "set Loan to ...".
+
+Line 6: I don't know a sentence that starts with "Monthly".
+    Monthly rate is interest rate divide 100 divide 12.
+    ^^^^^^^
+Sentences like these work: "what is the total?", "divide total by 2" or "if total is 5, say "five"".
+
+Line 7: I don't know a sentence that starts with "Number".
+    Number of month is years multiply 12.
+    ^^^^^^
+Sentences like these work: "total the amount per month", "what is the total?" or "multiply total by 2".
+
+Line 8: I don't know a sentence that starts with "Payment".
+    Payment is loan multiply monthly rate divide (1 minus (1 plus monthly rate) power minus number of month).
+    ^^^^^^^
+To keep a value in a name, write "let Payment be ...". To change it, write "set Payment to ...".
+
+Line 9: I don't know a sentence that starts with "Round".
+    Round payment to 2 decimal.
+    ^^^^^
+Did you mean "count"?
+
+Line 11: I don't understand "for" here.
+    Show payment for month.
+                 ^^^
+Did you mean "or"?
+
+Line 12: I don't know a sentence that starts with "Total".
+    Total is payment multiply number of month.
+    ^^^^^
+To keep a value in a name, write "let Total be ...". To change it, write "set Total to ...".
+--- files made ---

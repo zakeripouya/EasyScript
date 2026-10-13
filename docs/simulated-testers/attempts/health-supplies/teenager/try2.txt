@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand the text "how many gloves" here.
+    let gloves be ask "how many gloves"
+                      ^^^^^^^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 2: I don't understand the text "how many masks" here.
+    let masks be ask "how many masks"
+                     ^^^^^^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: I don't understand the text "how many bandages" here.
+    let bandages be ask "how many bandages"
+                        ^^^^^^^^^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't understand the text "how many hand gel" here.
+    let gel be ask "how many hand gel"
+                   ^^^^^^^^^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

@@ -1,0 +1,26 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I can't add text to text.
+    Let bills be rent plus utilities plus insurance plus phone.
+                 ^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 6: I can't add text to a number.
+    Let bills be rent plus utilities plus insurance plus phone.
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 6: I can't add text to a number.
+    Let bills be rent plus utilities plus insurance plus phone.
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 7: I can't subtract a number from text.
+    Let left be income minus bills.
+                ^^^^^^^^^^^^^^^^^^
+
+Line 11: I can't divide a number by text.
+    Let months be 5000 divided by savings.
+                  ^^^^^^^^^^^^^^^^^^^^^^^
+--- files made ---

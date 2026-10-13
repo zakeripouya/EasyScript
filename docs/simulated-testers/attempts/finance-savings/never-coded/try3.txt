@@ -1,0 +1,25 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I can't add text to text.
+        Add yearly to balance.
+        ^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 7: I can't add a number to text.
+        Add rate percent of balance to balance.
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 7: "percent of" needs a number, but this is text.
+        Add rate percent of balance to balance.
+            ^^^^
+
+Line 7: "percent of" needs a number, but this is text.
+        Add rate percent of balance to balance.
+                            ^^^^^^^
+
+Line 8: "rounded to ... decimal places" needs a number, but this is text.
+        Say balance rounded to 2 decimal places.
+            ^^^^^^^
+--- files made ---

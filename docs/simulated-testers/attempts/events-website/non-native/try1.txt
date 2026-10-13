@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Make".
+    Make web page for sign up to event.
+    ^^^^
+Did you mean "mark" or "move" or "save"?
+
+Line 2: I don't know a sentence that starts with "Guest".
+    Guest write his name in box.
+    ^^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "for each score in scores:" or "mark box as fragile".
+
+Line 3: I don't know a sentence that starts with "Guest".
+    Guest choose meal from list: fish, veggie, chicken.
+    ^^^^^
+Sentences like these work: "subtract 5 from total", "list the big orders" or "count from 1 to 10:".
+
+Line 4: I expected a colon after this event, but found "click".
+    When guest click button "Sign up", save name and meal in signups.csv.
+               ^^^^^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 5: I don't understand the text "Thank you, you are sign up" here.
+    Show message "Thank you, you are sign up".
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

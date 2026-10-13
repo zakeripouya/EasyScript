@@ -1,0 +1,232 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand the character "{".
+    budget = {"groceries": 400, "eating out": 150, "transport": 120, "fun": 100}
+             ^
+
+Line 1: I don't understand the character "}".
+    budget = {"groceries": 400, "eating out": 150, "transport": 120, "fun": 100}
+                                                                               ^
+
+Line 5: I don't understand the character "{".
+    totals = {}
+             ^
+
+Line 5: I don't understand the character "}".
+    totals = {}
+              ^
+
+Line 7: I don't understand the character "[".
+        month = row.date[0:7]
+                        ^
+
+Line 7: I don't understand the character "]".
+        month = row.date[0:7]
+                            ^
+
+Line 10: I don't understand the character "[".
+            totals[month] = {}
+                  ^
+
+Line 10: I don't understand the character "]".
+            totals[month] = {}
+                        ^
+
+Line 10: I don't understand the character "{".
+            totals[month] = {}
+                            ^
+
+Line 10: I don't understand the character "}".
+            totals[month] = {}
+                             ^
+
+Line 11: I don't understand the character "[".
+        totals[month][row.category] = totals[month].get(row.category, 0) + amount
+              ^
+
+Line 11: I don't understand the character "]".
+        totals[month][row.category] = totals[month].get(row.category, 0) + amount
+                    ^
+
+Line 11: I don't understand the character "[".
+        totals[month][row.category] = totals[month].get(row.category, 0) + amount
+                     ^
+
+Line 11: I don't understand the character "]".
+        totals[month][row.category] = totals[month].get(row.category, 0) + amount
+                                  ^
+
+Line 11: I don't understand the character "[".
+        totals[month][row.category] = totals[month].get(row.category, 0) + amount
+                                            ^
+
+Line 11: I don't understand the character "]".
+        totals[month][row.category] = totals[month].get(row.category, 0) + amount
+                                                  ^
+
+Line 13: I don't understand the character "{".
+    month_totals = {}
+                   ^
+
+Line 13: I don't understand the character "}".
+    month_totals = {}
+                    ^
+
+Line 16: I don't understand the character "[".
+        month_totals[month] = 0
+                    ^
+
+Line 16: I don't understand the character "]".
+        month_totals[month] = 0
+                          ^
+
+Line 19: I don't understand the character "[".
+            month_totals[month] += spent
+                        ^
+
+Line 19: I don't understand the character "]".
+            month_totals[month] += spent
+                              ^
+
+Line 20: I don't understand the character "[".
+            if spent > budget[category]:
+                             ^
+
+Line 20: I don't understand the character "]".
+            if spent > budget[category]:
+                                      ^
+
+Line 21: I don't understand the character "[".
+                print("  OVER BUDGET: " + category + " by $" + (spent - budget[category]))
+                                                                              ^
+
+Line 21: I don't understand the character "]".
+                print("  OVER BUDGET: " + category + " by $" + (spent - budget[category]))
+                                                                                       ^
+
+Line 1: I don't know a sentence that starts with "budget".
+    budget = {"groceries": 400, "eating out": 150, "transport": 120, "fun": 100}
+    ^^^^^^
+To keep a value in a name, write "let budget be ...". To change it, write "set budget to ...".
+
+Line 3: I don't know a sentence that starts with "rows".
+    rows = read_csv("spending.csv")
+    ^^^^
+To keep a value in a name, write "let rows be ...". To change it, write "set rows to ...".
+
+Line 5: I don't know a sentence that starts with "totals".
+    totals = {}
+    ^^^^^^
+To keep a value in a name, write "let totals be ...". To change it, write "set totals to ...".
+
+Line 6: I expected "each" here, but found "row".
+    for row in rows:
+        ^^^
+Write it like "for each n from 1 to 10:".
+
+Line 7: I don't know a sentence that starts with "month".
+        month = row.date[0:7]
+        ^^^^^
+To keep a value in a name, write "let month be ...". To change it, write "set month to ...".
+
+Line 7: I don't know a sentence that starts with "date".
+        month = row.date[0:7]
+                    ^^^^
+Did you mean "save"?
+
+Line 8: I don't know a sentence that starts with "amount".
+        amount = number(row.amount.replace("$", ""))
+        ^^^^^^
+Did you mean "count"?
+
+Line 8: I don't know a sentence that starts with "amount".
+        amount = number(row.amount.replace("$", ""))
+                            ^^^^^^
+Did you mean "count"?
+
+Line 8: I don't know a sentence that starts with "replace".
+        amount = number(row.amount.replace("$", ""))
+                                   ^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 9: I expected ":", "," or "then" after the condition, but found "not".
+        if month not in totals:
+                 ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 10: I don't know a sentence that starts with "totals".
+            totals[month] = {}
+            ^^^^^^
+A sentence like this works: "total the amount per month".
+
+Line 11: I don't know a sentence that starts with "totals".
+        totals[month][row.category] = totals[month].get(row.category, 0) + amount
+        ^^^^^^
+A sentence like this works: "total the amount per month".
+
+Line 11: I don't know a sentence that starts with "category".
+        totals[month][row.category] = totals[month].get(row.category, 0) + amount
+                          ^^^^^^^^
+To keep a value in a name, write "let category be ...". To change it, write "set category to ...".
+
+Line 11: I don't know a sentence that starts with "get".
+        totals[month][row.category] = totals[month].get(row.category, 0) + amount
+                                                    ^^^
+Did you mean "let" or "set"?
+
+Line 11: I don't know a sentence that starts with "category".
+        totals[month][row.category] = totals[month].get(row.category, 0) + amount
+                                                            ^^^^^^^^
+A sentence like this works: "total the amount per month".
+
+Line 13: I don't know a sentence that starts with "month_totals".
+    month_totals = {}
+    ^^^^^^^^^^^^
+To keep a value in a name, write "let month_totals be ...". To change it, write "set month_totals to ...".
+
+Line 14: I expected "each" here, but found "month".
+    for month, cats in totals:
+        ^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 16: I don't know a sentence that starts with "month_totals".
+        month_totals[month] = 0
+        ^^^^^^^^^^^^
+A sentence like this works: "total the amount per month".
+
+Line 17: I expected "each" here, but found "category".
+        for category, spent in cats:
+            ^^^^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 19: I don't know a sentence that starts with "month_totals".
+            month_totals[month] += spent
+            ^^^^^^^^^^^^
+A sentence like this works: "total the amount per month".
+
+Line 20: I expected ":", "," or "then" after the condition, but found "category".
+            if spent > budget[category]:
+                              ^^^^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 21: This "(" is never closed.
+                print("  OVER BUDGET: " + category + " by $" + (spent - budget[category]))
+                                                               ^
+Add a ")" where the group ends, on the same line.
+
+Line 23: I don't know a sentence that starts with "chart".
+    chart = bar_chart(month_totals, title="Total spent per month")
+    ^^^^^
+To keep a value in a name, write "let chart be ...". To change it, write "set chart to ...".
+
+Line 24: I don't know a sentence that starts with "chart".
+    chart.save("months.svg")
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 24: Something is missing after ")".
+    chart.save("months.svg")
+                           ^
+Write it like "save rows as csv file "out.csv"".
+--- files made ---

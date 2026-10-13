@@ -1,0 +1,26 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I can't add text to text.
+        Set balance to (balance + deposit) * (1 + rate / 100).
+                       ^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 6: "balance" is text (made on line 4), but this is a number.
+        Set balance to (balance + deposit) * (1 + rate / 100).
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A name keeps the kind of value it was made with. To keep a number, make a new name for it.
+
+Line 6: I can't divide text by a number.
+        Set balance to (balance + deposit) * (1 + rate / 100).
+                                                  ^^^^^^^^^^
+
+Line 7: I can't use "and" between a number and a number.
+        Say year and balance rounded to 2 decimal places.
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To add numbers, use "plus".
+
+Line 7: "rounded to ... decimal places" needs a number, but this is text.
+        Say year and balance rounded to 2 decimal places.
+                     ^^^^^^^
+--- files made ---

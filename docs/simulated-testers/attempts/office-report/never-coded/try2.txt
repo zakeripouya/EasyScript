@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "open".
+    Please open the file "timesheet.csv".
+           ^^^^
+Sentences like these work: "make a new file called "notes.txt"", "write "hello" to file "notes.txt"" or "append "hello" to file "notes.txt"".
+
+Line 3: I expected "to" here, but found ",".
+    For each employee from the file, please add up all of their hours for the week and show me the total next to their name.
+                                   ^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "please".
+    Then please make a list of anyone who worked more than 40 hours this week, and show how many hours over 40 they worked.
+         ^^^^^^
+Did you mean "please"?
+
+Line 7: I don't know a sentence that starts with "please".
+    Finally, please add up the hours for everyone together and show me the total hours for the whole team.
+             ^^^^^^
+Did you mean "please"?
+--- files made ---

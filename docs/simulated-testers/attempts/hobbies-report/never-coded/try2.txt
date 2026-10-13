@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "open".
+    Please open the file games.csv, which has a record of our board game nights.
+           ^^^^
+Sentences like these work: "make a new file called "notes.txt"", "write "hello" to file "notes.txt"" or "append "hello" to file "notes.txt"".
+
+Line 1: I don't know a sentence that starts with "csv".
+    Please open the file games.csv, which has a record of our board game nights.
+                               ^^^
+Sentences like these work: "check which kind s is:", "go from 0 to 100 in steps of 10:" or "insert 7 at position 1 of scores".
+
+Line 3: I don't understand "person" here.
+    tell me which person has won the most games.
+                  ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: Something is missing after "games".
+    for each game from games.csv, tell me the average winning score.
+                       ^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 7: I don't understand "winning" here.
+    tell me the top 3 highest winning scores, along with the name of the person who got each one and which game it was in.
+                              ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand the text "Bill amount: " here.
+    let bill be ask "Bill amount: "
+                    ^^^^^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 2: I don't understand the text "Number of people: " here.
+    let people be ask "Number of people: "
+                      ^^^^^^^^^^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: I don't understand the text "Service (good/okay/bad): " here.
+    let service be ask "Service (good/okay/bad): "
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "file" here, but found "spending".
+    read spending.csv
+         ^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "csv".
+    read spending.csv
+                  ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I don't know a sentence that starts with "budget".
+    budget: groceries 400, eating out 150, transport 120, fun 100
+    ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 3: I don't understand "per" here.
+    show spending per month per category
+                  ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't understand "went" here.
+    show what went over budget and by how much
+              ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I don't understand "per" here.
+    bar chart of total per month save as months.svg
+                       ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I don't know a sentence that starts with "svg".
+    bar chart of total per month save as months.svg
+                                                ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

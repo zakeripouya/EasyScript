@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "open".
+    open sales.csv
+    ^^^^
+A sentence like this works: "read the table in "sales.csv" and call it sales".
+
+Line 1: I don't know a sentence that starts with "csv".
+    open sales.csv
+               ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I don't know a sentence that starts with "total".
+    total money
+    ^^^^^
+Sentences like these work: "total the amount per month", "what is the total?" or "let total be 0".
+
+Line 3: I don't know a sentence that starts with "most".
+    most sold product
+    ^^^^
+Did you mean "list" or "move" or "sort"?
+
+Line 4: I don't know a sentence that starts with "money".
+    money per month
+    ^^^^^
+Did you mean "move"?
+
+Line 5: I don't know a sentence that starts with "bar".
+    bar chart money per month save as months.svg
+    ^^^
+Sentences like these work: "total the amount per month", "save rows as csv file "sales.csv"" or "mark box as fragile".
+
+Line 5: I don't know a sentence that starts with "svg".
+    bar chart money per month save as months.svg
+                                             ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

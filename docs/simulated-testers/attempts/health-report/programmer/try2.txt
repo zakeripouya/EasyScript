@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "csv" here.
+    let rows be read csv "appointments.csv"
+                     ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: I don't understand "clinic" here.
+    let clinics be unique clinic of rows
+                          ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 9: I don't understand "pct" here.
+        say c + ": " + missed + " missed, " + round pct + "%"
+                                                    ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 11: I don't understand "grouped" here.
+    let day_totals be number of rows grouped by weekday
+                                     ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

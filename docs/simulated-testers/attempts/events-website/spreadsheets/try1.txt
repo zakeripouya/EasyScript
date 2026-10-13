@@ -1,0 +1,43 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Create".
+    Create a web page titled "Event Sign-Up".
+    ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 2: I expected "to" here, but found "input".
+    Add a text input "Name".
+               ^^^^^
+Write it like "add 5 to total".
+
+Line 3: I expected "to" here, but found the text "Meal".
+    Add a dropdown "Meal" with options: fish, veggie, chicken.
+                   ^^^^^^
+Write it like "add 5 to total".
+
+Line 4: I expected "to" here, but found the text "Sign up".
+    Add a button "Sign up".
+                 ^^^^^^^^^
+Write it like "add 5 to total".
+
+Line 5: I expected "to file" here, but found "row".
+    When the button is clicked, append a new row to signups.csv with columns: name, meal.
+                                             ^^^
+Write it like "append "hello" to file "notes.txt"".
+
+Line 5: I don't know a sentence that starts with "csv".
+    When the button is clicked, append a new row to signups.csv with columns: name, meal.
+                                                            ^^^
+Sentences like these work: "ask "What's your name?" and call the answer name", "call greet with "Paris"" or "privately to tidy with text:".
+
+Line 6: I don't know a sentence that starts with "Fill".
+    Fill the name column from "Name" and the meal column from "Meal".
+    ^^^^
+Did you mean "tell" or "call"?
+
+Line 7: I don't understand "after" here.
+    Show "Thanks, you're signed up!" after the row is added.
+                                     ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "open".
+    open listings.xlsx
+    ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 1: I don't know a sentence that starts with "xlsx".
+    open listings.xlsx
+                  ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 2: I don't understand "price" here.
+    show avg price per neighborhood and cheapest house in each
+             ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

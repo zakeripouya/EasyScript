@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I expected "there are" or a test like "are above 70" here, but found "and".
+        show how many missed and percent missed
+                             ^^^
+Write it like "how many scores are above 70" or "how many scores there are".
+
+Line 4: I expected a field after "highest" here, but found "appointments".
+    show the day with the highest appointments
+                                  ^^^^^^^^^^^^
+Write it like "the dog with the highest age".
+--- files made ---

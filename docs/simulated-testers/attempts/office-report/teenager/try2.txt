@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "file" here, but found "timesheet".
+    read timesheet.csv
+         ^^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "csv".
+    read timesheet.csv
+                   ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I don't know a sentence that starts with "total".
+    total the hours per employee
+    ^^^^^
+Sentences like these work: "total the amount per month", "what is the total?" or "let total be 0".
+
+Line 3: I don't understand "much" here.
+    show who is over 40 and how much over
+                                ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

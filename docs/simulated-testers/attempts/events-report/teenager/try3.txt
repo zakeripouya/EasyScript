@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 9: Something is missing after "'s".
+            add g's plus ones to total
+                 ^^
+Write the name of a field after it, like "rex's name".
+
+Line 12: I don't know a sentence that starts with "total".
+    total the plus ones per meal
+    ^^^^^
+Sentences like these work: "total the amount per month", "what is the total?" or "let total be 0".
+--- files made ---

@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "shipments".
+    Read the file shipments.csv.
+                  ^^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "csv".
+    Read the file shipments.csv.
+                            ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I expected "there are" or a test like "are above 70" here, but found "went".
+    Tell me how many shipments went to each country.
+                               ^^^^
+Write it like "how many scores are above 70" or "how many scores there are".
+
+Line 3: I expected a test like "are above 50" after "all the shipments", but found ".".
+    Tell me the average weight of all the shipments.
+                                                   ^
+Write it like "all the shipments are at least 50".
+
+Line 4: I don't understand "shipment" here.
+    Tell me which shipment was the heaviest.
+                  ^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I expected a test like "are above 50" after "all the shipments", but found "that".
+    List all the shipments that took more than 5 days from the shipped date to the delivered date.
+                           ^^^^
+Write it like "all the shipments are at least 50".
+--- files made ---

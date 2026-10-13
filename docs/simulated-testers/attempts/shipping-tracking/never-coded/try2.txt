@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "tracking".
+    Read the file tracking.txt.
+                  ^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "txt".
+    Read the file tracking.txt.
+                           ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 3: I expected "from" here, but found "to".
+        Go to the website https://track.example-carrier.com/?id=NUMBER with the tracking number in place of NUMBER.
+           ^^
+Write it like "go from 0 to 100 in steps of 10:".
+
+Line 4: I expected "which kind" here, but found "if".
+        Check if the parcel has been delivered.
+              ^^
+Write it like "check which kind s is:".
+
+Line 5: I don't understand "have" here.
+    Tell me which of the parcels have been delivered.
+                                 ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

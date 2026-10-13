@@ -1,0 +1,43 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "spending".
+    Read the file spending.csv, which has our household spending.
+                  ^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "csv".
+    Read the file spending.csv, which has our household spending.
+                           ^^^
+Sentences like these work: "check which kind s is:" or "save rows as csv file "sales.csv"".
+
+Line 2: I don't understand "," here.
+    Let our budget for groceries be $400, for eating out $150, for transport $120 and for fun $100.
+                                        ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: I don't know a sentence that starts with "Total".
+    Total the amount per month.
+    ^^^^^
+Sentences like these work: "total the amount per month", "what is the total?" or "let total be 0".
+
+Line 4: I don't understand "much" here.
+    Say how much we spent in each category for each month.
+            ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I expected ":", "," or "then" after the condition, but found "went".
+    If a category went over its budget in a month, say which one it was and by how much.
+                  ^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 6: I expected "called" here, but found "we".
+    Make a bar chart of the total we spent each month called months.svg.
+                                  ^^
+Write it like "make a bar chart of sales called "sales.svg"".
+
+Line 6: I don't know a sentence that starts with "svg".
+    Make a bar chart of the total we spent each month called months.svg.
+                                                                    ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

@@ -1,0 +1,58 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "(" here.
+    let rows be read_csv("spending.csv")
+                        ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: Something is missing after "row".
+        set row.amount to number(replace(row.amount, "$", ""))
+            ^^^
+Write it like "set total to 10".
+
+Line 4: I don't know a sentence that starts with "amount".
+        set row.amount to number(replace(row.amount, "$", ""))
+                ^^^^^^
+Did you mean "count"?
+
+Line 4: I don't know a sentence that starts with "amount".
+        set row.amount to number(replace(row.amount, "$", ""))
+                                             ^^^^^^
+Did you mean "count"?
+
+Line 5: Something is missing after "row".
+        set row.month to slice(row.date, 0, 7)
+            ^^^
+Write it like "set total to 10".
+
+Line 5: I don't know a sentence that starts with "month".
+        set row.month to slice(row.date, 0, 7)
+                ^^^^^
+Sentences like these work: "total the amount per month", "set total to 10" or "change total to 10".
+
+Line 5: I don't know a sentence that starts with "date".
+        set row.month to slice(row.date, 0, 7)
+                                   ^^^^
+Did you mean "save"?
+
+Line 12: I don't know a sentence that starts with "total".
+    total the amount per month
+    ^^^^^
+Sentences like these work: "total the amount per month", "what is the total?" or "let total be 0".
+
+Line 14: I expected a colon after this loop, but found "(".
+    for each month in months(rows):
+                            ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 16: I expected a colon after this loop, but found "(".
+        for each category in categories(rows):
+                                       ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 17: I don't understand "(" here.
+            let spent be sum_where(rows, month, category)
+                                  ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

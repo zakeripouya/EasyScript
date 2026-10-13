@@ -1,0 +1,47 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't understand the character "$".
+    Convert the amount column to numbers (remove the $ sign).
+                                                     ^
+
+Line 1: I don't know a sentence that starts with "Load".
+    Load bank.csv as a table.
+    ^^^^
+Did you mean "read"?
+
+Line 1: I don't know a sentence that starts with "csv".
+    Load bank.csv as a table.
+              ^^^
+Sentences like these work: "save rows as csv file "sales.csv"", "read the table in "sales.csv" and call it sales" or "mark box as fragile".
+
+Line 3: I don't know a sentence that starts with "Convert".
+    Convert the amount column to numbers (remove the $ sign).
+    ^^^^^^^
+Sentences like these work: "total the amount per month", "set total to 10" or "change total to 10".
+
+Line 4: I don't know a sentence that starts with "Create".
+    Create a pivot table: rows = category, values = SUM of amount.
+    ^^^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "go from 0 to 100 in steps of 10:" or "insert 7 at position 1 of scores".
+
+Line 5: I don't know a sentence that starts with "Create".
+    Create a pivot table: rows = month of date, values = SUM of amount.
+    ^^^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "total the amount per month" or "go from 0 to 100 in steps of 10:".
+
+Line 6: I don't understand "matching" here.
+    Show MAX of amount, with the matching description, category and date.
+                                 ^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 7: I expected "called" here, but found "chart".
+    Make a pie chart from the category pivot table: labels = category, values = SUM of amount.
+               ^^^^^
+Write it like "make a new file called "notes.txt"".
+
+Line 8: I don't know a sentence that starts with "svg".
+    Save the chart as categories.svg.
+                                 ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I don't know a sentence that starts with "Left".
+    Left is income minus rent minus utilities minus insurance minus phone.
+    ^^^^
+Did you mean "let"?
+
+Line 10: I don't know a sentence that starts with "Months".
+    Months is 5000 divided by save.
+    ^^^^^^
+To keep a value in a name, write "let Months be ...". To change it, write "set Months to ...".
+--- files made ---

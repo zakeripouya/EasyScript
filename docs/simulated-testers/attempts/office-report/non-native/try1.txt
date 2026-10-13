@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "timesheet".
+    Read file timesheet.csv.
+              ^^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "csv".
+    Read file timesheet.csv.
+                        ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I expected "each" here, but found "every".
+    For every employee, make sum of hours and show it.
+        ^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 3: I expected ":", "," or "then" after the condition, but found "work".
+    If employee work more than 40 hours, show name and overtime hours. Overtime is hours minus 40.
+                ^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 4: I expected a test like "are above 50" after "all team", but found ".".
+    Show total hours of all team.
+                                ^
+Write it like "all team are at least 50".
+--- files made ---

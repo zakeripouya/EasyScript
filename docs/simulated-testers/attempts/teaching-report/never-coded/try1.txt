@@ -1,0 +1,53 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 13: I don't understand "!".
+    Thank you very much!
+                       ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hello".
+    Hello,
+    ^^^^^
+Did you mean "tell"?
+
+Line 3: I don't know a sentence that starts with "csv".
+    Please open the file called grades.csv. It has my class's test results, with a column for the student, the subject, and the score.
+                                       ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 3: I don't know a sentence that starts with "It".
+    Please open the file called grades.csv. It has my class's test results, with a column for the student, the subject, and the score.
+                                            ^^
+Did you mean "if"?
+
+Line 5: I expected "from" here, but found ",".
+    For each student, could you please work out their average score and show it to me?
+                    ^
+Write it like "for each n from 1 to 10:".
+
+Line 7: I don't know a sentence that starts with "please".
+    Then please tell me which student has the best average.
+         ^^^^^^
+Did you mean "please"?
+
+Line 9: I don't know a sentence that starts with "I".
+    I would also like to know how many test results were below 50, so please count those for me.
+    ^
+Did you mean "if"?
+
+Line 11: I don't know a sentence that starts with "please".
+    Finally, please make a bar chart showing each student's average and save it as averages.svg.
+             ^^^^^^
+Did you mean "please"?
+
+Line 11: I don't know a sentence that starts with "svg".
+    Finally, please make a bar chart showing each student's average and save it as averages.svg.
+                                                                                            ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 13: I don't know a sentence that starts with "Thank".
+    Thank you very much!
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

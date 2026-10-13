@@ -1,0 +1,41 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 28: I don't understand the character "&".
+    Show "Your score: " & Score & " out of 5"
+                        ^
+
+Line 28: I don't understand the character "&".
+    Show "Your score: " & Score & " out of 5"
+                                ^
+
+Line 4: I expected ":", "," or "then" after the condition, but found "a1".
+    If LOWER A1 = "paris" then show "Right!" and add 1 to Score
+             ^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 9: I expected ":", "," or "then" after the condition, but found "a2".
+    If LOWER A2 = "tokyo" then show "Right!" and add 1 to Score
+             ^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 14: I expected ":", "," or "then" after the condition, but found "a3".
+    If LOWER A3 = "nairobi" then show "Right!" and add 1 to Score
+             ^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 19: I expected ":", "," or "then" after the condition, but found "a4".
+    If LOWER A4 = "ottawa" then show "Right!" and add 1 to Score
+             ^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 24: I expected ":", "," or "then" after the condition, but found "a5".
+    If LOWER A5 = "brasilia" then show "Right!" and add 1 to Score
+             ^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 28: I don't understand "score" here.
+    Show "Your score: " & Score & " out of 5"
+                          ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

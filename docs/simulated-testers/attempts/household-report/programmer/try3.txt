@@ -1,0 +1,68 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 8: I don't know a sentence that starts with "total".
+    total the amount per month in rows
+    ^^^^^
+Sentences like these work: "total the amount per month", "read the table in "sales.csv" and call it sales" or "what is the total?".
+
+Line 12: I expected ":", "," or "then" after the condition, but found ".".
+        if row.category == "groceries":
+              ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 14: I expected ":", "," or "then" after the condition, but found ".".
+        if row.category == "eating out":
+              ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 16: I expected ":", "," or "then" after the condition, but found ".".
+        if row.category == "transport":
+              ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 18: I expected ":", "," or "then" after the condition, but found ".".
+        if row.category == "fun":
+              ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 20: This "(" is never closed.
+        print(row.month + " " + row.category + ": $" + row.amount)
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 20: I don't know a sentence that starts with "month".
+        print(row.month + " " + row.category + ": $" + row.amount)
+                  ^^^^^
+A sentence like this works: "total the amount per month".
+
+Line 20: I don't know a sentence that starts with "category".
+        print(row.month + " " + row.category + ": $" + row.amount)
+                                    ^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 20: I don't know a sentence that starts with "amount".
+        print(row.month + " " + row.category + ": $" + row.amount)
+                                                           ^^^^^^
+Did you mean "count"?
+
+Line 21: I expected ":", "," or "then" after the condition, but found ".".
+        if row.amount > limit:
+              ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 22: This "(" is never closed.
+            print("  OVER BUDGET: " + row.category + " by $" + (row.amount - limit))
+                 ^
+Add a ")" where the group ends, on the same line.
+
+Line 22: I don't know a sentence that starts with "category".
+            print("  OVER BUDGET: " + row.category + " by $" + (row.amount - limit))
+                                          ^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 22: I don't know a sentence that starts with "amount".
+            print("  OVER BUDGET: " + row.category + " by $" + (row.amount - limit))
+                                                                    ^^^^^^
+Did you mean "count"?
+--- files made ---

@@ -1,0 +1,31 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: A "for each" loop needs a list to go through, but this is text.
+    for each employee in timesheet:
+                         ^^^^^^^^^
+
+Line 3: I don't know anything called "hours".
+        show sum of hours
+                    ^^^^^
+Make it first, like "let hours be 0".
+
+Line 4: I don't know anything called "hours".
+        if hours is more than 40:
+           ^^^^^
+Make it first, like "let hours be 0".
+
+Line 5: I don't know anything called "name".
+            show name and hours minus 40
+                 ^^^^
+Make it first, like "let name be 0".
+
+Line 5: I don't know anything called "hours".
+            show name and hours minus 40
+                          ^^^^^
+Make it first, like "let hours be 0".
+
+Line 6: I can only add up the items of a list, but this is text.
+    show total hours of timesheet
+                        ^^^^^^^^^
+--- files made ---

@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 8: I don't understand "(" here.
+    let Payment be ROUND(Loan * MonthlyRate / (1 - POWER(1 + MonthlyRate, -Months)), 2)
+                        ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

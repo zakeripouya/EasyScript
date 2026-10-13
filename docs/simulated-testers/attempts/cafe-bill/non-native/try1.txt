@@ -1,0 +1,53 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "and call the answer" here, but found "for".
+    Ask user for bill amount.
+             ^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 2: I expected "and call the answer" here, but found "how".
+    Ask user how many people.
+             ^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 3: I expected "and call the answer" here, but found "how".
+    Ask user how was service, good or okay or bad.
+             ^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 4: I don't know a sentence that starts with "tip".
+    If service is good, tip is 20 percent of bill.
+                        ^^^
+To keep a value in a name, write "let tip be ...". To change it, write "set tip to ...".
+
+Line 5: I don't know a sentence that starts with "tip".
+    If service is okay, tip is 15 percent of bill.
+                        ^^^
+To keep a value in a name, write "let tip be ...". To change it, write "set tip to ...".
+
+Line 6: I don't know a sentence that starts with "tip".
+    If service is bad, tip is 10 percent of bill.
+                       ^^^
+To keep a value in a name, write "let tip be ...". To change it, write "set tip to ...".
+
+Line 7: I don't know a sentence that starts with "Total".
+    Total is bill plus tip.
+    ^^^^^
+To keep a value in a name, write "let Total be ...". To change it, write "set Total to ...".
+
+Line 8: I don't know a sentence that starts with "Each".
+    Each person pay total divide by people.
+    ^^^^
+Sentences like these work: "divide total by 2", "increase total by 5" or "decrease total by 5".
+
+Line 9: I don't understand "in" here.
+    Show tip in dollar.
+             ^^
+Did you mean "is"?
+
+Line 10: I don't understand "in" here.
+    Show total in dollar.
+               ^^
+Did you mean "is"?
+--- files made ---

@@ -1,0 +1,32 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't understand the character "&".
+    In column B, put "https://track.example-carrier.com/?id=" & A
+                                                              ^
+
+Line 1: I don't know a sentence that starts with "Open".
+    Open tracking.txt as column A
+    ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 1: I don't know a sentence that starts with "txt".
+    Open tracking.txt as column A
+                  ^^^
+Sentences like these work: "mark box as fragile", "as long as x is less than 10:" or "keep tax_rate as 0.2".
+
+Line 2: I don't know a sentence that starts with "In".
+    In column B, put "https://track.example-carrier.com/?id=" & A
+    ^^
+Did you mean "if"?
+
+Line 3: I don't know a sentence that starts with "In".
+    In column C, get the status from the page at the link in column B
+    ^^
+Did you mean "if"?
+
+Line 4: I don't know a sentence that starts with "Filter".
+    Filter rows where column C = "Delivered"
+    ^^^^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+--- files made ---

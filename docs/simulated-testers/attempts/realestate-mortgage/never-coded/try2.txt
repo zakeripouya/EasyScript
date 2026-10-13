@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 8: "of" can't be part of a name, because it already means something in EasyScript.
+    let number of months be years times 12
+               ^^
+Try a name without it, like "months number".
+
+Line 9: I expected a value here, but found "minus".
+    let monthly payment be loan amount times monthly rate divided by (1 minus (1 plus monthly rate) to the power of minus number of months)
+                                                                                                                    ^^^^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 10: I expected "decimal places" here, but found the end of the line.
+    say monthly payment rounded to the cent
+                                           ^
+Write it like "price rounded to 2 decimal places".
+--- files made ---

@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I don't know a sentence that starts with "total".
+    total the amount per month in spending
+    ^^^^^
+Sentences like these work: "total the amount per month", "read the table in "sales.csv" and call it sales" or "what is the total?".
+--- files made ---

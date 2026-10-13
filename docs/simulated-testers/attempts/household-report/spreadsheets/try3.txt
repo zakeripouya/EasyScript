@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: "it" doesn't refer to anything here.
+    Total the amount per month.
+              ^^^^^^
+"it" only means something inside a loop, where it's the loop's number or item.
+
+Line 7: "it" doesn't refer to anything here.
+    Total the amount per category.
+              ^^^^^^
+"it" only means something inside a loop, where it's the loop's number or item.
+
+Line 9: A "for each" loop with two names needs a map to go through, but this is a list of rows of spending.csv.
+    For each category and amount in spending:
+                                    ^^^^^^^^
+A list has one item at a time, so name it once, like "for each score in scores:".
+
+Line 14: A chart needs a list of numbers or amounts, or a map to them, but this is a list of rows of spending.csv.
+    Make a bar chart of spending called "months.svg".
+                        ^^^^^^^^
+A chart shows numbers or amounts, like "a list of 3, 5 and 2" or "the total price of orders per day".
+--- files made ---

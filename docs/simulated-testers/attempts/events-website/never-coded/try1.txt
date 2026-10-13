@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 9: I don't understand "!".
+    Thank you so much for your help!
+                                   ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hello".
+    Hello,
+    ^^^^^
+Did you mean "tell"?
+
+Line 5: I don't know a sentence that starts with "On".
+    On the page, there should be a box where a guest can type their name, and a way for them to choose their meal. The meal choices are fish, veggie, and chicken.
+    ^^
+Sentences like these work: "let total be 0", "mark box as fragile" or "move on".
+
+Line 5: I don't know a sentence that starts with "meal".
+    On the page, there should be a box where a guest can type their name, and a way for them to choose their meal. The meal choices are fish, veggie, and chicken.
+                                                                                                                       ^^^^
+Did you mean "tell" or "read"?
+
+Line 7: I don't know a sentence that starts with "There".
+    There should also be a button that says "Sign up". When a guest clicks it, please save their name and their meal choice to a file called signups.csv, and let them know that they have been signed up.
+    ^^^^^
+A sentence like this works: "let total be 0".
+
+Line 7: I expected a colon after this event, but found "clicks".
+    There should also be a button that says "Sign up". When a guest clicks it, please save their name and their meal choice to a file called signups.csv, and let them know that they have been signed up.
+                                                                    ^^^^^^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 9: I don't know a sentence that starts with "Thank".
+    Thank you so much for your help!
+    ^^^^^
+Sentences like these work: "for each score in scores:", "ask "What's your name?" and call the answer name" or "for each n from 1 to 10:".
+--- files made ---

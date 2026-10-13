@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: Something is missing after "row".
+        set row.amount to number(replace(row.amount, "$", ""))
+            ^^^
+Write it like "set total to 10".
+
+Line 5: I don't know a sentence that starts with "amount".
+        set row.amount to number(replace(row.amount, "$", ""))
+                ^^^^^^
+Did you mean "count"?
+
+Line 5: I don't know a sentence that starts with "amount".
+        set row.amount to number(replace(row.amount, "$", ""))
+                                             ^^^^^^
+Did you mean "count"?
+
+Line 13: I don't understand "(" here.
+    let biggest be max(rows, amount)
+                      ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 14: I don't know a sentence that starts with "description".
+    say "Biggest expense: " + biggest.description + " on " + biggest.date + " ($" + (biggest.amount rounded to 2 decimal places) + ")"
+                                      ^^^^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 14: I don't know a sentence that starts with "date".
+    say "Biggest expense: " + biggest.description + " on " + biggest.date + " ($" + (biggest.amount rounded to 2 decimal places) + ")"
+                                                                     ^^^^
+Did you mean "save"?
+
+Line 14: I don't know a sentence that starts with "amount".
+    say "Biggest expense: " + biggest.description + " on " + biggest.date + " ($" + (biggest.amount rounded to 2 decimal places) + ")"
+                                                                                             ^^^^^^
+Did you mean "count"?
+--- files made ---

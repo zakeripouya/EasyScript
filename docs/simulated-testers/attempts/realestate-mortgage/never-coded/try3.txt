@@ -1,0 +1,15 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I can't subtract text from text.
+    let loan amount be house price minus deposit
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 7: I can't divide text by a number.
+    let monthly rate be interest rate divided by 100 divided by 12
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 8: I can't multiply text by a number.
+    let months number be years times 12
+                         ^^^^^^^^^^^^^^
+--- files made ---

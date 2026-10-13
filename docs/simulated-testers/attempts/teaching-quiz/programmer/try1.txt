@@ -1,0 +1,51 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand the character "{".
+    capitals = {
+               ^
+
+Line 7: I don't understand the character "}".
+    }
+    ^
+
+Line 1: I don't know a sentence that starts with "capitals".
+    capitals = {
+    ^^^^^^^^
+To keep a value in a name, write "let capitals be ...". To change it, write "set capitals to ...".
+
+Line 2: This line is indented, but nothing above it starts a block.
+        "France": "Paris",
+    ^^^^
+Remove the spaces at the start of the line.
+
+Line 2: A sentence can't start with the text "France".
+        "France": "Paris",
+        ^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 9: I don't know a sentence that starts with "score".
+    score = 0
+    ^^^^^
+Did you mean "sort"?
+
+Line 10: I expected "each" here, but found "country".
+    for country, capital in capitals.items():
+        ^^^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 11: I don't know a sentence that starts with "answer".
+        answer = input("What is the capital of " + country + "? ")
+        ^^^^^^
+To keep a value in a name, write "let answer be ...". To change it, write "set answer to ...".
+
+Line 12: I expected ":", "," or "then" after the condition, but found ".".
+        if answer.strip().lower() == capital.lower():
+                 ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 14: I don't know a sentence that starts with "score".
+            score += 1
+            ^^^^^
+Did you mean "sort"?
+--- files made ---

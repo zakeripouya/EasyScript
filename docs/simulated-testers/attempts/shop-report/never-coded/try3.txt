@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I expected "from" here, but found ",".
+    For each row, let money be the quantity times the price.
+                ^
+Write it like "for each n from 1 to 10:".
+
+Line 7: I don't understand "that" here.
+    Tell me the product that sold the most units.
+                        ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I don't understand "income" here.
+    set income to number income
+                         ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 7: I don't understand "rent" here.
+    set rent to number rent
+                       ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: I don't understand "utilities" here.
+    set utilities to number utilities
+                            ^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 9: I don't understand "insurance" here.
+    set insurance to number insurance
+                            ^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 10: I don't understand "phone" here.
+    set phone to number phone
+                        ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 15: I don't understand "save" here.
+    set save to number save
+                       ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

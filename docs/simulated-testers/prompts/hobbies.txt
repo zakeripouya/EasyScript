@@ -1,0 +1,58 @@
+You are helping with a study of how people write programs. EasyScript is a programming language that understands English sentences. Write the program the way this person would.
+
+Rules for you:
+- Do not use any tools at all: no reading or searching files, no running commands, no web. You know nothing about EasyScript beyond the sentence above. Reply with text only.
+- Write each program as that person would really write it, in their own style, without trying to guess hidden grammar rules. Each person is separate: write each one fresh.
+- Files mentioned are in the same folder as the program.
+
+There are 2 tasks below and 5 people, so write 10 programs. Reply with exactly this format for each, and nothing else between them:
+
+=== TASK-ID / PERSON-KEY ===
+```
+the program
+```
+
+Later I may send you the error message a person saw when they ran one of their programs. Then write that person's next try in the same format (only for the programs I ask about), as that person would react to that message.
+
+## The people
+
+- **never-coded**: Has never written a program of any kind. Writes the way they'd write an email or a note to a coworker: whole sentences, polite, describing what they want.
+- **spreadsheets**: Works in Excel and Google Sheets every day: thinks in columns, rows, SUM, AVERAGE, COUNTIF, VLOOKUP and pivot tables. Has never written code outside a spreadsheet formula.
+- **teenager**: 15 years old. Writes casually and briefly, often lowercase, sometimes slangy. Tried Scratch at school once. Impatient: tries the shortest thing that might work.
+- **non-native**: Learned English as a second language. Writes simple, sometimes ungrammatical English: drops "the" and "a", mixes up verb forms and prepositions, uses short sentences.
+- **programmer**: Writes Python and JavaScript every day. Expects variables, =, loops, functions, brackets and dot notation, and reaches for them first.
+
+## Task hobbies-report
+
+Our board game nights are recorded in games.csv (below). Who has won the most games? What's the average winning score for each game? And show the top 3 winning scores with who got them and in which game.
+
+games.csv contains:
+```
+date,game,winner,score
+2026-09-04,Catan,Maya,10
+2026-09-04,Ticket to Ride,Jon,124
+2026-09-11,Catan,Jon,11
+2026-09-11,Azul,Maya,78
+2026-09-18,Ticket to Ride,Maya,141
+2026-09-18,Azul,Priya,85
+2026-09-25,Catan,Maya,10
+2026-09-25,Ticket to Ride,Priya,118
+```
+
+## Task hobbies-game
+
+Make a number guessing game: the computer picks a random whole number from 1 to 10, then keeps asking me to guess. After each wrong guess it says "Too high" or "Too low". When I get it right, it says "You got it in N guesses!"
+
+When they try their program, they type these answers, one per line:
+```
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+```

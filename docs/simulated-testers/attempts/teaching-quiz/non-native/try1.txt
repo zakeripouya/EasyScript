@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Make".
+    Make quiz about capital city.
+    ^^^^
+Did you mean "mark" or "move" or "save"?
+
+Line 2: I don't know a sentence that starts with "Questions".
+    Questions is: France, Japan, Kenya, Canada, Brazil.
+    ^^^^^^^^^
+To keep a value in a name, write "let Questions be ...". To change it, write "set Questions to ...".
+
+Line 3: I don't know a sentence that starts with "Right".
+    Right answers is: Paris, Tokyo, Nairobi, Ottawa, Brasilia.
+    ^^^^^
+Sentences like these work: "what is the total?", "if total is 5, say "five"" or "unless total is 5, say "not five"".
+
+Line 4: I expected "and call the answer" here, but found "question".
+    Ask one question each time.
+            ^^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 5: I don't know a sentence that starts with "Big".
+    Big or small letter is not matter.
+    ^^^
+Sentences like these work: "unless total is 5, say "not five"", "what is the total?" or "show me the big orders".
+
+Line 7: I don't understand "answer" here.
+    If answer is wrong, say "Wrong" and say right answer.
+                                                  ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: I don't know a sentence that starts with "In".
+    In the end say score from 5.
+    ^^
+Did you mean "if"?
+--- files made ---

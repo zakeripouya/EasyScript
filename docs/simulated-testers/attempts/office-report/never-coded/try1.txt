@@ -1,0 +1,48 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 11: I don't understand "!".
+    Thank you very much!
+                       ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hello".
+    Hello,
+    ^^^^^
+Did you mean "tell"?
+
+Line 3: I don't know a sentence that starts with "csv".
+    Please open the file timesheet.csv. It has a list of our employees, the days they worked, and the hours they worked each day.
+                                   ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 3: I don't know a sentence that starts with "It".
+    Please open the file timesheet.csv. It has a list of our employees, the days they worked, and the hours they worked each day.
+                                        ^^
+Did you mean "if"?
+
+Line 5: I expected "from" here, but found ",".
+    For each employee, could you please add up all of their hours for the week and show me the total next to their name?
+                     ^
+Write it like "for each n from 1 to 10:".
+
+Line 7: I don't know a sentence that starts with "please".
+    Then, please make a list of anyone who worked more than 40 hours this week. For each of those people, please show how many overtime hours they did, meaning the number of hours over 40.
+          ^^^^^^
+Did you mean "please"?
+
+Line 7: I expected "from" here, but found ",".
+    Then, please make a list of anyone who worked more than 40 hours this week. For each of those people, please show how many overtime hours they did, meaning the number of hours over 40.
+                                                                                                        ^
+Write it like "for each n from 1 to 10:".
+
+Line 9: I don't know a sentence that starts with "please".
+    Finally, please add up the hours for everyone together and show me the total hours for the whole team.
+             ^^^^^^
+Did you mean "please"?
+
+Line 11: I don't know a sentence that starts with "Thank".
+    Thank you very much!
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

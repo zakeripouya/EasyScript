@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "," here.
+    Let Questions be France, Japan, Kenya, Canada, Brazil.
+                           ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 2: I don't understand "," here.
+    Let Answers be Paris, Tokyo, Nairobi, Ottawa, Brasilia.
+                        ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I expected "and call the answer" here, but found "country".
+        Ask "What is capital of " country "?" and call the answer answer.
+                                  ^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 6: I expected ":", "," or "then" after the condition, but found "answer".
+        If answer is right answer of country, say "Right" and set score to score plus 1.
+                           ^^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 7: I expected ":", "," or "then" after the condition, but found "answer".
+        If answer is not right answer of country, say "Wrong. Right answer is " right answer of country.
+                               ^^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 8: I don't understand "score" here.
+    Say "Your score is " score " from 5".
+                         ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

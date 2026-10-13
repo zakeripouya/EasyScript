@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't understand "status" here.
+      let Missed be COUNTIF status = "missed"
+                            ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't understand "rows" here.
+      let Total be COUNT rows
+                         ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: I don't understand "rows" here.
+      let Appointments be COUNT rows
+                                ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 9: I expected a field after "highest" here, but found "appointments".
+    Show the weekday with the highest Appointments
+                                      ^^^^^^^^^^^^
+Write it like "the dog with the highest age".
+--- files made ---

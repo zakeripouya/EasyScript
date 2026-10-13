@@ -1,0 +1,74 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I don't understand the character "{".
+    rates = {"good": 0.20, "okay": 0.15, "bad": 0.10}
+            ^
+
+Line 5: I don't understand the character "}".
+    rates = {"good": 0.20, "okay": 0.15, "bad": 0.10}
+                                                    ^
+
+Line 6: I don't understand the character "[".
+    tip = bill * rates[service]
+                      ^
+
+Line 6: I don't understand the character "]".
+    tip = bill * rates[service]
+                              ^
+
+Line 1: I don't know a sentence that starts with "bill".
+    bill = float(input("Bill amount: "))
+    ^^^^
+Did you mean "tell" or "call"?
+
+Line 2: I don't know a sentence that starts with "people".
+    people = int(input("Number of people: "))
+    ^^^^^^
+To keep a value in a name, write "let people be ...". To change it, write "set people to ...".
+
+Line 3: I don't know a sentence that starts with "service".
+    service = input("Service (good/okay/bad): ").lower()
+    ^^^^^^^
+To keep a value in a name, write "let service be ...". To change it, write "set service to ...".
+
+Line 3: I don't know a sentence that starts with "lower".
+    service = input("Service (good/okay/bad): ").lower()
+                                                 ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "rates".
+    rates = {"good": 0.20, "okay": 0.15, "bad": 0.10}
+    ^^^^^
+To keep a value in a name, write "let rates be ...". To change it, write "set rates to ...".
+
+Line 6: I don't know a sentence that starts with "tip".
+    tip = bill * rates[service]
+    ^^^
+To keep a value in a name, write "let tip be ...". To change it, write "set tip to ...".
+
+Line 7: I don't know a sentence that starts with "total".
+    total = bill + tip
+    ^^^^^
+To keep a value in a name, write "let total be ...". To change it, write "set total to ...".
+
+Line 8: I don't know a sentence that starts with "per_person".
+    per_person = total / people
+    ^^^^^^^^^^
+To keep a value in a name, write "let per_person be ...". To change it, write "set per_person to ...".
+
+Line 10: This "(" is never closed.
+    print("Tip: $" + format(tip, ".2f"))
+         ^
+Add a ")" where the group ends, on the same line.
+
+Line 11: This "(" is never closed.
+    print("Total: $" + format(total, ".2f"))
+         ^
+Add a ")" where the group ends, on the same line.
+
+Line 12: This "(" is never closed.
+    print("Each person pays: $" + format(per_person, ".2f"))
+         ^
+Add a ")" where the group ends, on the same line.
+--- files made ---

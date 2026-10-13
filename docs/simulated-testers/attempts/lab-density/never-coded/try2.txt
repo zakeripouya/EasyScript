@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 7: A one-line "if" can't have an "otherwise".
+    otherwise, say "It sinks in water."
+    ^^^^^^^^^
+Write the "if" with a colon and its sentences on indented lines below it; then the "otherwise" can follow.
+
+Line 9: I expected "this" here, but found "it".
+    if another is yes, then do it all again
+                               ^^
+Write it like "do this 3 times:".
+--- files made ---

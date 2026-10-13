@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand the text "orders.csv" here.
+    let orders be read_csv "orders.csv"
+                           ^^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 9: I don't understand "price" here.
+        set total to total + order price
+                                   ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

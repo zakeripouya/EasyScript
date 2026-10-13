@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I expected a field after "most" here, but found "wins".
+    Show winner with the most wins.
+                              ^^^^
+Write it like "the dog with the highest age".
+
+Line 3: I expected "to" here, but found ":".
+    For each game from games:
+                            ^
+Write it like "for each n from 1 to 10:".
+
+Line 4: I don't know a sentence that starts with "Calculate".
+        Calculate average score.
+        ^^^^^^^^^
+A sentence like this works: "for each score in scores:".
+--- files made ---

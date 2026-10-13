@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't know a sentence that starts with "On".
+    On every Monday at 9am, send email to "team@ourcompany.com" with subject and bookings.
+    ^^
+Sentences like these work: "apply double to every number in scores", "privately to tidy with text:" or "set total to 10".
+--- files made ---

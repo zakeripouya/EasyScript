@@ -1,0 +1,58 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand the character "é".
+    Hello, I would like to work out how to split a bill at my café.
+                                                                 ^
+Words can only use the letters a to z, digits and underscores. Put other text in double quotes.
+
+Line 11: I don't understand "!".
+    Thank you very much!
+                       ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hello".
+    Hello, I would like to work out how to split a bill at my café.
+    ^^^^^
+Did you mean "tell"?
+
+Line 3: I don't know a sentence that starts with "please".
+    First, please ask me what the bill amount is.
+           ^^^^^^
+Did you mean "please"?
+
+Line 4: I don't know a sentence that starts with "please".
+    Then please ask me how many people are sharing the bill.
+         ^^^^^^
+Did you mean "please"?
+
+Line 5: I don't know a sentence that starts with "please".
+    Then please ask me how the service was. The answer will be good, okay or bad.
+         ^^^^^^
+Did you mean "please"?
+
+Line 5: I don't know a sentence that starts with "answer".
+    Then please ask me how the service was. The answer will be good, okay or bad.
+                                                ^^^^^^
+Sentences like these work: "let total be 0" or "ask "What's your name?" and call the answer name".
+
+Line 7: I expected ":", "," or "then" after the condition, but found "was".
+    If the service was good, the tip should be 20% of the bill. If it was okay, the tip should be 15%, and if it was bad, the tip should be 10%.
+                   ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 9: I don't know a sentence that starts with "total".
+    Please show me the tip, then the total including the tip, and then how much each person needs to pay. Please show all of these in dollars and cents, for example $12.34.
+                                     ^^^^^
+Sentences like these work: "set total to 10", "change total to 10" or "add 5 to total".
+
+Line 9: I expected a test like "are above 50" after "all of these", but found "in".
+    Please show me the tip, then the total including the tip, and then how much each person needs to pay. Please show all of these in dollars and cents, for example $12.34.
+                                                                                                                                   ^^
+Write it like "all of these are at least 50".
+
+Line 11: I don't know a sentence that starts with "Thank".
+    Thank you very much!
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

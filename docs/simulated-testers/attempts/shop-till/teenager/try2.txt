@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "beans" here.
+    let prices be coffee beans 12.50, mug 8, filter papers 3.20
+                         ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 2: I expected "as" here, but found the text "done".
+    keep asking item how many till "done"
+                                   ^^^^^^
+Write it like "keep tax rate as 0.2".
+
+Line 3: I expected ":", "," or "then" after the condition, but found "list".
+    if item is not on list, say "nope"
+                      ^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

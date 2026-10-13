@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "and call it" here, but found the text "listings.xlsx".
+    Read the file called "listings.xlsx".
+                         ^^^^^^^^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 3: I don't understand "house" here.
+    Say the cheapest house.
+                     ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't understand "house" here.
+    Say the neighborhood of each house.
+                                 ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

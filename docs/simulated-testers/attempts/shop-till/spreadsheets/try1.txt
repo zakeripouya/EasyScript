@@ -1,0 +1,119 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't understand the character "|".
+    | item          | price  |
+    ^
+
+Line 2: I don't understand the character "|".
+    | item          | price  |
+                    ^
+
+Line 2: I don't understand the character "|".
+    | item          | price  |
+                             ^
+
+Line 3: I don't understand the character "|".
+    | coffee beans  | 12.50  |
+    ^
+
+Line 3: I don't understand the character "|".
+    | coffee beans  | 12.50  |
+                    ^
+
+Line 3: I don't understand the character "|".
+    | coffee beans  | 12.50  |
+                             ^
+
+Line 4: I don't understand the character "|".
+    | mug           | 8.00   |
+    ^
+
+Line 4: I don't understand the character "|".
+    | mug           | 8.00   |
+                    ^
+
+Line 4: I don't understand the character "|".
+    | mug           | 8.00   |
+                             ^
+
+Line 5: I don't understand the character "|".
+    | filter papers | 3.20   |
+    ^
+
+Line 5: I don't understand the character "|".
+    | filter papers | 3.20   |
+                    ^
+
+Line 5: I don't understand the character "|".
+    | filter papers | 3.20   |
+                             ^
+
+Line 14: I don't understand the character "&".
+    Show "Total: $" & Total
+                    ^
+
+Line 15: I don't understand the character "&".
+    If Total > 50 then show "Discounted total: $" & Total * 0.9
+                                                  ^
+
+Line 1: I don't know a sentence that starts with "Price".
+    Price list:
+    ^^^^^
+Did you mean "print" or "write"?
+
+Line 2: I don't know a sentence that starts with "item".
+    | item          | price  |
+      ^^^^
+Sentences like these work: "reduce price by 10 percent" or "remove item 2 from scores".
+
+Line 3: I don't know a sentence that starts with "coffee".
+    | coffee beans  | 12.50  |
+      ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 4: I don't know a sentence that starts with "mug".
+    | mug           | 8.00   |
+      ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "filter".
+    | filter papers | 3.20   |
+      ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 7: I don't know a sentence that starts with "Total".
+    Total = 0
+    ^^^^^
+To keep a value in a name, write "let Total be ...". To change it, write "set Total to ...".
+
+Line 9: I expected "and call the answer" here, but found "into".
+        Ask "Item?" into item
+                    ^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 11: I expected ":", "," or "then" after the condition, but found "price".
+        If item is not in Price list, show "Not on the list" and ask again
+                          ^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 12: I expected "and call the answer" here, but found "into".
+        Ask "How many?" into qty
+                        ^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 13: I don't know a sentence that starts with "Total".
+        Total = Total + VLOOKUP(item, Price list, price) * qty
+        ^^^^^
+To keep a value in a name, write "let Total be ...". To change it, write "set Total to ...".
+
+Line 14: I don't understand "total" here.
+    Show "Total: $" & Total
+                      ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 15: I don't understand "total" here.
+    If Total > 50 then show "Discounted total: $" & Total * 0.9
+                                                    ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

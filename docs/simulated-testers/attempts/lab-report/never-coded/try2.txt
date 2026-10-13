@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I don't understand "drop" here.
+        say the biggest drop in temperature between two readings in a row
+                        ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: I don't understand "," here.
+        let fahrenheit be temperature times 9, divided by 5, plus 32
+                                             ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 11: I expected "called" here, but found "for".
+    make a line chart of the temperatures for group A and save it as "cooling.svg"
+                                          ^^^
+Write it like "make a bar chart of sales called "sales.svg"".
+--- files made ---

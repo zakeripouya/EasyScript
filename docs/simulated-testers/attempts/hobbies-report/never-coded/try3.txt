@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "and call it" here, but found ",".
+    Please read the file "games.csv", which has a record of our board game nights.
+                                    ^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 3: I don't understand "most" here.
+    tell me who has won the most games.
+                            ^^^^
+Did you mean "not" or "mod"?
+
+Line 6: I don't understand "score" here.
+        tell me the average score.
+                            ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: I don't understand "scores" here.
+    tell me the top 3 highest scores, along with the name of the person who got each one and which game it was in.
+                              ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

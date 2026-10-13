@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "page" here.
+    Let page be a web page titled "Event Sign-Up".
+                      ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I expected a colon after this event, but found "button".
+    When the "Sign up" button is clicked:
+                       ^^^^^^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 5: I expected "to file" here, but found ",".
+        append name, meal to file "signups.csv"
+                   ^
+Write it like "append "hello" to file "notes.txt"".
+--- files made ---

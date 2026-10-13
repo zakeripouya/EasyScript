@@ -1,0 +1,63 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "(" here.
+    let orders be read_csv("orders.csv")
+                          ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: I expected a colon after this loop, but found "(".
+    for each day in unique(column(orders, "day")):
+                          ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 6: I expected ":", "," or "then" after the condition, but found "(".
+            if get(order, "day") == day:
+                  ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 7: I don't understand "(" here.
+                set total to total + get(order, "price")
+                                        ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: I don't understand "(" here.
+        say day + ": $" + round(total, 2)
+                               ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 12: I expected a colon after this loop, but found "(".
+    for each item in unique(column(orders, "item")):
+                           ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 13: I don't understand "(" here.
+        let n be count(column(orders, "item"), item)
+                      ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 19: I don't understand "(" here.
+    let prices be column(orders, "price")
+                        ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 20: I don't understand "(" here.
+    let avg be sum(prices) / len(prices)
+                  ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 21: I don't understand "(" here.
+    say "Average order price: $" + round(avg, 2)
+                                        ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 25: I expected a colon after this loop, but found "(".
+    for each day in unique(column(orders, "day")):
+                          ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 26: I don't understand "(" here.
+        let n be count(column(orders, "day"), day)
+                      ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

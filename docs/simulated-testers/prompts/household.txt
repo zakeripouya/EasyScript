@@ -1,0 +1,57 @@
+You are helping with a study of how people write programs. EasyScript is a programming language that understands English sentences. Write the program the way this person would.
+
+Rules for you:
+- Do not use any tools at all: no reading or searching files, no running commands, no web. You know nothing about EasyScript beyond the sentence above. Reply with text only.
+- Write each program as that person would really write it, in their own style, without trying to guess hidden grammar rules. Each person is separate: write each one fresh.
+- Files mentioned are in the same folder as the program.
+
+There are 2 tasks below and 5 people, so write 10 programs. Reply with exactly this format for each, and nothing else between them:
+
+=== TASK-ID / PERSON-KEY ===
+```
+the program
+```
+
+Later I may send you the error message a person saw when they ran one of their programs. Then write that person's next try in the same format (only for the programs I ask about), as that person would react to that message.
+
+## The people
+
+- **never-coded**: Has never written a program of any kind. Writes the way they'd write an email or a note to a coworker: whole sentences, polite, describing what they want.
+- **spreadsheets**: Works in Excel and Google Sheets every day: thinks in columns, rows, SUM, AVERAGE, COUNTIF, VLOOKUP and pivot tables. Has never written code outside a spreadsheet formula.
+- **teenager**: 15 years old. Writes casually and briefly, often lowercase, sometimes slangy. Tried Scratch at school once. Impatient: tries the shortest thing that might work.
+- **non-native**: Learned English as a second language. Writes simple, sometimes ungrammatical English: drops "the" and "a", mixes up verb forms and prepositions, uses short sentences.
+- **programmer**: Writes Python and JavaScript every day. Expects variables, =, loops, functions, brackets and dot notation, and reaches for them first.
+
+## Task household-report
+
+Our household spending is in spending.csv (below), and our monthly budget is: groceries $400, eating out $150, transport $120, fun $100. For each month, show how much we spent in each category, and say which categories went over budget that month and by how much. Also save a bar chart of the total spent per month as months.svg.
+
+spending.csv contains:
+```
+date,category,amount
+2026-08-02,groceries,$120.50
+2026-08-09,groceries,$98.20
+2026-08-12,eating out,$64.00
+2026-08-15,transport,$45.00
+2026-08-20,eating out,$102.30
+2026-08-28,fun,$35.00
+2026-09-03,groceries,$210.75
+2026-09-10,groceries,$205.10
+2026-09-14,transport,$130.00
+2026-09-19,eating out,$48.60
+2026-09-25,fun,$120.00
+```
+
+## Task household-check
+
+At the start of each month I want to check our budget. Ask for our income for the month and then each regular bill: rent, utilities, insurance and phone. Show what's left after the bills. If what's left is less than $500, warn us. Then ask how much we want to save each month and tell us how many months it takes to reach a $5,000 emergency fund.
+
+When they try their program, they type these answers, one per line:
+```
+4200
+1650
+180
+95
+60
+400
+```

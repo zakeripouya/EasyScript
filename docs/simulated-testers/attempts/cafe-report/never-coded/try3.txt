@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: I expected "to" here, but found "prices".
+        Add up the prices and show me how much money we took that day.
+                   ^^^^^^
+Write it like "add 5 to total".
+
+Line 6: I don't understand "ordered" here.
+    Show me the most ordered item.
+                     ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 10: I don't understand "day" here.
+    Show me the busiest day, the one with the most orders.
+                        ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

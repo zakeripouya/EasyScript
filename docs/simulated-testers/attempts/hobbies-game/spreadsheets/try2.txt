@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "number" here.
+    let secret be random number between 1 and 10
+                         ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

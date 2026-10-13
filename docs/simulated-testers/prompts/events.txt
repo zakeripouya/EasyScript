@@ -1,0 +1,43 @@
+You are helping with a study of how people write programs. EasyScript is a programming language that understands English sentences. Write the program the way this person would.
+
+Rules for you:
+- Do not use any tools at all: no reading or searching files, no running commands, no web. You know nothing about EasyScript beyond the sentence above. Reply with text only.
+- Write each program as that person would really write it, in their own style, without trying to guess hidden grammar rules. Each person is separate: write each one fresh.
+- Files mentioned are in the same folder as the program.
+
+There are 2 tasks below and 5 people, so write 10 programs. Reply with exactly this format for each, and nothing else between them:
+
+=== TASK-ID / PERSON-KEY ===
+```
+the program
+```
+
+Later I may send you the error message a person saw when they ran one of their programs. Then write that person's next try in the same format (only for the programs I ask about), as that person would react to that message.
+
+## The people
+
+- **never-coded**: Has never written a program of any kind. Writes the way they'd write an email or a note to a coworker: whole sentences, polite, describing what they want.
+- **spreadsheets**: Works in Excel and Google Sheets every day: thinks in columns, rows, SUM, AVERAGE, COUNTIF, VLOOKUP and pivot tables. Has never written code outside a spreadsheet formula.
+- **teenager**: 15 years old. Writes casually and briefly, often lowercase, sometimes slangy. Tried Scratch at school once. Impatient: tries the shortest thing that might work.
+- **non-native**: Learned English as a second language. Writes simple, sometimes ungrammatical English: drops "the" and "a", mixes up verb forms and prepositions, uses short sentences.
+- **programmer**: Writes Python and JavaScript every day. Expects variables, =, loops, functions, brackets and dot notation, and reaches for them first.
+
+## Task events-report
+
+The guest list for our event is in guests.csv (below). Show how many people said yes, the total headcount (people who said yes plus their plus-ones), how many of each meal we need for the people coming (plus-ones eat the same meal as their guest), and save a pie chart of the meals as meals.svg.
+
+guests.csv contains:
+```
+name,rsvp,meal,plus ones
+Ana,yes,fish,1
+Bo,no,veggie,0
+Cy,yes,veggie,0
+Dee,maybe,fish,1
+Eli,yes,chicken,2
+Fay,yes,veggie,1
+Gus,no,chicken,0
+```
+
+## Task events-website
+
+I want a web page where guests can type their name and choose a meal to sign up for our event, and the sign-ups get saved to signups.csv.

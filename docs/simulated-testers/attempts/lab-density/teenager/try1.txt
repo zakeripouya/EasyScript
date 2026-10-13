@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "and call the answer" here, but found ",".
+    ask name, mass, volume
+            ^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 2: I don't know a sentence that starts with "density".
+    density = mass / volume rounded to 2 decimals
+    ^^^^^^^
+To keep a value in a name, write "let density be ...". To change it, write "set density to ...".
+
+Line 3: I expected ":", "," or "then" after the condition, but found "say".
+    if density < 1 say floats else say sinks
+                   ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 4: Something is missing after "another".
+    ask another? keep going till no
+        ^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 4: I expected "as" here, but found "no".
+    ask another? keep going till no
+                                 ^^
+Write it like "keep tax rate as 0.2".
+--- files made ---

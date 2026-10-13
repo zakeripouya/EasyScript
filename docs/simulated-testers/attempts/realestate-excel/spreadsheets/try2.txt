@@ -1,0 +1,22 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: A "for each" loop needs a list to go through, but this is text.
+    For each Neighborhood in Data:
+                             ^^^^
+
+Line 3: I don't know anything called "Price".
+        say AVERAGE of Price
+                       ^^^^^
+Make it first, like "let Price be 0".
+
+Line 4: I don't know how to "MIN".
+        say MIN of Price
+            ^^^^^^^^^^^^
+Define it first, like "to MIN with someone:" with its sentences indented below.
+
+Line 4: I don't know anything called "Price".
+        say MIN of Price
+                   ^^^^^
+Make it first, like "let Price be 0".
+--- files made ---

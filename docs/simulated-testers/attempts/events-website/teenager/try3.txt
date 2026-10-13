@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I can't add text to text.
+    append name + "," + meal to file "signups.csv"
+           ^^^^^^^^^^
+To join text, use "followed by".
+
+Line 3: I can't add text to a number.
+    append name + "," + meal to file "signups.csv"
+           ^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+--- files made ---

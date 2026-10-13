@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I expected the sentence to end after "skip".
+    skip rows with no amount
+         ^^^^
+End the sentence with a period, or start a new line.
+
+Line 5: I don't understand "amount" here.
+    say biggest amount
+                ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "file" here, but found "csv".
+    read csv "bookings.csv" and call it bookings
+         ^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 5: I don't know a sentence that starts with "room".
+        set body to body + b.room + " - " + b.day + " " + b.time + " (" + b.booked_by + ")\n"
+                             ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "day".
+        set body to body + b.room + " - " + b.day + " " + b.time + " (" + b.booked_by + ")\n"
+                                              ^^^
+Did you mean "say"?
+
+Line 5: I don't know a sentence that starts with "time".
+        set body to body + b.room + " - " + b.day + " " + b.time + " (" + b.booked_by + ")\n"
+                                                            ^^^^
+Did you mean "give"?
+
+Line 5: I don't know a sentence that starts with "booked_by".
+        set body to body + b.room + " - " + b.day + " " + b.time + " (" + b.booked_by + ")\n"
+                                                                            ^^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 7: I expected a time of day here, like "9am", "9:30pm" or "17:00".
+    every monday at "09:00":
+                    ^^^^^^^
+Write it like "every Monday at 9am:". Hours go from 1 to 12 with am or pm, or from 0 to 23 with minutes (17:00).
+
+Line 8: I don't know a sentence that starts with "send".
+        send email to "team@ourcompany.com" with subject "Room bookings this week" and body body
+        ^^^^
+Did you mean "set" or "read"?
+--- files made ---

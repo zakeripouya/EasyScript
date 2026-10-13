@@ -1,0 +1,53 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Open".
+    Open file guests.csv.
+    ^^^^
+Sentences like these work: "make a new file called "notes.txt"", "write "hello" to file "notes.txt"" or "append "hello" to file "notes.txt"".
+
+Line 1: I don't know a sentence that starts with "csv".
+    Open file guests.csv.
+                     ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I don't know a sentence that starts with "Take".
+    Take only guests who say yes.
+    ^^^^
+Did you mean "save"?
+
+Line 3: I expected "there are" or a test like "are above 70" here, but found "say".
+    Show how many guest say yes.
+                        ^^^
+Write it like "how many scores are above 70" or "how many scores there are".
+
+Line 4: "plus" can't be part of a name, because it already means something in EasyScript.
+    For each guest add plus ones to count person.
+                       ^^^^
+Try a name without it, like "guest add ones".
+
+Line 5: I don't understand "who" here.
+    Show total of person who come.
+                         ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 6: I don't understand "for" here.
+    Count meal for each person who come, plus ones eat same meal like guest.
+               ^^^
+Did you mean "or"?
+
+Line 7: I don't understand "meal" here.
+    Show number of every meal.
+                         ^^^^
+Did you mean "me"?
+
+Line 8: I expected "called" here, but found "and".
+    Make pie chart of meals and save in meals.svg.
+                            ^^^
+Write it like "make a bar chart of sales called "sales.svg"".
+
+Line 8: I don't know a sentence that starts with "svg".
+    Make pie chart of meals and save in meals.svg.
+                                              ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

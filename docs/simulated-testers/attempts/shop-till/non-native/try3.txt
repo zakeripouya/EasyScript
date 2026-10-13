@@ -1,0 +1,27 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 9: I can't compare text with a number.
+        If item is not coffee beans and item is not mug and item is not filter papers, say "This item is not in list".
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 9: I can't compare text with a number.
+        If item is not coffee beans and item is not mug and item is not filter papers, say "This item is not in list".
+                                        ^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 9: I can't compare text with a number.
+        If item is not coffee beans and item is not mug and item is not filter papers, say "This item is not in list".
+                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 11: I don't know how to "price".
+        Add (price of item) times amount to total.
+            ^^^^^^^^^^^^^^^
+Define it first, like "to price with someone:" with its sentences indented below.
+
+Line 11: I can't multiply an unknown kind of value by text.
+        Add (price of item) times amount to total.
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--- files made ---

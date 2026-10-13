@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "shipments".
+    Read file shipments.csv.
+              ^^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "csv".
+    Read file shipments.csv.
+                        ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I expected "there are" or a test like "are above 70" here, but found "go".
+    Count how many shipment go to each country.
+                            ^^
+Write it like "how many scores are above 70" or "how many scores there are".
+
+Line 4: I don't understand "which" here.
+    Show shipment which is most heavy.
+                  ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: Something is missing after "delivered".
+    For each shipment calculate days between shipped and delivered.
+                                                         ^^^^^^^^^
+Write it like "for each name and age in ages:".
+--- files made ---

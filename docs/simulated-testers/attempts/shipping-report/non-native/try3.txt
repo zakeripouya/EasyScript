@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't understand "for" here.
+    show how many shipments there are for each country
+                                      ^^^
+Did you mean "or"?
+
+Line 3: I don't understand "in" here.
+    say average of "weight kg" in shipments
+                               ^^
+Did you mean "is"?
+
+Line 4: I don't understand the text "weight kg" here.
+    say biggest "weight kg" in shipments
+                ^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

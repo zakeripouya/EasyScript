@@ -1,0 +1,43 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "bank".
+    Read file bank.csv.
+              ^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "csv".
+    Read file bank.csv.
+                   ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I expected ":", "," or "then" after the condition, but found "have".
+    If row have no amount, ignore it.
+           ^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 3: I don't understand "money" here.
+    Show total money spend for each category.
+               ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't understand "money" here.
+    Show total money spend for each month.
+               ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I don't understand "expense" here.
+    Show biggest expense.
+                 ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 6: I expected "called" here, but found "by".
+    Make pie chart of spending by category and save in categories.svg.
+                               ^^
+Write it like "make a bar chart of sales called "sales.svg"".
+
+Line 6: I don't know a sentence that starts with "svg".
+    Make pie chart of spending by category and save in categories.svg.
+                                                                  ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

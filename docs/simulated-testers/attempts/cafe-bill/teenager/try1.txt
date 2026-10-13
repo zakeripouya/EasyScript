@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "bill".
+    ask bill
+        ^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 2: Something is missing after "people".
+    ask people
+        ^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 3: Something is missing after "service".
+    ask service
+        ^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 4: I expected ":", "," or "then" after the condition, but found "tip".
+    if service is good tip is 20%
+                       ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 5: I expected ":", "," or "then" after the condition, but found "tip".
+    if service is okay tip is 15%
+                       ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 6: I expected ":", "," or "then" after the condition, but found "tip".
+    if service is bad tip is 10%
+                      ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

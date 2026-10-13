@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "spending".
+    Read file spending.csv.
+              ^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "csv".
+    Read file spending.csv.
+                       ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I don't know a sentence that starts with "Budget".
+    Budget is: groceries 400, eating out 150, transport 120, fun 100.
+    ^^^^^^
+To keep a value in a name, write "let Budget be ...". To change it, write "set Budget to ...".
+
+Line 3: I don't know a sentence that starts with "Total".
+    Total the amount per month.
+    ^^^^^
+Sentences like these work: "total the amount per month", "what is the total?" or "let total be 0".
+
+Line 4: I expected "from" here, but found ",".
+    For each month, show amount of each category.
+                  ^
+Write it like "for each n from 1 to 10:".
+
+Line 6: I expected "called" here, but found "chart".
+    Make bar chart called "months.svg".
+             ^^^^^
+Write it like "make a new file called "notes.txt"".
+--- files made ---

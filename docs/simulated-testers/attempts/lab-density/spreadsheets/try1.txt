@@ -1,0 +1,43 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "Repeat".
+    Repeat:
+    ^^^^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 2: I don't know a sentence that starts with "Name".
+      Name = ask "Object name?"
+      ^^^^
+Did you mean "save"?
+
+Line 3: I don't know a sentence that starts with "Mass".
+      Mass = ask "Mass (g)?"
+      ^^^^
+Did you mean "mark" or "ask" or "as"?
+
+Line 4: I don't know a sentence that starts with "Volume".
+      Volume = ask "Volume (cm3)?"
+      ^^^^^^
+To keep a value in a name, write "let Volume be ...". To change it, write "set Volume to ...".
+
+Line 5: I don't know a sentence that starts with "Density".
+      Density = ROUND(Mass / Volume, 2)
+      ^^^^^^^
+To keep a value in a name, write "let Density be ...". To change it, write "set Density to ...".
+
+Line 6: I don't know a sentence that starts with "Result".
+      Result = IF(Density < 1, "floats", "sinks")
+      ^^^^^^
+To keep a value in a name, write "let Result be ...". To change it, write "set Result to ...".
+
+Line 8: I don't know a sentence that starts with "Another".
+      Another = ask "Another object? (yes/no)"
+      ^^^^^^^
+To keep a value in a name, write "let Another be ...". To change it, write "set Another to ...".
+
+Line 9: I don't know a sentence that starts with "Until".
+    Until Another = "no"
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

@@ -1,0 +1,87 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: "and" doesn't join text: it means both, for yes or no values.
+    let groups be "A" and "B"
+                  ^^^^^^^^^^^
+To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name).
+
+Line 5: I don't know how to "rows".
+        let rows be all rows of data with group is group
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+Define it first, like "to rows with someone:" with its sentences indented below.
+
+Line 5: "data" is text, so it can't be called.
+        let rows be all rows of data with group is group
+                                ^^^^
+Only a definition, or a function made with "a function taking ...", can be called. To keep one in a name, write something like "let double be a function taking x that gives back x times 2".
+
+Line 6: I don't know how to "temperature".
+        let temps be temperature of rows
+                     ^^^^^^^^^^^^^^^^^^^
+Define it first, like "to temperature with someone:" with its sentences indented below.
+
+Line 7: I don't know how to "count".
+        let n be count of temps
+                 ^^^^^^^^^^^^^^
+Define it first, like "to count with someone:" with its sentences indented below.
+
+Line 14: I can't add an unknown kind of value to text.
+        say "Group " + group + ": average = " + avg + ", biggest drop = " + biggest_drop
+            ^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 14: I can't add text to a number.
+        say "Group " + group + ": average = " + avg + ", biggest drop = " + biggest_drop
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 14: I can't add text to a number.
+        say "Group " + group + ": average = " + avg + ", biggest drop = " + biggest_drop
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 16: A "for each" loop needs a list to go through, but this is text.
+    for each row in data:
+                    ^^^^
+
+Line 17: I don't know how to "temperature".
+        let f be (temperature of row) * 9 / 5 + 32
+                 ^^^^^^^^^^^^^^^^^^^^
+Define it first, like "to temperature with someone:" with its sentences indented below.
+
+Line 18: I don't know how to "group".
+        say (group of row) + " minute " + (minute of row) + ": " + f + " F"
+            ^^^^^^^^^^^^^^
+Define it first, like "to group with someone:" with its sentences indented below.
+
+Line 18: I can't add text to an unknown kind of value.
+        say (group of row) + " minute " + (minute of row) + ": " + f + " F"
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 18: I can't add text to a number.
+        say (group of row) + " minute " + (minute of row) + ": " + f + " F"
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 18: I can't add text to a number.
+        say (group of row) + " minute " + (minute of row) + ": " + f + " F"
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 20: I don't know how to "rows".
+    let group_a be all rows of data with group is "A"
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+Define it first, like "to rows with someone:" with its sentences indented below.
+
+Line 20: "data" is text, so it can't be called.
+    let group_a be all rows of data with group is "A"
+                               ^^^^
+Only a definition, or a function made with "a function taking ...", can be called. To keep one in a name, write something like "let double be a function taking x that gives back x times 2".
+
+Line 20: I don't know anything called "group".
+    let group_a be all rows of data with group is "A"
+                                         ^^^^^
+"group" is each item of the loop on line 4, so it only exists inside that loop. To keep one, make a name before the loop and set it inside.
+--- files made ---

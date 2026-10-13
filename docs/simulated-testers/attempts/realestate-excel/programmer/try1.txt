@@ -1,0 +1,58 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "listings".
+    listings = load("listings.xlsx")
+    ^^^^^^^^
+To keep a value in a name, write "let listings be ...". To change it, write "set listings to ...".
+
+Line 2: I don't know a sentence that starts with "groups".
+    groups = listings.groupBy("neighborhood")
+    ^^^^^^
+To keep a value in a name, write "let groups be ...". To change it, write "set groups to ...".
+
+Line 2: I don't know a sentence that starts with "groupBy".
+    groups = listings.groupBy("neighborhood")
+                      ^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 4: I expected "each" here, but found "name".
+    for name, houses in groups:
+        ^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "avg".
+        avg = average(houses.price)
+        ^^^
+To keep a value in a name, write "let avg be ...". To change it, write "set avg to ...".
+
+Line 5: I don't know a sentence that starts with "price".
+        avg = average(houses.price)
+                             ^^^^^
+Did you mean "print" or "write"?
+
+Line 6: I don't know a sentence that starts with "cheapest".
+        cheapest = houses.minBy("price")
+        ^^^^^^^^
+To keep a value in a name, write "let cheapest be ...". To change it, write "set cheapest to ...".
+
+Line 6: I don't know a sentence that starts with "minBy".
+        cheapest = houses.minBy("price")
+                          ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 7: This "(" is never closed.
+        print(name + ": avg price = " + round(avg, 2) + ", cheapest = " + cheapest.address + " (" + cheapest.price + ")")
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 7: I don't know a sentence that starts with "address".
+        print(name + ": avg price = " + round(avg, 2) + ", cheapest = " + cheapest.address + " (" + cheapest.price + ")")
+                                                                                   ^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 7: I don't know a sentence that starts with "price".
+        print(name + ": avg price = " + round(avg, 2) + ", cheapest = " + cheapest.address + " (" + cheapest.price + ")")
+                                                                                                             ^^^^^
+Did you mean "print" or "write"?
+--- files made ---

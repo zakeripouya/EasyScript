@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't understand "wins" here.
+    say most wins
+             ^^^^
+Did you mean "is" or "minus"?
+
+Line 3: I don't understand "per" here.
+    say average per game
+                ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

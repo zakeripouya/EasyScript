@@ -1,0 +1,43 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "open".
+    open bank.csv
+    ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 1: I don't know a sentence that starts with "csv".
+    open bank.csv
+              ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I expected the sentence to end after "skip".
+    skip rows with no amount
+         ^^^^
+End the sentence with a period, or start a new line.
+
+Line 3: I don't understand "spent" here.
+    show total spent per category
+               ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't understand "per" here.
+    show total per month
+               ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I don't understand "expense" here.
+    show biggest expense
+                 ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 6: I don't understand "save" here.
+    pie chart of categories save as categories.svg
+                            ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 6: I don't know a sentence that starts with "svg".
+    pie chart of categories save as categories.svg
+                                               ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

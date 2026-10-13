@@ -1,0 +1,48 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Load".
+    Load grades.csv
+    ^^^^
+Did you mean "read"?
+
+Line 1: I don't know a sentence that starts with "csv".
+    Load grades.csv
+                ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I don't know a sentence that starts with "Group".
+    Group by student and calculate AVERAGE of score
+    ^^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "for each score in scores:" or "increase total by 5".
+
+Line 3: I don't understand "table" here.
+    Show the averages table
+                      ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't know a sentence that starts with "Find".
+    Find the student with the MAX average
+    ^^^^
+Did you mean "sine"?
+
+Line 5: I don't understand "student" here.
+    Show that student
+              ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 6: I don't know a sentence that starts with "COUNTIF".
+    COUNTIF score < 50
+    ^^^^^^^
+Did you mean "count"?
+
+Line 8: I don't know a sentence that starts with "Create".
+    Create a bar chart of average by student
+    ^^^^^^
+Sentences like these work: "increase total by 5", "decrease total by 5" or "reduce price by 10 percent".
+
+Line 9: I don't know a sentence that starts with "svg".
+    Save chart as averages.svg
+                           ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

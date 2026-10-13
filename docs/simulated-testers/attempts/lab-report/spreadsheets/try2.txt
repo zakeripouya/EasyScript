@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't understand "(" here.
+      let Avg be AVERAGE(temperature)
+                        ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't understand "(" here.
+      let BiggestDrop be MAX(previous temperature - temperature)
+                            ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 10: I expected "called" here, but found "as".
+    make a line chart of GroupA with minute as X and temperature as Y
+                                            ^^
+Write it like "make a bar chart of sales called "sales.svg"".
+--- files made ---

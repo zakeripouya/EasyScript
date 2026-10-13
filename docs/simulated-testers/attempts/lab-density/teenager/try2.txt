@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: I expected "decimal places" here, but found "decimals".
+    let density be mass / volume rounded to 2 decimals
+                                              ^^^^^^^^
+Write it like "price rounded to 2 decimal places".
+
+Line 6: A one-line "if" can't have an "else".
+    else, say "sinks"
+    ^^^^
+Write the "if" with a colon and its sentences on indented lines below it; then the "else" can follow.
+--- files made ---

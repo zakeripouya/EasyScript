@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "open".
+    Please open the file called "listings.xlsx".
+           ^^^^
+Sentences like these work: "make a new file called "notes.txt"", "write "hello" to file "notes.txt"" or "append "hello" to file "notes.txt"".
+
+Line 2: I don't understand "in" here.
+    Tell me the average price of the houses in each neighborhood.
+                                            ^^
+Did you mean "is"?
+
+Line 3: I don't understand "house" here.
+    Tell me which house is the cheapest one in each neighborhood.
+                  ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't understand "for" here.
+    Say the results for each neighborhood.
+                    ^^^
+Did you mean "or"?
+--- files made ---

@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I expected a colon after this loop, but found ",".
+    For each day in orders, add up the prices and show me how much money we took that day.
+                          ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 5: I don't understand "item" here.
+    Show me which item was ordered the most times.
+                  ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 9: I don't understand "day" here.
+    Show me which day had the most orders.
+                  ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "open".
+    open appointments.csv
+    ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 1: I don't know a sentence that starts with "csv".
+    open appointments.csv
+                      ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: Something is missing after "percent missed".
+    for each clinic show how many missed and the percent missed
+                                                 ^^^^^^^^^^^^^^
+Write it like "for each name and age in ages:".
+
+Line 3: I expected a field after "most" here, but found "appointments".
+    show day with most appointments
+                       ^^^^^^^^^^^^
+Write it like "the dog with the highest age".
+--- files made ---

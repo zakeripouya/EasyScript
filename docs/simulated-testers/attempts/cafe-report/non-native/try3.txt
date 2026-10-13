@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I expected a field after "highest" here, but found "number".
+    Show item with the highest number of orders.
+                               ^^^^^^
+Write it like "the dog with the highest age".
+
+Line 8: I expected a field after "highest" here, but found "number".
+    Show day with the highest number of orders.
+                              ^^^^^^
+Write it like "the dog with the highest age".
+--- files made ---

@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't know a sentence that starts with "Look".
+        Look at the website "https://track.example-carrier.com/?id=" plus number.
+        ^^^^
+Sentences like these work: "insert 7 at position 1 of scores" or "apply double to every number in scores".
+--- files made ---

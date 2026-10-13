@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 8: This "(" is never closed.
+    Let payment be loan multiplied by monthly rate divided by (1 minus (1 plus monthly rate) power minus month number).
+                                                              ^
+Add a ")" where the group ends, on the same line.
+
+Line 9: I don't understand "round" here.
+    Let payment be payment round to 2 decimal.
+                           ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: I don't understand "(" here.
+    Let balance be VALUE(start).
+                        ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I don't understand "(" here.
+    Let yearly be VALUE(deposit).
+                       ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 6: I don't understand "(" here.
+    Let percent be VALUE(rate).
+                        ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

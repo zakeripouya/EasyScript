@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "open".
+    open games.csv
+    ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 1: I don't know a sentence that starts with "csv".
+    open games.csv
+               ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I don't know a sentence that starts with "who".
+    who won most
+    ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 3: I don't know a sentence that starts with "average".
+    average score per game
+    ^^^^^^^
+Sentences like these work: "total the amount per month" or "for each score in scores:".
+
+Line 4: I don't know a sentence that starts with "top".
+    top 3 scores
+    ^^^
+Did you mean "stop" or "to"?
+--- files made ---

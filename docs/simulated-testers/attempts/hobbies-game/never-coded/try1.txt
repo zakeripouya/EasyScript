@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "pick".
+    Please pick a random whole number between 1 and 10, but don't tell me what it is.
+           ^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "tell me the total" or "ask "What's your name?" and call the answer name".
+
+Line 3: I expected a value here, but found "me".
+    Then ask me to guess the number. If my guess is too high, please say "Too high". If my guess is too low, please say "Too low". Keep asking me until I guess correctly.
+             ^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 3: I expected ":", "," or "then" after the condition, but found "guess".
+    Then ask me to guess the number. If my guess is too high, please say "Too high". If my guess is too low, please say "Too low". Keep asking me until I guess correctly.
+                                           ^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 5: I expected a colon after this event, but found "get".
+    When I get it right, please say "You got it in N guesses!", where N is how many guesses it took me.
+           ^^^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+--- files made ---

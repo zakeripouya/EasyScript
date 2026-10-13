@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "On".
+    On Mondays at 9am, send an email to "team@ourcompany.com" with the subject "Room bookings this week".
+    ^^
+Sentences like these work: "privately to tidy with text:", "set total to 10" or "change total to 10".
+
+Line 3: I expected "in file" here, but found "from".
+    Put the bookings from the file "bookings.csv" in the email, so everyone can see which rooms are booked, on which day and time, and by whom.
+                     ^^^^
+Write it like "put "hello" in file "notes.txt"".
+--- files made ---

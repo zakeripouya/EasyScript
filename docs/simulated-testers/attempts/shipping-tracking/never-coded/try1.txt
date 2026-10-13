@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 9: I don't understand "!".
+    Thanks so much for your help!
+                                ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hi".
+    Hi,
+    ^^
+Sentences like these work: "go from 0 to 100 in steps of 10:", "put "hello" in file "notes.txt"" or "make a new file called "notes.txt"".
+
+Line 3: I don't know a sentence that starts with "txt".
+    I have a list of tracking numbers in the file tracking.txt, one on each line.
+                                                           ^^^
+Sentences like these work: "for each score in scores:", "skip this one" or "move on".
+
+Line 5: I expected "from" here, but found ",".
+    For each tracking number, could you please go to the carrier's website at https://track.example-carrier.com/?id=NUMBER (putting the tracking number in place of NUMBER) and check the status of the parcel?
+                            ^
+Write it like "for each n from 1 to 10:".
+
+Line 7: I expected a colon after this event, but found "are".
+    When you are done, please tell me which of the parcels have been delivered.
+             ^^^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 9: I don't know a sentence that starts with "Thanks".
+    Thanks so much for your help!
+    ^^^^^^
+Sentences like these work: "for each score in scores:", "ask "What's your name?" and call the answer name" or "for each n from 1 to 10:".
+--- files made ---

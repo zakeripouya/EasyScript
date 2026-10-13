@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: "max of temps - min of temps" could mean two things.
+      say max of temps - min of temps
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Use parentheses to say which: "(max of temps) - min of temps" or "max of (temps - min of temps)".
+--- files made ---

@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 9: I don't understand "!".
+    Thank you very much!
+                       ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hello".
+    Hello, could you please open the file spending.csv? It has our household spending, with a date, a category and an amount on each line.
+    ^^^^^
+Did you mean "tell"?
+
+Line 1: I don't know a sentence that starts with "It".
+    Hello, could you please open the file spending.csv? It has our household spending, with a date, a category and an amount on each line.
+                                                        ^^
+Did you mean "if"?
+
+Line 3: I don't know a sentence that starts with "Our".
+    Our monthly budget is $400 for groceries, $150 for eating out, $120 for transport and $100 for fun.
+    ^^^
+Sentences like these work: "what is the total?", "for each score in scores:" or "if total is 5, say "five"".
+
+Line 5: I expected "from" here, but found ",".
+    For each month, please show me how much we spent in each category. Then please tell me which categories went over the budget that month, and by how much.
+                  ^
+Write it like "for each n from 1 to 10:".
+
+Line 7: I don't know a sentence that starts with "Finally".
+    Finally, could you please make a bar chart showing the total we spent in each month, and save it as months.svg?
+    ^^^^^^^
+Sentences like these work: "make a new file called "notes.txt"", "total the amount per month" or "what is the total?".
+
+Line 9: I don't know a sentence that starts with "Thank".
+    Thank you very much!
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

@@ -1,0 +1,53 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected a value here, but found "me".
+    Ask me what our income is for the month.
+        ^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 2: I expected a value here, but found "me".
+    Ask me what our rent is.
+        ^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 3: I expected a value here, but found "me".
+    Ask me what our utilities are.
+        ^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 4: I expected a value here, but found "me".
+    Ask me what our insurance is.
+        ^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 5: I expected a value here, but found "me".
+    Ask me what our phone bill is.
+        ^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 6: I expected the sentence to end after "bills".
+    Add rent to the bills, add utilities to the bills, add insurance to the bills and add phone to the bills.
+                         ^
+End the sentence with a period, or start a new line.
+
+Line 7: I don't understand "much" here.
+    Say how much is left when you take the bills away from the income.
+            ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: I expected ":", "," or "then" after the condition, but found "that".
+    If the money that is left is less than $500, say that we need to be careful this month.
+                 ^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 9: I expected a value here, but found "me".
+    Ask me how much we want to save each month.
+        ^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 10: I expected "there are" or a test like "are above 70" here, but found "it".
+    Say how many months it will take us to save $5,000 for our emergency fund.
+                        ^^
+Write it like "how many scores are above 70" or "how many scores there are".
+--- files made ---

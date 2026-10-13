@@ -1,0 +1,22 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't know anything called "total".
+    what is the total?
+                ^^^^^
+Make it first, like "let total be 0".
+
+Line 3: The top items are picked by a number or a date, but this is text.
+    sort sales by quantity
+                  ^^^^^^^^
+
+Line 4: "it" doesn't refer to anything here.
+    total the amount per month
+              ^^^^^^
+"it" only means something inside a loop, where it's the loop's number or item.
+
+Line 5: A chart needs a list of numbers or amounts, or a map to them, but this is a list of sales.
+    make a bar chart of sales called "months.svg"
+                        ^^^^^
+A chart shows numbers or amounts, like "a list of 3, 5 and 2" or "the total price of orders per day".
+--- files made ---

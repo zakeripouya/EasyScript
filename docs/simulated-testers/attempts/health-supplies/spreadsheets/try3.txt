@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I expected "and call the answer" here, but found "and put".
+    ask "How many gloves (boxes) do we have?" and put the answer in GlovesOnHand
+                                              ^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 7: I expected "and call the answer" here, but found "and put".
+    ask "How many masks (boxes) do we have?" and put the answer in MasksOnHand
+                                             ^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 8: I expected "and call the answer" here, but found "and put".
+    ask "How many bandages (packs) do we have?" and put the answer in BandagesOnHand
+                                                ^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 9: I expected "and call the answer" here, but found "and put".
+    ask "How many hand gel (bottles) do we have?" and put the answer in GelOnHand
+                                                  ^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+--- files made ---

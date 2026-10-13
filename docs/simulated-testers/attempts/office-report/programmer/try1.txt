@@ -1,0 +1,82 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't understand the character "{".
+    totals = {}
+             ^
+
+Line 3: I don't understand the character "}".
+    totals = {}
+              ^
+
+Line 5: I don't understand the character "[".
+        totals[row.employee] = totals[row.employee] + row.hours
+              ^
+
+Line 5: I don't understand the character "]".
+        totals[row.employee] = totals[row.employee] + row.hours
+                           ^
+
+Line 5: I don't understand the character "[".
+        totals[row.employee] = totals[row.employee] + row.hours
+                                     ^
+
+Line 5: I don't understand the character "]".
+        totals[row.employee] = totals[row.employee] + row.hours
+                                                  ^
+
+Line 1: I don't know a sentence that starts with "data".
+    data = read csv "timesheet.csv"
+    ^^^^
+To keep a value in a name, write "let data be ...". To change it, write "set data to ...".
+
+Line 3: I don't know a sentence that starts with "totals".
+    totals = {}
+    ^^^^^^
+To keep a value in a name, write "let totals be ...". To change it, write "set totals to ...".
+
+Line 4: I expected "each" here, but found "row".
+    for row in data:
+        ^^^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "totals".
+        totals[row.employee] = totals[row.employee] + row.hours
+        ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "employee".
+        totals[row.employee] = totals[row.employee] + row.hours
+                   ^^^^^^^^
+To keep a value in a name, write "let employee be ...". To change it, write "set employee to ...".
+
+Line 5: I don't know a sentence that starts with "employee".
+        totals[row.employee] = totals[row.employee] + row.hours
+                                          ^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "hours".
+        totals[row.employee] = totals[row.employee] + row.hours
+                                                          ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 7: I expected "each" here, but found "name".
+    for name, hours in totals:
+        ^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 11: I expected "each" here, but found "name".
+    for name, hours in totals:
+        ^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 15: I don't know a sentence that starts with "team_total".
+    team_total = sum(data.hours)
+    ^^^^^^^^^^
+To keep a value in a name, write "let team_total be ...". To change it, write "set team_total to ...".
+
+Line 15: I don't know a sentence that starts with "hours".
+    team_total = sum(data.hours)
+                          ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

@@ -1,0 +1,79 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I can't compare text with a number.
+    If gloves is below 20, show "gloves" and 40 minus gloves.
+       ^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 6: "and" doesn't join text: it means both, for yes or no values.
+    If gloves is below 20, show "gloves" and 40 minus gloves.
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name).
+
+Line 6: I can't subtract text from a number.
+    If gloves is below 20, show "gloves" and 40 minus gloves.
+                                             ^^^^^^^^^^^^^^^
+
+Line 7: I can't compare text with a number.
+    If masks is below 15, show "masks" and 30 minus masks.
+       ^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 7: "and" doesn't join text: it means both, for yes or no values.
+    If masks is below 15, show "masks" and 30 minus masks.
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name).
+
+Line 7: I can't subtract text from a number.
+    If masks is below 15, show "masks" and 30 minus masks.
+                                           ^^^^^^^^^^^^^^
+
+Line 8: I can't compare text with a number.
+    If bandages is below 30, show "bandages" and 60 minus bandages.
+       ^^^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 8: "and" doesn't join text: it means both, for yes or no values.
+    If bandages is below 30, show "bandages" and 60 minus bandages.
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name).
+
+Line 8: I can't subtract text from a number.
+    If bandages is below 30, show "bandages" and 60 minus bandages.
+                                                 ^^^^^^^^^^^^^^^^^
+
+Line 9: I can't compare text with a number.
+    If handgel is below 10, show "hand gel" and 20 minus handgel.
+       ^^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 9: "and" doesn't join text: it means both, for yes or no values.
+    If handgel is below 10, show "hand gel" and 20 minus handgel.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name).
+
+Line 9: I can't subtract text from a number.
+    If handgel is below 10, show "hand gel" and 20 minus handgel.
+                                                ^^^^^^^^^^^^^^^^
+
+Line 11: I can't compare text with a number.
+    If gloves is at least 20 and masks is at least 15 and bandages is at least 30 and handgel is at least 10, say "Nothing to order this week."
+       ^^^^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 11: I can't compare text with a number.
+    If gloves is at least 20 and masks is at least 15 and bandages is at least 30 and handgel is at least 10, say "Nothing to order this week."
+                                 ^^^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 11: I can't compare text with a number.
+    If gloves is at least 20 and masks is at least 15 and bandages is at least 30 and handgel is at least 10, say "Nothing to order this week."
+                                                          ^^^^^^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 11: I can't compare text with a number.
+    If gloves is at least 20 and masks is at least 15 and bandages is at least 30 and handgel is at least 10, say "Nothing to order this week."
+                                                                                      ^^^^^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+--- files made ---

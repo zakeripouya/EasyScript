@@ -1,0 +1,199 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: I don't understand the character "{".
+    units = {}
+            ^
+
+Line 4: I don't understand the character "}".
+    units = {}
+             ^
+
+Line 5: I don't understand the character "{".
+    monthly = {}
+              ^
+
+Line 5: I don't understand the character "}".
+    monthly = {}
+               ^
+
+Line 11: I don't understand the character "[".
+        units[row.product] = units.get(row.product, 0) + row.quantity
+             ^
+
+Line 11: I don't understand the character "]".
+        units[row.product] = units.get(row.product, 0) + row.quantity
+                         ^
+
+Line 12: I don't understand the character "[".
+        month = row.date[0:7]
+                        ^
+
+Line 12: I don't understand the character "]".
+        month = row.date[0:7]
+                            ^
+
+Line 13: I don't understand the character "[".
+        monthly[month] = monthly.get(month, 0) + revenue
+               ^
+
+Line 13: I don't understand the character "]".
+        monthly[month] = monthly.get(month, 0) + revenue
+                     ^
+
+Line 17: I don't understand the character "[".
+    print("Best seller: " + best + " (" + units[best] + " units)")
+                                               ^
+
+Line 17: I don't understand the character "]".
+    print("Best seller: " + best + " (" + units[best] + " units)")
+                                                    ^
+
+Line 20: I don't understand the character "[".
+        print(month + ": $" + monthly[month])
+                                     ^
+
+Line 20: I don't understand the character "]".
+        print(month + ": $" + monthly[month])
+                                           ^
+
+Line 1: I don't know a sentence that starts with "sales".
+    sales = read csv "sales.csv"
+    ^^^^^
+Did you mean "save"?
+
+Line 3: I don't know a sentence that starts with "total".
+    total = 0
+    ^^^^^
+To keep a value in a name, write "let total be ...". To change it, write "set total to ...".
+
+Line 4: I don't know a sentence that starts with "units".
+    units = {}
+    ^^^^^
+To keep a value in a name, write "let units be ...". To change it, write "set units to ...".
+
+Line 5: I don't know a sentence that starts with "monthly".
+    monthly = {}
+    ^^^^^^^
+To keep a value in a name, write "let monthly be ...". To change it, write "set monthly to ...".
+
+Line 7: I expected "each" here, but found "row".
+    for row in sales:
+        ^^^
+Write it like "for each n from 1 to 10:".
+
+Line 8: I don't know a sentence that starts with "price".
+        price = number(row.price.replace("$", ""))
+        ^^^^^
+Did you mean "print" or "write"?
+
+Line 8: I don't know a sentence that starts with "price".
+        price = number(row.price.replace("$", ""))
+                           ^^^^^
+Did you mean "print" or "write"?
+
+Line 8: I don't know a sentence that starts with "replace".
+        price = number(row.price.replace("$", ""))
+                                 ^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 9: I don't know a sentence that starts with "revenue".
+        revenue = row.quantity * price
+        ^^^^^^^
+To keep a value in a name, write "let revenue be ...". To change it, write "set revenue to ...".
+
+Line 9: I don't know a sentence that starts with "quantity".
+        revenue = row.quantity * price
+                      ^^^^^^^^
+A sentence like this works: "reduce price by 10 percent".
+
+Line 10: I don't know a sentence that starts with "total".
+        total = total + revenue
+        ^^^^^
+To keep a value in a name, write "let total be ...". To change it, write "set total to ...".
+
+Line 11: I don't know a sentence that starts with "units".
+        units[row.product] = units.get(row.product, 0) + row.quantity
+        ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 11: I don't know a sentence that starts with "product".
+        units[row.product] = units.get(row.product, 0) + row.quantity
+                  ^^^^^^^
+To keep a value in a name, write "let product be ...". To change it, write "set product to ...".
+
+Line 11: I don't know a sentence that starts with "get".
+        units[row.product] = units.get(row.product, 0) + row.quantity
+                                   ^^^
+Did you mean "let" or "set"?
+
+Line 11: I don't know a sentence that starts with "product".
+        units[row.product] = units.get(row.product, 0) + row.quantity
+                                           ^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 11: I don't know a sentence that starts with "quantity".
+        units[row.product] = units.get(row.product, 0) + row.quantity
+                                                             ^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 12: I don't know a sentence that starts with "month".
+        month = row.date[0:7]
+        ^^^^^
+To keep a value in a name, write "let month be ...". To change it, write "set month to ...".
+
+Line 12: I don't know a sentence that starts with "date".
+        month = row.date[0:7]
+                    ^^^^
+Did you mean "save"?
+
+Line 13: I don't know a sentence that starts with "monthly".
+        monthly[month] = monthly.get(month, 0) + revenue
+        ^^^^^^^
+A sentence like this works: "total the amount per month".
+
+Line 13: I don't know a sentence that starts with "get".
+        monthly[month] = monthly.get(month, 0) + revenue
+                                 ^^^
+Did you mean "let" or "set"?
+
+Line 16: I don't know a sentence that starts with "best".
+    best = max(units, key=units.get)
+    ^^^^
+Did you mean "let" or "set" or "list"?
+
+Line 16: I don't know a sentence that starts with "get".
+    best = max(units, key=units.get)
+                                ^^^
+Did you mean "let" or "set"?
+
+Line 17: This "(" is never closed.
+    print("Best seller: " + best + " (" + units[best] + " units)")
+         ^
+Add a ")" where the group ends, on the same line.
+
+Line 19: I expected "each" here, but found "month".
+    for month in monthly:
+        ^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 20: This "(" is never closed.
+        print(month + ": $" + monthly[month])
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 22: I don't know a sentence that starts with "chart".
+    chart = bar_chart(monthly, title="Revenue per month")
+    ^^^^^
+To keep a value in a name, write "let chart be ...". To change it, write "set chart to ...".
+
+Line 23: I don't know a sentence that starts with "chart".
+    chart.save("months.svg")
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 23: Something is missing after ")".
+    chart.save("months.svg")
+                           ^
+Write it like "save rows as csv file "out.csv"".
+--- files made ---

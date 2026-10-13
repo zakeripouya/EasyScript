@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "object".
+    Ask name of object.
+                ^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 2: I expected "and call the answer" here, but found "in".
+    Ask mass in gram.
+             ^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 3: I expected "and call the answer" here, but found "in".
+    Ask volume in cubic centimeter.
+               ^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 4: I don't know a sentence that starts with "Density".
+    Density is mass divide by volume, round to 2 decimal.
+    ^^^^^^^
+To keep a value in a name, write "let Density be ...". To change it, write "set Density to ...".
+
+Line 6: I expected ":", "," or "then" after the condition, but found "less".
+    If density less than 1, say "it float". Else say "it sink".
+               ^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 7: I expected "and call the answer" here, but found "have".
+    Ask if have another object.
+           ^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 8: I expected "from" here, but found "back".
+    If answer is yes, go back to begin. If answer is no, stop.
+                         ^^^^
+Write it like "go from 0 to 100 in steps of 10:".
+--- files made ---

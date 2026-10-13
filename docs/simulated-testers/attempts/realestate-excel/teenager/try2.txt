@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't understand "price" here.
+    say average price per neighborhood
+                ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: I don't understand "house" here.
+    say cheapest house per neighborhood
+                 ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

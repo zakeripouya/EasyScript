@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "file" here, but found the text "appointments.csv".
+    Read "appointments.csv"
+         ^^^^^^^^^^^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 3: I don't understand "(" here.
+      let Missed be COUNTIF(status, "missed")
+                           ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't understand "(" here.
+      let Total be COUNT(rows)
+                        ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 7: I don't understand "per" here.
+    count the appointments per weekday
+                           ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: I expected a field after "highest" here, but found "count".
+    Show the weekday with the highest count
+                                      ^^^^^
+Write it like "the dog with the highest age".
+--- files made ---

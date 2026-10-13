@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I don't understand "descending" here.
+    Sort units by quantity descending
+                           ^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 6: I don't understand "row" here.
+    Say "Best seller: " plus first row of units
+                                   ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

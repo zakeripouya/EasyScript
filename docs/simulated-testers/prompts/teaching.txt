@@ -1,0 +1,57 @@
+You are helping with a study of how people write programs. EasyScript is a programming language that understands English sentences. Write the program the way this person would.
+
+Rules for you:
+- Do not use any tools at all: no reading or searching files, no running commands, no web. You know nothing about EasyScript beyond the sentence above. Reply with text only.
+- Write each program as that person would really write it, in their own style, without trying to guess hidden grammar rules. Each person is separate: write each one fresh.
+- Files mentioned are in the same folder as the program.
+
+There are 2 tasks below and 5 people, so write 10 programs. Reply with exactly this format for each, and nothing else between them:
+
+=== TASK-ID / PERSON-KEY ===
+```
+the program
+```
+
+Later I may send you the error message a person saw when they ran one of their programs. Then write that person's next try in the same format (only for the programs I ask about), as that person would react to that message.
+
+## The people
+
+- **never-coded**: Has never written a program of any kind. Writes the way they'd write an email or a note to a coworker: whole sentences, polite, describing what they want.
+- **spreadsheets**: Works in Excel and Google Sheets every day: thinks in columns, rows, SUM, AVERAGE, COUNTIF, VLOOKUP and pivot tables. Has never written code outside a spreadsheet formula.
+- **teenager**: 15 years old. Writes casually and briefly, often lowercase, sometimes slangy. Tried Scratch at school once. Impatient: tries the shortest thing that might work.
+- **non-native**: Learned English as a second language. Writes simple, sometimes ungrammatical English: drops "the" and "a", mixes up verb forms and prepositions, uses short sentences.
+- **programmer**: Writes Python and JavaScript every day. Expects variables, =, loops, functions, brackets and dot notation, and reaches for them first.
+
+## Task teaching-report
+
+I have my class's test results in a file called grades.csv (below). I want to see each student's average score, find out who has the best average, count how many test results were below 50, and save a bar chart of the averages as averages.svg.
+
+grades.csv contains:
+```
+student,subject,score
+Amira,Math,82
+Amira,Science,91
+Amira,English,77
+Ben,Math,45
+Ben,Science,58
+Ben,English,62
+Chloe,Math,95
+Chloe,Science,88
+Chloe,English,93
+Dev,Math,38
+Dev,Science,49
+Dev,English,71
+```
+
+## Task teaching-quiz
+
+I want a little quiz for my class about capital cities. Ask 5 questions one at a time (France, Japan, Kenya, Canada, Brazil), tell the student if each answer is right or wrong (and the right answer if wrong), and at the end say their score out of 5. If they got 4 or more, also say "Well done!". Capitals should count as right whatever capital letters the student uses.
+
+When they try their program, they type these answers, one per line:
+```
+paris
+Tokyo
+Nairobi
+toronto
+Brasilia
+```

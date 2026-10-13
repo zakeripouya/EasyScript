@@ -1,0 +1,64 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 11: I can't compare text with a number.
+    if gloves now is less than gloves, say "Please order " and gloves times 2 minus gloves now and " boxes of gloves."
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 11: "and" doesn't join text: it means both, for yes or no values.
+    if gloves now is less than gloves, say "Please order " and gloves times 2 minus gloves now and " boxes of gloves."
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name).
+
+Line 11: I can't subtract text from a number.
+    if gloves now is less than gloves, say "Please order " and gloves times 2 minus gloves now and " boxes of gloves."
+                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 12: I can't compare text with a number.
+    if masks now is less than masks, say "Please order " and masks times 2 minus masks now and " boxes of masks."
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 12: "and" doesn't join text: it means both, for yes or no values.
+    if masks now is less than masks, say "Please order " and masks times 2 minus masks now and " boxes of masks."
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name).
+
+Line 12: I can't subtract text from a number.
+    if masks now is less than masks, say "Please order " and masks times 2 minus masks now and " boxes of masks."
+                                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 13: I can't compare text with a number.
+    if bandages now is less than bandages, say "Please order " and bandages times 2 minus bandages now and " packs of bandages."
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 13: "and" doesn't join text: it means both, for yes or no values.
+    if bandages now is less than bandages, say "Please order " and bandages times 2 minus bandages now and " packs of bandages."
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name).
+
+Line 13: I can't subtract text from a number.
+    if bandages now is less than bandages, say "Please order " and bandages times 2 minus bandages now and " packs of bandages."
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 14: I can't compare text with a number.
+    if hand gel now is less than hand gel, say "Please order " and hand gel times 2 minus hand gel now and " bottles of hand gel."
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 14: "and" doesn't join text: it means both, for yes or no values.
+    if hand gel now is less than hand gel, say "Please order " and hand gel times 2 minus hand gel now and " bottles of hand gel."
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name).
+
+Line 14: I can't subtract text from a number.
+    if hand gel now is less than hand gel, say "Please order " and hand gel times 2 minus hand gel now and " bottles of hand gel."
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 16: I don't know anything called "needed".
+    if nothing is needed, say "Nothing to order this week."
+                  ^^^^^^
+Make it first, like "let needed be 0".
+--- files made ---

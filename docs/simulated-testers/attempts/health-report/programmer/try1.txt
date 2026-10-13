@@ -1,0 +1,73 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "rows".
+    rows = read csv "appointments.csv"
+    ^^^^
+To keep a value in a name, write "let rows be ...". To change it, write "set rows to ...".
+
+Line 3: I don't know a sentence that starts with "clinics".
+    clinics = unique(rows.clinic)
+    ^^^^^^^
+To keep a value in a name, write "let clinics be ...". To change it, write "set clinics to ...".
+
+Line 3: I don't know a sentence that starts with "clinic".
+    clinics = unique(rows.clinic)
+                          ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 4: I expected "each" here, but found "clinic".
+    for clinic in clinics:
+        ^^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "clinic_rows".
+        clinic_rows = rows where clinic == clinic
+        ^^^^^^^^^^^
+To keep a value in a name, write "let clinic_rows be ...". To change it, write "set clinic_rows to ...".
+
+Line 6: I don't know a sentence that starts with "missed".
+        missed = count(clinic_rows where status == "missed")
+        ^^^^^^
+To keep a value in a name, write "let missed be ...". To change it, write "set missed to ...".
+
+Line 7: I don't know a sentence that starts with "total".
+        total = count(clinic_rows)
+        ^^^^^
+To keep a value in a name, write "let total be ...". To change it, write "set total to ...".
+
+Line 8: I don't know a sentence that starts with "pct".
+        pct = missed / total * 100
+        ^^^
+Did you mean "put"?
+
+Line 9: This "(" is never closed.
+        print(clinic + ": " + missed + " missed (" + round(pct, 1) + "%)")
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 11: I don't know a sentence that starts with "day_counts".
+    day_counts = count rows grouped by weekday
+    ^^^^^^^^^^
+To keep a value in a name, write "let day_counts be ...". To change it, write "set day_counts to ...".
+
+Line 12: I don't know a sentence that starts with "busiest".
+    busiest = max(day_counts)
+    ^^^^^^^
+To keep a value in a name, write "let busiest be ...". To change it, write "set busiest to ...".
+
+Line 13: This "(" is never closed.
+    print("Busiest day: " + busiest.weekday + " with " + busiest.count + " appointments")
+         ^
+Add a ")" where the group ends, on the same line.
+
+Line 13: I don't know a sentence that starts with "weekday".
+    print("Busiest day: " + busiest.weekday + " with " + busiest.count + " appointments")
+                                    ^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 13: I expected "from" here, but found "+".
+    print("Busiest day: " + busiest.weekday + " with " + busiest.count + " appointments")
+                                                                       ^
+Write it like "count from 1 to 10:".
+--- files made ---

@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "file" here, but found the text "games.csv".
+    Read "games.csv"
+         ^^^^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 2: I don't understand "per" here.
+    Count rows per winner, sort descending, show top 1
+               ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: I don't know a sentence that starts with "Average".
+    Average score per game
+    ^^^^^^^
+Sentences like these work: "total the amount per month" or "for each score in scores:".
+
+Line 4: I don't understand "descending" here.
+    Sort rows by score descending, show top 3 with winner, game and score
+                       ^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

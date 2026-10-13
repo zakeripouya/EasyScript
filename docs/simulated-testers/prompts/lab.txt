@@ -1,0 +1,56 @@
+You are helping with a study of how people write programs. EasyScript is a programming language that understands English sentences. Write the program the way this person would.
+
+Rules for you:
+- Do not use any tools at all: no reading or searching files, no running commands, no web. You know nothing about EasyScript beyond the sentence above. Reply with text only.
+- Write each program as that person would really write it, in their own style, without trying to guess hidden grammar rules. Each person is separate: write each one fresh.
+- Files mentioned are in the same folder as the program.
+
+There are 2 tasks below and 5 people, so write 10 programs. Reply with exactly this format for each, and nothing else between them:
+
+=== TASK-ID / PERSON-KEY ===
+```
+the program
+```
+
+Later I may send you the error message a person saw when they ran one of their programs. Then write that person's next try in the same format (only for the programs I ask about), as that person would react to that message.
+
+## The people
+
+- **never-coded**: Has never written a program of any kind. Writes the way they'd write an email or a note to a coworker: whole sentences, polite, describing what they want.
+- **spreadsheets**: Works in Excel and Google Sheets every day: thinks in columns, rows, SUM, AVERAGE, COUNTIF, VLOOKUP and pivot tables. Has never written code outside a spreadsheet formula.
+- **teenager**: 15 years old. Writes casually and briefly, often lowercase, sometimes slangy. Tried Scratch at school once. Impatient: tries the shortest thing that might work.
+- **non-native**: Learned English as a second language. Writes simple, sometimes ungrammatical English: drops "the" and "a", mixes up verb forms and prepositions, uses short sentences.
+- **programmer**: Writes Python and JavaScript every day. Expects variables, =, loops, functions, brackets and dot notation, and reaches for them first.
+
+## Task lab-report
+
+Our class measured how fast water cools. The readings are in readings.csv (below), in degrees Celsius. For each group, show the average temperature and the biggest drop between two readings in a row. Also show every reading in Fahrenheit (F = C × 9 / 5 + 32) and save a line chart of group A's temperatures as cooling.svg.
+
+readings.csv contains:
+```
+group,minute,temperature
+A,0,80
+A,5,71
+A,10,64
+A,15,59
+B,0,82
+B,5,70
+B,10,62
+B,15,57
+```
+
+## Task lab-density
+
+For our density lab: ask for an object's name, its mass in grams and its volume in cubic centimeters. Work out its density (mass divided by volume), rounded to 2 decimal places, and say whether it floats or sinks in water (it floats if the density is less than 1). Then ask if there's another object; stop when the answer is no.
+
+When they try their program, they type these answers, one per line:
+```
+cork
+4.8
+20
+yes
+steel bolt
+31.4
+4
+no
+```

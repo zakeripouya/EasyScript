@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "," here.
+    let countries be "France", "Japan", "Kenya", "Canada", "Brazil"
+                             ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 2: I don't understand "," here.
+    let capitals be "Paris", "Tokyo", "Nairobi", "Ottawa", "Brasilia"
+                           ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 9: I expected ":", "," or "then" after the condition, but found "(".
+        if lowercase(answer) is lowercase(capital):
+                    ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

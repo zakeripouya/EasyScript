@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 10: Something is missing after "'s".
+        let weight be row's "weight kg"
+                         ^^
+Write the name of a field after it, like "rex's name".
+
+Line 28: I expected "there are" or a test like "are above 70" here, but found "in".
+        say country + ": " + how many rows in data have country
+                                           ^^
+Write it like "how many scores are above 70" or "how many scores there are".
+--- files made ---

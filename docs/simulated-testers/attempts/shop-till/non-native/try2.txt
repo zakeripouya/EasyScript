@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "beans" here.
+    Let prices be coffee beans $12.50, mug $8, filter papers $3.20.
+                         ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: Something is missing after "Repeat".
+    Repeat:
+    ^^^^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 6: I expected ":", "," or "then" after the condition, but found "prices".
+        If item is not in prices, say "This item is not in list" and ask again.
+                          ^^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 8: "price of item times amount" could mean two things.
+        Add price of item times amount to total.
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Use parentheses to say which: "(price of item) times amount" or "price of (item times amount)".
+--- files made ---

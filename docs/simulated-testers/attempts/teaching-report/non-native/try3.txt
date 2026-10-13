@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't know a sentence that starts with "Calculate".
+        Calculate average of score.
+        ^^^^^^^^^
+Sentences like these work: "for each score in scores:", "go from 0 to 100 in steps of 10:" or "insert 7 at position 1 of scores".
+
+Line 5: I don't understand "average" here.
+    Show best average and student.
+              ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 7: I expected "called" here, but found "chart".
+    Make bar chart called "averages.svg" with averages.
+             ^^^^^
+Write it like "make a new file called "notes.txt"".
+--- files made ---

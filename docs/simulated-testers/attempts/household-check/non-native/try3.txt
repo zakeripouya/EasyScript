@@ -1,0 +1,27 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I can't subtract text from text.
+    Let left be income minus rent minus utilities minus insurance minus phone.
+                ^^^^^^^^^^^^^^^^^
+
+Line 6: I can't subtract text from a number.
+    Let left be income minus rent minus utilities minus insurance minus phone.
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 6: I can't subtract text from a number.
+    Let left be income minus rent minus utilities minus insurance minus phone.
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 6: I can't subtract text from a number.
+    Let left be income minus rent minus utilities minus insurance minus phone.
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 8: I can't compare a number with an amount in dollars.
+    If left is less than $500, say "Money is low this month!"
+       ^^^^^^^^^^^^^^^^^^^^^^
+
+Line 10: I can't divide a number by text.
+    Let months be 5000 divided by save.
+                  ^^^^^^^^^^^^^^^^^^^^
+--- files made ---

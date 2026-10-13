@@ -1,0 +1,65 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 10: I don't understand the character "&".
+    Show "Tip: " & DOLLAR(Tip, 2)
+                 ^
+
+Line 11: I don't understand the character "&".
+    Show "Total: " & DOLLAR(Total, 2)
+                   ^
+
+Line 12: I don't understand the character "&".
+    Show "Each person pays: " & DOLLAR(PerPerson, 2)
+                              ^
+
+Line 1: I expected "and call the answer" here, but found "and put".
+    Ask "Bill amount?" and put the answer in Bill.
+                       ^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 2: I expected "and call the answer" here, but found "and put".
+    Ask "How many people?" and put the answer in People.
+                           ^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 3: I expected "and call the answer" here, but found "and put".
+    Ask "How was the service? (good, okay or bad)" and put the answer in Service.
+                                                   ^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 5: I don't know a sentence that starts with "TipRate".
+    TipRate = IF(Service = "good", 20%, IF(Service = "okay", 15%, 10%))
+    ^^^^^^^
+To keep a value in a name, write "let TipRate be ...". To change it, write "set TipRate to ...".
+
+Line 6: I don't know a sentence that starts with "Tip".
+    Tip = Bill * TipRate
+    ^^^
+To keep a value in a name, write "let Tip be ...". To change it, write "set Tip to ...".
+
+Line 7: I don't know a sentence that starts with "Total".
+    Total = Bill + Tip
+    ^^^^^
+To keep a value in a name, write "let Total be ...". To change it, write "set Total to ...".
+
+Line 8: I don't know a sentence that starts with "PerPerson".
+    PerPerson = Total / People
+    ^^^^^^^^^
+To keep a value in a name, write "let PerPerson be ...". To change it, write "set PerPerson to ...".
+
+Line 10: I don't understand "dollar" here.
+    Show "Tip: " & DOLLAR(Tip, 2)
+                   ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 11: I don't understand "dollar" here.
+    Show "Total: " & DOLLAR(Total, 2)
+                     ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 12: I don't understand "dollar" here.
+    Show "Each person pays: " & DOLLAR(PerPerson, 2)
+                                ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

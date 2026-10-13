@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "load".
+    load timesheet.csv
+    ^^^^
+Did you mean "read"?
+
+Line 1: I don't know a sentence that starts with "csv".
+    load timesheet.csv
+                   ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I don't know a sentence that starts with "total".
+    total hours for each employee
+    ^^^^^
+Sentences like these work: "for each score in scores:", "for each n from 1 to 10:" or "total the amount per month".
+
+Line 3: I don't understand "did" here.
+    show who did over 40 and how much over
+             ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't know a sentence that starts with "total".
+    total hours for everyone
+    ^^^^^
+Sentences like these work: "total the amount per month", "what is the total?" or "for each score in scores:".
+--- files made ---

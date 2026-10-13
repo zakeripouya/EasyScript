@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I don't understand "bill" here.
+    if the service is good, let the tip be 20% of the bill
+                                                      ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 6: I don't understand "bill" here.
+    if the service is okay, let the tip be 15% of the bill
+                                                      ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 7: I don't understand "bill" here.
+    if the service is bad, let the tip be 10% of the bill
+                                                     ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 10: "let" makes a new name, so it can't change a field.
+    let each person's share be the total divided by the people
+                   ^^
+To change a field, write "set each person's ... to ...".
+
+Line 14: Something is missing after "'s".
+    say "Each person needs to pay $" and each person's share
+                                                    ^^
+Write the name of a field after it, like "each drink's name".
+--- files made ---

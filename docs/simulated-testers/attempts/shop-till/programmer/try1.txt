@@ -1,0 +1,54 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand the character "{".
+    prices = {"coffee beans": 12.50, "mug": 8, "filter papers": 3.20}
+             ^
+
+Line 1: I don't understand the character "}".
+    prices = {"coffee beans": 12.50, "mug": 8, "filter papers": 3.20}
+                                                                    ^
+
+Line 12: I don't understand the character "[".
+        total = total + prices[item] * qty
+                              ^
+
+Line 12: I don't understand the character "]".
+        total = total + prices[item] * qty
+                                   ^
+
+Line 1: I don't know a sentence that starts with "prices".
+    prices = {"coffee beans": 12.50, "mug": 8, "filter papers": 3.20}
+    ^^^^^^
+To keep a value in a name, write "let prices be ...". To change it, write "set prices to ...".
+
+Line 2: I don't know a sentence that starts with "total".
+    total = 0
+    ^^^^^
+To keep a value in a name, write "let total be ...". To change it, write "set total to ...".
+
+Line 5: I don't know a sentence that starts with "item".
+        item = input("Item: ")
+        ^^^^
+To keep a value in a name, write "let item be ...". To change it, write "set item to ...".
+
+Line 8: I expected ":", "," or "then" after the condition, but found "not".
+        if item not in prices:
+                ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 11: I don't know a sentence that starts with "qty".
+        qty = number(input("How many: "))
+        ^^^
+To keep a value in a name, write "let qty be ...". To change it, write "set qty to ...".
+
+Line 12: I don't know a sentence that starts with "total".
+        total = total + prices[item] * qty
+        ^^^^^
+To keep a value in a name, write "let total be ...". To change it, write "set total to ...".
+
+Line 16: I don't know a sentence that starts with "discounted".
+        discounted = total * 0.9
+        ^^^^^^^^^^
+To keep a value in a name, write "let discounted be ...". To change it, write "set discounted to ...".
+--- files made ---

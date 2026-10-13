@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I don't understand "(" here.
+    let balance be number(start_text)
+                         ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 6: I don't understand "(" here.
+    let deposit be number(deposit_text)
+                         ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 7: I don't understand "(" here.
+    let rate be number(rate_text)
+                      ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

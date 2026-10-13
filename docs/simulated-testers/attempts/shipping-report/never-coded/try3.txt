@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't understand "for" here.
+    Tell me how many shipments there are for each country.
+                                         ^^^
+Did you mean "or"?
+
+Line 4: I don't understand "shipment" here.
+    Tell me the heaviest shipment.
+                         ^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I don't understand "date" here.
+    List the shipments where the delivered date minus the shipped date is more than 5 days.
+                                           ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

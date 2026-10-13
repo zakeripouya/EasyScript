@@ -1,0 +1,19 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: "A" can't be used as a name.
+    read file "tracking.txt" and call it A
+                                         ^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 2: Something is missing after "in".
+    for each number in A:
+                    ^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 4: I don't understand "at" here.
+        let status be the page at link
+                               ^^
+Did you mean "as"?
+--- files made ---

@@ -1,0 +1,78 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 17: I don't understand "!".
+    Thank you!
+             ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hello".
+    Hello,
+    ^^^^^
+Did you mean "tell"?
+
+Line 3: I expected "and call the answer" here, but found "these".
+    I would like to give my class a short quiz about capital cities. Please ask the student these five questions, one at a time, and wait for their answer each time:
+                                                                                            ^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 5: I don't know a sentence that starts with "answer".
+    What is the capital of France? The answer is Paris.
+                                       ^^^^^^
+To keep a value in a name, write "let answer be ...". To change it, write "set answer to ...".
+
+Line 6: I don't know a sentence that starts with "answer".
+    What is the capital of Japan? The answer is Tokyo.
+                                      ^^^^^^
+To keep a value in a name, write "let answer be ...". To change it, write "set answer to ...".
+
+Line 7: I don't know a sentence that starts with "answer".
+    What is the capital of Kenya? The answer is Nairobi.
+                                      ^^^^^^
+To keep a value in a name, write "let answer be ...". To change it, write "set answer to ...".
+
+Line 8: I don't know a sentence that starts with "answer".
+    What is the capital of Canada? The answer is Ottawa.
+                                       ^^^^^^
+To keep a value in a name, write "let answer be ...". To change it, write "set answer to ...".
+
+Line 9: I don't know a sentence that starts with "answer".
+    What is the capital of Brazil? The answer is Brasilia.
+                                       ^^^^^^
+To keep a value in a name, write "let answer be ...". To change it, write "set answer to ...".
+
+Line 11: I don't know a sentence that starts with "After".
+    After each answer, please tell the student whether they were right or wrong. If they were wrong, please tell them the correct answer.
+    ^^^^^
+Sentences like these work: "for each score in scores:", "tell me the total" or "ask "What's your name?" and call the answer name".
+
+Line 11: I expected ":", "," or "then" after the condition, but found "were".
+    After each answer, please tell the student whether they were right or wrong. If they were wrong, please tell them the correct answer.
+                                                                                         ^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 13: I don't know a sentence that starts with "don't".
+    Please don't worry about capital letters. For example, "paris" and "Paris" should both count as correct.
+           ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 13: I don't understand "should" here.
+    Please don't worry about capital letters. For example, "paris" and "Paris" should both count as correct.
+                                                                               ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 15: I don't know a sentence that starts with "At".
+    At the end, please tell the student their score out of 5. If they got 4 or more right, please also say "Well done!".
+    ^^
+Did you mean "as"?
+
+Line 15: I expected ":", "," or "then" after the condition, but found "got".
+    At the end, please tell the student their score out of 5. If they got 4 or more right, please also say "Well done!".
+                                                                      ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 17: I don't know a sentence that starts with "Thank".
+    Thank you!
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

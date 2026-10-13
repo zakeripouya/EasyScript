@@ -1,0 +1,36 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I can only count the items of a list, but this is text.
+    say how many s there are
+                 ^
+
+Line 3: I don't know how to "weight".
+    say average of weight of s
+                   ^^^^^^^^^^^
+Define it first, like "to weight with someone:" with its sentences indented below.
+
+Line 4: I don't know how to "max".
+    say max of weight of s
+        ^^^^^^^^^^^^^^^^^^
+Define it first, like "to max with someone:" with its sentences indented below.
+
+Line 4: I don't know how to "weight".
+    say max of weight of s
+               ^^^^^^^^^^^
+Define it first, like "to weight with someone:" with its sentences indented below.
+
+Line 5: A "for each" loop needs a list to go through, but this is text.
+    for each row in s:
+                    ^
+
+Line 6: I don't know anything called "delivered".
+        if delivered minus shipped is more than 5, say row
+           ^^^^^^^^^
+Make it first, like "let delivered be 0".
+
+Line 6: I don't know anything called "shipped".
+        if delivered minus shipped is more than 5, say row
+                           ^^^^^^^
+Make it first, like "let shipped be 0".
+--- files made ---

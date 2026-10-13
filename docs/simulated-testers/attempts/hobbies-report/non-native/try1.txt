@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "games".
+    Read file games.csv.
+              ^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "csv".
+    Read file games.csv.
+                    ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I don't know a sentence that starts with "Find".
+    Find who is winning most games.
+    ^^^^
+Sentences like these work: "what is the total?", "if total is 5, say "five"" or "unless total is 5, say "not five"".
+
+Line 3: "of" can't be part of a name, because it already means something in EasyScript.
+    For each game calculate average of score.
+                                    ^^
+Try a name without it, like "score game calculate average".
+
+Line 4: I don't understand "biggest" here.
+    Show 3 biggest score with winner and game.
+           ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

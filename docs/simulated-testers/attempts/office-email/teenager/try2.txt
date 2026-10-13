@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected a colon after this event, but found "email".
+    every monday at 9am email "bookings.csv" to "team@ourcompany.com" subject "Room bookings this week"
+                        ^^^^^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+--- files made ---

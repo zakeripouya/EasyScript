@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: I don't know a sentence that starts with "Make".
+    Make balance a number.
+    ^^^^
+Did you mean "mark" or "move" or "save"?
+
+Line 5: I don't know a sentence that starts with "Make".
+    Make yearly a number.
+    ^^^^
+Did you mean "mark" or "move" or "save"?
+
+Line 6: I don't know a sentence that starts with "Make".
+    Make rate a number.
+    ^^^^
+Did you mean "mark" or "move" or "save"?
+--- files made ---

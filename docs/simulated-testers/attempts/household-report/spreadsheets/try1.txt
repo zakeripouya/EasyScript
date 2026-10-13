@@ -1,0 +1,73 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Load".
+    Load spending.csv as a table with columns date, category, amount.
+    ^^^^
+Did you mean "read"?
+
+Line 1: I don't know a sentence that starts with "csv".
+    Load spending.csv as a table with columns date, category, amount.
+                  ^^^
+Sentences like these work: "save rows as csv file "sales.csv"", "read the table in "sales.csv" and call it sales" or "total the amount per month".
+
+Line 2: I don't know a sentence that starts with "Make".
+    Make a column month = the year and month part of date.
+    ^^^^
+Did you mean "mark" or "move" or "save"?
+
+Line 3: I don't know a sentence that starts with "Budget".
+    Budget table:
+    ^^^^^^
+A sentence like this works: "read the table in "sales.csv" and call it sales".
+
+Line 4: I don't know a sentence that starts with "groceries".
+      groceries = 400
+      ^^^^^^^^^
+To keep a value in a name, write "let groceries be ...". To change it, write "set groceries to ...".
+
+Line 5: I don't know a sentence that starts with "eating".
+      eating out = 150
+      ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 6: I don't know a sentence that starts with "transport".
+      transport = 120
+      ^^^^^^^^^
+To keep a value in a name, write "let transport be ...". To change it, write "set transport to ...".
+
+Line 7: I don't know a sentence that starts with "fun".
+      fun = 100
+      ^^^
+To keep a value in a name, write "let fun be ...". To change it, write "set fun to ...".
+
+Line 8: I don't know a sentence that starts with "Pivot".
+    Pivot table: rows = month, columns = category, values = SUM of amount.
+    ^^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "total the amount per month" or "save rows as csv file "sales.csv"".
+
+Line 9: I don't understand "table" here.
+    Show the pivot table.
+                   ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 10: I expected "in" here, but found ",".
+    For each month and category, over = SUM of amount - budget for that category (lookup from budget table).
+                               ^
+Write it like "for each name and age in ages:".
+
+Line 11: I don't understand "month" here.
+    Show each month and category where over > 0, with the over amount.
+              ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 12: I expected "called" here, but found "amount".
+    Make a bar chart of total amount per month (SUM of amount grouped by month).
+                              ^^^^^^
+Write it like "make a bar chart of sales called "sales.svg"".
+
+Line 13: I don't know a sentence that starts with "svg".
+    Save chart as months.svg.
+                         ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

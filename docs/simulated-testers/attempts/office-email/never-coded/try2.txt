@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Every".
+    Every Monday morning at 9am, please send an email to "team@ourcompany.com" with the subject "Room bookings this week".
+    ^^^^^
+Sentences like these work: "apply double to every number in scores", "set total to 10" or "change total to 10".
+
+Line 3: I expected "in file" here, but found "room".
+    Please put the meeting room bookings from the file "bookings.csv" in the email, so everyone can see which rooms are booked, on which day and time, and by whom.
+                           ^^^^
+Write it like "put "hello" in file "notes.txt"".
+--- files made ---

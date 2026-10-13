@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I expected a field after "most" here, but found "games".
+    What is winner with most games?
+                             ^^^^^
+Write it like "the dog with the highest age".
+
+Line 3: I expected "from" here, but found ",".
+    For each game, calculate average score.
+                 ^
+Write it like "for each n from 1 to 10:".
+--- files made ---

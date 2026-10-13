@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "grades".
+    Read file grades.csv.
+              ^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "csv".
+    Read file grades.csv.
+                     ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I expected "each" here, but found "every".
+    For every student calculate average of score.
+        ^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 3: I don't understand "student" here.
+    Show average of each student.
+                         ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't know a sentence that starts with "Find".
+    Find student who have best average and show him.
+    ^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "show me the big orders" or "show "hello"".
+
+Line 6: I expected "called" here, but found "chart".
+    Make bar chart with averages and save in averages.svg.
+             ^^^^^
+Write it like "make a new file called "notes.txt"".
+
+Line 6: I don't know a sentence that starts with "svg".
+    Make bar chart with averages and save in averages.svg.
+                                                      ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

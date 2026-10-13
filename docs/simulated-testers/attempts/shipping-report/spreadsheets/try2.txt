@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't understand "by" here.
+    let counts be count of shipments by country
+                                     ^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't understand "kg" here.
+    let avg be average of weight kg in shipments
+                                 ^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 6: I don't understand "kg" here.
+    let heaviest be max of weight kg in shipments
+                                  ^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

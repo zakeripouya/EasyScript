@@ -1,0 +1,53 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Load".
+    Load guests.csv as a table.
+    ^^^^
+Did you mean "read"?
+
+Line 1: I don't know a sentence that starts with "csv".
+    Load guests.csv as a table.
+                ^^^
+Sentences like these work: "save rows as csv file "sales.csv"", "read the table in "sales.csv" and call it sales" or "mark box as fragile".
+
+Line 2: I don't know a sentence that starts with "Filter".
+    Filter rows where rsvp = "yes".
+    ^^^^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 3: Something is missing after "as".
+    Count rows where rsvp = "yes" and show it as "Yes count".
+                                              ^^
+Did you mean "as a number", "as text", "as money", "as a percent" or "as a table"?
+
+Line 4: I expected "to" here, but found the text "headcount".
+    Add a column "headcount" = 1 + plus ones.
+                 ^^^^^^^^^^^
+Write it like "add 5 to total".
+
+Line 5: I don't understand "for" here.
+    Show SUM of headcount for rsvp = "yes" as "Total headcount".
+                          ^^^
+Did you mean "or"?
+
+Line 6: I don't know a sentence that starts with "Make".
+    Make a pivot table of the yes rows: rows by meal, values = SUM of headcount.
+    ^^^^
+Did you mean "mark" or "move" or "save"?
+
+Line 7: I don't understand "table" here.
+    Show the pivot table.
+                   ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: I expected "called" here, but found "chart".
+    Make a pie chart from the pivot table, meal as labels, SUM of headcount as values.
+               ^^^^^
+Write it like "make a new file called "notes.txt"".
+
+Line 9: I don't know a sentence that starts with "svg".
+    Save the chart as meals.svg.
+                            ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

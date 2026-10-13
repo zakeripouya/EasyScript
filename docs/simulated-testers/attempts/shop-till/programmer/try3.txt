@@ -1,0 +1,37 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 8: I can only look for something in text or a list, but this is a map from text to numbers.
+        if prices doesn't contain product:
+           ^^^^^^
+To check whether a map has a key, use "has".
+
+Line 9: I can't add text to text.
+            say "Sorry, " + product + " isn't on the list."
+                ^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 9: I can't add text to a number.
+            say "Sorry, " + product + " isn't on the list."
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 12: "prices" is a map from text to numbers, so it can't be called.
+        set total to total + (prices of product) * qty
+                             ^^^^^^
+Only a definition, or a function made with "a function taking ...", can be called. To keep one in a name, write something like "let double be a function taking x that gives back x times 2".
+
+Line 12: I can't multiply an unknown kind of value by text.
+        set total to total + (prices of product) * qty
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 14: I can't add a number to text.
+    say "Total: $" + total
+        ^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 17: I can't add a number to text.
+        say "Discounted total: $" + discounted
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+--- files made ---

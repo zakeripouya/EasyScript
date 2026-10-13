@@ -1,0 +1,53 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 9: I don't understand "!".
+    Thank you!
+             ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "open".
+    Please open the file readings.csv. It has the columns group, minute and temperature, and the temperatures are in degrees Celsius.
+           ^^^^
+Sentences like these work: "make a new file called "notes.txt"", "write "hello" to file "notes.txt"" or "append "hello" to file "notes.txt"".
+
+Line 1: I don't know a sentence that starts with "csv".
+    Please open the file readings.csv. It has the columns group, minute and temperature, and the temperatures are in degrees Celsius.
+                                  ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 1: I don't know a sentence that starts with "It".
+    Please open the file readings.csv. It has the columns group, minute and temperature, and the temperatures are in degrees Celsius.
+                                       ^^
+Did you mean "if"?
+
+Line 3: I expected "from" here, but found ",".
+    For each group, please show me the average temperature, and also the biggest drop in temperature between two readings that come one after the other.
+                  ^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "please".
+    Then please show me every reading converted to Fahrenheit. To convert, multiply the Celsius temperature by 9, divide by 5, and then add 32.
+         ^^^^^^
+Did you mean "please"?
+
+Line 5: I expected a name here, but found ",".
+    Then please show me every reading converted to Fahrenheit. To convert, multiply the Celsius temperature by 9, divide by 5, and then add 32.
+                                                                         ^
+A name is a single word, like "total", or several, like "late fee".
+
+Line 7: I don't know a sentence that starts with "please".
+    Finally, please make a line chart of the temperatures for group A over time (minute along the bottom, temperature going up the side) and save it as cooling.svg.
+             ^^^^^^
+Did you mean "please"?
+
+Line 7: I don't know a sentence that starts with "svg".
+    Finally, please make a line chart of the temperatures for group A over time (minute along the bottom, temperature going up the side) and save it as cooling.svg.
+                                                                                                                                                                ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 9: I don't know a sentence that starts with "Thank".
+    Thank you!
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

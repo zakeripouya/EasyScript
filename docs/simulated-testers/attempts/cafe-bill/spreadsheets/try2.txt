@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I don't understand "(" here.
+    Let TipRate be IF(Service = "good", 20%, IF(Service = "okay", 15%, 10%))
+                     ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 10: I don't understand "(" here.
+    Show "Tip: $" plus ROUND(Tip, 2)
+                            ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 11: I don't understand "(" here.
+    Show "Total: $" plus ROUND(Total, 2)
+                              ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 12: I don't understand "(" here.
+    Show "Each person pays: $" plus ROUND(PerPerson, 2)
+                                         ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

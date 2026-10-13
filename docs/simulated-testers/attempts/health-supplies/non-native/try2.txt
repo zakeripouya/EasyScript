@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 11: EasyScript doesn't have "is not below".
+    If gloves is not below 20 and masks is not below 15 and bandages is not below 30 and handgel is not below 10, say "Nothing to order this week."
+              ^^^^^^^^^^^^
+Did you mean "is at least"?
+--- files made ---

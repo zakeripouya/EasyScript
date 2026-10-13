@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Make".
+    Make random number from 1 to 10 and call it secret.
+    ^^^^
+Did you mean "mark" or "move" or "save"?
+--- files made ---

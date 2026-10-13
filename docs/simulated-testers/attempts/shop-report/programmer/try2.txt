@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I don't know a sentence that starts with "price".
+        let price be row.price as a number
+                         ^^^^^
+Did you mean "print" or "write" or "place"?
+
+Line 7: I don't know a sentence that starts with "quantity".
+        let revenue be row.quantity * price
+                           ^^^^^^^^
+A sentence like this works: "reduce price by 10 percent".
+
+Line 14: I don't understand "descending" here.
+    sort units by quantity descending
+                           ^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

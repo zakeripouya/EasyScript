@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I expected "as" here, but found "and".
+    save name and meal as csv file "signups.csv"
+              ^^^
+Write it like "save rows as csv file "out.csv"".
+--- files made ---

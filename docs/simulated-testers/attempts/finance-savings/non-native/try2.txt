@@ -1,0 +1,26 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I can't add text to text.
+      Add yearly to balance.
+      ^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 6: I can't add a number to text.
+      Add balance times rate divided by 100 to balance.
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 6: I can't multiply text by text.
+      Add balance times rate divided by 100 to balance.
+          ^^^^^^^^^^^^^^^^^^
+
+Line 7: I can't use "and" between a number and a number.
+      Say year and balance rounded to 2 decimal places.
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To add numbers, use "plus".
+
+Line 7: "rounded to ... decimal places" needs a number, but this is text.
+      Say year and balance rounded to 2 decimal places.
+                   ^^^^^^^
+--- files made ---

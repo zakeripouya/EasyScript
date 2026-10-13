@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I don't know a sentence that starts with "round".
+    round density to 2 decimal
+    ^^^^^
+Did you mean "count"?
+
+Line 8: A one-line "if" can't have an "else".
+    else, say "it sink"
+    ^^^^
+Write the "if" with a colon and its sentences on indented lines below it; then the "else" can follow.
+
+Line 10: I expected "from" here, but found "to".
+    if answer is yes, go to begin
+                         ^^
+Write it like "go from 0 to 100 in steps of 10:".
+--- files made ---

@@ -1,0 +1,64 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: I don't know anything called "good".
+    If service is good, let tip be 20 percent of bill.
+                  ^^^^
+Make it first, like "let good be 0".
+
+Line 4: "percent of" needs a number, but this is text.
+    If service is good, let tip be 20 percent of bill.
+                                                 ^^^^
+
+Line 5: I don't know anything called "okay".
+    If service is okay, let tip be 15 percent of bill.
+                  ^^^^
+Make it first, like "let okay be 0".
+
+Line 5: "percent of" needs a number, but this is text.
+    If service is okay, let tip be 15 percent of bill.
+                                                 ^^^^
+
+Line 6: I don't know anything called "bad".
+    If service is bad, let tip be 10 percent of bill.
+                  ^^^
+Make it first, like "let bad be 0".
+
+Line 6: "percent of" needs a number, but this is text.
+    If service is bad, let tip be 10 percent of bill.
+                                                ^^^^
+
+Line 7: I can't add an unknown kind of value to text.
+    Let total be bill plus tip.
+                 ^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 7: I don't know anything called "tip".
+    Let total be bill plus tip.
+                           ^^^
+You made "tip" inside the "if" on line 4, so it only exists inside that block. To use it afterwards, make it before the "if".
+
+Line 8: I can't divide a number by text.
+    Let each be total divided by people.
+                ^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 9: I can't add an unknown kind of value to text.
+    Show "Tip: $" plus tip.
+         ^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 9: I don't know anything called "tip".
+    Show "Tip: $" plus tip.
+                       ^^^
+You made "tip" inside the "if" on line 4, so it only exists inside that block. To use it afterwards, make it before the "if".
+
+Line 10: I can't add a number to text.
+    Show "Total: $" plus total.
+         ^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 11: I can't add a number to text.
+    Show "Each person pay: $" plus each.
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+--- files made ---

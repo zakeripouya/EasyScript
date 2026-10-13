@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after the text "timesheet.csv".
+    Read the file "timesheet.csv".
+                  ^^^^^^^^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 3: I expected "from" here, but found ",".
+    For each employee, add up all of their hours for the week and show me the total next to their name.
+                     ^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "Then".
+    Then make a list of anyone who worked more than 40 hours this week, and show how many hours over 40 they worked.
+    ^^^^
+Sentences like these work: "make a new file called "notes.txt"", "list the big orders" or "skip this one".
+
+Line 7: I expected "to" here, but found "hours".
+    Finally, add up the hours for everyone together and show me the total hours for the whole team.
+                        ^^^^^
+Write it like "add 5 to total".
+--- files made ---

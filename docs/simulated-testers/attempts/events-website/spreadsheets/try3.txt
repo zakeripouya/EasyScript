@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't know anything called "clicked".
+    When "Sign up" is clicked:
+                      ^^^^^^^
+Make it first, like "let clicked be 0".
+
+Line 4: I can't add text to text.
+        append name + "," + meal to file "signups.csv"
+               ^^^^^^^^^^
+To join text, use "followed by".
+
+Line 4: I can't add text to a number.
+        append name + "," + meal to file "signups.csv"
+               ^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+--- files made ---

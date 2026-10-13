@@ -1,0 +1,48 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Prices".
+    Prices is: coffee beans $12.50, mug $8, filter papers $3.20.
+    ^^^^^^
+To keep a value in a name, write "let Prices be ...". To change it, write "set Prices to ...".
+
+Line 2: I don't know a sentence that starts with "Total".
+    Total is 0.
+    ^^^^^
+To keep a value in a name, write "let Total be ...". To change it, write "set Total to ...".
+
+Line 3: I expected "and call the answer" here, but found "for".
+    Ask user for item.
+             ^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 4: I expected ":", "," or "then" after the condition, but found "write".
+    If user write "done", stop asking.
+            ^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 5: I expected ":", "," or "then" after the condition, but found "not".
+    If item not in prices, say "This item is not in list" and ask again.
+            ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 6: Something is missing after "how many".
+    Ask how many.
+        ^^^^^^^^
+Write it like "how many scores are above 70".
+
+Line 7: I expected "to" here, but found "multiply".
+    Add price multiply how many to total.
+              ^^^^^^^^
+Write it like "add 5 to total".
+
+Line 8: I expected "times" here, but found "item".
+    Repeat ask item until done.
+               ^^^^
+Write it like "repeat 3 times:".
+
+Line 10: I expected ":", "," or "then" after the condition, but found "more".
+    If total more than $50, take off 10% and show discount total.
+             ^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't know a sentence that starts with "One".
+    One of the rows has no amount yet, so skip the rows that have no amount.
+    ^^^
+Sentences like these work: "skip this one", "total the amount per month" or "go from 0 to 100 in steps of 10:".
+
+Line 9: I don't understand "amount" here.
+    Say the biggest amount in bank.
+                    ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

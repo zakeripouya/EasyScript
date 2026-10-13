@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't know anything called "amount".
+    If amount is nothing, skip this one.
+       ^^^^^^
+Make it first, like "let amount be 0".
+
+Line 2: "skip this one" only works inside a loop.
+    If amount is nothing, skip this one.
+                          ^^^^^^^^^^^^^
+It jumps to the next round of the loop it's in.
+
+Line 3: "it" doesn't refer to anything here.
+    Total the amount per category.
+              ^^^^^^
+"it" only means something inside a loop, where it's the loop's number or item.
+
+Line 4: "it" doesn't refer to anything here.
+    Total the amount per month.
+              ^^^^^^
+"it" only means something inside a loop, where it's the loop's number or item.
+
+Line 5: I don't know anything called "amount".
+    Say biggest of amount.
+                   ^^^^^^
+Make it first, like "let amount be 0".
+
+Line 6: A chart needs a list of numbers or amounts, or a map to them, but this is a list of rows of bank.csv.
+    Make a pie chart of bank called "categories.svg".
+                        ^^^^
+A chart shows numbers or amounts, like "a list of 3, 5 and 2" or "the total price of orders per day".
+--- files made ---

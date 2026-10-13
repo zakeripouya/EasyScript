@@ -1,0 +1,48 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Load".
+    Load sales.csv as sales
+    ^^^^
+Did you mean "read"?
+
+Line 1: I don't know a sentence that starts with "csv".
+    Load sales.csv as sales
+               ^^^
+Sentences like these work: "save rows as csv file "sales.csv"", "read the table in "sales.csv" and call it sales" or "mark box as fragile".
+
+Line 2: I expected "to" here, but found "revenue".
+    Add column revenue = quantity * price
+               ^^^^^^^
+Write it like "add 5 to total".
+
+Line 3: Something is missing after "as".
+    Show SUM of revenue as "Total takings"
+                        ^^
+Did you mean "as a number", "as text", "as money", "as a percent" or "as a table"?
+
+Line 4: I don't know a sentence that starts with "Group".
+    Group sales by product, SUM of quantity, sort descending, show top 1 as "Best seller"
+    ^^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "increase total by 5" or "decrease total by 5".
+
+Line 5: I expected "to" here, but found "month".
+    Add column month = MONTH(date)
+               ^^^^^
+Write it like "add 5 to total".
+
+Line 6: I don't know a sentence that starts with "Pivot".
+    Pivot sales by month with SUM of revenue
+    ^^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "total the amount per month" or "increase total by 5".
+
+Line 8: I expected "called" here, but found ",".
+    Make bar chart of the pivot, month on x axis, revenue on y axis
+                               ^
+Write it like "make a bar chart of sales called "sales.svg"".
+
+Line 9: I don't know a sentence that starts with "svg".
+    Save chart as months.svg
+                         ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

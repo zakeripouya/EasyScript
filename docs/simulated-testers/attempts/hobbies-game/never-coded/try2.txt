@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "whole" here.
+    Please let the secret number be a random whole number between 1 and 10.
+                                             ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: "is" can't be part of a name, because it already means something in EasyScript.
+    Keep asking until the guess is right.
+                                ^^
+Try a name without it, like "asking until guess right".
+
+Line 10: I expected a colon after this event, but found "get".
+    When I get it right:
+           ^^^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+--- files made ---

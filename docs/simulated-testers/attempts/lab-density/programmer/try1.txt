@@ -1,0 +1,48 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't know a sentence that starts with "name".
+        name = input("Object name: ")
+        ^^^^
+Did you mean "save"?
+
+Line 3: I don't know a sentence that starts with "mass".
+        mass = float(input("Mass (g): "))
+        ^^^^
+Did you mean "mark" or "ask" or "as"?
+
+Line 4: I don't know a sentence that starts with "volume".
+        volume = float(input("Volume (cm^3): "))
+        ^^^^^^
+To keep a value in a name, write "let volume be ...". To change it, write "set volume to ...".
+
+Line 5: I don't know a sentence that starts with "density".
+        density = round(mass / volume, 2)
+        ^^^^^^^
+To keep a value in a name, write "let density be ...". To change it, write "set density to ...".
+
+Line 7: I don't know a sentence that starts with "result".
+            result = "floats"
+            ^^^^^^
+To keep a value in a name, write "let result be ...". To change it, write "set result to ...".
+
+Line 9: I don't know a sentence that starts with "result".
+            result = "sinks"
+            ^^^^^^
+To keep a value in a name, write "let result be ...". To change it, write "set result to ...".
+
+Line 10: This "(" is never closed.
+        print(f"{name}: density = {density} g/cm^3, it {result}")
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 11: I don't know a sentence that starts with "again".
+        again = input("Another object? ")
+        ^^^^^
+To keep a value in a name, write "let again be ...". To change it, write "set again to ...".
+
+Line 12: I expected ":", "," or "then" after the condition, but found ".".
+        if again.lower() == "no":
+                ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

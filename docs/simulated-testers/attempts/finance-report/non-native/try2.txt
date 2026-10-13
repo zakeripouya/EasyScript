@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't know a sentence that starts with "ignore".
+    If amount is nothing, ignore it.
+                          ^^^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales" or "read file "notes.txt" and call it notes".
+
+Line 5: I don't understand "amount" here.
+    Say biggest amount.
+                ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

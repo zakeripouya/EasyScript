@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "load".
+    load shipments.csv
+    ^^^^
+Did you mean "read"?
+
+Line 1: I don't know a sentence that starts with "csv".
+    load shipments.csv
+                   ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I expected "from" here, but found "by".
+    count by country
+          ^^
+Write it like "count from 1 to 10:".
+
+Line 3: I don't know a sentence that starts with "average".
+    average weight
+    ^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 4: I don't know a sentence that starts with "heaviest".
+    heaviest one
+    ^^^^^^^^
+A sentence like this works: "skip this one".
+
+Line 5: I don't understand "that" here.
+    show ones that took more than 5 days
+              ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

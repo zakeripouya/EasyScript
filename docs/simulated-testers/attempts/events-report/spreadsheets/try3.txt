@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 8: Something is missing after "'s".
+        add row's plus ones to total headcount
+               ^^
+Write the name of a field after it, like "rex's name".
+
+Line 10: I don't know a sentence that starts with "Total the headcount".
+    Total the headcount per meal.
+    ^^^^^^^^^^^^^^^^^^^
+Sentences like these work: "total the amount per month", "what is the total?" or "let total be 0".
+--- files made ---

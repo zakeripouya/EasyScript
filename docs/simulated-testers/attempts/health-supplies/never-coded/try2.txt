@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 16: I expected ":", "," or "then" after the condition, but found "needs".
+    if nothing needs ordering, say "Nothing to order this week."
+               ^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

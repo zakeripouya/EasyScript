@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "(" here.
+    let listings be read("listings.xlsx")
+                        ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 2: I don't understand "(" here.
+    let neighborhoods be unique(listings, "neighborhood")
+                               ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I don't understand "(" here.
+        let houses be filter(listings, "neighborhood", name)
+                            ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 6: I don't understand "(" here.
+        let avg be average(houses, "price")
+                          ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 7: I don't understand "(" here.
+        let cheapest be min(houses, "price")
+                           ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: This "(" is never closed.
+        print(name + ": avg price = " + round(avg, 2) + ", cheapest = " + cheapest)
+             ^
+Add a ")" where the group ends, on the same line.
+--- files made ---

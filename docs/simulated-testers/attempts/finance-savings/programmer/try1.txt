@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "balance".
+    balance = number(input("Starting amount: "))
+    ^^^^^^^
+To keep a value in a name, write "let balance be ...". To change it, write "set balance to ...".
+
+Line 2: I don't know a sentence that starts with "deposit".
+    deposit = number(input("Yearly deposit: "))
+    ^^^^^^^
+To keep a value in a name, write "let deposit be ...". To change it, write "set deposit to ...".
+
+Line 3: I don't know a sentence that starts with "rate".
+    rate = number(input("Yearly interest rate (%): "))
+    ^^^^
+Did you mean "write" or "save"?
+
+Line 5: I expected "each" here, but found "year".
+    for year in range(1, 6):
+        ^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 6: I don't know a sentence that starts with "balance".
+        balance = balance + deposit
+        ^^^^^^^
+To keep a value in a name, write "let balance be ...". To change it, write "set balance to ...".
+
+Line 7: I don't know a sentence that starts with "balance".
+        balance = balance * (1 + rate / 100)
+        ^^^^^^^
+To keep a value in a name, write "let balance be ...". To change it, write "set balance to ...".
+
+Line 8: This "(" is never closed.
+        print("Year " + year + ": " + round(balance, 2))
+             ^
+Add a ")" where the group ends, on the same line.
+--- files made ---

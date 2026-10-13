@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "open".
+    open readings.csv
+    ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 1: I don't know a sentence that starts with "csv".
+    open readings.csv
+                  ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: Something is missing after "biggest drop".
+    for each group show average temp and biggest drop
+                                         ^^^^^^^^^^^^
+Write it like "for each name and age in ages:".
+
+Line 3: I expected a test like "are above 50" after "all temps", but found "in".
+    show all temps in fahrenheit
+                   ^^
+Write it like "all temps are at least 50".
+
+Line 4: I don't understand "temps" here.
+    line chart of group A temps save as cooling.svg
+                          ^^^^^
+Did you mean "times"?
+
+Line 4: I don't know a sentence that starts with "svg".
+    line chart of group A temps save as cooling.svg
+                                                ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

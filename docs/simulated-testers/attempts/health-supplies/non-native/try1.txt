@@ -1,0 +1,43 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Supplies".
+    Supplies and lowest number:
+    ^^^^^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "ask "What's your name?" and call the answer name" or "read file "notes.txt" and call it notes".
+
+Line 2: I don't know a sentence that starts with "gloves".
+    gloves (boxes) 20
+    ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 3: I don't know a sentence that starts with "masks".
+    masks (boxes) 15
+    ^^^^^
+Did you mean "mark" or "ask"?
+
+Line 4: I don't know a sentence that starts with "bandages".
+    bandages (packs) 30
+    ^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "hand".
+    hand gel (bottles) 10
+    ^^^^
+Did you mean "add"?
+
+Line 7: I expected a value here, but found "me".
+    Ask me how many we have for each supply.
+        ^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 8: I expected ":", "," or "then" after the condition, but found "number".
+    If supply is below lowest number, show it and how many to order for get to two times lowest number.
+                              ^^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 9: I expected ":", "," or "then" after the condition, but found "supply".
+    If no supply need order, say "Nothing to order this week."
+          ^^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

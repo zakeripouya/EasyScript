@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected a value here, but found "me".
+    Please ask me for the name of an object, then ask for its mass in grams, and then ask for its volume in cubic centimeters.
+               ^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 3: I don't know a sentence that starts with "Work".
+    Work out the density by dividing the mass by the volume, and round it to 2 decimal places. Tell me the density, and tell me whether the object floats or sinks in water. It floats if the density is less than 1, otherwise it sinks.
+    ^^^^
+Did you mean "mark" or "for" or "sort"?
+
+Line 3: I expected a value here, but found "and".
+    Work out the density by dividing the mass by the volume, and round it to 2 decimal places. Tell me the density, and tell me whether the object floats or sinks in water. It floats if the density is less than 1, otherwise it sinks.
+                                                                                                                    ^^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 3: I don't know a sentence that starts with "It".
+    Work out the density by dividing the mass by the volume, and round it to 2 decimal places. Tell me the density, and tell me whether the object floats or sinks in water. It floats if the density is less than 1, otherwise it sinks.
+                                                                                                                                                                             ^^
+Did you mean "if"?
+
+Line 5: I don't know a sentence that starts with "please".
+    After that, please ask me if there is another object. If I say yes, do it all again. If I say no, please stop.
+                ^^^^^^
+Did you mean "please"?
+
+Line 5: I expected ":", "," or "then" after the condition, but found "say".
+    After that, please ask me if there is another object. If I say yes, do it all again. If I say no, please stop.
+                                                               ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

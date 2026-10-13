@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Load".
+    Load games.csv
+    ^^^^
+Did you mean "read"?
+
+Line 1: I don't know a sentence that starts with "csv".
+    Load games.csv
+               ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I don't understand "by" here.
+    Count rows by winner, sort descending, show the top 1
+               ^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: I don't know a sentence that starts with "Average".
+    Average of score grouped by game
+    ^^^^^^^
+Sentences like these work: "for each score in scores:", "increase total by 5" or "decrease total by 5".
+
+Line 4: I don't understand "score" here.
+    Sort by score descending, show top 3 rows with winner, game and score
+            ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't understand "for" here.
+    show me total of price for each day
+                           ^^^
+Did you mean "or"?
+
+Line 3: I expected a field after "most" here, but found "orders".
+    show me the item with the most orders
+                                   ^^^^^^
+Write it like "the dog with the highest age".
+
+Line 5: I expected a field after "most" here, but found "orders".
+    show me the day with the most orders
+                                  ^^^^^^
+Write it like "the dog with the highest age".
+--- files made ---

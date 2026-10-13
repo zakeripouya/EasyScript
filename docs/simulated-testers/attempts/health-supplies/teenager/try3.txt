@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "gloves".
+    ask gloves
+        ^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 2: Something is missing after "masks".
+    ask masks
+        ^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 3: Something is missing after "bandages".
+    ask bandages
+        ^^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 4: Something is missing after "gel".
+    ask gel
+        ^^^
+Write it like "ask "What's your name?" and call the answer name".
+--- files made ---

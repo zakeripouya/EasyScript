@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I expected a colon after this event, but found "clicks".
+    When the guest clicks "Sign up":
+                   ^^^^^^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 6: I expected "as" here, but found "and".
+        Save name and meal as csv file "signups.csv".
+                  ^^^
+Write it like "save rows as csv file "out.csv"".
+--- files made ---

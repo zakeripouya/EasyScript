@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: I don't understand "appointments" here.
+        Show percent of missed appointments.
+                               ^^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I expected a field after "most" here, but found "appointments".
+    Show me weekday with most appointments.
+                              ^^^^^^^^^^^^
+Write it like "the dog with the highest age".
+--- files made ---

@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "open".
+    open orders.csv
+    ^^^^
+Sentences like these work: "show me the big orders" or "list the big orders".
+
+Line 1: I don't know a sentence that starts with "csv".
+    open orders.csv
+                ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I don't understand "price" here.
+    show total price for each day
+               ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: I don't understand "popular" here.
+    show most popular item
+              ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't understand "price" here.
+    show average price
+                 ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I don't understand "day" here.
+    show busiest day
+                 ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

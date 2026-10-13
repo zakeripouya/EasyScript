@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: I don't understand "drop" here.
+      say biggest drop of temps
+                  ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 7: I expected "called" here, but found "and".
+    make line chart of group A and save as "cooling.svg"
+                               ^^^
+Write it like "make a bar chart of sales called "sales.svg"".
+--- files made ---

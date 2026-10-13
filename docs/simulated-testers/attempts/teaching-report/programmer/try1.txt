@@ -1,0 +1,112 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't understand the character "{".
+    averages = {}
+               ^
+
+Line 3: I don't understand the character "}".
+    averages = {}
+                ^
+
+Line 6: I don't understand the character "[".
+        averages[student] = mean(rows.score)
+                ^
+
+Line 6: I don't understand the character "]".
+        averages[student] = mean(rows.score)
+                        ^
+
+Line 7: I don't understand the character "[".
+        print(student + ": " + averages[student])
+                                       ^
+
+Line 7: I don't understand the character "]".
+        print(student + ": " + averages[student])
+                                               ^
+
+Line 1: I don't know a sentence that starts with "data".
+    data = read_csv("grades.csv")
+    ^^^^
+To keep a value in a name, write "let data be ...". To change it, write "set data to ...".
+
+Line 3: I don't know a sentence that starts with "averages".
+    averages = {}
+    ^^^^^^^^
+To keep a value in a name, write "let averages be ...". To change it, write "set averages to ...".
+
+Line 4: I expected "each" here, but found "student".
+    for student in unique(data.student):
+        ^^^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "rows".
+        rows = data.filter(row => row.student == student)
+        ^^^^
+To keep a value in a name, write "let rows be ...". To change it, write "set rows to ...".
+
+Line 5: I don't know a sentence that starts with "filter".
+        rows = data.filter(row => row.student == student)
+                    ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "student".
+        rows = data.filter(row => row.student == student)
+                                      ^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 6: I don't know a sentence that starts with "averages".
+        averages[student] = mean(rows.score)
+        ^^^^^^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 6: I don't know a sentence that starts with "score".
+        averages[student] = mean(rows.score)
+                                      ^^^^^
+Did you mean "sort"?
+
+Line 7: This "(" is never closed.
+        print(student + ": " + averages[student])
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 9: I don't know a sentence that starts with "best".
+    best = max(averages, key=averages.get)
+    ^^^^
+Did you mean "let" or "set" or "list"?
+
+Line 9: I don't know a sentence that starts with "get".
+    best = max(averages, key=averages.get)
+                                      ^^^
+Did you mean "let" or "set"?
+
+Line 12: I don't know a sentence that starts with "below_50".
+    below_50 = count(data.filter(row => row.score < 50))
+    ^^^^^^^^
+To keep a value in a name, write "let below_50 be ...". To change it, write "set below_50 to ...".
+
+Line 12: I don't know a sentence that starts with "filter".
+    below_50 = count(data.filter(row => row.score < 50))
+                          ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 12: I don't know a sentence that starts with "score".
+    below_50 = count(data.filter(row => row.score < 50))
+                                            ^^^^^
+Did you mean "sort"?
+
+Line 15: I don't know a sentence that starts with "chart".
+    chart = bar_chart(averages, title="Average score per student")
+    ^^^^^
+To keep a value in a name, write "let chart be ...". To change it, write "set chart to ...".
+
+Line 16: I don't know a sentence that starts with "chart".
+    chart.save("averages.svg")
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 16: Something is missing after ")".
+    chart.save("averages.svg")
+                             ^
+Write it like "save rows as csv file "out.csv"".
+--- files made ---

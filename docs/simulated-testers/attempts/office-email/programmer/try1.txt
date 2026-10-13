@@ -1,0 +1,61 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I don't understand the character "[".
+            body = body + b.room + " - " + b.day + " " + b.time + " (" + b["booked by"] + ")\n"
+                                                                          ^
+
+Line 5: I don't understand the character "]".
+            body = body + b.room + " - " + b.day + " " + b.time + " (" + b["booked by"] + ")\n"
+                                                                                      ^
+
+Line 1: I don't know a sentence that starts with "function".
+    function send_bookings():
+    ^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 2: I don't know a sentence that starts with "bookings".
+        bookings = read csv "bookings.csv"
+        ^^^^^^^^
+To keep a value in a name, write "let bookings be ...". To change it, write "set bookings to ...".
+
+Line 3: I don't know a sentence that starts with "body".
+        body = ""
+        ^^^^
+To keep a value in a name, write "let body be ...". To change it, write "set body to ...".
+
+Line 4: I expected "each" here, but found "b".
+        for b in bookings:
+            ^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "body".
+            body = body + b.room + " - " + b.day + " " + b.time + " (" + b["booked by"] + ")\n"
+            ^^^^
+To keep a value in a name, write "let body be ...". To change it, write "set body to ...".
+
+Line 5: I don't know a sentence that starts with "room".
+            body = body + b.room + " - " + b.day + " " + b.time + " (" + b["booked by"] + ")\n"
+                            ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "day".
+            body = body + b.room + " - " + b.day + " " + b.time + " (" + b["booked by"] + ")\n"
+                                             ^^^
+Did you mean "say"?
+
+Line 5: I don't know a sentence that starts with "time".
+            body = body + b.room + " - " + b.day + " " + b.time + " (" + b["booked by"] + ")\n"
+                                                           ^^^^
+Did you mean "give"?
+
+Line 6: I don't know a sentence that starts with "send_email".
+        send_email(to="team@ourcompany.com", subject="Room bookings this week", body=body)
+        ^^^^^^^^^^
+Sentences like these work: "set total to 10", "change total to 10" or "add 5 to total".
+
+Line 8: I don't know a sentence that starts with "schedule".
+    schedule(every="monday", at="09:00", run=send_bookings)
+    ^^^^^^^^
+Sentences like these work: "insert 7 at position 1 of scores" or "apply double to every number in scores".
+--- files made ---

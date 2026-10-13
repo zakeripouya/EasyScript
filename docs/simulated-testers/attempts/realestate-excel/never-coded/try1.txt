@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "!".
+    Hello, I keep all of my house listings in an Excel file called listings.xlsx. Could you please open it and work out the average price of the houses in each neighborhood? I would also like to know which house is the cheapest one in each neighborhood. Please show me the results neighborhood by neighborhood. Thank you very much!
+                                                                                                                                                                                                                                                                                                                                          ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hello".
+    Hello, I keep all of my house listings in an Excel file called listings.xlsx. Could you please open it and work out the average price of the houses in each neighborhood? I would also like to know which house is the cheapest one in each neighborhood. Please show me the results neighborhood by neighborhood. Thank you very much!
+    ^^^^^
+Did you mean "tell"?
+
+Line 1: I don't know a sentence that starts with "xlsx".
+    Hello, I keep all of my house listings in an Excel file called listings.xlsx. Could you please open it and work out the average price of the houses in each neighborhood? I would also like to know which house is the cheapest one in each neighborhood. Please show me the results neighborhood by neighborhood. Thank you very much!
+                                                                            ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 1: I don't understand "it" here.
+    Hello, I keep all of my house listings in an Excel file called listings.xlsx. Could you please open it and work out the average price of the houses in each neighborhood? I would also like to know which house is the cheapest one in each neighborhood. Please show me the results neighborhood by neighborhood. Thank you very much!
+                                                                                                        ^^
+Did you mean "is"?
+
+Line 1: I don't know a sentence that starts with "I".
+    Hello, I keep all of my house listings in an Excel file called listings.xlsx. Could you please open it and work out the average price of the houses in each neighborhood? I would also like to know which house is the cheapest one in each neighborhood. Please show me the results neighborhood by neighborhood. Thank you very much!
+                                                                                                                                                                              ^
+Did you mean "if"?
+
+Line 1: I don't understand "neighborhood" here.
+    Hello, I keep all of my house listings in an Excel file called listings.xlsx. Could you please open it and work out the average price of the houses in each neighborhood? I would also like to know which house is the cheapest one in each neighborhood. Please show me the results neighborhood by neighborhood. Thank you very much!
+                                                                                                                                                                                                                                                                                         ^^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 1: I don't know a sentence that starts with "Thank".
+    Hello, I keep all of my house listings in an Excel file called listings.xlsx. Could you please open it and work out the average price of the houses in each neighborhood? I would also like to know which house is the cheapest one in each neighborhood. Please show me the results neighborhood by neighborhood. Thank you very much!
+                                                                                                                                                                                                                                                                                                                       ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

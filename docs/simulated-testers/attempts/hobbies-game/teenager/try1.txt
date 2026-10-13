@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "pick".
+    pick random number 1 to 10
+    ^^^^
+Sentences like these work: "apply double to every number in scores", "set total to 10" or "change total to 10".
+
+Line 2: Something is missing after "asking guess".
+    keep asking guess
+         ^^^^^^^^^^^^
+Write it like "keep tax rate as 0.2".
+
+Line 3: I expected ":", "," or "then" after the condition, but found "high".
+    if too high say "Too high"
+           ^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 4: I expected ":", "," or "then" after the condition, but found "low".
+    if too low say "Too low"
+           ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 5: I expected ":", "," or "then" after the condition, but found "say".
+    if right say "You got it in N guesses!"
+             ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

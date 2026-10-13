@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "and call the answer" here, but found "money".
+    ask start money
+              ^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 2: I expected "and call the answer" here, but found "much".
+    ask how much added each year
+            ^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 3: Something is missing after "%".
+    ask interest %
+                 ^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 5: I expected "to" here, but found "money".
+      add yearly money
+                 ^^^^^
+Write it like "add 5 to total".
+
+Line 6: Something is missing after "interest".
+      add interest
+          ^^^^^^^^
+Write it like "add 5 to total".
+
+Line 7: I expected "decimal places" here, but found the end of the line.
+      say year and money rounded to cents
+                                         ^
+Write it like "price rounded to 2 decimal places".
+--- files made ---

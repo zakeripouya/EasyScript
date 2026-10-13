@@ -1,0 +1,103 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "games".
+    games = load("games.csv")
+    ^^^^^
+To keep a value in a name, write "let games be ...". To change it, write "set games to ...".
+
+Line 3: I don't know a sentence that starts with "wins".
+    wins = games.groupBy("winner").count()
+    ^^^^
+To keep a value in a name, write "let wins be ...". To change it, write "set wins to ...".
+
+Line 3: I don't know a sentence that starts with "groupBy".
+    wins = games.groupBy("winner").count()
+                 ^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 3: Something is missing after "(".
+    wins = games.groupBy("winner").count()
+                                        ^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 4: This "(" is never closed.
+    print("Most wins:", wins.max())
+         ^
+Add a ")" where the group ends, on the same line.
+
+Line 4: I don't know a sentence that starts with "max".
+    print("Most wins:", wins.max())
+                             ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 6: I expected "each" here, but found "game".
+    for game in games.unique("game"):
+        ^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 7: I don't know a sentence that starts with "rows".
+        rows = games.filter(row => row.game == game)
+        ^^^^
+To keep a value in a name, write "let rows be ...". To change it, write "set rows to ...".
+
+Line 7: I don't know a sentence that starts with "filter".
+        rows = games.filter(row => row.game == game)
+                     ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 7: I don't know a sentence that starts with "game".
+        rows = games.filter(row => row.game == game)
+                                       ^^^^
+Did you mean "give" or "save"?
+
+Line 8: This "(" is never closed.
+        print(game, average(rows.score))
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 8: I don't know a sentence that starts with "score".
+        print(game, average(rows.score))
+                                 ^^^^^
+Did you mean "sort"?
+
+Line 10: I don't know a sentence that starts with "top3".
+    top3 = games.sortBy("score", descending).take(3)
+    ^^^^
+Did you mean "stop" or "to"?
+
+Line 10: I don't know a sentence that starts with "sortBy".
+    top3 = games.sortBy("score", descending).take(3)
+                 ^^^^^^
+Did you mean "sort"?
+
+Line 10: I don't know a sentence that starts with "take".
+    top3 = games.sortBy("score", descending).take(3)
+                                             ^^^^
+Did you mean "save"?
+
+Line 11: I expected "each" here, but found "row".
+    for row in top3:
+        ^^^
+Write it like "for each n from 1 to 10:".
+
+Line 12: This "(" is never closed.
+        print(row.winner, row.game, row.score)
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 12: I don't know a sentence that starts with "winner".
+        print(row.winner, row.game, row.score)
+                  ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 12: I don't know a sentence that starts with "game".
+        print(row.winner, row.game, row.score)
+                              ^^^^
+Did you mean "give" or "save"?
+
+Line 12: I don't know a sentence that starts with "score".
+        print(row.winner, row.game, row.score)
+                                        ^^^^^
+Did you mean "sort"?
+--- files made ---

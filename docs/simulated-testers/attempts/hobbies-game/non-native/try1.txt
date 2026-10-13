@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Computer".
+    Computer choose random number from 1 to 10.
+    ^^^^^^^^
+Sentences like these work: "count from 1 to 10:", "go from 0 to 100 in steps of 10:" or "for each n from 1 to 10:".
+
+Line 2: I expected a value here, but found "me".
+    Ask me guess number.
+        ^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 3: I expected ":", "," or "then" after the condition, but found "guess".
+    If my guess is more big, say "Too high".
+          ^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 4: I expected ":", "," or "then" after the condition, but found "guess".
+    If my guess is more small, say "Too low".
+          ^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 5: I expected a colon after this loop, but found "guess".
+    Repeat until I guess correct.
+                   ^^^^^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+--- files made ---

@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I expected a name or a field here, like "rex's name".
+        add (hours of row) to (totals of (employee of row))
+                              ^
+A value in parentheses can only be changed through one of its fields, like "(item 1 of dogs)'s name".
+--- files made ---

@@ -1,0 +1,41 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't understand the character "[".
+    for each group in ["A", "B"]:
+                      ^
+
+Line 3: I don't understand the character "]".
+    for each group in ["A", "B"]:
+                               ^
+
+Line 3: I expected a colon after this loop, but found ",".
+    for each group in ["A", "B"]:
+                          ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 6: I don't understand "(" here.
+        let avg be sum(temps) / count(temps)
+                      ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: I expected a colon after this loop, but found "(".
+        for each i from 2 to count(temps):
+                                  ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 15: "temperature of row * 9" could mean two things.
+        let f be temperature of row * 9 / 5 + 32
+                 ^^^^^^^^^^^^^^^^^^^^^^
+Use parentheses to say which: "(temperature of row) * 9" or "temperature of (row * 9)".
+
+Line 16: "group of row + " minute "" could mean two things.
+        say group of row + " minute " + minute of row + ": " + f + " F"
+            ^^^^^^^^^^^^^^^^^^^^^^^^^
+Use parentheses to say which: "(group of row) + " minute "" or "group of (row + " minute ")".
+
+Line 19: I expected "called" here, but found "and".
+    make a line chart of group_a with minute and temperature and save it as "cooling.svg"
+                                                             ^^^
+Write it like "make a bar chart of sales called "sales.svg"".
+--- files made ---

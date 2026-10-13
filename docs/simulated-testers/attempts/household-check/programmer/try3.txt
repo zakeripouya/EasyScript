@@ -1,0 +1,36 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 7: I can't add text to text.
+    let total_bills be rent + utilities + insurance + phone
+                       ^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 7: I can't add text to a number.
+    let total_bills be rent + utilities + insurance + phone
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 7: I can't add text to a number.
+    let total_bills be rent + utilities + insurance + phone
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 8: I can't subtract a number from text.
+    let left be income - total_bills
+                ^^^^^^^^^^^^^^^^^^^^
+
+Line 9: I can't add a number to text.
+    print("Left after bills: $" + left)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 16: "rounded up" needs a number, but this is text.
+    let months be goal / savings rounded up
+                         ^^^^^^^
+
+Line 17: I can't add a number to text.
+    print("Months to reach $5,000 emergency fund: " + months)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+--- files made ---

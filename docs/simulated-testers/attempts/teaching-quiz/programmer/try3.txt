@@ -1,0 +1,43 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 8: I can't add text to text.
+        ask "What is the capital of " + country + "? " and call the answer answer
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 8: I can't add text to a number.
+        ask "What is the capital of " + country + "? " and call the answer answer
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 9: I don't know how to "lowercase".
+        if lowercase of answer is lowercase of capital:
+           ^^^^^^^^^^^^^^^^^^^
+Define it first, like "to lowercase with someone:" with its sentences indented below.
+
+Line 9: I don't know how to "lowercase".
+        if lowercase of answer is lowercase of capital:
+                                  ^^^^^^^^^^^^^^^^^^^^
+Define it first, like "to lowercase with someone:" with its sentences indented below.
+
+Line 13: I can't add text to text.
+            say "Wrong! The answer is " + capital + "."
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 13: I can't add text to a number.
+            say "Wrong! The answer is " + capital + "."
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 15: I can't add a number to text.
+    say "Your score: " + score + " out of 5"
+        ^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 15: I can't add text to a number.
+    say "Your score: " + score + " out of 5"
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+--- files made ---

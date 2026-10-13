@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "file" here, but found "guests".
+    read guests.csv
+         ^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "csv".
+    read guests.csv
+                ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I expected "from" here, but found "yes".
+    count yes rsvps
+          ^^^
+Write it like "count from 1 to 10:".
+
+Line 3: I don't know a sentence that starts with "total".
+    total people = yes + plus ones
+    ^^^^^
+Sentences like these work: "total the amount per month", "what is the total?" or "let total be 0".
+
+Line 4: I don't know a sentence that starts with "meals".
+    meals for yes people (plus ones too)
+    ^^^^^
+Sentences like these work: "for each score in scores:" or "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "pie".
+    pie chart meals -> meals.svg
+    ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "svg".
+    pie chart meals -> meals.svg
+                             ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

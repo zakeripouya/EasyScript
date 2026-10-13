@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: I don't understand "before" here.
+        let biggest be maximum of temperature before minus temperature after
+                                              ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

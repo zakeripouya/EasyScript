@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: Something is missing after "%".
+    if service is good, let tip be 20%
+                                     ^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 5: Something is missing after "%".
+    if service is okay, let tip be 15%
+                                     ^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 6: Something is missing after "%".
+    if service is bad, let tip be 10%
+                                    ^
+Add a value there, like a number, some text in quotes, or a name.
+--- files made ---

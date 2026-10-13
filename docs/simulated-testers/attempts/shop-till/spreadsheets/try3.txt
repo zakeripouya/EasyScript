@@ -1,0 +1,30 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 10: I can't compare text with a number.
+        If item is not coffee beans or mug or filter papers, say "Not on the list"
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+Turn the text into a number first with "as a number".
+
+Line 10: "or" needs yes or no on both sides, but the right side is a number.
+        If item is not coffee beans or mug or filter papers, say "Not on the list"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 10: "or" needs yes or no on both sides, but the right side is a number.
+        If item is not coffee beans or mug or filter papers, say "Not on the list"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 12: I can't multiply text by text.
+        Set Total to Total plus item times qty
+                                ^^^^^^^^^^^^^^
+
+Line 13: I can't add a number to text.
+    Say "Total: $" plus Total
+        ^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 14: I can't add a number to text.
+    If Total is above 50, say "Discounted total: $" plus Total times 0.9
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+--- files made ---

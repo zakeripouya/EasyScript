@@ -1,0 +1,43 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 11: I don't understand "!".
+    Thank you!
+             ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hello".
+    Hello, at the start of each month I would like to check our budget, please.
+    ^^^^^
+Did you mean "tell"?
+
+Line 3: I don't know a sentence that starts with "please".
+    First, please ask me for our income for the month. Then please ask me for each of our regular bills, one at a time: rent, utilities, insurance and phone.
+           ^^^^^^
+Did you mean "please"?
+
+Line 3: I don't know a sentence that starts with "please".
+    First, please ask me for our income for the month. Then please ask me for each of our regular bills, one at a time: rent, utilities, insurance and phone.
+                                                            ^^^^^^
+Did you mean "please"?
+
+Line 5: I expected "to" here, but found "bills".
+    Please add up the bills, take them away from the income, and show me what is left.
+                      ^^^^^
+Write it like "add 5 to total".
+
+Line 7: Comparisons can't be chained like this.
+    If what is left is less than $500, please give us a warning so we know to be careful.
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Compare one pair at a time and join them with "and": "what is left and left is less than $500".
+
+Line 9: I don't know a sentence that starts with "please".
+    After that, please ask me how much we want to save each month, and tell me how many months it will take us to reach a $5,000 emergency fund.
+                ^^^^^^
+Did you mean "please"?
+
+Line 11: I don't know a sentence that starts with "Thank".
+    Thank you!
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

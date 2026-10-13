@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "1" here.
+    let secret be random 1, 10
+                         ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't understand the text "Guess: " here.
+        let guess be input "Guess: "
+                           ^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

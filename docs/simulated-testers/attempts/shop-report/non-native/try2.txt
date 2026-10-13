@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I expected a colon after this loop, but found ",".
+    For each line in sales, multiply quantity with price, this is money.
+                          ^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 4: I don't understand "what" here.
+    Show product what sold most units.
+                 ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I don't know a sentence that starts with "Total".
+    Total the money per month and call it months.
+    ^^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "total the amount per month" or "read file "notes.txt" and call it notes".
+--- files made ---

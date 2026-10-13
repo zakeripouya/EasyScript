@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "and call the answer" here, but found "start".
+    Ask for Start balance.
+            ^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 2: I expected "and call the answer" here, but found "yearly".
+    Ask for Yearly deposit.
+            ^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 3: I expected "and call the answer" here, but found "interest".
+    Ask for Interest rate (%).
+            ^^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 4: I don't know a sentence that starts with "Make".
+    Make a table with columns Year and Balance, for Year 1 to 5.
+    ^^^^
+Did you mean "mark" or "move" or "save"?
+
+Line 5: I don't know a sentence that starts with "Balance".
+    Balance for each year = (previous Balance + Yearly deposit) * (1 + Interest rate / 100).
+    ^^^^^^^
+Sentences like these work: "for each score in scores:" or "for each n from 1 to 10:".
+
+Line 6: I don't know a sentence that starts with "Previous".
+    Previous Balance for Year 1 = Start balance.
+    ^^^^^^^^
+Sentences like these work: "for each score in scores:" or "for each n from 1 to 10:".
+
+Line 7: I don't know a sentence that starts with "ROUND".
+    ROUND Balance to 2 decimals.
+    ^^^^^
+Did you mean "count"?
+--- files made ---

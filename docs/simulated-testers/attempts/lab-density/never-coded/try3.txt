@@ -1,0 +1,17 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I can't divide text by text.
+        let density be mass divided by volume, rounded to 2 decimal places
+                       ^^^^^^^^^^^^^^^^^^^^^^
+
+Line 7: "and" doesn't join text: it means both, for yes or no values.
+        say "The density is " and density
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use commas in "say" (say "Hello,", name) or "followed by" ("Hello, " followed by name).
+
+Line 12: "another" is a yes/no value (made on line 1), but this is text.
+        ask "Is there another object?" and call the answer another
+                                                           ^^^^^^^
+A name keeps the kind of value it was made with. To keep text, make a new name for it.
+--- files made ---

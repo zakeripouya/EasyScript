@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Choose".
+    Choose random number from 1 to 10 and call it secret.
+    ^^^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "read file "notes.txt" and call it notes" or "ask "What's your name?" and call the answer name".
+
+Line 3: Something is missing after "is more".
+    If guess is more big than secret, say "Too high".
+             ^^^^^^^
+Did you mean "is more than"?
+
+Line 4: Something is missing after "is more".
+    If guess is more small than secret, say "Too low".
+             ^^^^^^^
+Did you mean "is more than"?
+--- files made ---

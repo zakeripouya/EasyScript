@@ -1,0 +1,154 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand the character "[".
+    supplies = [
+               ^
+
+Line 2: I don't understand the character "{".
+        {name: "gloves", unit: "boxes", min: 20},
+        ^
+
+Line 2: I don't understand the character "}".
+        {name: "gloves", unit: "boxes", min: 20},
+                                               ^
+
+Line 3: I don't understand the character "{".
+        {name: "masks", unit: "boxes", min: 15},
+        ^
+
+Line 3: I don't understand the character "}".
+        {name: "masks", unit: "boxes", min: 15},
+                                              ^
+
+Line 4: I don't understand the character "{".
+        {name: "bandages", unit: "packs", min: 30},
+        ^
+
+Line 4: I don't understand the character "}".
+        {name: "bandages", unit: "packs", min: 30},
+                                                 ^
+
+Line 5: I don't understand the character "{".
+        {name: "hand gel", unit: "bottles", min: 10}
+        ^
+
+Line 5: I don't understand the character "}".
+        {name: "hand gel", unit: "bottles", min: 10}
+                                                   ^
+
+Line 6: I don't understand the character "]".
+    ]
+    ^
+
+Line 8: I don't understand the character "[".
+    to_order = []
+               ^
+
+Line 8: I don't understand the character "]".
+    to_order = []
+                ^
+
+Line 12: I don't understand the character "{".
+            to_order.append({name: item.name, unit: item.unit, qty: item.min * 2 - item.count})
+                            ^
+
+Line 12: I don't understand the character "}".
+            to_order.append({name: item.name, unit: item.unit, qty: item.min * 2 - item.count})
+                                                                                             ^
+
+Line 1: I don't know a sentence that starts with "supplies".
+    supplies = [
+    ^^^^^^^^
+To keep a value in a name, write "let supplies be ...". To change it, write "set supplies to ...".
+
+Line 2: This line is indented, but nothing above it starts a block.
+        {name: "gloves", unit: "boxes", min: 20},
+    ^^^^
+Remove the spaces at the start of the line.
+
+Line 2: I don't know a sentence that starts with "name".
+        {name: "gloves", unit: "boxes", min: 20},
+         ^^^^
+Did you mean "save"?
+
+Line 8: I don't know a sentence that starts with "to_order".
+    to_order = []
+    ^^^^^^^^
+To keep a value in a name, write "let to_order be ...". To change it, write "set to_order to ...".
+
+Line 9: I expected "each" here, but found "item".
+    for item in supplies:
+        ^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 10: I don't know a sentence that starts with "item".
+        item.count = ask("How many " + item.name + " (" + item.unit + ") do we have? ")
+        ^^^^
+A sentence like this works: "remove item 2 from scores".
+
+Line 10: A sentence that starts with "count" is a counting loop, like "count from 1 to 10:".
+        item.count = ask("How many " + item.name + " (" + item.unit + ") do we have? ")
+             ^^^^^
+To keep a value called "count", write "let count be ...".
+
+Line 11: I expected ":", "," or "then" after the condition, but found ".".
+        if item.count < item.min:
+               ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 12: I don't know a sentence that starts with "to_order".
+            to_order.append({name: item.name, unit: item.unit, qty: item.min * 2 - item.count})
+            ^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 12: This "(" is never closed.
+            to_order.append({name: item.name, unit: item.unit, qty: item.min * 2 - item.count})
+                           ^
+Add a ")" where the group ends, on the same line.
+
+Line 12: I don't know a sentence that starts with "name".
+            to_order.append({name: item.name, unit: item.unit, qty: item.min * 2 - item.count})
+                                        ^^^^
+Did you mean "save"?
+
+Line 12: I don't know a sentence that starts with "unit".
+            to_order.append({name: item.name, unit: item.unit, qty: item.min * 2 - item.count})
+                                                         ^^^^
+Did you mean "wait"?
+
+Line 12: I don't know a sentence that starts with "min".
+            to_order.append({name: item.name, unit: item.unit, qty: item.min * 2 - item.count})
+                                                                         ^^^
+A sentence like this works: "remove item 2 from scores".
+
+Line 12: I expected "from" here, but found ")".
+            to_order.append({name: item.name, unit: item.unit, qty: item.min * 2 - item.count})
+                                                                                              ^
+Write it like "count from 1 to 10:".
+
+Line 17: I expected "each" here, but found "o".
+        for o in to_order:
+            ^
+Write it like "for each n from 1 to 10:".
+
+Line 18: This "(" is never closed.
+            print(o.name + ": order " + o.qty + " " + o.unit)
+                 ^
+Add a ")" where the group ends, on the same line.
+
+Line 18: I don't know a sentence that starts with "name".
+            print(o.name + ": order " + o.qty + " " + o.unit)
+                    ^^^^
+Did you mean "save"?
+
+Line 18: I don't know a sentence that starts with "qty".
+            print(o.name + ": order " + o.qty + " " + o.unit)
+                                          ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 18: I don't know a sentence that starts with "unit".
+            print(o.name + ": order " + o.qty + " " + o.unit)
+                                                        ^^^^
+Did you mean "wait"?
+--- files made ---

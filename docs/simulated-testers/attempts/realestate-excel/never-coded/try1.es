@@ -1,0 +1,1 @@
+Hello, I keep all of my house listings in an Excel file called listings.xlsx. Could you please open it and work out the average price of the houses in each neighborhood? I would also like to know which house is the cheapest one in each neighborhood. Please show me the results neighborhood by neighborhood. Thank you very much!

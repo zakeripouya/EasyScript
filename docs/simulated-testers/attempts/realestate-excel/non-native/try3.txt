@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't understand "price" here.
+        Let average be average price.
+                               ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I don't understand "house" here.
+        Let cheapest be cheapest house.
+                                 ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

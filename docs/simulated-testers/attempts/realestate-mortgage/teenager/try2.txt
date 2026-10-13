@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 8: I expected "decimal places" here, but found "decimals".
+    let payment be loan * r / (1 - (1 + r) to the power of -n) rounded to 2 decimals
+                                                                            ^^^^^^^^
+Write it like "price rounded to 2 decimal places".
+--- files made ---

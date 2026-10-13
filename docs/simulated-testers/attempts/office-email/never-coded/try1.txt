@@ -1,0 +1,37 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't understand the character "@".
+    Every Monday morning at 9am, could you please send an email to team@ourcompany.com with the subject "Room bookings this week"?
+                                                                       ^
+
+Line 7: I don't understand "!".
+    Thanks so much for your help!
+                                ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hi".
+    Hi,
+    ^^
+Sentences like these work: "insert 7 at position 1 of scores" or "apply double to every number in scores".
+
+Line 3: I don't understand the text "Room bookings this week" here.
+    Every Monday morning at 9am, could you please send an email to team@ourcompany.com with the subject "Room bookings this week"?
+                                                                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I don't know a sentence that starts with "In".
+    In the email, please include the meeting room bookings for the week from the file bookings.csv, so everyone can see which rooms are booked, on which day and time, and by whom.
+    ^^
+Did you mean "if"?
+
+Line 5: I don't know a sentence that starts with "csv".
+    In the email, please include the meeting room bookings for the week from the file bookings.csv, so everyone can see which rooms are booked, on which day and time, and by whom.
+                                                                                               ^^^
+Sentences like these work: "move on", "check which kind s is:" or "save rows as csv file "sales.csv"".
+
+Line 7: I don't know a sentence that starts with "Thanks".
+    Thanks so much for your help!
+    ^^^^^^
+Sentences like these work: "for each score in scores:", "ask "What's your name?" and call the answer name" or "for each n from 1 to 10:".
+--- files made ---

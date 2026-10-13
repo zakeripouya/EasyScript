@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: Something is missing after "asking item how many till done".
+    keep asking item how many till done
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Write it like "keep tax rate as 0.2".
+
+Line 5: I expected ":", "," or "then" after the condition, but found "prices".
+    if item is not in prices, say "nope"
+                      ^^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

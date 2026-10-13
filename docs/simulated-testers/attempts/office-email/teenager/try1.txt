@@ -1,0 +1,22 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand the character "@".
+    every monday 9am email bookings.csv to team@ourcompany.com subject "Room bookings this week"
+                                               ^
+
+Line 1: I don't know a sentence that starts with "every".
+    every monday 9am email bookings.csv to team@ourcompany.com subject "Room bookings this week"
+    ^^^^^
+A sentence like this works: "apply double to every number in scores".
+
+Line 1: I don't know a sentence that starts with "csv".
+    every monday 9am email bookings.csv to team@ourcompany.com subject "Room bookings this week"
+                                    ^^^
+Sentences like these work: "set total to 10", "change total to 10" or "add 5 to total".
+
+Line 1: I don't know a sentence that starts with "com".
+    every monday 9am email bookings.csv to team@ourcompany.com subject "Room bookings this week"
+                                                           ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

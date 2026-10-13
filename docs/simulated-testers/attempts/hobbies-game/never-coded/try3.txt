@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "number" here.
+    Please let the secret number be a random number between 1 and 10.
+                                             ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 8: Something is missing after "asking until guess right".
+    Keep asking until guess right.
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+Write it like "keep tax rate as 0.2".
+--- files made ---

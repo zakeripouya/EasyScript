@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I expected "exists" here, but found ":".
+    for each line in file "tracking.txt":
+                                        ^
+Write it like "if file "notes.txt" exists:" or "if file "notes.txt" doesn't exist:".
+
+Line 2: I expected "which kind" here, but found "https".
+        check https://track.example-carrier.com/?id=line
+              ^^^^^
+Write it like "check which kind s is:".
+
+Line 3: I expected ":", "," or "then" after the condition, but found "say".
+        if delivered say line
+                     ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

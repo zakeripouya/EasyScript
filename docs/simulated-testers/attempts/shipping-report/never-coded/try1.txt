@@ -1,0 +1,43 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 10: I don't understand "!".
+    Thank you very much!
+                       ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hello".
+    Hello,
+    ^^^^^
+Did you mean "tell"?
+
+Line 3: Something is missing after "me".
+    Could you please open the file shipments.csv and give me a short report on our shipments?
+                                                          ^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 5: I don't know a sentence that starts with "First".
+    First, I would like to know how many shipments went to each country.
+    ^^^^^
+Did you mean "list"?
+
+Line 6: I don't know a sentence that starts with "please".
+    Then please tell me the average weight of all the shipments.
+         ^^^^^^
+Did you mean "please"?
+
+Line 7: I don't know a sentence that starts with "also".
+    Please also tell me which shipment was the heaviest.
+           ^^^^
+Did you mean "ask" or "as"?
+
+Line 8: I don't understand "you" here.
+    Finally, could you list all the shipments that took more than 5 days to arrive, counting from the shipped date to the delivered date?
+                   ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 10: I don't know a sentence that starts with "Thank".
+    Thank you very much!
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

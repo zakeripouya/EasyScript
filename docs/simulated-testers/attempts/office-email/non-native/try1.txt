@@ -1,0 +1,32 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand the character "@".
+    Every Monday on 9am, send email to team@ourcompany.com.
+                                           ^
+
+Line 1: I don't know a sentence that starts with "Every".
+    Every Monday on 9am, send email to team@ourcompany.com.
+    ^^^^^
+Sentences like these work: "apply double to every number in scores", "set total to 10" or "change total to 10".
+
+Line 1: I don't know a sentence that starts with "com".
+    Every Monday on 9am, send email to team@ourcompany.com.
+                                                       ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 2: I don't know a sentence that starts with "Subject".
+    Subject is "Room bookings this week".
+    ^^^^^^^
+To keep a value in a name, write "let Subject be ...". To change it, write "set Subject to ...".
+
+Line 3: I don't know a sentence that starts with "In".
+    In email put bookings from file bookings.csv.
+    ^^
+Did you mean "if"?
+
+Line 3: I don't know a sentence that starts with "csv".
+    In email put bookings from file bookings.csv.
+                                             ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+--- files made ---

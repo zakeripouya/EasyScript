@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't understand "we" here.
+    Tell me the total amount of money we took. For each row the money is the quantity times the price, and I want them all added together.
+                                      ^^
+Did you mean "me"?
+
+Line 3: "is" can't be part of a name, because it already means something in EasyScript.
+    Tell me the total amount of money we took. For each row the money is the quantity times the price, and I want them all added together.
+                                                                      ^^
+Try a name without it, like "row money quantity".
+
+Line 5: I don't understand "product" here.
+    Tell me which product sold the most units in total.
+                  ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 7: I don't understand "to" here.
+    Total the money per month and show it to me.
+                                          ^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 9: I expected "called" here, but found "per".
+    Make a bar chart of the money per month called "months.svg".
+                                  ^^^
+Write it like "make a bar chart of sales called "sales.svg"".
+--- files made ---

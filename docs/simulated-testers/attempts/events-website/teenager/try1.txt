@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "make".
+    make a website
+    ^^^^
+Did you mean "mark" or "move" or "save"?
+
+Line 2: I don't know a sentence that starts with "name".
+    name box + meal picker (fish veggie chicken)
+    ^^^^
+Did you mean "save"?
+
+Line 3: I don't know a sentence that starts with "signup".
+    signup button saves to signups.csv
+    ^^^^^^
+Sentences like these work: "set total to 10", "change total to 10" or "add 5 to total".
+
+Line 3: I don't know a sentence that starts with "csv".
+    signup button saves to signups.csv
+                                   ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+--- files made ---

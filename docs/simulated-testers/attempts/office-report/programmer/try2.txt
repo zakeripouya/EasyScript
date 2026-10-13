@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: Something is missing after "row".
+        add row.hours to totals of row.employee
+            ^^^
+Write it like "add 5 to total".
+
+Line 5: I don't know a sentence that starts with "hours".
+        add row.hours to totals of row.employee
+                ^^^^^
+Sentences like these work: "go from 0 to 100 in steps of 10:", "set total to 10" or "change total to 10".
+
+Line 5: I don't know a sentence that starts with "employee".
+        add row.hours to totals of row.employee
+                                       ^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 13: "totals of name - 40" could mean two things.
+            say name + ": " + (totals of name - 40)
+                               ^^^^^^^^^^^^^^^^^^^
+Use parentheses to say which: "(totals of name) - 40" or "totals of (name - 40)".
+
+Line 15: I don't understand "in" here.
+    let team_total be sum of hours in data
+                                   ^^
+Did you mean "is"?
+--- files made ---

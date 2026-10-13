@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't know a sentence that starts with "total".
+    total the hours per employee
+    ^^^^^
+Sentences like these work: "total the amount per month", "what is the total?" or "let total be 0".
+--- files made ---

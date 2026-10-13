@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't know anything called "rows".
+    Remove rows where amount is blank.
+           ^^^^
+Make it first, like "let rows be 0".
+
+Line 3: "it" doesn't refer to anything here.
+    Total the amount per category.
+              ^^^^^^
+"it" only means something inside a loop, where it's the loop's number or item.
+
+Line 4: "it" doesn't refer to anything here.
+    Total the amount per month.
+              ^^^^^^
+"it" only means something inside a loop, where it's the loop's number or item.
+
+Line 5: I don't know anything called "amount".
+    Show MAX of amount.
+                ^^^^^^
+Make it first, like "let amount be 0".
+
+Line 6: A chart needs a list of numbers or amounts, or a map to them, but this is a list of rows of bank.csv.
+    Make a pie chart of bank called "categories.svg".
+                        ^^^^
+A chart shows numbers or amounts, like "a list of 3, 5 and 2" or "the total price of orders per day".
+--- files made ---

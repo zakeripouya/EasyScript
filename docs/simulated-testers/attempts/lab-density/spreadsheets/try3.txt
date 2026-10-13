@@ -1,0 +1,16 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I can't divide text by a number.
+      let Density be Mass / Volume rounded to 2 decimal places
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 6: "rounded to ... decimal places" needs a number, but this is text.
+      let Density be Mass / Volume rounded to 2 decimal places
+                            ^^^^^^
+
+Line 11: I don't know anything called "Result".
+      say Name, Density, Result
+                         ^^^^^^
+You made "Result" inside the "if" on line 7, so it only exists inside that block. To use it afterwards, make it before the "if".
+--- files made ---

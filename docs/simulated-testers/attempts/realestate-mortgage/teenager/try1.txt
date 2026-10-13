@@ -1,0 +1,47 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 8: I don't understand the character "^".
+    payment is loan * r / (1 - (1 + r)^(-n)) rounded to 2 decimals
+                                      ^
+
+Line 1: I expected "and call the answer" here, but found "price".
+    ask house price
+              ^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 2: Something is missing after "deposit".
+    ask deposit
+        ^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 3: I expected "and call the answer" here, but found "rate".
+    ask interest rate
+                 ^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 4: Something is missing after "years".
+    ask years
+        ^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 5: I don't know a sentence that starts with "loan".
+    loan is price minus deposit
+    ^^^^
+To keep a value in a name, write "let loan be ...". To change it, write "set loan to ...".
+
+Line 6: I don't know a sentence that starts with "r".
+    r is rate / 100 / 12
+    ^
+To keep a value in a name, write "let r be ...". To change it, write "set r to ...".
+
+Line 7: I don't know a sentence that starts with "n".
+    n is years * 12
+    ^
+To keep a value in a name, write "let n be ...". To change it, write "set n to ...".
+
+Line 8: I don't know a sentence that starts with "payment".
+    payment is loan * r / (1 - (1 + r)^(-n)) rounded to 2 decimals
+    ^^^^^^^
+To keep a value in a name, write "let payment be ...". To change it, write "set payment to ...".
+--- files made ---

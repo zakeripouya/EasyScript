@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "," here.
+    let prices be a list of "coffee beans" is 12.50, "mug" is 8, "filter papers" is 3.20
+                                                   ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: Something is missing after "repeat".
+    repeat:
+    ^^^^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 7: I expected ":", "," or "then" after the condition, but found "prices".
+        if item is not in prices:
+                          ^^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 11: Something is missing after "item".
+        set total to total + price of item in prices * qty
+                                      ^^^^
+Say which item, like "item 1", "the first item", or "the last item".
+--- files made ---

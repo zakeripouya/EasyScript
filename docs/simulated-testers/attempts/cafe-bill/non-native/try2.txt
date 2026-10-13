@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 8: I don't understand "divide" here.
+    Let each be total divide by people.
+                      ^^^^^^
+Did you mean "divided"?
+
+Line 9: I don't understand "tip" here.
+    Show "Tip: $" tip.
+                  ^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 10: I don't understand "total" here.
+    Show "Total: $" total.
+                    ^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 11: I don't understand "each" here.
+    Show "Each person pay: $" each.
+                              ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

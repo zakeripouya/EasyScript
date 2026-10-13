@@ -1,0 +1,48 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Load".
+    Load orders.csv as a table called orders.
+    ^^^^
+Did you mean "read"?
+
+Line 1: I don't know a sentence that starts with "csv".
+    Load orders.csv as a table called orders.
+                ^^^
+Sentences like these work: "save rows as csv file "sales.csv"", "make a new file called "notes.txt"" or "read the table in "sales.csv" and call it sales".
+
+Line 3: I don't know a sentence that starts with "Make".
+    Make a pivot of orders with day as rows and SUM of price as values. Show it with the heading "Money taken per day".
+    ^^^^
+Did you mean "mark" or "move" or "save"?
+
+Line 3: I don't understand "with" here.
+    Make a pivot of orders with day as rows and SUM of price as values. Show it with the heading "Money taken per day".
+                                                                                ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 5: I don't know a sentence that starts with "Make".
+    Make a pivot of orders with item as rows and COUNT of item as values. Show the item with the highest count as "Most popular item".
+    ^^^^
+Did you mean "mark" or "move" or "save"?
+
+Line 5: I expected a field after "highest" here, but found "count".
+    Make a pivot of orders with item as rows and COUNT of item as values. Show the item with the highest count as "Most popular item".
+                                                                                                         ^^^^^
+Write it like "the dog with the highest age".
+
+Line 7: I don't understand "column" here.
+    Show AVERAGE of the price column as "Average order price", rounded to 2 decimals.
+                              ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 9: I don't know a sentence that starts with "Make".
+    Make a pivot of orders with day as rows and COUNT of orders as values. Show the day with the highest count as "Busiest day".
+    ^^^^
+Did you mean "mark" or "move" or "save"?
+
+Line 9: I expected a field after "highest" here, but found "count".
+    Make a pivot of orders with day as rows and COUNT of orders as values. Show the day with the highest count as "Busiest day".
+                                                                                                         ^^^^^
+Write it like "the dog with the highest age".
+--- files made ---

@@ -1,0 +1,144 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 9: I don't understand the character "[".
+            drop = temps[i-1] - temps[i]
+                        ^
+
+Line 9: I don't understand the character "]".
+            drop = temps[i-1] - temps[i]
+                            ^
+
+Line 9: I don't understand the character "[".
+            drop = temps[i-1] - temps[i]
+                                     ^
+
+Line 9: I don't understand the character "]".
+            drop = temps[i-1] - temps[i]
+                                       ^
+
+Line 1: I don't know a sentence that starts with "data".
+    data = read_csv("readings.csv")
+    ^^^^
+To keep a value in a name, write "let data be ...". To change it, write "set data to ...".
+
+Line 3: I don't know a sentence that starts with "groups".
+    groups = data.group_by("group")
+    ^^^^^^
+To keep a value in a name, write "let groups be ...". To change it, write "set groups to ...".
+
+Line 3: I don't know a sentence that starts with "group_by".
+    groups = data.group_by("group")
+                  ^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 4: I expected "each" here, but found "name".
+    for name, rows in groups:
+        ^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "temps".
+        temps = rows.map(r => r.temperature)
+        ^^^^^
+To keep a value in a name, write "let temps be ...". To change it, write "set temps to ...".
+
+Line 5: I don't know a sentence that starts with "map".
+        temps = rows.map(r => r.temperature)
+                     ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "temperature".
+        temps = rows.map(r => r.temperature)
+                                ^^^^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 6: I don't know a sentence that starts with "avg".
+        avg = sum(temps) / len(temps)
+        ^^^
+To keep a value in a name, write "let avg be ...". To change it, write "set avg to ...".
+
+Line 7: I don't know a sentence that starts with "biggest_drop".
+        biggest_drop = 0
+        ^^^^^^^^^^^^
+To keep a value in a name, write "let biggest_drop be ...". To change it, write "set biggest_drop to ...".
+
+Line 8: I expected "each" here, but found "i".
+        for i in range(1, len(temps)):
+            ^
+Write it like "for each n from 1 to 10:".
+
+Line 9: I don't know a sentence that starts with "drop".
+            drop = temps[i-1] - temps[i]
+            ^^^^
+Did you mean "stop" or "do"?
+
+Line 11: I don't know a sentence that starts with "biggest_drop".
+                biggest_drop = drop
+                ^^^^^^^^^^^^
+To keep a value in a name, write "let biggest_drop be ...". To change it, write "set biggest_drop to ...".
+
+Line 12: This "(" is never closed.
+        print(f"Group {name}: average = {avg}, biggest drop = {biggest_drop}")
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 14: I expected "each" here, but found "row".
+    for row in data:
+        ^^^
+Write it like "for each n from 1 to 10:".
+
+Line 15: I don't know a sentence that starts with "f".
+        f = row.temperature * 9 / 5 + 32
+        ^
+Did you mean "if"?
+
+Line 15: I don't know a sentence that starts with "temperature".
+        f = row.temperature * 9 / 5 + 32
+                ^^^^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 16: This "(" is never closed.
+        print(f"{row.group} minute {row.minute}: {f} F")
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 18: I don't know a sentence that starts with "group_a".
+    group_a = data.filter(r => r.group == "A")
+    ^^^^^^^
+To keep a value in a name, write "let group_a be ...". To change it, write "set group_a to ...".
+
+Line 18: I don't know a sentence that starts with "filter".
+    group_a = data.filter(r => r.group == "A")
+                   ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 18: I don't know a sentence that starts with "group".
+    group_a = data.filter(r => r.group == "A")
+                                 ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 19: I don't know a sentence that starts with "chart".
+    chart = line_chart(x=group_a.minute, y=group_a.temperature)
+    ^^^^^
+To keep a value in a name, write "let chart be ...". To change it, write "set chart to ...".
+
+Line 19: I don't know a sentence that starts with "minute".
+    chart = line_chart(x=group_a.minute, y=group_a.temperature)
+                                 ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 19: I don't know a sentence that starts with "temperature".
+    chart = line_chart(x=group_a.minute, y=group_a.temperature)
+                                                   ^^^^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 20: I don't know a sentence that starts with "chart".
+    chart.save("cooling.svg")
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 20: Something is missing after ")".
+    chart.save("cooling.svg")
+                            ^
+Write it like "save rows as csv file "out.csv"".
+--- files made ---

@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I expected "file" here, but found the text "bookings.csv".
+        read "bookings.csv"
+             ^^^^^^^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 3: Something is missing after "set".
+        set to "team@ourcompany.com"
+        ^^^
+Add a name there, like "total".
+
+Line 5: I expected a test like "are above 50" after "all rows of bookings", but found ".".
+        set body to all rows of bookings.csv
+                                        ^
+Write it like "all rows of bookings are at least 50".
+
+Line 5: I don't know a sentence that starts with "csv".
+        set body to all rows of bookings.csv
+                                         ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 6: I don't know a sentence that starts with "send".
+        send email
+        ^^^^
+Did you mean "set" or "read"?
+--- files made ---

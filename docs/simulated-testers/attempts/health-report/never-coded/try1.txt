@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 7: I don't understand "!".
+    Thank you!
+             ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "open".
+    Please open the file appointments.csv. It has our clinic's appointments in it.
+           ^^^^
+Sentences like these work: "make a new file called "notes.txt"", "write "hello" to file "notes.txt"" or "append "hello" to file "notes.txt"".
+
+Line 1: I don't know a sentence that starts with "csv".
+    Please open the file appointments.csv. It has our clinic's appointments in it.
+                                      ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 1: I don't know a sentence that starts with "It".
+    Please open the file appointments.csv. It has our clinic's appointments in it.
+                                           ^^
+Did you mean "if"?
+
+Line 3: I expected "from" here, but found ",".
+    For each clinic, please count how many appointments were missed. Then work out what percent of that clinic's appointments were missed, and show both numbers next to the clinic's name.
+                   ^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "please".
+    After that, please look at the weekday column and tell me which day of the week had the most appointments.
+                ^^^^^^
+Did you mean "please"?
+
+Line 7: I don't know a sentence that starts with "Thank".
+    Thank you!
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand the text "appointments.csv" here.
+    let rows be read "appointments.csv"
+                     ^^^^^^^^^^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 3: I don't understand "(" here.
+    let clinics be unique(rows, "clinic")
+                         ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 9: I don't understand "(" here.
+        say c + ": " + missed + " missed, " + round(pct) + "%"
+                                                   ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 11: I don't understand "," here.
+    let days be "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
+                        ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

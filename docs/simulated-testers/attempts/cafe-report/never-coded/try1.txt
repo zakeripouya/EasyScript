@@ -1,0 +1,48 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand the character "é".
+    Hello, please open the file orders.csv, which has last week's café orders in it.
+                                                                     ^
+Words can only use the letters a to z, digits and underscores. Put other text in double quotes.
+
+Line 11: I don't understand "!".
+    Thank you!
+             ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hello".
+    Hello, please open the file orders.csv, which has last week's café orders in it.
+    ^^^^^
+Did you mean "tell"?
+
+Line 1: I don't know a sentence that starts with "csv".
+    Hello, please open the file orders.csv, which has last week's café orders in it.
+                                       ^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "show me the big orders" or "for each score in scores:".
+
+Line 3: "of" can't be part of a name, because it already means something in EasyScript.
+    For each day of the week, please add up the prices and show me how much money we took that day.
+                 ^^
+Try a name without it, like "week day".
+
+Line 5: I don't know a sentence that starts with "please".
+    Then please tell me which item was ordered the most times, so I know our most popular item.
+         ^^^^^^
+Did you mean "please"?
+
+Line 7: I don't understand "work" here.
+    Could you also work out the average price of an order and show it to me?
+                   ^^^^
+Did you mean "or"?
+
+Line 9: I don't know a sentence that starts with "please".
+    Finally, please tell me which day was the busiest, meaning the day with the most orders.
+             ^^^^^^
+Did you mean "please"?
+
+Line 11: I don't know a sentence that starts with "Thank".
+    Thank you!
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

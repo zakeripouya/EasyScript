@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: This "(" is never closed.
+        set body to body + (room of b) + " - " + (day of b) + " " + (time of b) + " (" + (booked by of b) + ")\n"
+                                                                                         ^
+Add a ")" where the group ends, on the same line.
+
+Line 8: I don't know a sentence that starts with "email".
+        email body to "team@ourcompany.com" with subject "Room bookings this week"
+        ^^^^^
+Sentences like these work: "privately to tidy with text:", "set total to 10" or "change total to 10".
+--- files made ---

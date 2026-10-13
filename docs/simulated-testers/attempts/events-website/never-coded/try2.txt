@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "page have a box where a guest can type their name".
+    Let the page have a box where a guest can type their name.
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Write it like "let total be 0".
+
+Line 3: "of" can't be part of a name, because it already means something in EasyScript.
+    Let the page have a list of meals to choose from: fish, veggie, and chicken.
+                             ^^
+Try a name without it, like "meals page have list".
+
+Line 5: "that" can't be part of a name, because it already means something in EasyScript.
+    Let the page have a button that says "Sign up".
+                               ^^^^
+Try a name without it, like "page have button says".
+
+Line 7: I expected a colon after this event, but found "clicks".
+    When a guest clicks the "Sign up" button:
+                 ^^^^^^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 8: I expected "as" here, but found "name".
+        Save their name and their meal to the file "signups.csv".
+                   ^^^^
+Write it like "save rows as csv file "out.csv"".
+--- files made ---

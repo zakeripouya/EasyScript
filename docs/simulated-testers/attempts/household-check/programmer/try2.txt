@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 16: I don't understand "(" here.
+    let months be ceil(goal / savings)
+                      ^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

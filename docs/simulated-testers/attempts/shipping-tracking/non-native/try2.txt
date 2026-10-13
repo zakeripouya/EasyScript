@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't know a sentence that starts with "open".
+        open website "https://track.example-carrier.com/?id=" plus number
+        ^^^^
+A sentence like this works: "apply double to every number in scores".
+--- files made ---

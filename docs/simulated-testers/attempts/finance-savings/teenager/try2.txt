@@ -1,0 +1,21 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I can't add text to text.
+      add yearly to money
+      ^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 6: I can't add a number to text.
+      add money times interest / 100 to money
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 6: I can't multiply text by text.
+      add money times interest / 100 to money
+          ^^^^^^^^^^^^^^^^^^^^
+
+Line 7: "rounded to ... decimal places" needs a number, but this is text.
+      say money rounded to 2 decimal places
+          ^^^^^
+--- files made ---

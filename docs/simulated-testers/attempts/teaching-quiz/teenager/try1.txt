@@ -1,0 +1,58 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 10: I don't understand "!".
+    if 4 or more say Well done!
+                              ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "quiz".
+    quiz capitals:
+    ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 2: I don't know a sentence that starts with "france".
+    france paris
+    ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 3: I don't know a sentence that starts with "japan".
+    japan tokyo
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 4: I don't know a sentence that starts with "kenya".
+    kenya nairobi
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "canada".
+    canada ottawa
+    ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 6: I don't know a sentence that starts with "brazil".
+    brazil brasilia
+    ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 7: I don't understand "if" here.
+    say right or wrong and the answer if wrong
+                                      ^^
+Did you mean "is"?
+
+Line 8: I don't know a sentence that starts with "ignore".
+    ignore caps
+    ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 9: I don't know a sentence that starts with "score".
+    score out of 5 at the end
+    ^^^^^
+Did you mean "sort"?
+
+Line 10: I expected ":", "," or "then" after the condition, but found "say".
+    if 4 or more say Well done!
+                 ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

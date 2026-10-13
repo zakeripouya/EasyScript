@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "supplies".
+    supplies: gloves 20, masks 15, bandages 30, hand gel 10
+    ^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 2: I expected "there are" or a test like "are above 70" here, but found the end of the line.
+    ask how many of each
+                        ^
+Write it like "how many scores are above 70" or "how many scores there are".
+
+Line 3: I expected ":", "," or "then" after the condition, but found "below".
+    if its below the number show it and how many to order to get to double
+           ^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 4: I expected ":", "," or "then" after the condition, but found "say".
+    if nothing say "Nothing to order this week."
+               ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

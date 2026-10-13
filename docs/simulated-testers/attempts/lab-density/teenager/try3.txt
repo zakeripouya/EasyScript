@@ -1,0 +1,11 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: I can't divide text by a number.
+    let density be mass / volume rounded to 2 decimal places
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Line 4: "rounded to ... decimal places" needs a number, but this is text.
+    let density be mass / volume rounded to 2 decimal places
+                          ^^^^^^
+--- files made ---

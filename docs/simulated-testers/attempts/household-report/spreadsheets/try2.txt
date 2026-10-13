@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 7: Something is missing after "and".
+    Total the amount per month and category.
+                               ^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 10: I expected ":", "," or "then" after the condition, but found "for".
+      IF amount > budget for that category then show category and amount - budget.
+                         ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

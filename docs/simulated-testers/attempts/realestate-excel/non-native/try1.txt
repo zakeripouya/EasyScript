@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Open".
+    Open file listings.xlsx.
+    ^^^^
+Sentences like these work: "make a new file called "notes.txt"", "write "hello" to file "notes.txt"" or "append "hello" to file "notes.txt"".
+
+Line 1: I don't know a sentence that starts with "xlsx".
+    Open file listings.xlsx.
+                       ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 2: I expected "each" here, but found "every".
+    For every neighborhood calculate average price.
+        ^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 3: I don't know a sentence that starts with "Also".
+    Also find cheapest house in each neighborhood.
+    ^^^^
+Did you mean "ask" or "as"?
+--- files made ---

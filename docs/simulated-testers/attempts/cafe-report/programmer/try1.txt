@@ -1,0 +1,114 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't understand the character "{".
+    totals = {}
+             ^
+
+Line 3: I don't understand the character "}".
+    totals = {}
+              ^
+
+Line 5: I don't understand the character "[".
+        totals[order.day] = totals.get(order.day, 0) + order.price
+              ^
+
+Line 5: I don't understand the character "]".
+        totals[order.day] = totals.get(order.day, 0) + order.price
+                        ^
+
+Line 1: I don't know a sentence that starts with "orders".
+    orders = read_csv("orders.csv")
+    ^^^^^^
+To keep a value in a name, write "let orders be ...". To change it, write "set orders to ...".
+
+Line 3: I don't know a sentence that starts with "totals".
+    totals = {}
+    ^^^^^^
+To keep a value in a name, write "let totals be ...". To change it, write "set totals to ...".
+
+Line 4: I expected "each" here, but found "order".
+    for order in orders:
+        ^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "totals".
+        totals[order.day] = totals.get(order.day, 0) + order.price
+        ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "day".
+        totals[order.day] = totals.get(order.day, 0) + order.price
+                     ^^^
+Did you mean "say"?
+
+Line 5: I don't know a sentence that starts with "get".
+        totals[order.day] = totals.get(order.day, 0) + order.price
+                                   ^^^
+Did you mean "let" or "set"?
+
+Line 5: I don't know a sentence that starts with "day".
+        totals[order.day] = totals.get(order.day, 0) + order.price
+                                             ^^^
+Did you mean "say"?
+
+Line 5: I don't know a sentence that starts with "price".
+        totals[order.day] = totals.get(order.day, 0) + order.price
+                                                             ^^^^^
+Did you mean "print" or "write"?
+
+Line 7: I expected "each" here, but found "day".
+    for day, total in totals:
+        ^^^
+Write it like "for each n from 1 to 10:".
+
+Line 8: This "(" is never closed.
+        print(day + ": $" + format(total, 2))
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 10: I don't know a sentence that starts with "item_counts".
+    item_counts = count(orders, by="item")
+    ^^^^^^^^^^^
+To keep a value in a name, write "let item_counts be ...". To change it, write "set item_counts to ...".
+
+Line 11: This "(" is never closed.
+    print("Most popular item: " + max(item_counts).key)
+         ^
+Add a ")" where the group ends, on the same line.
+
+Line 11: I don't know a sentence that starts with "key".
+    print("Most popular item: " + max(item_counts).key)
+                                                   ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 13: I don't know a sentence that starts with "avg".
+    avg = sum(orders.price) / len(orders)
+    ^^^
+To keep a value in a name, write "let avg be ...". To change it, write "set avg to ...".
+
+Line 13: I don't know a sentence that starts with "price".
+    avg = sum(orders.price) / len(orders)
+                     ^^^^^
+Did you mean "print" or "write"?
+
+Line 14: This "(" is never closed.
+    print("Average order price: $" + format(avg, 2))
+         ^
+Add a ")" where the group ends, on the same line.
+
+Line 16: I don't know a sentence that starts with "day_counts".
+    day_counts = count(orders, by="day")
+    ^^^^^^^^^^
+To keep a value in a name, write "let day_counts be ...". To change it, write "set day_counts to ...".
+
+Line 17: This "(" is never closed.
+    print("Busiest day: " + max(day_counts).key)
+         ^
+Add a ")" where the group ends, on the same line.
+
+Line 17: I don't know a sentence that starts with "key".
+    print("Busiest day: " + max(day_counts).key)
+                                            ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

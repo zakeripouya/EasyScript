@@ -1,0 +1,15 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I can't subtract text from text.
+    let loan be price minus deposit
+                ^^^^^^^^^^^^^^^^^^^
+
+Line 6: I can't divide text by a number.
+    let r be rate / 100 / 12
+             ^^^^^^^^^^
+
+Line 7: I can't multiply text by a number.
+    let n be years * 12
+             ^^^^^^^^^^
+--- files made ---

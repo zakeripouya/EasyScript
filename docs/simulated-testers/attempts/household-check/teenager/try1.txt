@@ -1,0 +1,48 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "income".
+    ask income
+        ^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 2: Something is missing after "rent".
+    ask rent
+        ^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 3: Something is missing after "utilities".
+    ask utilities
+        ^^^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 4: Something is missing after "insurance".
+    ask insurance
+        ^^^^^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 5: Something is missing after "phone".
+    ask phone
+        ^^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 6: I don't know a sentence that starts with "left".
+    left = income - rent - utilities - insurance - phone
+    ^^^^
+Did you mean "let"?
+
+Line 8: I expected ":", "," or "then" after the condition, but found "say".
+    if left < 500 say "warning ur running low"
+                  ^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 9: I expected "and call the answer" here, but found "much".
+    ask how much to save
+            ^^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 10: I expected "there are" or a test like "are above 70" here, but found "to".
+    show how many months to get 5000
+                         ^^
+Write it like "how many scores are above 70" or "how many scores there are".
+--- files made ---

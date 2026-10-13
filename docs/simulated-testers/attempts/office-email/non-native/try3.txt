@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't know a sentence that starts with "Monday".
+    Monday at 9am:
+    ^^^^^^
+A sentence like this works: "insert 7 at position 1 of scores".
+
+Line 4: I don't know a sentence that starts with "send".
+        send email to "team@ourcompany.com" with subject and bookings.
+        ^^^^
+Did you mean "set" or "read"?
+--- files made ---

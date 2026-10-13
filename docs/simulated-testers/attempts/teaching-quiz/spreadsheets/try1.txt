@@ -1,0 +1,48 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Create".
+    Create a table with columns Country and Capital:
+    ^^^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "ask "What's your name?" and call the answer name" or "read file "notes.txt" and call it notes".
+
+Line 2: I don't know a sentence that starts with "France".
+    France, Paris
+    ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 3: I don't know a sentence that starts with "Japan".
+    Japan, Tokyo
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 4: I don't know a sentence that starts with "Kenya".
+    Kenya, Nairobi
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "Canada".
+    Canada, Ottawa
+    ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 6: I don't know a sentence that starts with "Brazil".
+    Brazil, Brasilia
+    ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 10: Something is missing after "?"".
+      Ask "What is the capital of [Country]?"
+                                           ^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 11: I expected ":", "," or "then" after the condition, but found "(".
+      If LOWER(answer) = LOWER(Capital) then show "Right!" and add 1 to Score
+              ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 12: I expected a colon after this "otherwise", but found "show".
+      Otherwise show "Wrong, the answer is [Capital]"
+                ^^^^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+--- files made ---

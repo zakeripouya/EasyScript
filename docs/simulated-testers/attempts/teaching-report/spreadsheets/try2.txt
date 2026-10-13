@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't understand "in" here.
+    Let averages be AVERAGE of score in grades by student
+                                     ^^
+Did you mean "is"?
+
+Line 4: I don't understand "average" here.
+    Show the student with the MAX average in averages
+                                  ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 7: I expected "called" here, but found "by".
+    Make a bar chart of averages by student
+                                 ^^
+Write it like "make a bar chart of sales called "sales.svg"".
+--- files made ---

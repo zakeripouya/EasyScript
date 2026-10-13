@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 23: I can't add a number to text.
+    Say "Your score is " plus score plus " from 5".
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 23: I can't add text to a number.
+    Say "Your score is " plus score plus " from 5".
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 24: I don't know anything called "more".
+    If score is 4 or more, say "Well done!".
+                     ^^^^
+Did you mean "score"? You made it on line 1.
+--- files made ---

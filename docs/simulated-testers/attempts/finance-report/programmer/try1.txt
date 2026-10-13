@@ -1,0 +1,233 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I don't understand the character "[".
+        row.month = row.date[0:7]
+                            ^
+
+Line 6: I don't understand the character "]".
+        row.month = row.date[0:7]
+                                ^
+
+Line 8: I don't understand the character "{".
+    by_category = {}
+                  ^
+
+Line 8: I don't understand the character "}".
+    by_category = {}
+                   ^
+
+Line 9: I don't understand the character "{".
+    by_month = {}
+               ^
+
+Line 9: I don't understand the character "}".
+    by_month = {}
+                ^
+
+Line 11: I don't understand the character "[".
+        by_category[row.category] = by_category.get(row.category, 0) + row.amount
+                   ^
+
+Line 11: I don't understand the character "]".
+        by_category[row.category] = by_category.get(row.category, 0) + row.amount
+                                ^
+
+Line 12: I don't understand the character "[".
+        by_month[row.month] = by_month.get(row.month, 0) + row.amount
+                ^
+
+Line 12: I don't understand the character "]".
+        by_month[row.month] = by_month.get(row.month, 0) + row.amount
+                          ^
+
+Line 1: I don't know a sentence that starts with "rows".
+    rows = read_csv("bank.csv")
+    ^^^^
+To keep a value in a name, write "let rows be ...". To change it, write "set rows to ...".
+
+Line 2: I don't know a sentence that starts with "rows".
+    rows = rows.filter(row => row.amount != "")
+    ^^^^
+To keep a value in a name, write "let rows be ...". To change it, write "set rows to ...".
+
+Line 2: I don't know a sentence that starts with "filter".
+    rows = rows.filter(row => row.amount != "")
+                ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 2: I don't know a sentence that starts with "amount".
+    rows = rows.filter(row => row.amount != "")
+                                  ^^^^^^
+Did you mean "count"?
+
+Line 4: I expected "each" here, but found "row".
+    for row in rows:
+        ^^^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "row".
+        row.amount = number(row.amount.replace("$", ""))
+        ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "amount".
+        row.amount = number(row.amount.replace("$", ""))
+            ^^^^^^
+Did you mean "count"?
+
+Line 5: I don't know a sentence that starts with "amount".
+        row.amount = number(row.amount.replace("$", ""))
+                                ^^^^^^
+Did you mean "count"?
+
+Line 5: I don't know a sentence that starts with "replace".
+        row.amount = number(row.amount.replace("$", ""))
+                                       ^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 6: I don't know a sentence that starts with "row".
+        row.month = row.date[0:7]
+        ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 6: I don't know a sentence that starts with "month".
+        row.month = row.date[0:7]
+            ^^^^^
+To keep a value in a name, write "let month be ...". To change it, write "set month to ...".
+
+Line 6: I don't know a sentence that starts with "date".
+        row.month = row.date[0:7]
+                        ^^^^
+Did you mean "save"?
+
+Line 8: I don't know a sentence that starts with "by_category".
+    by_category = {}
+    ^^^^^^^^^^^
+To keep a value in a name, write "let by_category be ...". To change it, write "set by_category to ...".
+
+Line 9: I don't know a sentence that starts with "by_month".
+    by_month = {}
+    ^^^^^^^^
+To keep a value in a name, write "let by_month be ...". To change it, write "set by_month to ...".
+
+Line 10: I expected "each" here, but found "row".
+    for row in rows:
+        ^^^
+Write it like "for each n from 1 to 10:".
+
+Line 11: I don't know a sentence that starts with "by_category".
+        by_category[row.category] = by_category.get(row.category, 0) + row.amount
+        ^^^^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 11: I don't know a sentence that starts with "category".
+        by_category[row.category] = by_category.get(row.category, 0) + row.amount
+                        ^^^^^^^^
+To keep a value in a name, write "let category be ...". To change it, write "set category to ...".
+
+Line 11: I don't know a sentence that starts with "get".
+        by_category[row.category] = by_category.get(row.category, 0) + row.amount
+                                                ^^^
+Did you mean "let" or "set"?
+
+Line 11: I don't know a sentence that starts with "category".
+        by_category[row.category] = by_category.get(row.category, 0) + row.amount
+                                                        ^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 11: I don't know a sentence that starts with "amount".
+        by_category[row.category] = by_category.get(row.category, 0) + row.amount
+                                                                           ^^^^^^
+Did you mean "count"?
+
+Line 12: I don't know a sentence that starts with "by_month".
+        by_month[row.month] = by_month.get(row.month, 0) + row.amount
+        ^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 12: I don't know a sentence that starts with "month".
+        by_month[row.month] = by_month.get(row.month, 0) + row.amount
+                     ^^^^^
+To keep a value in a name, write "let month be ...". To change it, write "set month to ...".
+
+Line 12: I don't know a sentence that starts with "get".
+        by_month[row.month] = by_month.get(row.month, 0) + row.amount
+                                       ^^^
+Did you mean "let" or "set"?
+
+Line 12: I don't know a sentence that starts with "month".
+        by_month[row.month] = by_month.get(row.month, 0) + row.amount
+                                               ^^^^^
+A sentence like this works: "total the amount per month".
+
+Line 12: I don't know a sentence that starts with "amount".
+        by_month[row.month] = by_month.get(row.month, 0) + row.amount
+                                                               ^^^^^^
+Did you mean "count"?
+
+Line 15: I expected "each" here, but found "category".
+    for category, total in by_category:
+        ^^^^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 16: This "(" is never closed.
+        print(category + ": " + format(total, 2))
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 19: I expected "each" here, but found "month".
+    for month, total in by_month:
+        ^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 20: This "(" is never closed.
+        print(month + ": " + format(total, 2))
+             ^
+Add a ")" where the group ends, on the same line.
+
+Line 22: I don't know a sentence that starts with "biggest".
+    biggest = max(rows, key=row => row.amount)
+    ^^^^^^^
+To keep a value in a name, write "let biggest be ...". To change it, write "set biggest to ...".
+
+Line 22: I don't know a sentence that starts with "amount".
+    biggest = max(rows, key=row => row.amount)
+                                       ^^^^^^
+Did you mean "count"?
+
+Line 23: This "(" is never closed.
+    print("Biggest expense: " + biggest.description + " on " + biggest.date + " ($" + format(biggest.amount, 2) + ")")
+         ^
+Add a ")" where the group ends, on the same line.
+
+Line 23: I don't know a sentence that starts with "description".
+    print("Biggest expense: " + biggest.description + " on " + biggest.date + " ($" + format(biggest.amount, 2) + ")")
+                                        ^^^^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 23: I don't know a sentence that starts with "date".
+    print("Biggest expense: " + biggest.description + " on " + biggest.date + " ($" + format(biggest.amount, 2) + ")")
+                                                                       ^^^^
+Did you mean "save"?
+
+Line 23: I don't know a sentence that starts with "amount".
+    print("Biggest expense: " + biggest.description + " on " + biggest.date + " ($" + format(biggest.amount, 2) + ")")
+                                                                                                     ^^^^^^
+Did you mean "count"?
+
+Line 25: I don't know a sentence that starts with "chart".
+    chart = pie_chart(labels=keys(by_category), values=values(by_category), title="Spending per category")
+    ^^^^^
+To keep a value in a name, write "let chart be ...". To change it, write "set chart to ...".
+
+Line 26: I don't know a sentence that starts with "chart".
+    chart.save("categories.svg")
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 26: Something is missing after ")".
+    chart.save("categories.svg")
+                               ^
+Write it like "save rows as csv file "out.csv"".
+--- files made ---

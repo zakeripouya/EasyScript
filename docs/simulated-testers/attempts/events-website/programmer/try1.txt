@@ -1,0 +1,132 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I don't understand the character "[".
+    form.add_select("meal", label="Meal", options=["fish", "veggie", "chicken"])
+                                                  ^
+
+Line 5: I don't understand the character "]".
+    form.add_select("meal", label="Meal", options=["fish", "veggie", "chicken"])
+                                                                              ^
+
+Line 8: I don't understand the character "{".
+    form.on_submit(data => {
+                           ^
+
+Line 9: I don't understand the character "{".
+        append_csv("signups.csv", { name: data.name, meal: data.meal })
+                                  ^
+
+Line 9: I don't understand the character "}".
+        append_csv("signups.csv", { name: data.name, meal: data.meal })
+                                                                     ^
+
+Line 11: I don't understand the character "}".
+    })
+    ^
+
+Line 1: I don't know a sentence that starts with "page".
+    page = new WebPage("Event Sign-Up")
+    ^^^^
+Did you mean "save"?
+
+Line 3: I don't know a sentence that starts with "form".
+    form = page.add_form()
+    ^^^^
+Did you mean "for"?
+
+Line 3: I don't know a sentence that starts with "add_form".
+    form = page.add_form()
+                ^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 4: I don't know a sentence that starts with "form".
+    form.add_input("name", label="Your name", required=true)
+    ^^^^
+Did you mean "for"?
+
+Line 4: I don't know a sentence that starts with "add_input".
+    form.add_input("name", label="Your name", required=true)
+         ^^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: I don't know a sentence that starts with "form".
+    form.add_select("meal", label="Meal", options=["fish", "veggie", "chicken"])
+    ^^^^
+Did you mean "for"?
+
+Line 5: I don't know a sentence that starts with "add_select".
+    form.add_select("meal", label="Meal", options=["fish", "veggie", "chicken"])
+         ^^^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 6: I don't know a sentence that starts with "form".
+    form.add_button("Sign up")
+    ^^^^
+Did you mean "for"?
+
+Line 6: I don't know a sentence that starts with "add_button".
+    form.add_button("Sign up")
+         ^^^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 8: I don't know a sentence that starts with "form".
+    form.on_submit(data => {
+    ^^^^
+Did you mean "for"?
+
+Line 8: I don't know a sentence that starts with "on_submit".
+    form.on_submit(data => {
+         ^^^^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 9: This line is indented, but nothing above it starts a block.
+        append_csv("signups.csv", { name: data.name, meal: data.meal })
+    ^^^^
+Remove the spaces at the start of the line.
+
+Line 9: I don't know a sentence that starts with "append_csv".
+        append_csv("signups.csv", { name: data.name, meal: data.meal })
+        ^^^^^^^^^^
+A sentence like this works: "ask "What's your name?" and call the answer name".
+
+Line 9: I don't know a sentence that starts with "name".
+        append_csv("signups.csv", { name: data.name, meal: data.meal })
+                                               ^^^^
+Did you mean "save"?
+
+Line 9: I don't know a sentence that starts with "meal".
+        append_csv("signups.csv", { name: data.name, meal: data.meal })
+                                                                ^^^^
+Did you mean "tell" or "read"?
+
+Line 10: I don't know a sentence that starts with "page".
+        page.show("Thanks, " + data.name + "! You're signed up.")
+        ^^^^
+Did you mean "save"?
+
+Line 10: This "(" is never closed.
+        page.show("Thanks, " + data.name + "! You're signed up.")
+                 ^
+Add a ")" where the group ends, on the same line.
+
+Line 10: I don't know a sentence that starts with "name".
+        page.show("Thanks, " + data.name + "! You're signed up.")
+                                    ^^^^
+Did you mean "save"?
+
+Line 11: A sentence can't start with ")".
+    })
+     ^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 13: I don't know a sentence that starts with "page".
+    page.serve(port=8080)
+    ^^^^
+Did you mean "save"?
+
+Line 13: I don't know a sentence that starts with "serve".
+    page.serve(port=8080)
+         ^^^^^
+Did you mean "save"?
+--- files made ---

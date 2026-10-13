@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: Something is missing after "readings".
+    Read file readings.csv.
+              ^^^^^^^^
+Write it like "read file "notes.txt" and call it notes".
+
+Line 1: I don't know a sentence that starts with "csv".
+    Read file readings.csv.
+                       ^^^
+A sentence like this works: "save rows as csv file "sales.csv"".
+
+Line 2: I expected "each" here, but found "every".
+    For every group, calculate average of temperature.
+        ^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 3: I expected "each" here, but found "every".
+    For every group, find biggest drop between two reading next each other.
+        ^^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 6: I expected "called" here, but found "chart".
+    Make line chart for temperature of group A and save in cooling.svg.
+              ^^^^^
+Write it like "make a new file called "notes.txt"".
+
+Line 6: I don't know a sentence that starts with "svg".
+    Make line chart for temperature of group A and save in cooling.svg.
+                                                                   ^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

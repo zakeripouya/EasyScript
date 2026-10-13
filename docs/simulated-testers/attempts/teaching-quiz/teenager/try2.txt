@@ -1,0 +1,54 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: "a" can't be used as a name.
+    ask "capital of france?" and call the answer a
+                                                 ^
+EasyScript ignores the words "a", "an" and "the" wherever they appear, so they can't be names.
+Try a name that says what it holds, like "total" or "answer".
+
+Line 6: I expected ":", "," or "then" after the condition, but found "b".
+    if lowercase b is "tokyo", say "right" and set score to score + 1
+                 ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 7: I expected ":", "," or "then" after the condition, but found "b".
+    if lowercase b is not "tokyo", say "wrong its tokyo"
+                 ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 9: I expected ":", "," or "then" after the condition, but found "c".
+    if lowercase c is "nairobi", say "right" and set score to score + 1
+                 ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 10: I expected ":", "," or "then" after the condition, but found "c".
+    if lowercase c is not "nairobi", say "wrong its nairobi"
+                 ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 12: I expected ":", "," or "then" after the condition, but found "d".
+    if lowercase d is "ottawa", say "right" and set score to score + 1
+                 ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 13: I expected ":", "," or "then" after the condition, but found "d".
+    if lowercase d is not "ottawa", say "wrong its ottawa"
+                 ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 15: I expected ":", "," or "then" after the condition, but found "e".
+    if lowercase e is "brasilia", say "right" and set score to score + 1
+                 ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 16: I expected ":", "," or "then" after the condition, but found "e".
+    if lowercase e is not "brasilia", say "wrong its brasilia"
+                 ^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 17: I don't understand the text "/5" here.
+    say score "/5"
+              ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

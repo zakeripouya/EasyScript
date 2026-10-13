@@ -1,0 +1,48 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 7: I don't understand "!".
+    Thank you!
+             ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hello".
+    Hello, I would like to make a mortgage calculator for my clients.
+    ^^^^^
+Did you mean "tell"?
+
+Line 2: I expected "and call the answer" here, but found "for".
+    Please ask the client for the price of the house, then ask how much deposit they are putting down, then ask for the yearly interest rate in percent, and finally ask for how many years the loan will last.
+                          ^^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 3: I don't know a sentence that starts with "loan".
+    The loan amount is the house price minus the deposit. Please show the loan amount.
+        ^^^^
+Sentences like these work: "total the amount per month", "what is the total?" or "reduce price by 10 percent".
+
+Line 3: I don't understand "amount" here.
+    The loan amount is the house price minus the deposit. Please show the loan amount.
+                                                                               ^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 4: I expected a name here, but found ",".
+    To get the monthly payment, take the yearly interest rate, divide it by 100 and then by 12 to get the monthly rate. The number of months is the number of years times 12. The monthly payment is the loan times the monthly rate, divided by (1 minus (1 plus the monthly rate) to the power of minus the number of months).
+                              ^
+A name is a single word, like "total", or several, like "late fee".
+
+Line 5: I don't understand "payment" here.
+    Please show the monthly payment rounded to the cent.
+                            ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 6: I don't know a sentence that starts with "please".
+    Finally, please show the total amount paid over the whole loan, which is the monthly payment times the number of months.
+             ^^^^^^
+Did you mean "please"?
+
+Line 7: I don't know a sentence that starts with "Thank".
+    Thank you!
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

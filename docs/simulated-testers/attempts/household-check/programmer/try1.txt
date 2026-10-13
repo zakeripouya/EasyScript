@@ -1,0 +1,77 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I don't understand the character "{".
+    bills = {}
+            ^
+
+Line 3: I don't understand the character "}".
+    bills = {}
+             ^
+
+Line 4: I don't understand the character "[".
+    for name in ["rent", "utilities", "insurance", "phone"]:
+                ^
+
+Line 4: I don't understand the character "]".
+    for name in ["rent", "utilities", "insurance", "phone"]:
+                                                          ^
+
+Line 5: I don't understand the character "[".
+        bills[name] = number(input(name + ": "))
+             ^
+
+Line 5: I don't understand the character "]".
+        bills[name] = number(input(name + ": "))
+                  ^
+
+Line 1: I don't know a sentence that starts with "income".
+    income = number(input("Income for the month: "))
+    ^^^^^^
+To keep a value in a name, write "let income be ...". To change it, write "set income to ...".
+
+Line 3: I don't know a sentence that starts with "bills".
+    bills = {}
+    ^^^^^
+To keep a value in a name, write "let bills be ...". To change it, write "set bills to ...".
+
+Line 4: I expected "each" here, but found "name".
+    for name in ["rent", "utilities", "insurance", "phone"]:
+        ^^^^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't know a sentence that starts with "bills".
+        bills[name] = number(input(name + ": "))
+        ^^^^^
+Sentences like these work: "ask "What's your name?" and call the answer name" or "apply double to every number in scores".
+
+Line 7: I don't know a sentence that starts with "total_bills".
+    total_bills = sum(bills.values())
+    ^^^^^^^^^^^
+To keep a value in a name, write "let total_bills be ...". To change it, write "set total_bills to ...".
+
+Line 7: I don't know a sentence that starts with "values".
+    total_bills = sum(bills.values())
+                            ^^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 8: I don't know a sentence that starts with "left".
+    left = income - total_bills
+    ^^^^
+Did you mean "let"?
+
+Line 14: I don't know a sentence that starts with "savings".
+    savings = number(input("How much to save per month: "))
+    ^^^^^^^
+To keep a value in a name, write "let savings be ...". To change it, write "set savings to ...".
+
+Line 15: I don't know a sentence that starts with "goal".
+    goal = 5000
+    ^^^^
+Did you mean "go"?
+
+Line 16: I don't know a sentence that starts with "months".
+    months = ceil(goal / savings)
+    ^^^^^^
+To keep a value in a name, write "let months be ...". To change it, write "set months to ...".
+--- files made ---

@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't understand "page" here.
+    let page be a web page called "Event Sign-Up"
+                      ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 6: I expected a colon after this event, but found "button".
+    when the "Sign up" button is clicked:
+                       ^^^^^^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+--- files made ---

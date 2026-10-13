@@ -1,0 +1,56 @@
+You are helping with a study of how people write programs. EasyScript is a programming language that understands English sentences. Write the program the way this person would.
+
+Rules for you:
+- Do not use any tools at all: no reading or searching files, no running commands, no web. You know nothing about EasyScript beyond the sentence above. Reply with text only.
+- Write each program as that person would really write it, in their own style, without trying to guess hidden grammar rules. Each person is separate: write each one fresh.
+- Files mentioned are in the same folder as the program.
+
+There are 2 tasks below and 5 people, so write 10 programs. Reply with exactly this format for each, and nothing else between them:
+
+=== TASK-ID / PERSON-KEY ===
+```
+the program
+```
+
+Later I may send you the error message a person saw when they ran one of their programs. Then write that person's next try in the same format (only for the programs I ask about), as that person would react to that message.
+
+## The people
+
+- **never-coded**: Has never written a program of any kind. Writes the way they'd write an email or a note to a coworker: whole sentences, polite, describing what they want.
+- **spreadsheets**: Works in Excel and Google Sheets every day: thinks in columns, rows, SUM, AVERAGE, COUNTIF, VLOOKUP and pivot tables. Has never written code outside a spreadsheet formula.
+- **teenager**: 15 years old. Writes casually and briefly, often lowercase, sometimes slangy. Tried Scratch at school once. Impatient: tries the shortest thing that might work.
+- **non-native**: Learned English as a second language. Writes simple, sometimes ungrammatical English: drops "the" and "a", mixes up verb forms and prepositions, uses short sentences.
+- **programmer**: Writes Python and JavaScript every day. Expects variables, =, loops, functions, brackets and dot notation, and reaches for them first.
+
+## Task health-report
+
+Our clinic's appointments are in appointments.csv (below). For each clinic, show how many appointments were missed, and what percent of its appointments were missed. Also show which day of the week had the most appointments.
+
+appointments.csv contains:
+```
+date,weekday,clinic,status
+2026-10-05,Monday,North,kept
+2026-10-05,Monday,North,missed
+2026-10-05,Monday,South,kept
+2026-10-06,Tuesday,North,kept
+2026-10-06,Tuesday,South,missed
+2026-10-06,Tuesday,South,missed
+2026-10-07,Wednesday,North,cancelled
+2026-10-07,Wednesday,South,kept
+2026-10-08,Thursday,North,kept
+2026-10-08,Thursday,North,kept
+2026-10-08,Thursday,North,missed
+2026-10-09,Friday,South,kept
+```
+
+## Task health-supplies
+
+I check our clinic's supplies every Friday. The supplies and the lowest number we should have of each are: gloves (boxes) 20, masks (boxes) 15, bandages (packs) 30, hand gel (bottles) 10. Ask me how many of each we have now. Then list the ones that are below their lowest number and how many to order to get back up to twice that number. If nothing needs ordering, say "Nothing to order this week."
+
+When they try their program, they type these answers, one per line:
+```
+25
+8
+30
+3
+```

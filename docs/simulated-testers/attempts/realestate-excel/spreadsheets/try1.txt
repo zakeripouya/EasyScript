@@ -1,0 +1,33 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "Open".
+    Open listings.xlsx
+    ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 1: I don't know a sentence that starts with "xlsx".
+    Open listings.xlsx
+                  ^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 2: I don't know a sentence that starts with "Group".
+    Group rows by the Neighborhood column
+    ^^^^^
+Sentences like these work: "increase total by 5", "decrease total by 5" or "reduce price by 10 percent".
+
+Line 3: I expected "from" here, but found ",".
+    For each Neighborhood, calculate AVERAGE of Price
+                         ^
+Write it like "for each n from 1 to 10:".
+
+Line 4: I expected "from" here, but found ",".
+    For each Neighborhood, find the MIN of Price and show that row
+                         ^
+Write it like "for each n from 1 to 10:".
+
+Line 5: I don't understand "with" here.
+    Show the results as a table with columns: Neighborhood, Average Price, Cheapest House, Cheapest Price
+                                ^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

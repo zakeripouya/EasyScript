@@ -1,0 +1,23 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: Something is missing after "as".
+    ask "How many gloves (boxes) do we have? " as gloves
+                                               ^^
+Did you mean "as a number", "as text", "as money", "as a percent" or "as a table"?
+
+Line 7: Something is missing after "as".
+    ask "How many masks (boxes) do we have? " as masks
+                                              ^^
+Did you mean "as a number", "as text", "as money", "as a percent" or "as a table"?
+
+Line 8: Something is missing after "as".
+    ask "How many bandages (packs) do we have? " as bandages
+                                                 ^^
+Did you mean "as a number", "as text", "as money", "as a percent" or "as a table"?
+
+Line 9: Something is missing after "as".
+    ask "How many hand gel (bottles) do we have? " as gel
+                                                   ^^
+Did you mean "as a number", "as text", "as money", "as a percent" or "as a table"?
+--- files made ---

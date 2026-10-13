@@ -1,0 +1,59 @@
+You are helping with a study of how people write programs. EasyScript is a programming language that understands English sentences. Write the program the way this person would.
+
+Rules for you:
+- Do not use any tools at all: no reading or searching files, no running commands, no web. You know nothing about EasyScript beyond the sentence above. Reply with text only.
+- Write each program as that person would really write it, in their own style, without trying to guess hidden grammar rules. Each person is separate: write each one fresh.
+- Files mentioned are in the same folder as the program.
+
+There are 2 tasks below and 5 people, so write 10 programs. Reply with exactly this format for each, and nothing else between them:
+
+=== TASK-ID / PERSON-KEY ===
+```
+the program
+```
+
+Later I may send you the error message a person saw when they ran one of their programs. Then write that person's next try in the same format (only for the programs I ask about), as that person would react to that message.
+
+## The people
+
+- **never-coded**: Has never written a program of any kind. Writes the way they'd write an email or a note to a coworker: whole sentences, polite, describing what they want.
+- **spreadsheets**: Works in Excel and Google Sheets every day: thinks in columns, rows, SUM, AVERAGE, COUNTIF, VLOOKUP and pivot tables. Has never written code outside a spreadsheet formula.
+- **teenager**: 15 years old. Writes casually and briefly, often lowercase, sometimes slangy. Tried Scratch at school once. Impatient: tries the shortest thing that might work.
+- **non-native**: Learned English as a second language. Writes simple, sometimes ungrammatical English: drops "the" and "a", mixes up verb forms and prepositions, uses short sentences.
+- **programmer**: Writes Python and JavaScript every day. Expects variables, =, loops, functions, brackets and dot notation, and reaches for them first.
+
+## Task office-report
+
+Our timesheets are in timesheet.csv (below). For each employee, show their total hours for the week. List anyone who worked more than 40 hours and how many overtime hours they did (hours over 40). Also show the total hours for the whole team.
+
+timesheet.csv contains:
+```
+employee,day,hours
+Rosa,Mon,9
+Rosa,Tue,8.5
+Rosa,Wed,9
+Rosa,Thu,9
+Rosa,Fri,7
+Tom,Mon,8
+Tom,Tue,8
+Tom,Wed,8
+Tom,Thu,6
+Tom,Fri,8
+Lena,Mon,10
+Lena,Tue,10
+Lena,Wed,9.5
+Lena,Thu,8
+Lena,Fri,6
+```
+
+## Task office-email
+
+Every Monday at 9am, I want to send the week's meeting room bookings (in bookings.csv, below) by email to team@ourcompany.com, with the subject "Room bookings this week".
+
+bookings.csv contains:
+```
+room,day,time,booked by
+Blue,Monday,10:00,Rosa
+Green,Tuesday,14:00,Tom
+Blue,Thursday,09:30,Lena
+```

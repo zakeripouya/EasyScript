@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I expected "as" here, but found ",".
+    Keep asking which item I want, then how many of them, until the item is "done".
+                                 ^
+Write it like "keep tax rate as 0.2".
+
+Line 7: I expected ":", "," or "then" after the condition, but found "list".
+    If the item is not on the list, tell me it isn't on the list and ask again.
+                              ^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 11: Something is missing after "%".
+        If the total is over $50, show the total minus 10%.
+                                                         ^
+Add a value there, like a number, some text in quotes, or a name.
+--- files made ---

@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 2: I don't understand "by" here.
+    Let averages be AVERAGE of score by student from grades
+                                     ^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

@@ -1,0 +1,8 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I don't know a sentence that starts with "email".
+        email body to recipient with subject
+        ^^^^^
+Sentences like these work: "privately to tidy with text:", "set total to 10" or "change total to 10".
+--- files made ---

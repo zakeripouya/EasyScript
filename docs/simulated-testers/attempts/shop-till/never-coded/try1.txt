@@ -1,0 +1,38 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 11: I don't understand "!".
+    Thank you!
+             ^
+To check that two things are different, write "!=".
+
+Line 1: I don't know a sentence that starts with "Hello".
+    Hello, I would like a simple till for my shop counter, please.
+    ^^^^^
+Did you mean "tell"?
+
+Line 3: I don't know a sentence that starts with "My".
+    My prices are: coffee beans cost $12.50, a mug costs $8, and filter papers cost $3.20.
+    ^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: "me" can't be part of a name, because it already means something in EasyScript.
+    Please keep asking me which item I want and how many of them, until I type "done".
+                       ^^
+Try a name without it, like "asking which item I want".
+
+Line 7: I expected ":", "," or "then" after the condition, but found "type".
+    If I type something that isn't one of those items, please tell me it isn't on the list and ask me again.
+         ^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+
+Line 9: I expected a colon after this event, but found "type".
+    When I type "done", please show me the total. If the total is over $50, please take 10% off and show me the discounted total as well.
+           ^^^^
+Put a colon at the end of the line and the sentences that belong to it on the indented lines below.
+
+Line 11: I don't know a sentence that starts with "Thank".
+    Thank you!
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+--- files made ---

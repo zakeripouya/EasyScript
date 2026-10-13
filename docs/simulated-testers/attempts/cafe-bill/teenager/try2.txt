@@ -1,0 +1,18 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 4: I don't know a sentence that starts with "tip".
+    if service is good, tip is 20%
+                        ^^^
+To keep a value in a name, write "let tip be ...". To change it, write "set tip to ...".
+
+Line 5: I don't know a sentence that starts with "tip".
+    if service is okay, tip is 15%
+                        ^^^
+To keep a value in a name, write "let tip be ...". To change it, write "set tip to ...".
+
+Line 6: I don't know a sentence that starts with "tip".
+    if service is bad, tip is 10%
+                       ^^^
+To keep a value in a name, write "let tip be ...". To change it, write "set tip to ...".
+--- files made ---

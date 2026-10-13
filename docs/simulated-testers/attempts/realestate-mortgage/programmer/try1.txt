@@ -1,0 +1,71 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 10: I don't understand the character "{".
+    function monthlyPayment(loan, r, n) {
+                                        ^
+
+Line 12: I don't understand the character "}".
+    }
+    ^
+
+Line 1: I don't know a sentence that starts with "price".
+    price = number(input("House price: "))
+    ^^^^^
+Did you mean "print" or "write"?
+
+Line 2: I don't know a sentence that starts with "deposit".
+    deposit = number(input("Deposit: "))
+    ^^^^^^^
+To keep a value in a name, write "let deposit be ...". To change it, write "set deposit to ...".
+
+Line 3: I don't know a sentence that starts with "rate".
+    rate = number(input("Yearly interest rate (%): "))
+    ^^^^
+Did you mean "write" or "save"?
+
+Line 4: I don't know a sentence that starts with "years".
+    years = number(input("Years: "))
+    ^^^^^
+To keep a value in a name, write "let years be ...". To change it, write "set years to ...".
+
+Line 6: I don't know a sentence that starts with "loan".
+    loan = price - deposit
+    ^^^^
+To keep a value in a name, write "let loan be ...". To change it, write "set loan to ...".
+
+Line 7: I don't know a sentence that starts with "r".
+    r = rate / 100 / 12
+    ^
+To keep a value in a name, write "let r be ...". To change it, write "set r to ...".
+
+Line 8: I don't know a sentence that starts with "n".
+    n = years * 12
+    ^
+To keep a value in a name, write "let n be ...". To change it, write "set n to ...".
+
+Line 10: I don't know a sentence that starts with "function".
+    function monthlyPayment(loan, r, n) {
+    ^^^^^^^^
+A sentence like this works: "for each n from 1 to 10:".
+
+Line 11: This line is indented, but nothing above it starts a block.
+        return loan * r / (1 - (1 + r) ** (-n))
+    ^^^^
+Remove the spaces at the start of the line.
+
+Line 11: I expected a value here, but found "*".
+        return loan * r / (1 - (1 + r) ** (-n))
+                                        ^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 14: I don't know a sentence that starts with "payment".
+    payment = round(monthlyPayment(loan, r, n), 2)
+    ^^^^^^^
+To keep a value in a name, write "let payment be ...". To change it, write "set payment to ...".
+
+Line 15: I don't know a sentence that starts with "total".
+    total = round(payment * n, 2)
+    ^^^^^
+To keep a value in a name, write "let total be ...". To change it, write "set total to ...".
+--- files made ---

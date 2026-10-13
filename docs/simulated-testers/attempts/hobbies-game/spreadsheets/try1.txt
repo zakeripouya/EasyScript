@@ -1,0 +1,46 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 9: I don't understand the character "&".
+    show "You got it in " & guesses & " guesses!"
+                          ^
+
+Line 9: I don't understand the character "&".
+    show "You got it in " & guesses & " guesses!"
+                                    ^
+
+Line 1: I don't know a sentence that starts with "secret".
+    secret = random number between 1 and 10
+    ^^^^^^
+To keep a value in a name, write "let secret be ...". To change it, write "set secret to ...".
+
+Line 2: I don't know a sentence that starts with "guesses".
+    guesses = 0
+    ^^^^^^^
+To keep a value in a name, write "let guesses be ...". To change it, write "set guesses to ...".
+
+Line 3: Something is missing after "repeat".
+    repeat:
+    ^^^^^^
+Add a value there, like a number, some text in quotes, or a name.
+
+Line 4: I expected "and call the answer" here, but found "in".
+      ask "Guess the number" and store in guess
+                                       ^^
+Write it like "ask "What's your name?" and call the answer name".
+
+Line 5: I don't know a sentence that starts with "guesses".
+      guesses = guesses + 1
+      ^^^^^^^
+To keep a value in a name, write "let guesses be ...". To change it, write "set guesses to ...".
+
+Line 8: I don't know a sentence that starts with "until".
+    until guess = secret
+    ^^^^^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 9: I don't understand "guesses" here.
+    show "You got it in " & guesses & " guesses!"
+                            ^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+--- files made ---

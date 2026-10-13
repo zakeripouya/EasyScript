@@ -1,0 +1,28 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 3: I expected "there are" or a test like "are above 70" here, but found "said".
+    Tell me how many people said yes.
+                            ^^^^
+Write it like "how many scores are above 70" or "how many scores there are".
+
+Line 5: I don't understand "headcount" here.
+    Tell me the total headcount, which is everyone who said yes plus the plus ones they are bringing.
+                      ^^^^^^^^^
+After a value I expected an operator like "plus" or "is", or the end of the sentence.
+
+Line 7: I expected "there are" or a test like "are above 70" here, but found "meal".
+    Tell me how many of each meal we need for the people who are coming. The plus ones eat the same meal as the guest who brought them.
+                             ^^^^
+Write it like "how many scores are above 70" or "how many scores there are".
+
+Line 7: I don't know a sentence that starts with "plus".
+    Tell me how many of each meal we need for the people who are coming. The plus ones eat the same meal as the guest who brought them.
+                                                                             ^^^^
+Did you mean "put"?
+
+Line 9: I expected "called" here, but found "and".
+    Make a pie chart of the meals and save it as "meals.svg".
+                                  ^^^
+Write it like "make a bar chart of sales called "sales.svg"".
+--- files made ---

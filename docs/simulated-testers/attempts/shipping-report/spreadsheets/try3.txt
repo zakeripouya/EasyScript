@@ -1,0 +1,13 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 5: I don't understand "in" here.
+    let avg be average of "weight kg" in shipments
+                                      ^^
+Did you mean "is"?
+
+Line 7: I don't understand "in" here.
+    let heaviest be max of "weight kg" in shipments
+                                       ^^
+Did you mean "is"?
+--- files made ---

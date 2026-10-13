@@ -1,0 +1,53 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 1: I don't know a sentence that starts with "We".
+    We check our clinic's supplies every Friday. Here are the supplies and the lowest number we should have of each:
+    ^^
+Sentences like these work: "check which kind s is:" or "apply double to every number in scores".
+
+Line 1: I don't know a sentence that starts with "Here".
+    We check our clinic's supplies every Friday. Here are the supplies and the lowest number we should have of each:
+                                                 ^^^^
+Sentences like these work: "read the table in "sales.csv" and call it sales", "for each score in scores:" or "ask "What's your name?" and call the answer name".
+
+Line 2: A sentence can't start with "-".
+    - gloves (boxes): 20
+    ^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 3: A sentence can't start with "-".
+    - masks (boxes): 15
+    ^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 4: A sentence can't start with "-".
+    - bandages (packs): 30
+    ^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 5: A sentence can't start with "-".
+    - hand gel (bottles): 10
+    ^
+Sentences start with a word like "let", "set", "say" or "ask".
+
+Line 7: I expected a value here, but found "me".
+    Please ask me how many of each one we have right now.
+               ^^
+A value is a number, some text in quotes, yes or no, nothing, or a name.
+
+Line 9: I don't know a sentence that starts with "please".
+    Then please make a list of the supplies that are below their lowest number. For each one, tell me how many we need to order to get back up to twice the lowest number.
+         ^^^^^^
+Did you mean "please"?
+
+Line 9: I expected "from" here, but found ",".
+    Then please make a list of the supplies that are below their lowest number. For each one, tell me how many we need to order to get back up to twice the lowest number.
+                                                                                            ^
+Write it like "for each n from 1 to 10:".
+
+Line 11: I expected ":", "," or "then" after the condition, but found "lowest".
+    If nothing is below its lowest number, please just say "Nothing to order this week."
+                            ^^^^^^
+Write "if x is 5:" and put the sentences on the lines below, indented. For one sentence, write "if x is 5, say "five"".
+--- files made ---

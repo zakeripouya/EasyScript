@@ -1,0 +1,22 @@
+exit code: 1
+--- output ---
+--- errors ---
+Line 6: I can't divide text by text.
+        let density be (mass / volume) rounded to 2 decimal places
+                       ^^^^^^^^^^^^^^^
+
+Line 11: I can't add text to text.
+        say name + ": density = " + density + " g/cm^3, it " + result
+            ^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 11: I can't add text to a number.
+        say name + ": density = " + density + " g/cm^3, it " + result
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To join text, use "followed by".
+
+Line 11: I don't know anything called "result".
+        say name + ": density = " + density + " g/cm^3, it " + result
+                                                               ^^^^^^
+You made "result" inside the "if" on line 7, so it only exists inside that block. To use it afterwards, make it before the "if".
+--- files made ---
