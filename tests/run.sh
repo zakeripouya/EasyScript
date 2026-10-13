@@ -252,6 +252,7 @@ check_dump plan "$ROOT/tests/plan" plan out
 
 # Examples back the docs, so every one of them must be checked.
 check_run "$ROOT/examples/programs" examples/programs
+check_run "$ROOT/templates" templates  # what "easyscript new" starts from
 check_dump tokens "$ROOT/examples/lexer" examples/lexer tokens
 check_dump ast "$ROOT/examples/parser" examples/parser ast
 for dir in "$ROOT"/examples/*/; do
@@ -487,6 +488,48 @@ expect_failure "cli/two-sources" 2 "Give one .es file at a time." \
 expect_failure "cli/plan-with-o" 2 "--plan only prints the plan, so it doesn't take -o." \
     "$ES" build --plan "$HELLO" -o x
 
+expect_failure "cli/new-without-name" 2 "Give \"easyscript new\" a name for the new folder, like \"easyscript new hello\"." \
+    "$ES" new
+expect_failure "cli/new-unknown-template" 2 "I don't know a template called \"poem\". The templates are blank, report, quiz, game and tool." \
+    "$ES" new mine --template poem
+expect_failure "cli/new-template-without-name" 2 "After --template, give a template's name (easyscript new --list shows them)." \
+    "$ES" new mine --template
+expect_failure "cli/new-two-names" 2 "Give one name to \"easyscript new\"." \
+    "$ES" new one two
+expect_failure "cli/new-other-option" 2 "\"easyscript new\" takes a name, and maybe --template T." \
+    "$ES" new mine --fast
+expect_failure "cli/new-existing-folder" 1 "There's already a folder called \".\" here, so I didn't change it. Pick another name." \
+    "$ES" new .
+expect_failure "cli/version-with-more" 2 "--version takes nothing after it." \
+    "$ES" --version now
+
+# "--version": the version and the edition.
+if [ "$("$ES" --version)" = "EasyScript 0.2.0 (the 2026 edition)" ]; then
+    ok "cli/version"
+else
+    not_ok "cli/version" "$("$ES" --version 2>&1)"
+fi
+
+# "new NAME [--template T]" makes NAME/main.es from the template, exactly;
+# "new --list" lists them; an existing folder is left alone.
+fresh_dir
+new_ok=yes
+for t in blank report quiz game tool; do
+    if [ "$t" = blank ]; then
+        (cd "$WORK/cwd" && "$ES" new "my $t" >/dev/null) || new_ok="new my $t failed"
+    else
+        (cd "$WORK/cwd" && "$ES" new "my $t" --template "$t" >/dev/null) || new_ok="new --template $t failed"
+    fi
+    cmp -s "$WORK/cwd/my $t/main.es" "$ROOT/templates/$t.es" || new_ok="my $t/main.es isn't templates/$t.es"
+done
+if ! (cd "$WORK/cwd" && "$ES" new --list | grep -q "^  report "); then new_ok="new --list doesn't list report"; fi
+if out=$(cd "$WORK/cwd" && "$ES" new "my quiz" 2>&1); then
+    new_ok="new over an existing folder worked"
+elif [ "$out" != "There's already a folder called \"my quiz\" here, so I didn't change it. Pick another name." ]; then
+    new_ok="new over an existing folder: $out"
+fi
+if [ "$new_ok" = yes ]; then ok "cli/new-templates"; else not_ok "cli/new-templates" "$new_ok"; fi
+
 # "build --plan FILE" is "plan FILE", and neither makes a file.
 fresh_dir
 out=$(cd "$WORK/cwd" && "$ES" build --plan "$ROOT/tests/plan/questions.es" 2>&1)
@@ -613,7 +656,7 @@ else
     strict_failed=""
     for src in "$ROOT"/tests/run/*.es "$ROOT"/tests/memory/*.es "$ROOT"/examples/programs/*.es \
         "$ROOT"/tests/modules/*/main.es "$ROOT"/examples/programs/*/main.es "$ROOT"/examples/programs/snake/play.es \
-        "$ROOT"/benchmarks/*/*.es "$ROOT"/docs/cookbook/*/*.es; do
+        "$ROOT"/benchmarks/*/*.es "$ROOT"/docs/cookbook/*/*.es "$ROOT"/templates/*.es; do
         [ -e "$src" ] || continue
         "$ES" emit "$src" >"$WORK/strict.c" 2>/dev/null || continue
         if ! out=$("$STRICT_CC" -std=c11 -Wall -Wextra -Wpedantic -Werror -O2 -c "$WORK/strict.c" \

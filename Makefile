@@ -15,8 +15,11 @@ GEN_RUNTIME = build/gen/es_runtime_embed.c
 # Modules written in EasyScript that the compiler joins to a program that needs them.
 LIBRARY = lib/charts.es
 GEN_LIBRARY = build/gen/es_charts_embed.c
+# Starter templates for "easyscript new", one generated file each.
+TEMPLATES = blank report quiz game tool
+GEN_TEMPLATES = $(patsubst %,build/gen/es_template_%.c,$(TEMPLATES))
 EMBED = build/tools/embed
-COMPILER_SRC = src/main.c src/modules.c src/shell.c $(FRONT_SRC) $(BACK_SRC) $(COMMON_SRC) $(GEN_RUNTIME) $(GEN_LIBRARY)
+COMPILER_SRC = src/main.c src/modules.c src/shell.c src/new.c $(FRONT_SRC) $(BACK_SRC) $(COMMON_SRC) $(GEN_RUNTIME) $(GEN_LIBRARY) $(GEN_TEMPLATES)
 UNIT_SRC = $(wildcard tests/unit/*.c) $(FRONT_SRC) $(COMMON_SRC)
 
 RELEASE_DIR = build/release
@@ -44,6 +47,10 @@ $(GEN_RUNTIME): $(RUNTIME) $(EMBED)
 $(GEN_LIBRARY): $(LIBRARY) $(EMBED)
 	@mkdir -p $(dir $@)
 	$(EMBED) $@ es_charts_source $(LIBRARY)
+
+build/gen/es_template_%.c: templates/%.es $(EMBED)
+	@mkdir -p $(dir $@)
+	$(EMBED) $@ es_template_$* $<
 
 easyscript: $(call release_objs,$(COMPILER_SRC))
 	$(CC) $(CFLAGS) $(RELEASE_FLAGS) -o $@ $^ $(LDLIBS)

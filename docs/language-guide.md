@@ -61,6 +61,8 @@ and run it:
 ./easyscript run hello.es
 ```
 
+To start a new program in a folder of its own, `easyscript new hello` makes `hello/main.es`; `easyscript new sales --template report` starts from a template instead (`blank`, `report`, `quiz`, `game` or `tool`; `easyscript new --list` says what each one does), and every template runs as it is. `easyscript --version` says which version and edition you have.
+
 `easyscript build hello.es -o hello` makes a program you can run on its own (`./hello`). Running `./easyscript` with nothing after it starts the interactive shell, where you can type sentences and see the results straight away; end a line with `:` to type a block, and finish the block with a blank line. A line with a mistake, or one that stops with an error while it runs, isn't kept: the next line works as if it had never been typed. If a new line makes a line from before stop with an error, the error says "This line worked before. The new line changes how it works." Two more commands show what the compiler sees: `easyscript tokens` (the words and symbols) and `easyscript ast` (the meaning, as a tree).
 
 ### Editions

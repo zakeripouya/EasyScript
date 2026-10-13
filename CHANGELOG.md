@@ -20,6 +20,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added (v0.2 prep: release)
 
+- Starter templates: `easyscript new NAME` makes a folder NAME with `main.es`, and `easyscript new NAME --template T` starts from `blank`, `report` (reads a csv file, adds it up, saves a chart), `quiz`, `game` or `tool` (uses the words given to the program); `easyscript new --list` lists them. The templates are `templates/*.es`, built into the compiler; `make test` runs each one.
+- `easyscript --version` prints `EasyScript 0.2.0 (the 2026 edition)`.
 - Editions: an optional first line, `this program uses EasyScript 2026.`, says which edition a program is written for; without it a program uses the current one (2026). An unknown edition, or the line anywhere but a file's first line, is an error. The promise, in design-principles.md: after v0.2.0 a later edition can change wording only for programs that ask for it ([proposal 0025](docs/proposals/0025-editions.md)).
 - A license: the Apache License 2.0 (`LICENSE`, `NOTICE`), with a runtime exception modeled on Swift's: programs compiled with EasyScript, including the parts of the runtime built into them, belong to their authors and don't need to carry the license or notice. CONTRIBUTING.md: contributions are under the same license; pull requests aren't accepted yet, issues and ideas are welcome.
 

@@ -163,6 +163,9 @@ make bench        # times the benchmarks against C, Go, and Python
 ./easyscript tokens file.es          # show how the lexer reads a file
 ./easyscript ast file.es             # show the syntax tree
 ./easyscript errors file.es          # check a file and print its errors as data (JSON, one per line)
+./easyscript new hello               # make a folder hello/ with main.es to start from
+./easyscript new sales --template report   # ... from a template: blank, report, quiz, game or tool
+./easyscript --version               # the version and the edition
 ./easyscript                         # interactive shell
 ```
 

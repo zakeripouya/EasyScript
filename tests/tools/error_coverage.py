@@ -22,6 +22,8 @@ EXEMPT = {
     "I couldn't run %s: %s.": 'needs exec to fail (no cc, or a deleted compiler)',
     "I couldn't build the program from the C I made. This is a bug in EasyScript; please report it.": 'generated C always compiles (checked by fuzzing with -Werror)',
     "I couldn't set up the shell's answers file: %s.": 'needs the temp directory to fail',
+    'I couldn\'t write "%s": %s.': 'needs writing main.es into a folder just made to fail (easyscript new)',
+    'I couldn\'t make the folder "%s": %s.': 'needs mkdir to fail for a name that doesn\'t exist yet (easyscript new)',
     'I couldn\'t look in the folder "%s": %s.': 'needs a folder that exists but can\'t be read (permissions are ignored when tests run as root)',
     'I couldn\'t rename "%s" to "%s": %s.': 'the paths are checked first, so it needs the system to refuse',
     'I couldn\'t copy "%s" to "%s".': 'needs a read or write to fail partway (a full disk)',

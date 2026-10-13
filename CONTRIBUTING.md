@@ -91,6 +91,7 @@ Expected-output files must match **byte for byte**. When you change a message on
 
 Never bless just to make the suite go green. A blessed regression becomes the new "expected" output and stops being caught. Unit tests (`tests/unit`) have no golden files and aren't affected.
 
+- `templates/NAME.es` plus `NAME.out` (and `NAME.in`/`NAME.args`): a starter template for `easyscript new`, run like an example; the CLI checks make sure `easyscript new` writes it exactly. A new template also needs its name in `TEMPLATES` in the Makefile and in `src/new.c`.
 - `docs/cookbook/SECTOR/NAME.es` plus `NAME.out` (and `NAME.in` for typed answers): a cookbook recipe, run like an example in an empty folder holding that sector's csv files. Its page `NAME.md` must show the program, the csv files it reads and the output exactly (`tests/tools/cookbook_sync.py`), and the sector's `README.md` must list it.
 
 ## Language rules

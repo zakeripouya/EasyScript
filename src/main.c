@@ -19,6 +19,8 @@
 #include "back/codegen_c.h"
 #include "back/source_table.h"
 #include "modules.h"
+#include "common/version.h"
+#include "new.h"
 #include "shell.h"
 
 static Arena *arena;
@@ -41,6 +43,9 @@ static void print_usage(FILE *out) {
     fprintf(out, "  easyscript errors FILE        Check FILE and print its errors as data, one per line\n");
     fprintf(out, "  easyscript plan FILE          Print what each list question and filter in FILE becomes\n");
     fprintf(out, "                                (also: easyscript build --plan FILE)\n");
+    fprintf(out, "  easyscript new NAME           Make a folder NAME with main.es to start from\n");
+    fprintf(out, "                                (--template T picks a template; easyscript new --list shows them)\n");
+    fprintf(out, "  easyscript --version          Print the version and the edition of EasyScript\n");
     fprintf(out, "  easyscript                    Start the interactive shell\n");
 }
 
@@ -318,6 +323,29 @@ static int cmd_run(const char *source_path, char **words, int count, bool testin
     return status < 0 ? 1 : status;
 }
 
+// new NAME [--template T] / new --list
+static int cmd_new(int argc, char *argv[]) {
+    if (argc == 3 && strcmp(argv[2], "--list") == 0) {
+        new_list(stdout);
+        return 0;
+    }
+    const char *name = NULL, *template_name = "blank";
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--template") == 0) {
+            if (i + 1 >= argc) return usage_error("After --template, give a template's name (easyscript new --list shows them).");
+            template_name = argv[++i];
+        } else if (argv[i][0] == '-') {
+            return usage_error("\"easyscript new\" takes a name, and maybe --template T.");
+        } else if (!name) {
+            name = argv[i];
+        } else {
+            return usage_error("Give one name to \"easyscript new\".");
+        }
+    }
+    if (!name) return usage_error("Give \"easyscript new\" a name for the new folder, like \"easyscript new hello\".");
+    return new_program(arena, name, template_name);
+}
+
 int main(int argc, char *argv[]) {
     arena = arena_new();
     atexit(free_arena);
@@ -333,6 +361,12 @@ int main(int argc, char *argv[]) {
         print_usage(stdout);
         return 0;
     }
+    if (strcmp(command, "--version") == 0 || strcmp(command, "version") == 0) {
+        if (argc > 2) return usage_error("--version takes nothing after it.");
+        printf("EasyScript %s (the %d edition)\n", EASYSCRIPT_VERSION, EASYSCRIPT_EDITION);
+        return 0;
+    }
+    if (strcmp(command, "new") == 0) return cmd_new(argc, argv);
 
     const char *source_path = NULL;
     const char *output_path = NULL;
