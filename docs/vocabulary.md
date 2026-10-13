@@ -485,6 +485,7 @@ All **Available**. Each goes through the list once, makes no list it doesn't giv
 |---|---|---|
 | `how many L are COMPARISON X` / `how many L is ...` / `how many of L are ...` | How many items pass the test (also `are empty`, `start with`, `end with`, `contain`, `don't contain`, ...) | `how many scores are above 70` |
 | `how many L there are` / `how many L there is` | How many items | `how many guests there are` |
+| `how many L are there` / `how many L is there` | The same, the way a question asks it (`how many guests are there?`). A name, constant or definition called `there`, or a describing word `there`, keeps its meaning (then it's a test) | `how many guests are there` |
 | `how many L whose FIELD ...` / `how many L where C` | How many items the filter keeps | `how many orders whose amount is over 50` |
 | `the number of L` | How many items (`the number of items in L` too) | `the number of orders` |
 | `any ITEM TEST` / `every ITEM TEST` / `no ITEM TEST` | Yes if some, every, or no item passes, going through the list named like ITEM's plural; stops as soon as the answer is known. An empty list makes `every` and `no` yes and `any` no | `if any score is above 90:`, `if every order's amount is above 0:` |

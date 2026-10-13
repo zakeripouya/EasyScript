@@ -2267,7 +2267,7 @@ say how many orders whose amount is over 50 there are.
 
 Each phrase is one pass over the list, written here with the loops it stands for (`it` is the item):
 
-- `how many L are ...` starts a count at 0 and adds 1 for each item that passes. `how many L there are` is the number of items.
+- `how many L are ...` starts a count at 0 and adds 1 for each item that passes. `how many L there are` is the number of items, and so is `how many L are there` (the question: `how many orders are there?`), unless the program makes a name or a describing word called `there`.
 - `any ITEM ...` is no until an item passes, then yes, and stops. `every ITEM ...` is yes until an item fails, then no, and stops. `no ITEM ...` is yes until an item passes, then no, and stops.
 - `the total of L` starts at 0 and adds each item (or each item's field). `the average` is that total divided by the number of items, an error for an empty list. `the median` keeps the numbers, sorts them, and takes the middle one (or halfway between the two middle ones).
 - `the top N L` keeps the N biggest seen so far (in a small heap, so it never sorts the whole list) and gives them back biggest first; `the lowest N` the same for the smallest. Ties keep the item that came first.

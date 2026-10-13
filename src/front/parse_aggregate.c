@@ -139,7 +139,10 @@ static Expr *parse_how_many(Parser *p) {
         return count;
     }
     if (at_singular_test(p) || parser_at_item_test(p, 0)) {
+        size_t test = p->pos;
+        bool there = (parser_at_word(p, 0, "are") || parser_at_word(p, 0, "is")) && parser_at_word(p, 1, "there");
         count->as.aggregate.condition = parser_parse_item_test(p, example);
+        count->as.aggregate.there = there && p->pos == test + 2;  // "how many purchases are there"
         return finish(count, count->as.aggregate.condition);
     }
     if (list->kind == EXPR_ONLY) return finish(count, list);  // how many dogs whose age is over 3

@@ -294,6 +294,8 @@ Before: `Line 4: "sum" needs a list of numbers for "values", but this is a list 
 
 ## Shell and money fixes
 
+**Summary:** (1) charts show money; (2) a table's file decides the kind of a column the program uses as a number or an amount; (3) the shell no longer seems to bring back an old error after a line that wasn't kept; (4) `how many purchases are there?`. Open questions added to [english-pass.md](english-pass.md#still-open): columns the program only shows or sorts, `how many tasks are left`, and a `how many` question without its `?`. No "Still not English" line was affected (none of them were about these four). Changed expected files over the four commits: `tests/run/charts.out` and `tests/errors/chart_errors.err` (fix 1); everything else is new.
+
 On the `shell-and-money-fixes` branch (from master after `fix-linux-sanitizers`), 2026-10-12. A beginner's test with a bank export (`bank.csv`, amounts written `$1200`) and the interactive shell found four problems; each is fixed in its own commit, after `make test`, `make test-gcc`, `make test-debug` (with the leak sweep) on macOS and `make test-debug` and `make CC=gcc test` on Linux x86-64 (GCC 16 in Docker) all passed. `make bless` was never run: every new or changed expected file was written from a run checked by hand.
 
 ### 1. Charts accept money
@@ -332,3 +334,13 @@ On the `shell-and-money-fixes` branch (from master after `fix-linux-sanitizers`)
 - **Not changed:** files a failed line wrote stay written (the shell can't undo them); output and errors from earlier lines aren't shown again, as before (checked by the tests).
 - **Changed expected files:** none. New: `tests/shell/failed_compile` (a compile error, then lines using its name), `tests/shell/failed_run` (a missing file, then a line using its name, with "Did you mean"), `tests/shell/after_failure` (good lines after failed ones, earlier output not repeated, and a kept line stopped by a new one).
 - **Tests:** `make test` 773, `make test-gcc` 773, `make test-debug` 772 with 0 of 882 processes leaking (macOS); Linux (GCC 16 in Docker, aarch64): `make CC=gcc test` 773, `make test-debug` 772.
+
+### 4. how many purchases are there?
+
+- **Fixed:** `how many Ls are there` and `how many Ls is there` mean `how many Ls there are`: as a value (`say how many purchases are there.`, `"[how many purchases are there]"`) and as a question (`how many purchases are there?`) ([proposal 0015](proposals/0015-how-many-are-there.md)).
+- **How:** the parser marks the bare form; the checker counts every item when the program has no name, constant or definition called `there`. A describing word `there` is read by the parser as before, so it wins. A program that makes a name `there` keeps its old meaning (`how many numbers are there` counts the numbers equal to it), so nothing that worked changes. Recorded in design-principles.md's Known exceptions.
+- **"the note says so":** when a describing word `there` wins there's no error, so there's no note to add; the rule is written down in the vocabulary, the guide and the known exception instead.
+- **Not built (Still open in english-pass.md):** `how many tasks are left` ("left" is also a side, two meanings in plain English); a `how many` question typed without its `?` on its own line (only sentences ending in `?` are questions, as for `how many Ls there are` already).
+- **The "big" message:** `how many purchases are big?` still says "I don't know what "big" means for a purchase." (`errors/how_many_unknown_word`).
+- **Changed expected files:** none. New: `tests/run/how_many_there`, `tests/run/how_many_there_meanings` (a describing word `there` wins), `tests/run/how_many_there_name` (a name `there` keeps its meaning), `tests/errors/how_many_unknown_word`, `tests/shell/how_many_question`.
+- **Tests:** `make test` 778, `make test-gcc` 778, `make test-debug` 777 with 0 of 890 processes leaking (macOS); Linux (GCC 16 in Docker, aarch64): `make CC=gcc test` 778, `make test-debug` 777.
