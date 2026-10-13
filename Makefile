@@ -113,6 +113,11 @@ bless: all
 bench: all
 	sh benchmarks/run.sh
 
+# make bench, then fail if any benchmark is more than 20% slower than the
+# latest results in docs/performance.md (benchmarks/check.sh).
+bench-check: easyscript
+	sh benchmarks/check.sh
+
 # make install [PREFIX=/usr/local]: copies easyscript to PREFIX/bin (DESTDIR
 # is put in front, for packaging). It carries its runtime, library and
 # templates inside it; programs are built with the system's cc.
@@ -129,4 +134,4 @@ clean:
 
 -include $(shell find build -name '*.d' 2>/dev/null)
 
-.PHONY: all debug test test-debug test-gcc bless bench clean install uninstall
+.PHONY: all debug test test-debug test-gcc bless bench bench-check clean install uninstall

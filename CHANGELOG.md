@@ -20,6 +20,7 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added (v0.2 prep: release)
 
+- `make bench-check`: runs the benchmarks and fails if any got more than 20% slower than the latest results in `docs/performance.md` (best of 3 runs; at least 0.02 s slower, for the timer's resolution).
 - `make install` (to `/usr/local/bin`, or `PREFIX=...`; `DESTDIR` for packaging) and `make uninstall`, and [docs/install.md](docs/install.md): macOS and Linux, checking it works, uninstalling, and Windows through WSL. A draft Homebrew formula, `packaging/homebrew/easyscript.rb`, builds from a tagged release (not published).
 - Starter templates: `easyscript new NAME` makes a folder NAME with `main.es`, and `easyscript new NAME --template T` starts from `blank`, `report` (reads a csv file, adds it up, saves a chart), `quiz`, `game` or `tool` (uses the words given to the program); `easyscript new --list` lists them. The templates are `templates/*.es`, built into the compiler; `make test` runs each one.
 - `easyscript --version` prints `EasyScript 0.2.0 (the 2026 edition)`.

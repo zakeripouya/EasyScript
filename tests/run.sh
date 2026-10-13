@@ -529,6 +529,21 @@ else
     echo "SKIP cli/make-install (./easyscript isn't up to date)"
 fi
 
+# make bench-check compares a run with docs/performance.md: the recorded
+# times pass, a benchmark much slower than recorded fails.
+fresh_dir
+awk '/^## Latest results/{on=1; next} /^## /{on=0} on && /^\| [a-z_]+ \| [0-9.]+ s/ {
+    split($0, c, "|"); n = c[2]; t = c[3]; gsub(/ /, "", n); sub(/^ */, "", t); sub(/ s.*/, "", t)
+    print n, "easyscript", t, "1.0", "-", "result" }' "$ROOT/docs/performance.md" >"$WORK/same.txt"
+awk '$1 == "fib" { $3 = $3 * 2 + 0.5 } { print }' "$WORK/same.txt" >"$WORK/slower.txt"
+if ! out=$(BENCH_OUTPUT="$WORK/same.txt" sh "$ROOT/benchmarks/check.sh" 2>&1); then
+    not_ok "bench/check" "the recorded times didn't pass: $out"
+elif out=$(BENCH_OUTPUT="$WORK/slower.txt" sh "$ROOT/benchmarks/check.sh" 2>&1) || ! echo "$out" | grep -q "^fib .*SLOWER"; then
+    not_ok "bench/check" "a slower fib wasn't caught: $out"
+else
+    ok "bench/check"
+fi
+
 # "new NAME [--template T]" makes NAME/main.es from the template, exactly;
 # "new --list" lists them; an existing folder is left alone.
 fresh_dir

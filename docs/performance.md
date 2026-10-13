@@ -19,6 +19,8 @@ EasyScript compiles to C and then to native code, so it's meant to be fast. This
 | `sales` | Reads a csv file of 100,000 sales (written by its `setup.sh`: five columns, every tenth row with a quoted field holding a comma) into a list of rows, and totals the amounts, all together and per region with a map. Python uses `csv.DictReader` and a `dict`. Python reads the file one row at a time; EasyScript keeps every row in the list `read csv file` gives back |
 | `sort` | Makes a list of a million pseudo-random numbers (the same in every language) and sorts it, smallest first. C uses the standard library's `qsort`, Go `sort.Float64s`, Python `list.sort()`. Its file `items` (1000000) makes `make bench` add a "bytes/item" column: the peak memory of the whole process divided by the number of items |
 
+`make bench-check` (`benchmarks/check.sh`) runs `make bench` and fails if any EasyScript time is more than 20% slower than the "Latest results" table below (and at least 0.02 s slower, since the timer's resolution is 10 ms). Run it on a quiet machine: other work running at the same time makes everything slower.
+
 The C versions keep their totals `volatile` so the compiler can't remove the loops. The timer's resolution is 10 ms, so times under about 0.05 s are rough.
 
 ## Latest results

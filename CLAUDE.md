@@ -489,6 +489,7 @@ Don't move code into this layout separately. Create it as later steps rewrite ea
 
 ## Performance records
 
+- `make bench-check` (`benchmarks/check.sh`) runs `make bench` and fails if an EasyScript time is more than 20% (and 0.02 s) slower than docs/performance.md's "Latest results" table (`BENCH_OUTPUT=FILE` checks a saved run).
 - `make bench` (`benchmarks/run.sh`) builds every program in `benchmarks/NAME/` (`NAME.es`, plus `.c`, `.go`, `.py` where present). It runs each 3 times (`BENCH_RUNS`) under `/usr/bin/time`, prints the fastest time and peak RSS, and fails if any language's first output line differs from EasyScript's.
 - **The speed rule (English pass):** `benchmarks/forms/NAME.es` (a high-level form) and `NAME_loop.es` (the same work by hand) are timed by `make bench`, which fails when a form's result differs or it takes more than 20% longer; the table is in `docs/performance.md`.
 - `docs/performance.md` has the latest full table (machine, tool versions, date) and a **History** table with one EasyScript row per milestone. **Never edit past history rows' results; only add new rows.** A benchmark added later gets a new column, with "(none)" in the rows from before it existed. At each milestone, run `make bench`, replace the "Latest results" table, add a history row, and update the README's compact Performance table to match.
@@ -603,5 +604,6 @@ make bless                            # rewrite golden files from current output
 ./easyscript --version                # EasyScript 0.2.0 (the 2026 edition)
 ./easyscript                          # interactive shell (exit or quit to leave)
 make install [PREFIX=/usr/local]      # copies ./easyscript to PREFIX/bin (make uninstall removes it); docs/install.md
+make bench-check                      # make bench, failing if a benchmark is >20% slower than docs/performance.md
 make clean
 ```
