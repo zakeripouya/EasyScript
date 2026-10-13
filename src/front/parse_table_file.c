@@ -101,7 +101,10 @@ void parser_find_table_files(Parser *p) {
             kind.file_offset = file->span.offset;
             kind.file_length = file->span.length;
         }
-        size_t called = table_name_at(p, i + 4);  // "... and call it purchases": a kind called "purchase"
+        size_t called = 0;  // "... and call it purchases": a kind called "purchase" (maybe after ", with ...")
+        for (size_t j = i + 4; !called && j < p->count && p->tokens[j].kind != TOK_PERIOD && p->tokens[j].kind != TOK_NEWLINE; j++) {
+            called = table_name_at(p, j);
+        }
         const char *row = called ? row_kind_name(p, p->tokens[called].text) : NULL;
         if (row) {
             kind.name = kind.display = row;
@@ -135,6 +138,49 @@ size_t parser_field_words(const Parser *p, size_t ahead) {
     return 1;
 }
 
+// ", with amount in dollars and quantity as a number": each column's kind
+// written down (in dollars, euros or pounds, or as a number). False after an
+// error.
+static bool parse_column_kinds(Parser *p, Stmt *stmt) {
+    static const char *const example = "read the table in \"bank.csv\", with amount in dollars and quantity as a number";
+    static const char *const next[] = {"in", "as", NULL};
+    static const struct {
+        const char *words;
+        Type type;
+    } kinds[] = {{"in dollars", TYPE_DOLLARS}, {"in euros", TYPE_EUROS}, {"in pounds", TYPE_POUNDS}, {"as number", TYPE_NUMBER}};
+    if (!(parser_at(p, 0, TOK_COMMA) && parser_at_word(p, 1, "with"))) return true;
+    parser_consume(p, 2);
+    for (;;) {
+        ColumnKind column = {{0}, TYPE_UNKNOWN};
+        if (!parser_parse_name(p, &column.name, next)) return false;
+        size_t n = 0;
+        for (size_t k = 0; k < sizeof kinds / sizeof kinds[0] && !n; k++) {
+            if ((n = parser_match_words(p, kinds[k].words))) column.type = kinds[k].type;
+        }
+        if (!n) {
+            const Token *token = parser_peek(p, 0);
+            if (parser_error(p, token->span, "I expected \"in dollars\", \"in euros\", \"in pounds\" or \"as a number\" "
+                             "here, but found %s.", parser_describe(p, token))) {
+                diag_note(p->diag, "Write it like \"%s\".", example);
+                diag_info(p->diag, DIAG_MISSING, "the column's kind", NULL);
+            }
+            return false;
+        }
+        parser_consume(p, n);
+        if (column.type != TYPE_NUMBER) p->records->money = true;
+        vec_push(p->arena, &stmt->as.library.columns, column);
+        if (parser_at_step_link(p)) return true;  // ", then total the amount per month"
+        if (parser_at(p, 0, TOK_COMMA) && parser_match_words_at(p, 1, "and call it")) {  // ", and call it purchases"
+            parser_advance(p);
+            return true;
+        }
+        bool more = parser_at_word(p, 0, "and") && !parser_at_word(p, 1, "call");
+        more = more || (parser_at(p, 0, TOK_COMMA) && !parser_at_word(p, 1, "called"));
+        if (!more) return true;
+        parser_advance(p);
+    }
+}
+
 // After "read", at "table": "table in F [and call it NAME | , called NAME]".
 Stmt *parser_parse_read_table(Parser *p, const Token *verb) {
     static const char *const example = "read the table in \"sales.csv\" and call it sales";
@@ -151,13 +197,14 @@ Stmt *parser_parse_read_table(Parser *p, const Token *verb) {
         return NULL;
     }
     stmt->as.library.a = parse_primary(p);
-    if (p->sentence_failed) return NULL;
+    if (p->sentence_failed || !parse_column_kinds(p, stmt)) return NULL;
     size_t n = parser_match_words(p, "and call it");
     if (!n) n = parser_match_words(p, "called") ? 1 : 0;
     if (!n && parser_at(p, 0, TOK_COMMA) && parser_at_word(p, 1, "called")) n = 2;
     if (n) {
         parser_consume(p, n);
         if (!parser_parse_name(p, &stmt->as.library.name, NULL)) return NULL;
+        if (!stmt->as.library.columns.len && !parse_column_kinds(p, stmt)) return NULL;
     } else {  // for the next step's "it"
         stmt->as.library.name.text = arena_sprintf(p->arena, "0step%zu", ++p->hidden_lists);
         stmt->as.library.name.display = "the table";

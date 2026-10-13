@@ -1,0 +1,9 @@
+Line 1: I expected "in dollars", "in euros", "in pounds" or "as a number" here, but found "in".
+    read the table in "bank.csv", with amount in rupees.
+                                              ^^
+Write it like "read the table in "bank.csv", with amount in dollars and quantity as a number".
+
+Line 2: I expected "in dollars", "in euros", "in pounds" or "as a number" here, but found ".".
+    read the table in "bank.csv", with amount.
+                                             ^
+Write it like "read the table in "bank.csv", with amount in dollars and quantity as a number".

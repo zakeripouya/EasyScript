@@ -425,6 +425,30 @@ Field *checker_add_column(Checker *c, Stmt *def, Field column) {
     return &after[len];
 }
 
+// "read the table in F, with amount in dollars and quantity as a number":
+// each column named gets that kind (added as a field if nothing else uses
+// it), whatever the file looks like before the program runs.
+void checker_column_kinds(Checker *c, const Stmt *stmt) {
+    if (!stmt->as.library.columns.len) return;
+    Stmt *def = c->records->items[type_record_index(type_item(stmt->as.library.type))].definition;
+    for (size_t i = 0; i < stmt->as.library.columns.len; i++) {
+        const ColumnKind *column = &stmt->as.library.columns.items[i];
+        Field *field = NULL;
+        for (size_t f = 2; f < def->as.record.fields.len && !field; f++) {
+            if (strcmp(def->as.record.fields.items[f].name.text, column->name.text) == 0) field = &def->as.record.fields.items[f];
+        }
+        if (!field) field = checker_add_column(c, def, (Field){column->name, TYPE_UNKNOWN, NULL, column->name.pos, {0}, {0}});
+        TypeVar var = checker_field_kind(c, field, column->name.pos.line);
+        if (!types_require(c, var, column->type, column->name.pos.line)) {
+            diag_error(c->diag, column->name.pos.span, "\"%s\" is said to be %s here, but it's used as %s.", column->name.display,
+                       checker_type_name(c, column->type), checker_kind(c, var));
+            diag_note(c->diag, "Line %zu uses it as %s. Say the kind it's used as, or use it as %s.", types_line(c, var),
+                      checker_kind(c, var), checker_type_name(c, column->type));
+            diag_info(c->diag, DIAG_WRONG_KIND, NULL, checker_type_name(c, column->type));
+        }
+    }
+}
+
 // --- Rules ("an age must be between 0 and 150") ------------------------------------------
 
 // Every field the rule is about: the field with its name in the kind it

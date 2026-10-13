@@ -1,0 +1,13 @@
+Line 6: In bank.csv, line 2, "amount" is "$1200", an amount in dollars, but the program uses it as a number.
+    read the table in "bank.csv" and call it purchases, with amount as a number.
+                      ^^^^^^^^^^
+Line 6 uses "amount" as a number.
+
+Line 6: In bank.csv, line 2, "description" is "Rent", which isn't an amount in dollars.
+    read the table in "bank.csv" and call it purchases, with amount as a number.
+                      ^^^^^^^^^^
+Line 8 uses "description" as an amount in dollars.
+
+Line 10: I can only put text in uppercase, but this is an amount in dollars.
+        say row's description in uppercase.
+            ^^^^^^^^^^^^^^^^^

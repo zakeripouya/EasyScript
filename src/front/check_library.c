@@ -262,9 +262,10 @@ void checker_check_library_stmt(Checker *c, const Stmt *stmt) {
     case DO_READ_CSV: check_read_csv(c, stmt); break;
     case DO_SAVE_CSV: check_save_csv(c, stmt); break;
     case DO_SAVE_CHART: check_chart(c, stmt); break;
-    case DO_READ_TABLE: {  // rows of the kind made for it; its fields come from use
+    case DO_READ_TABLE: {  // rows of the kind made for it; its fields come from use, or are written down
         action_text(c, stmt->as.library.a, "The name of a file");
         checker_make_or_store(c, &stmt->as.library.name, types_new(c, stmt->as.library.type, stmt->pos.line));
+        checker_column_kinds(c, stmt);
         break;
     }
     case DO_COMPLAIN:

@@ -10,6 +10,8 @@ All notable changes to EasyScript are recorded here. The format follows [Keep a 
 
 ### Added (v0.2 prep: from the simulated testers)
 
+- A table's column kinds can be written down: `read the table in "bank.csv", with amount in dollars and quantity as a number, and call it purchases.` (also `in euros`, `in pounds`). A stated kind wins over what the file looks like; a file that doesn't fit is the error naming the column, the line and both kinds ([proposal 0023](docs/proposals/0023-column-kinds.md)). Plain numbers in a column of amounts (`1200` among `$` amounts) are that currency, when the program is checked and when the file is read (tested now).
+
 - `!` ends a sentence, like `.` and `?` (`say "Well done!"!`); `!=` still means "is not". Before, a lone `!` was an error ([proposal 0016](docs/proposals/0016-exclamation-and-polite-steps.md)).
 - Polite words and step words in either order: `then please ask ...`, `please, first say ...`, `next, can you say ...`. Before, `Then please ...` was "I don't know a sentence that starts with "please". Did you mean "please"?".
 - An answer used as a number is asked for as a number: after `ask "How many people? " and call it people.`, `bill divided by people` works, and the question is asked again until the answer is a number, like `ask for a number` (also amounts and yes or no). Before, using an answer as a number was an error ("I can't divide text by text."); 31 of the 120 simulated testers' attempts hit it ([proposal 0017](docs/proposals/0017-answers-used-as-numbers.md)).

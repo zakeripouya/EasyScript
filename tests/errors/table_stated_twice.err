@@ -1,0 +1,4 @@
+Line 1: "amount" is said to be a number here, but it's used as an amount in dollars.
+    read the table in "bank.csv" and call it purchases, with amount in dollars and amount as a number.
+                                                                                   ^^^^^^
+Line 1 uses it as an amount in dollars. Say the kind it's used as, or use it as a number.

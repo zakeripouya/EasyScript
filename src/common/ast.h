@@ -415,6 +415,13 @@ typedef struct {
     bool unless;    // "unless C": the branch runs when C is no
 } IfBranch;
 
+// A column of "read the table in F, with amount in dollars": its kind,
+// written down instead of worked out from use and the file.
+typedef struct {
+    Name name;
+    Type type;
+} ColumnKind;
+
 struct Stmt {
     StmtKind kind;
     SourcePos pos;  // the whole statement, without its period
@@ -519,6 +526,7 @@ struct Stmt {
             bool folder;      // DO_RENAME, DO_MOVE: "the folder A" rather than "the file A"
             Name name;        // DO_READ_CSV, DO_RUN, DO_WAIT_KEY: the name made (text NULL: none)
             Type type;        // DO_SAVE_CSV, DO_RUN: filled in by the checker: the list's kind, the parts' kinds
+            Vec(ColumnKind) columns;  // DO_READ_TABLE: ", with amount in dollars and quantity as a number"
             Vec(Expr *) parts;  // DO_RUN: the words after "with", each text, a number or a list of text;
                                 // DO_SAVE_CHART: the title (or NULL), then the checker's call of lib/charts.es
         } library;

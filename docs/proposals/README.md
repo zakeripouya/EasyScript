@@ -41,3 +41,4 @@ A doubt that comes up while building goes back into the proposal, not into the p
 - [0019: errors that answer words from spreadsheets and other languages](0019-errors-for-other-languages-words.md) (Built)
 - [0020: "rounded to 2 decimals" and "round X to 2 decimal places"](0020-rounding-words.md) (Built)
 - [0022: rounding after arithmetic says which part it rounds](0022-rounding-after-arithmetic.md) (Built)
+- [0023: a table's column kinds, written down](0023-column-kinds.md) (Built)
